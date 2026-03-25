@@ -1,3 +1,4 @@
+export const maxDuration = 60;
 
 import { NextResponse } from 'next/server';
 import { generateMethod4Image } from '@/services/generation/imageGenerator';
@@ -36,3 +37,4 @@ export async function POST(req: Request) {
         );
     }
 }
+

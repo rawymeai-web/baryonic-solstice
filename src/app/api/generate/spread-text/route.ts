@@ -1,3 +1,4 @@
+export const maxDuration = 60;
 import { NextResponse } from 'next/server';
 import { ai, cleanJsonString, withRetry } from '../../../../services/generation/modelGateway';
 import { getWordCountForAge } from '../../../../services/rules/guidebook';
@@ -64,3 +65,4 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }
 }
+
