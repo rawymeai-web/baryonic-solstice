@@ -10,6 +10,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Brand Colors */
+  --color-brand-navy: #1a237e;
+  --color-brand-orange: #ff9800;
+  --color-brand-coral: #ff7043;
+  --color-brand-teal: #00897b;
+  --color-brand-baby-blue: #81d4fa;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -1,0 +1,49 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+Γ£à Test entities created successfully.
+
+--- 2. Testing Subscription Deduplication ---
+Γ£à PASS: First order inserted successfully for cycle.
+Γ£à PASS: Duplicate cycle order correctly blocked by unique constraint.
+
+--- 3. Testing Theme Engine Assignment (No Repeats) ---
+[ThemeEngine] Starting assignment for Order: TEST-ORD-1, Hero: e6cc52d8-eab9-4678-a4ad-2c1b55494c47
+cmd : [ThemeEngine] 
+EXHAUSTION: Hero e6cc52d8
+-eab9-4678-a4ad-2c1b55494
+c47 has exhausted all 0 
+available catalog themes!
+At line:1 char:1
++ cmd /c npx tsx 
+scripts/test-pipeline.ts 
+2>&1 | Out-File 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpe    
+cified: ([ThemeE    
+ngine] E...catal    og 
+themes!:Strin    g) [], 
+RemoteExc    eption
+    + FullyQualified    
+ErrorId : Native    
+CommandError
+ 
+Γ¥î FAIL: Assigned first 
+theme via engine for 
+order
+[ThemeEngine] Starting assignment for Order: TEST-ORD-3, Hero: e6cc52d8-eab9-4678-a4ad-2c1b55494c47
+[ThemeEngine] 
+EXHAUSTION: Hero e6cc52d8
+-eab9-4678-a4ad-2c1b55494
+c47 has exhausted all 0 
+available catalog themes!
+Γ¥î FAIL: Assigned 
+second theme: undefined 
+(different from first)
+
+≡ƒÄë Test Run Complete: 2 Passed, 2 Failed.

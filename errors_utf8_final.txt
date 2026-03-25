@@ -1,0 +1,5 @@
+﻿src/components/admin/OrderPreviewModal.tsx(74,104): error TS2339: Property 'mood' does not exist on type '{ spreadNumber: number; purpose?: string | undefined; narrative: string; transitionHook?: string | undefined; visualFocus?: string | undefined; emotionalBeat: string; specificLocation: string; environmentType: string; timeOfDay: string; newCharacters?: string[] | undefined; }'.
+src/components/admin/OrderPreviewModal.tsx(75,105): error TS2339: Property 'lighting' does not exist on type '{ spreadNumber: number; purpose?: string | undefined; narrative: string; transitionHook?: string | undefined; visualFocus?: string | undefined; emotionalBeat: string; specificLocation: string; environmentType: string; timeOfDay: string; newCharacters?: string[] | undefined; }'.
+src/constants/index.ts(152,9): error TS1117: An object literal cannot have multiple properties with the same name.
+src/services/generation/modelGateway.ts(2,29): error TS2307: Cannot find module '@google/genai' or its corresponding type declarations.
+src/services/stitchingService.ts(51,23): error TS7006: Parameter 'blob' implicitly has an 'any' type.

@@ -1,0 +1,40 @@
+﻿[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+--- ORDER DATA ---
+
+Order: RWY-V8FO0H4JD
+Status: New Order
+Language: en
+Theme: ╪º┘ä╪¬╪¡╪»╪½ ┘à╪╣ ╪º┘ä╪¡┘è┘ê╪º┘å╪º╪¬ ┘ê┘ü┘ç┘à ┘ä╪║╪¬┘ç╪º.
+Title: ╪ú╪╡╪»┘é╪º╪í ╪º┘ä╪║╪º╪¿╪⌐
+Main Character Name: ╪│╪º╪▒╪⌐
+Main Character Image (Original) Length: 240048
+Visual DNA Length: 0
+Style Reference Image Length: 0
+Prompts Generated: 0
+Pages Generated: 8
+Blueprint Exists: false
+
+Order: RWY-J13I0G07L
+Status: story_ready
+Language: ar
+Theme: ╪º┘ä╪¬╪¡╪»╪½ ┘à╪╣ ╪º┘ä╪¡┘è┘ê╪º┘å╪º╪¬ ┘ê┘ü┘ç┘à ┘ä╪║╪¬┘ç╪º.
+Title: ╪ú╪╡╪»┘é╪º╪í ╪º┘ä╪║╪º╪¿╪⌐
+Main Character Name: ╪│╪º╪▒╪⌐
+Main Character Image (Original) Length: 240048
+Visual DNA Length: 0
+Style Reference Image Length: 0
+Prompts Generated: 9
+Pages Generated: 0
+Blueprint Exists: true
+
+--- JOB DATA ---
+Job Type: illustration, Status: running, Attempts: 0, Created At: 2026-03-10T21:25:27.817048+00:00
+Job Type: story, Status: completed, Attempts: 0, Created At: 2026-03-10T21:24:47.744431+00:00
+Job Type: blueprint, Status: completed, Attempts: 0, Created At: 2026-03-10T21:24:17.782654+00:00
+
+--- AUDIT DATA (Recent) ---
+Event: illustration_batch_started, Details: {"timestamp":"2026-03-10T21:25:32.766Z","target_spreads":9}, Created At: 2026-03-10T21:25:32.337167+00:00
+Event: story_generation_completed, Details: {"timestamp":"2026-03-10T21:25:27.019Z","prompts_generated":9}, Created At: 2026-03-10T21:25:26.711792+00:00
+Event: blueprint_generated, Details: {"theme":"╪│╪º╪▒╪⌐ ╪º┘ä╪╡╪║┘è╪▒╪⌐ ╪¬╪¡┘ä┘à ╪¿┘ü┘ç┘à ┘ä╪║╪⌐ ╪º┘ä╪¡┘è┘ê╪º┘å╪º╪¬ ┘ê╪¬╪«┘ê╪╢ ┘à╪║╪º┘à╪▒╪⌐ ┘ä╪¬╪¡┘é┘è┘é ╪░┘ä┘â.","title":"╪│╪º╪▒╪⌐ ┘ê╪º┘ä╪╖┘è┘ê╪▒ ╪º┘ä┘à╪¬┘â┘ä┘à╪⌐"}, Created At: 2026-03-10T21:24:47.351801+00:00
+Event: error, Details: {"error":"[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent: [400 Bad Request] Unable to process input image. Please retry or report in https://developers.generativeai.google/guide/troubleshooting","context":"illustration_generation","spread_number":9}, Created At: 2026-03-10T21:03:59.528674+00:00
+Event: error, Details: {"error":"[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent: [400 Bad Request] Unable to process input image. Please retry or report in https://developers.generativeai.google/guide/troubleshooting","context":"illustration_generation","spread_number":8}, Created At: 2026-03-10T21:03:45.961739+00:00

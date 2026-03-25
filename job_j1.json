@@ -1,0 +1,28 @@
+[
+  {
+    "id": "697b5d2a-1739-4906-adf0-32cf77d5cadf",
+    "order_id": "RWY-J13I0G07L",
+    "job_type": "story",
+    "status": "failed",
+    "attempts": 0,
+    "started_at": "2026-03-10T10:04:39.088+00:00",
+    "finished_at": null,
+    "error_message": "DETERMINISTIC: Order not found or database error",
+    "worker_name": null,
+    "artifact_refs": null,
+    "created_at": "2026-03-10T10:04:37.965607+00:00"
+  },
+  {
+    "id": "7340a110-b019-4f0d-aa2f-a2de8d57da75",
+    "order_id": "RWY-J13I0G07L",
+    "job_type": "story",
+    "status": "failed",
+    "attempts": 0,
+    "started_at": "2026-03-10T10:14:40.913+00:00",
+    "finished_at": null,
+    "error_message": "DETERMINISTIC: Order not found or database error",
+    "worker_name": null,
+    "artifact_refs": null,
+    "created_at": "2026-03-10T10:14:40.512528+00:00"
+  }
+]

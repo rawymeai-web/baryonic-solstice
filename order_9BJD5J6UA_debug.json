@@ -1,0 +1,30 @@
+{
+  "mainChar": {
+    "name": "Zayn",
+    "images": 0,
+    "desc": "A child"
+  },
+  "secondChar": {
+    "name": "Rayan",
+    "images": 0
+  },
+  "styleData": {
+    "styleSeed": 337652,
+    "stylePrompt": "A detailed, atmospheric illustration style with a focus on dramatic natural lighting, grand scale, and immersive world-building.",
+    "hasStyleRef": false,
+    "hasSecondRef": true,
+    "secondRefLength": 1068108
+  },
+  "prompts": [
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {}
+  ],
+  "pagesGenerated": 8
+}

@@ -1,0 +1,36 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+
+≡ƒÄë Test Run Complete: 0 Passed, 0 Failed.
+node.exe : Γ¥î 
+CRITICAL TEST 
+FAILURE:  Could not 
+create customer: 
+null value in column 
+"id" of relation 
+"customers" violates 
+not-null constraint
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (Γ¥î CRI   
+ TICAL TE...null     
+constraint:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 

@@ -1,0 +1,204 @@
+﻿[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[
+  {
+    "id": "010944f8-bf04-40d4-b749-cd1f0a3b0531",
+    "event_type": "story_generation_completed",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "timestamp": "2026-03-10T10:46:51.393Z",
+      "prompts_generated": 9
+    },
+    "created_at": "2026-03-10T10:46:51.674759+00:00"
+  },
+  {
+    "id": "2ea3bab1-6b20-4643-a9c6-1edfef86cef2",
+    "event_type": "illustration_batch_started",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "timestamp": "2026-03-10T10:46:53.213Z",
+      "target_spreads": 9
+    },
+    "created_at": "2026-03-10T10:46:53.27254+00:00"
+  },
+  {
+    "id": "57ce7aff-ca17-4d16-8e2a-50ef093a6f3d",
+    "event_type": "illustration_batch_started",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "timestamp": "2026-03-10T10:50:50.556Z",
+      "target_spreads": 9
+    },
+    "created_at": "2026-03-10T10:50:50.625612+00:00"
+  },
+  {
+    "id": "395f1726-3d36-4632-9000-45ef012c9384",
+    "event_type": "story_generation_completed",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "timestamp": "2026-03-10T11:23:10.104Z",
+      "prompts_generated": 9
+    },
+    "created_at": "2026-03-10T11:23:10.378247+00:00"
+  },
+  {
+    "id": "3b1e9770-a16b-4730-8cab-3f288f6856ad",
+    "event_type": "illustration_batch_started",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "timestamp": "2026-03-10T11:23:11.838Z",
+      "target_spreads": 9
+    },
+    "created_at": "2026-03-10T11:23:11.924669+00:00"
+  },
+  {
+    "id": "232c599e-2bd2-4563-96a4-5d9a2d5a0f48",
+    "event_type": "story_generation_completed",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "timestamp": "2026-03-10T11:48:15.763Z",
+      "prompts_generated": 9
+    },
+    "created_at": "2026-03-10T11:48:16.072942+00:00"
+  },
+  {
+    "id": "c0ea6dc4-52cd-4946-b436-8d6e8b91e9e9",
+    "event_type": "illustration_batch_started",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "timestamp": "2026-03-10T11:48:17.988Z",
+      "target_spreads": 9
+    },
+    "created_at": "2026-03-10T11:48:18.08626+00:00"
+  },
+  {
+    "id": "1c6668d6-bc82-4d94-9886-87064b86dd29",
+    "event_type": "error",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "error": "Cannot read properties of undefined (reading 'startsWith')",
+      "context": "illustration_generation",
+      "spread_number": 1
+    },
+    "created_at": "2026-03-10T11:48:25.798492+00:00"
+  },
+  {
+    "id": "81b1a7a5-18ac-4305-8566-9615c569acd5",
+    "event_type": "error",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "error": "Cannot read properties of undefined (reading 'startsWith')",
+      "context": "illustration_generation",
+      "spread_number": 2
+    },
+    "created_at": "2026-03-10T11:48:35.363014+00:00"
+  },
+  {
+    "id": "dfbbdd48-ccee-456e-bf8d-7e809a344b88",
+    "event_type": "error",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "error": "Cannot read properties of undefined (reading 'startsWith')",
+      "context": "illustration_generation",
+      "spread_number": 3
+    },
+    "created_at": "2026-03-10T11:48:44.918039+00:00"
+  },
+  {
+    "id": "55fc7c89-99b7-4c55-9506-46469058a7e7",
+    "event_type": "error",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "error": "Cannot read properties of undefined (reading 'startsWith')",
+      "context": "illustration_generation",
+      "spread_number": 4
+    },
+    "created_at": "2026-03-10T11:48:54.442821+00:00"
+  },
+  {
+    "id": "1eb13a5f-d92a-4a44-99c5-f5dab3e1b19c",
+    "event_type": "error",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "error": "Cannot read properties of undefined (reading 'startsWith')",
+      "context": "illustration_generation",
+      "spread_number": 5
+    },
+    "created_at": "2026-03-10T11:49:04.084658+00:00"
+  },
+  {
+    "id": "bd910db6-269a-485f-b073-3ccb8c742875",
+    "event_type": "error",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "error": "Cannot read properties of undefined (reading 'startsWith')",
+      "context": "illustration_generation",
+      "spread_number": 6
+    },
+    "created_at": "2026-03-10T11:49:13.642148+00:00"
+  },
+  {
+    "id": "6488f205-bded-4c5f-8076-9e9cc115c33f",
+    "event_type": "error",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "error": "Cannot read properties of undefined (reading 'startsWith')",
+      "context": "illustration_generation",
+      "spread_number": 7
+    },
+    "created_at": "2026-03-10T11:49:23.172886+00:00"
+  },
+  {
+    "id": "02f719a4-2ff1-4ca2-8eb5-aa16ce9ffae2",
+    "event_type": "error",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "error": "Cannot read properties of undefined (reading 'startsWith')",
+      "context": "illustration_generation",
+      "spread_number": 8
+    },
+    "created_at": "2026-03-10T11:49:32.724684+00:00"
+  },
+  {
+    "id": "474ceb25-d9d8-4240-b810-154d2b56c96a",
+    "event_type": "error",
+    "order_id": "RWY-J13I0G07L",
+    "subscription_id": null,
+    "admin_id": null,
+    "details": {
+      "error": "Cannot read properties of undefined (reading 'startsWith')",
+      "context": "illustration_generation",
+      "spread_number": 9
+    },
+    "created_at": "2026-03-10T11:49:42.377733+00:00"
+  }
+]

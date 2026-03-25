@@ -1,0 +1,14 @@
+﻿[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+[
+  "pages",
+  "theme",
+  "script",
+  "prompts",
+  "language",
+  "blueprint",
+  "childName",
+  "rawScript",
+  "visualPlan",
+  "childGender",
+  "prompt_version"
+]

@@ -1,0 +1,31 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+
+≡ƒÄë Test Run Complete: 0 Passed, 0 Failed.
+cmd : Γ¥î CRITICAL TEST 
+FAILURE:  Could not 
+create sub: Could not 
+find the 'plan_type' 
+column of 
+'subscriptions' in the 
+schema cache
+At line:1 char:1
++ cmd /c npx tsx 
+scripts/test-pipeline.ts 
+2>&1 | Out-File 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (Γ¥î CRITICAL TE...h   
+ e schema cache:Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 

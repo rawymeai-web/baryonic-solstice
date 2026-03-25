@@ -1,0 +1,56 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+Γ£à Test entities created successfully.
+
+--- 2. Testing Subscription Deduplication ---
+Γ£à PASS: First order inserted successfully for cycle.
+Γ£à PASS: Duplicate cycle order correctly blocked by unique constraint.
+
+--- 3. Testing Theme Engine Assignment (No Repeats) ---
+cmd : Theme Upsert 
+Error: {
+At line:1 char:1
++ cmd /c npx tsx scri
+pts/test-pipeline.ts 
+2>&1 | Out-File 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (Theme U   
+ psert Error: {:S    
+tring) [], Remot    
+eException
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'new row 
+violates row-level 
+security policy for 
+table "themes"'
+}
+[ThemeEngine] Starting assignment for Order: TEST-ORD-1-1772909099576, Hero: b65607a9-8178-45e1-b37f-8122ebf1a774
+[ThemeEngine] 
+EXHAUSTION: Hero b656
+07a9-8178-45e1-b37f-8
+122ebf1a774 has 
+exhausted all 0 
+available catalog 
+themes!
+Γ¥î FAIL: Assigned 
+first theme via 
+engine for order
+Γ¥î CRITICAL TEST 
+FAILURE:  orderId3 
+is not defined
+
+≡ƒÄë Test Run Complete: 2 Passed, 1 Failed.

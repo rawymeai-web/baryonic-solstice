@@ -1,0 +1,67 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+Γ£à Test entities created successfully.
+
+--- 2. Testing Subscription Deduplication ---
+Γ£à PASS: First order inserted successfully for cycle.
+Γ£à PASS: Duplicate cycle order correctly blocked by unique constraint.
+
+--- 3. Testing Theme Engine Assignment (No Repeats) ---
+cmd : Theme Upsert 
+Error: {
+At line:1 char:1
++ cmd /c npx tsx scri
+pts/test-pipeline.ts 
+2>&1 | Out-File 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~
+    + CategoryInfo   
+           : 
+NotSpecified:     
+(Theme Upsert Error: 
+    {:String) [], 
+Remot    eException
+    + 
+FullyQualifiedErro   
+ rId : 
+NativeCommandE    
+rror
+ 
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'new row 
+violates row-level 
+security policy for 
+table "themes"'
+}
+[ThemeEngine] Starting assignment for Order: TEST-ORD-1-1772909145235, Hero: ba0c7763-e9eb-4ce3-bdbf-d0e3b2de516b
+[ThemeEngine] 
+EXHAUSTION: Hero ba0c
+7763-e9eb-4ce3-bdbf-d
+0e3b2de516b has 
+exhausted all 0 
+available catalog 
+themes!
+Γ¥î FAIL: Assigned 
+first theme via 
+engine for order
+[ThemeEngine] Starting assignment for Order: TEST-ORD-3-1772909146405, Hero: ba0c7763-e9eb-4ce3-bdbf-d0e3b2de516b
+[ThemeEngine] 
+EXHAUSTION: Hero ba0c
+7763-e9eb-4ce3-bdbf-d
+0e3b2de516b has 
+exhausted all 0 
+available catalog 
+themes!
+Γ¥î FAIL: Assigned 
+second theme: 
+undefined (different 
+from first)
+
+≡ƒÄë Test Run Complete: 2 Passed, 2 Failed.

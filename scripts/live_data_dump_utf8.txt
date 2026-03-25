@@ -1,0 +1,23 @@
+﻿Fetching prompts from Supabase...
+--- SAVED PROMPTS ---
+
+Fetching Series Bible (Guidebook)...
+--- SERIES BIBLE ---
+[ID: 1]
+{}
+
+Fetching System Settings...
+--- SETTINGS ---
+[
+  {
+    "id": 1,
+    "default_method": "method4",
+    "default_spread_count": 8,
+    "enable_debug_view": false,
+    "generation_delay": 0,
+    "unit_production_cost": 13.25,
+    "unit_ai_cost": 0.6,
+    "unit_shipping_cost": 1.5,
+    "target_model": "gemini-1.5-flash"
+  }
+]

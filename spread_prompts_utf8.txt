@@ -1,0 +1,360 @@
+Spread 1
+Prompt for spread 1:
+** GOAL:** Generate a 16: 9 panoramic illustration with ** perfect likeness ** and ** cinematic charm **.
+
+** REFERENCE INPUTS:**
+- ** Character Photo(NDA Image):** This is the ** sole source of truth ** for the child’s identity.
+- ** Style:** Style: ${storyData.selectedStylePrompt}. Theme: ${storyData.themeVisualDNA || storyData.theme}
+
+** STRICT CHARACTER LOCK:**
+- ** PHYSICAL DESCRIPTION:** A child
+- ** OUTFIT:** You MUST depict the child wearing strictly: "Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set.".Do NOT change this outfit unless the scene explicitly requires special gear(e.g.swimming).Consistency is key.
+- Apply the art style to rendering technique only(color, materials, brushwork).
+- Summary Description: A child, Wearing: Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set. (Age: 5)
+
+** COMPOSITION RULES:**
+                    - 16: 9 Full Bleed panoramic.
+- ** SUBJECT PLACEMENT:** Main character must be framed clearly on the ** RIGHT**.
+- ** OPEN CANVAS:** The LEFT side must be ** OPEN AND UNCLUTTERED **.Use soft textures(e.g., smooth sky, blurred background, flat grass) to create a clean visual areas.
+- ** CAMERA LENS:** Use a ** WIDE ANGLE / MEDIUM - WIDE SHOT ** to establish the scene.Avoid extreme close - ups unless specified.
+- Camera angle: Eye-level
+                - Lighting: Natural sunlight
+
+** SCENE DESCRIPTION:**
+                    - Setting: Haya's bedroom, daytime, normal lighting (Bedroom)
+            - Action: Haya playing with toy knights and a small tower..Ensure the action is readable from a distance.
+
+** EMOTIONAL & DESIGN NOTES:**
+            - Mood: Playful
+        - Palette: Bright, cheerful
+        - Energy: Use expressive poses and framing.
+
+**MANDATORY OUTPUT RULES (GLOBAL STYLE LOCK):**
+- **Follow Visual DNA:** Strictly adhere to the rendering technique defined in the "Style" input above.
+- **Visual Noise:** Imperfection and occlusion are mandatory. Do not make it "clean".
+- **Color Decay:** Saturation must NEVER increase after Spread 4. Muted, earthy tones only.
+- **NO HERO FRAMING:** Do NOT Center the subject or isolate them. They must be embedded in the environment.
+- **Lighting Logic:** 
+    
+    
+- No typography, no letters, no watermarks.
+- No split screen line — continuous art.
+- ** ANATOMY CHECK:** Ensure correct number of limbs(2 arms, 2 legs) and fingers.No extra limbs or hallucinations.
+- Character must be integrated into the environment — not pasted or floating.
+- Match style fidelity from earlier spreads for visual consistency.
+
+Spread 2
+Prompt for spread 2:
+** GOAL:** Generate a 16: 9 panoramic illustration with ** perfect likeness ** and ** cinematic charm **.
+
+** REFERENCE INPUTS:**
+- ** Character Photo(NDA Image):** This is the ** sole source of truth ** for the child’s identity.
+- ** Style:** Style: ${storyData.selectedStylePrompt}. Theme: ${storyData.themeVisualDNA || storyData.theme}
+
+** STRICT CHARACTER LOCK:**
+- ** PHYSICAL DESCRIPTION:** A child
+- ** OUTFIT:** You MUST depict the child wearing strictly: "Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set.".Do NOT change this outfit unless the scene explicitly requires special gear(e.g.swimming).Consistency is key.
+- Apply the art style to rendering technique only(color, materials, brushwork).
+- Summary Description: A child, Wearing: Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set. (Age: 5)
+
+** COMPOSITION RULES:**
+                    - 16: 9 Full Bleed panoramic.
+- ** SUBJECT PLACEMENT:** Main character must be framed clearly on the ** RIGHT**.
+- ** OPEN CANVAS:** The LEFT side must be ** OPEN AND UNCLUTTERED **.Use soft textures(e.g., smooth sky, blurred background, flat grass) to create a clean visual areas.
+- ** CAMERA LENS:** Use a ** WIDE ANGLE / MEDIUM - WIDE SHOT ** to establish the scene.Avoid extreme close - ups unless specified.
+- Camera angle: Slightly low angle
+                - Lighting: Dimming natural light, shadows forming
+
+** SCENE DESCRIPTION:**
+                    - Setting: Haya's bedroom, shadows creeping in (Bedroom)
+            - Action: Haya noticing shadows on the wall, looking concerned..Ensure the action is readable from a distance.
+
+** EMOTIONAL & DESIGN NOTES:**
+            - Mood: Suspenseful
+        - Palette: Muted, darker tones appearing
+        - Energy: Use expressive poses and framing.
+
+**MANDATORY OUTPUT RULES (GLOBAL STYLE LOCK):**
+- **Follow Visual DNA:** Strictly adhere to the rendering technique defined in the "Style" input above.
+- **Visual Noise:** Imperfection and occlusion are mandatory. Do not make it "clean".
+- **Color Decay:** Saturation must NEVER increase after Spread 4. Muted, earthy tones only.
+- **NO HERO FRAMING:** Do NOT Center the subject or isolate them. They must be embedded in the environment.
+- **Lighting Logic:** 
+    
+    
+- No typography, no letters, no watermarks.
+- No split screen line — continuous art.
+- ** ANATOMY CHECK:** Ensure correct number of limbs(2 arms, 2 legs) and fingers.No extra limbs or hallucinations.
+- Character must be integrated into the environment — not pasted or floating.
+- Match style fidelity from earlier spreads for visual consistency.
+
+Spread 3
+Prompt for spread 3:
+** GOAL:** Generate a 16: 9 panoramic illustration with ** perfect likeness ** and ** cinematic charm **.
+
+** REFERENCE INPUTS:**
+- ** Character Photo(NDA Image):** This is the ** sole source of truth ** for the child’s identity.
+- ** Style:** Style: ${storyData.selectedStylePrompt}. Theme: ${storyData.themeVisualDNA || storyData.theme}
+
+** STRICT CHARACTER LOCK:**
+- ** PHYSICAL DESCRIPTION:** A child
+- ** OUTFIT:** You MUST depict the child wearing strictly: "Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set.".Do NOT change this outfit unless the scene explicitly requires special gear(e.g.swimming).Consistency is key.
+- Apply the art style to rendering technique only(color, materials, brushwork).
+- Summary Description: A child, Wearing: Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set. (Age: 5)
+
+** COMPOSITION RULES:**
+                    - 16: 9 Full Bleed panoramic.
+- ** SUBJECT PLACEMENT:** Main character must be framed clearly on the ** RIGHT**.
+- ** OPEN CANVAS:** The LEFT side must be ** OPEN AND UNCLUTTERED **.Use soft textures(e.g., smooth sky, blurred background, flat grass) to create a clean visual areas.
+- ** CAMERA LENS:** Use a ** WIDE ANGLE / MEDIUM - WIDE SHOT ** to establish the scene.Avoid extreme close - ups unless specified.
+- Camera angle: Dutch angle
+                - Lighting: 70% ambient, mostly dark shadows
+
+** SCENE DESCRIPTION:**
+                    - Setting: Haya's bedroom, now a dark castle corridor (Castle corridor)
+            - Action: Haya screaming and running back towards her bed, terrified of the shadows..Ensure the action is readable from a distance.
+
+** EMOTIONAL & DESIGN NOTES:**
+            - Mood: Frightening
+        - Palette: Dark blues and grays, desaturated
+        - Energy: Use expressive poses and framing.
+
+**MANDATORY OUTPUT RULES (GLOBAL STYLE LOCK):**
+- **Follow Visual DNA:** Strictly adhere to the rendering technique defined in the "Style" input above.
+- **Visual Noise:** Imperfection and occlusion are mandatory. Do not make it "clean".
+- **Color Decay:** Saturation must NEVER increase after Spread 4. Muted, earthy tones only.
+- **NO HERO FRAMING:** Do NOT Center the subject or isolate them. They must be embedded in the environment.
+- **Lighting Logic:** 
+    
+    
+- No typography, no letters, no watermarks.
+- No split screen line — continuous art.
+- ** ANATOMY CHECK:** Ensure correct number of limbs(2 arms, 2 legs) and fingers.No extra limbs or hallucinations.
+- Character must be integrated into the environment — not pasted or floating.
+- Match style fidelity from earlier spreads for visual consistency.
+
+Spread 4
+Prompt for spread 4:
+** GOAL:** Generate a 16: 9 panoramic illustration with ** perfect likeness ** and ** cinematic charm **.
+
+** REFERENCE INPUTS:**
+- ** Character Photo(NDA Image):** This is the ** sole source of truth ** for the child’s identity.
+- ** Style:** Style: ${storyData.selectedStylePrompt}. Theme: ${storyData.themeVisualDNA || storyData.theme}
+
+** STRICT CHARACTER LOCK:**
+- ** PHYSICAL DESCRIPTION:** A child
+- ** OUTFIT:** You MUST depict the child wearing strictly: "Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set.".Do NOT change this outfit unless the scene explicitly requires special gear(e.g.swimming).Consistency is key.
+- Apply the art style to rendering technique only(color, materials, brushwork).
+- Summary Description: A child, Wearing: Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set. (Age: 5)
+
+** COMPOSITION RULES:**
+                    - 16: 9 Full Bleed panoramic.
+- ** SUBJECT PLACEMENT:** Main character must be framed clearly on the ** RIGHT**.
+- ** OPEN CANVAS:** The LEFT side must be ** OPEN AND UNCLUTTERED **.Use soft textures(e.g., smooth sky, blurred background, flat grass) to create a clean visual areas.
+- ** CAMERA LENS:** Use a ** WIDE ANGLE / MEDIUM - WIDE SHOT ** to establish the scene.Avoid extreme close - ups unless specified.
+- Camera angle: Eye-level
+                - Lighting: 70% ambient, faint light source appearing
+
+** SCENE DESCRIPTION:**
+                    - Setting: Dark castle corridor, faint light appears (Castle corridor)
+            - Action: A faint light sparkles near Haya, calming her down slightly..Ensure the action is readable from a distance.
+
+** EMOTIONAL & DESIGN NOTES:**
+            - Mood: Hopeful
+        - Palette: Muted, hint of light colors
+        - Energy: Use expressive poses and framing.
+
+**MANDATORY OUTPUT RULES (GLOBAL STYLE LOCK):**
+- **Follow Visual DNA:** Strictly adhere to the rendering technique defined in the "Style" input above.
+- **Visual Noise:** Imperfection and occlusion are mandatory. Do not make it "clean".
+- **Color Decay:** Saturation must NEVER increase after Spread 4. Muted, earthy tones only.
+- **NO HERO FRAMING:** Do NOT Center the subject or isolate them. They must be embedded in the environment.
+- **Lighting Logic:** 
+    - Spread 4 Constraint: Shadows must be DEEPER than Spread 3.
+    
+- No typography, no letters, no watermarks.
+- No split screen line — continuous art.
+- ** ANATOMY CHECK:** Ensure correct number of limbs(2 arms, 2 legs) and fingers.No extra limbs or hallucinations.
+- Character must be integrated into the environment — not pasted or floating.
+- Match style fidelity from earlier spreads for visual consistency.
+
+Spread 5
+Prompt for spread 5:
+** GOAL:** Generate a 16: 9 panoramic illustration with ** perfect likeness ** and ** cinematic charm **.
+
+** REFERENCE INPUTS:**
+- ** Character Photo(NDA Image):** This is the ** sole source of truth ** for the child’s identity.
+- ** Style:** Style: ${storyData.selectedStylePrompt}. Theme: ${storyData.themeVisualDNA || storyData.theme}
+
+** STRICT CHARACTER LOCK:**
+- ** PHYSICAL DESCRIPTION:** A child
+- ** OUTFIT:** You MUST depict the child wearing strictly: "Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set.".Do NOT change this outfit unless the scene explicitly requires special gear(e.g.swimming).Consistency is key.
+- Apply the art style to rendering technique only(color, materials, brushwork).
+- Summary Description: A child, Wearing: Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set. (Age: 5)
+
+** COMPOSITION RULES:**
+                    - 16: 9 Full Bleed panoramic.
+- ** SUBJECT PLACEMENT:** Main character must be framed clearly on the ** RIGHT**.
+- ** OPEN CANVAS:** The LEFT side must be ** OPEN AND UNCLUTTERED **.Use soft textures(e.g., smooth sky, blurred background, flat grass) to create a clean visual areas.
+- ** CAMERA LENS:** Use a ** WIDE ANGLE / MEDIUM - WIDE SHOT ** to establish the scene.Avoid extreme close - ups unless specified.
+- Camera angle: Low angle, looking up at shadows
+                - Lighting: 55% ambient, deep shadows
+
+** SCENE DESCRIPTION:**
+                    - Setting: Dark castle corridor, shadows loom large (Castle corridor)
+            - Action: Haya feeling weak, struggling to see in the darkness..Ensure the action is readable from a distance.
+
+** EMOTIONAL & DESIGN NOTES:**
+            - Mood: Overwhelmed
+        - Palette: Dark, desaturated
+        - Energy: Use expressive poses and framing.
+
+**MANDATORY OUTPUT RULES (GLOBAL STYLE LOCK):**
+- **Follow Visual DNA:** Strictly adhere to the rendering technique defined in the "Style" input above.
+- **Visual Noise:** Imperfection and occlusion are mandatory. Do not make it "clean".
+- **Color Decay:** Saturation must NEVER increase after Spread 4. Muted, earthy tones only.
+- **NO HERO FRAMING:** Do NOT Center the subject or isolate them. They must be embedded in the environment.
+- **Lighting Logic:** 
+    - Spread 5 Constraint: Shadows must be DEEPER than Spread 4.
+    
+- No typography, no letters, no watermarks.
+- No split screen line — continuous art.
+- ** ANATOMY CHECK:** Ensure correct number of limbs(2 arms, 2 legs) and fingers.No extra limbs or hallucinations.
+- Character must be integrated into the environment — not pasted or floating.
+- Match style fidelity from earlier spreads for visual consistency.
+
+Spread 6
+Prompt for spread 6:
+** GOAL:** Generate a 16: 9 panoramic illustration with ** perfect likeness ** and ** cinematic charm **.
+
+** REFERENCE INPUTS:**
+- ** Character Photo(NDA Image):** This is the ** sole source of truth ** for the child’s identity.
+- ** Style:** Style: ${storyData.selectedStylePrompt}. Theme: ${storyData.themeVisualDNA || storyData.theme}
+
+** STRICT CHARACTER LOCK:**
+- ** PHYSICAL DESCRIPTION:** A child
+- ** OUTFIT:** You MUST depict the child wearing strictly: "Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set.".Do NOT change this outfit unless the scene explicitly requires special gear(e.g.swimming).Consistency is key.
+- Apply the art style to rendering technique only(color, materials, brushwork).
+- Summary Description: A child, Wearing: Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set. (Age: 5)
+
+** COMPOSITION RULES:**
+                    - 16: 9 Full Bleed panoramic.
+- ** SUBJECT PLACEMENT:** Main character must be framed clearly on the ** RIGHT**.
+- ** OPEN CANVAS:** The LEFT side must be ** OPEN AND UNCLUTTERED **.Use soft textures(e.g., smooth sky, blurred background, flat grass) to create a clean visual areas.
+- ** CAMERA LENS:** Use a ** WIDE ANGLE / MEDIUM - WIDE SHOT ** to establish the scene.Avoid extreme close - ups unless specified.
+- Camera angle: Close-up on Haya and the nightlight
+                - Lighting: 45% ambient, nightlight providing some illumination
+
+** SCENE DESCRIPTION:**
+                    - Setting: Dark castle corridor, nightlight glows (Castle corridor)
+            - Action: Haya looking at a small, glowing nightlight in her hand..Ensure the action is readable from a distance.
+
+** EMOTIONAL & DESIGN NOTES:**
+            - Mood: Introspective
+        - Palette: Dark, with a small area of warm light
+        - Energy: Use expressive poses and framing.
+
+**MANDATORY OUTPUT RULES (GLOBAL STYLE LOCK):**
+- **Follow Visual DNA:** Strictly adhere to the rendering technique defined in the "Style" input above.
+- **Visual Noise:** Imperfection and occlusion are mandatory. Do not make it "clean".
+- **Color Decay:** Saturation must NEVER increase after Spread 4. Muted, earthy tones only.
+- **NO HERO FRAMING:** Do NOT Center the subject or isolate them. They must be embedded in the environment.
+- **Lighting Logic:** 
+    - Spread 6 Constraint: Shadows must be DEEPER than Spread 5.
+    - Spread 6 Specific: 45% Ambient, 55% Shadow. DO NOT BRIGHTEN.
+- No typography, no letters, no watermarks.
+- No split screen line — continuous art.
+- ** ANATOMY CHECK:** Ensure correct number of limbs(2 arms, 2 legs) and fingers.No extra limbs or hallucinations.
+- Character must be integrated into the environment — not pasted or floating.
+- Match style fidelity from earlier spreads for visual consistency.
+
+Spread 7
+Prompt for spread 7:
+** GOAL:** Generate a 16: 9 panoramic illustration with ** perfect likeness ** and ** cinematic charm **.
+
+** REFERENCE INPUTS:**
+- ** Character Photo(NDA Image):** This is the ** sole source of truth ** for the child’s identity.
+- ** Style:** Style: ${storyData.selectedStylePrompt}. Theme: ${storyData.themeVisualDNA || storyData.theme}
+
+** STRICT CHARACTER LOCK:**
+- ** PHYSICAL DESCRIPTION:** A child
+- ** OUTFIT:** You MUST depict the child wearing strictly: "Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set.".Do NOT change this outfit unless the scene explicitly requires special gear(e.g.swimming).Consistency is key.
+- Apply the art style to rendering technique only(color, materials, brushwork).
+- Summary Description: A child, Wearing: Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set. (Age: 5)
+
+** COMPOSITION RULES:**
+                    - 16: 9 Full Bleed panoramic.
+- ** SUBJECT PLACEMENT:** Main character must be framed clearly on the ** RIGHT**.
+- ** OPEN CANVAS:** The LEFT side must be ** OPEN AND UNCLUTTERED **.Use soft textures(e.g., smooth sky, blurred background, flat grass) to create a clean visual areas.
+- ** CAMERA LENS:** Use a ** WIDE ANGLE / MEDIUM - WIDE SHOT ** to establish the scene.Avoid extreme close - ups unless specified.
+- Camera angle: Eye-level, following Haya
+                - Lighting: Nightlight illuminating a clear path
+
+** SCENE DESCRIPTION:**
+                    - Setting: Castle corridor, path revealed by nightlight (Castle corridor)
+            - Action: Haya walking confidently along the path, guided by the nightlight..Ensure the action is readable from a distance.
+
+** EMOTIONAL & DESIGN NOTES:**
+            - Mood: Determined
+        - Palette: Dark, but with a clear path of light
+        - Energy: Use expressive poses and framing.
+
+**MANDATORY OUTPUT RULES (GLOBAL STYLE LOCK):**
+- **Follow Visual DNA:** Strictly adhere to the rendering technique defined in the "Style" input above.
+- **Visual Noise:** Imperfection and occlusion are mandatory. Do not make it "clean".
+- **Color Decay:** Saturation must NEVER increase after Spread 4. Muted, earthy tones only.
+- **NO HERO FRAMING:** Do NOT Center the subject or isolate them. They must be embedded in the environment.
+- **Lighting Logic:** 
+    - Spread 7 Constraint: Shadows must be DEEPER than Spread 6.
+    
+- No typography, no letters, no watermarks.
+- No split screen line — continuous art.
+- ** ANATOMY CHECK:** Ensure correct number of limbs(2 arms, 2 legs) and fingers.No extra limbs or hallucinations.
+- Character must be integrated into the environment — not pasted or floating.
+- Match style fidelity from earlier spreads for visual consistency.
+
+Spread 8
+Prompt for spread 8:
+** GOAL:** Generate a 16: 9 panoramic illustration with ** perfect likeness ** and ** cinematic charm **.
+
+** REFERENCE INPUTS:**
+- ** Character Photo(NDA Image):** This is the ** sole source of truth ** for the child’s identity.
+- ** Style:** Style: ${storyData.selectedStylePrompt}. Theme: ${storyData.themeVisualDNA || storyData.theme}
+
+** STRICT CHARACTER LOCK:**
+- ** PHYSICAL DESCRIPTION:** A child
+- ** OUTFIT:** You MUST depict the child wearing strictly: "Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set.".Do NOT change this outfit unless the scene explicitly requires special gear(e.g.swimming).Consistency is key.
+- Apply the art style to rendering technique only(color, materials, brushwork).
+- Summary Description: A child, Wearing: Haya is a 5-year-old girl with bright, curious eyes and a purple hair bow. She wears a pink and white striped pajama set. (Age: 5)
+
+** COMPOSITION RULES:**
+                    - 16: 9 Full Bleed panoramic.
+- ** SUBJECT PLACEMENT:** Main character must be framed clearly on the ** RIGHT**.
+- ** OPEN CANVAS:** The LEFT side must be ** OPEN AND UNCLUTTERED **.Use soft textures(e.g., smooth sky, blurred background, flat grass) to create a clean visual areas.
+- ** CAMERA LENS:** Use a ** WIDE ANGLE / MEDIUM - WIDE SHOT ** to establish the scene.Avoid extreme close - ups unless specified.
+- Camera angle: Medium shot
+                - Lighting: Soft light from the nightlight and a window
+
+** SCENE DESCRIPTION:**
+                    - Setting: Castle tower, Haya and the Prince are safe (Castle tower)
+            - Action: Haya and the Prince standing together, smiling..Ensure the action is readable from a distance.
+
+** EMOTIONAL & DESIGN NOTES:**
+            - Mood: Joyful
+        - Palette: Warm, muted tones
+        - Energy: Use expressive poses and framing.
+
+**MANDATORY OUTPUT RULES (GLOBAL STYLE LOCK):**
+- **Follow Visual DNA:** Strictly adhere to the rendering technique defined in the "Style" input above.
+- **Visual Noise:** Imperfection and occlusion are mandatory. Do not make it "clean".
+- **Color Decay:** Saturation must NEVER increase after Spread 4. Muted, earthy tones only.
+- **NO HERO FRAMING:** Do NOT Center the subject or isolate them. They must be embedded in the environment.
+- **Lighting Logic:** 
+    - Spread 8 Constraint: Shadows must be DEEPER than Spread 7.
+    
+- No typography, no letters, no watermarks.
+- No split screen line — continuous art.
+- ** ANATOMY CHECK:** Ensure correct number of limbs(2 arms, 2 legs) and fingers.No extra limbs or hallucinations.
+- Character must be integrated into the environment — not pasted or floating.
+- Match style fidelity from earlier spreads for visual consistency.
+

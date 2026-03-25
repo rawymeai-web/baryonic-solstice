@@ -1,0 +1,224 @@
+Spread 1
+Prompt for spread 1:
+**GOAL:** Generate a panoramic storybook illustration with perfect style consistency.
+
+**REFERENCE INPUTS:**
+- **Character/Style Anchor (IMAGE 1):** The Master Reference for identity and artistic technique.
+
+**ID & STYLE LOCK:**
+- **IDENTITY:** A child, Age: 5).
+- **OUTFIT:** Wearing strictly: "Tiko is a 5-year-old boy with brown hair, wearing blue overalls with a cloud patch on the knee, and always carrying his blue kite with a cloud patch. He has a determined expression.". 
+- **FIXED ASSET MANDATE:** The character in IMAGE 1 is a fixed visual asset. Place them in the scene described below without modifying their face, body proportions, or rendering technique.
+- **SCENE EXTENSION:** Render the environment to match the specific artistic textures found in IMAGE 1. Build the world around the child using their style heritage.
+
+**COMPOSITION:**
+- **SUBJECT PLACEMENT:** Place the character from IMAGE 1 on the **RIGHT** side.
+- **OPEN CANVAS:** The **LEFT** side must be open/uncluttered background for illustration. 
+- **FRAMING:** Slightly above eye-level. No dutch angles or extreme cinematic lenses.
+
+**SCENE DESCRIPTION:**
+- Setting: Tiko's bedroom (Interior)
+- Action: Tiko playing, dressed as a knight, with his toy knight figure.
+
+**MANDATORY OUTPUT RULES:**
+- **Inherit Technique:** Use the exact same brushwork, line quality, and color temperature as IMAGE 1.
+- **Zero Realism:** Do not apply realistic photography physics (lighting decay, shadows). Keep the lighting consistent with the art style in IMAGE 1.
+- **Anatomy:** Ensure correct number of limbs/fingers.
+- No illustration, symbols, or split lines.
+
+Spread 2
+Prompt for spread 2:
+**GOAL:** Generate a panoramic storybook illustration with perfect style consistency.
+
+**REFERENCE INPUTS:**
+- **Character/Style Anchor (IMAGE 1):** The Master Reference for identity and artistic technique.
+
+**ID & STYLE LOCK:**
+- **IDENTITY:** A child, Age: 5).
+- **OUTFIT:** Wearing strictly: "Tiko is a 5-year-old boy with brown hair, wearing blue overalls with a cloud patch on the knee, and always carrying his blue kite with a cloud patch. He has a determined expression.". 
+- **FIXED ASSET MANDATE:** The character in IMAGE 1 is a fixed visual asset. Place them in the scene described below without modifying their face, body proportions, or rendering technique.
+- **SCENE EXTENSION:** Render the environment to match the specific artistic textures found in IMAGE 1. Build the world around the child using their style heritage.
+
+**COMPOSITION:**
+- **SUBJECT PLACEMENT:** Place the character from IMAGE 1 on the **RIGHT** side.
+- **OPEN CANVAS:** The **LEFT** side must be open/uncluttered background for illustration. 
+- **FRAMING:** Low angle to emphasize the height of the 'tower'. No dutch angles or extreme cinematic lenses.
+
+**SCENE DESCRIPTION:**
+- Setting: Tiko's bedroom transformed into a castle (Interior)
+- Action: Tiko's bedroom is now a castle with the toy blocks forming the castle walls.
+
+**MANDATORY OUTPUT RULES:**
+- **Inherit Technique:** Use the exact same brushwork, line quality, and color temperature as IMAGE 1.
+- **Zero Realism:** Do not apply realistic photography physics (lighting decay, shadows). Keep the lighting consistent with the art style in IMAGE 1.
+- **Anatomy:** Ensure correct number of limbs/fingers.
+- No illustration, symbols, or split lines.
+
+Spread 3
+Prompt for spread 3:
+**GOAL:** Generate a panoramic storybook illustration with perfect style consistency.
+
+**REFERENCE INPUTS:**
+- **Character/Style Anchor (IMAGE 1):** The Master Reference for identity and artistic technique.
+
+**ID & STYLE LOCK:**
+- **IDENTITY:** A child, Age: 5).
+- **OUTFIT:** Wearing strictly: "Tiko is a 5-year-old boy with brown hair, wearing blue overalls with a cloud patch on the knee, and always carrying his blue kite with a cloud patch. He has a determined expression.". 
+- **FIXED ASSET MANDATE:** The character in IMAGE 1 is a fixed visual asset. Place them in the scene described below without modifying their face, body proportions, or rendering technique.
+- **SCENE EXTENSION:** Render the environment to match the specific artistic textures found in IMAGE 1. Build the world around the child using their style heritage.
+
+**COMPOSITION:**
+- **SUBJECT PLACEMENT:** Place the character from IMAGE 1 on the **RIGHT** side.
+- **OPEN CANVAS:** The **LEFT** side must be open/uncluttered background for illustration. 
+- **FRAMING:** Dynamic angle showing the blocks falling. No dutch angles or extreme cinematic lenses.
+
+**SCENE DESCRIPTION:**
+- Setting: Castle tower (Interior)
+- Action: Tiko climbing blocks, blocks crumbling.
+
+**MANDATORY OUTPUT RULES:**
+- **Inherit Technique:** Use the exact same brushwork, line quality, and color temperature as IMAGE 1.
+- **Zero Realism:** Do not apply realistic photography physics (lighting decay, shadows). Keep the lighting consistent with the art style in IMAGE 1.
+- **Anatomy:** Ensure correct number of limbs/fingers.
+- No illustration, symbols, or split lines.
+
+Spread 4
+Prompt for spread 4:
+**GOAL:** Generate a panoramic storybook illustration with perfect style consistency.
+
+**REFERENCE INPUTS:**
+- **Character/Style Anchor (IMAGE 1):** The Master Reference for identity and artistic technique.
+
+**ID & STYLE LOCK:**
+- **IDENTITY:** A child, Age: 5).
+- **OUTFIT:** Wearing strictly: "Tiko is a 5-year-old boy with brown hair, wearing blue overalls with a cloud patch on the knee, and always carrying his blue kite with a cloud patch. He has a determined expression.". 
+- **FIXED ASSET MANDATE:** The character in IMAGE 1 is a fixed visual asset. Place them in the scene described below without modifying their face, body proportions, or rendering technique.
+- **SCENE EXTENSION:** Render the environment to match the specific artistic textures found in IMAGE 1. Build the world around the child using their style heritage.
+
+**COMPOSITION:**
+- **SUBJECT PLACEMENT:** Place the character from IMAGE 1 on the **RIGHT** side.
+- **OPEN CANVAS:** The **LEFT** side must be open/uncluttered background for illustration. 
+- **FRAMING:** Close-up on Tiko and the owl. No dutch angles or extreme cinematic lenses.
+
+**SCENE DESCRIPTION:**
+- Setting: Tiko's bedroom, with owl figure (Interior)
+- Action: Tiko looking at owl figure who is 'speaking' or gesturing.
+
+**MANDATORY OUTPUT RULES:**
+- **Inherit Technique:** Use the exact same brushwork, line quality, and color temperature as IMAGE 1.
+- **Zero Realism:** Do not apply realistic photography physics (lighting decay, shadows). Keep the lighting consistent with the art style in IMAGE 1.
+- **Anatomy:** Ensure correct number of limbs/fingers.
+- No illustration, symbols, or split lines.
+
+Spread 5
+Prompt for spread 5:
+**GOAL:** Generate a panoramic storybook illustration with perfect style consistency.
+
+**REFERENCE INPUTS:**
+- **Character/Style Anchor (IMAGE 1):** The Master Reference for identity and artistic technique.
+
+**ID & STYLE LOCK:**
+- **IDENTITY:** A child, Age: 5).
+- **OUTFIT:** Wearing strictly: "Tiko is a 5-year-old boy with brown hair, wearing blue overalls with a cloud patch on the knee, and always carrying his blue kite with a cloud patch. He has a determined expression.". 
+- **FIXED ASSET MANDATE:** The character in IMAGE 1 is a fixed visual asset. Place them in the scene described below without modifying their face, body proportions, or rendering technique.
+- **SCENE EXTENSION:** Render the environment to match the specific artistic textures found in IMAGE 1. Build the world around the child using their style heritage.
+
+**COMPOSITION:**
+- **SUBJECT PLACEMENT:** Place the character from IMAGE 1 on the **RIGHT** side.
+- **OPEN CANVAS:** The **LEFT** side must be open/uncluttered background for illustration. 
+- **FRAMING:** Eye-level. No dutch angles or extreme cinematic lenses.
+
+**SCENE DESCRIPTION:**
+- Setting: Tiko's bedroom (Interior)
+- Action: Tiko looking at toys with a disappointed expression.
+
+**MANDATORY OUTPUT RULES:**
+- **Inherit Technique:** Use the exact same brushwork, line quality, and color temperature as IMAGE 1.
+- **Zero Realism:** Do not apply realistic photography physics (lighting decay, shadows). Keep the lighting consistent with the art style in IMAGE 1.
+- **Anatomy:** Ensure correct number of limbs/fingers.
+- No illustration, symbols, or split lines.
+
+Spread 6
+Prompt for spread 6:
+**GOAL:** Generate a panoramic storybook illustration with perfect style consistency.
+
+**REFERENCE INPUTS:**
+- **Character/Style Anchor (IMAGE 1):** The Master Reference for identity and artistic technique.
+
+**ID & STYLE LOCK:**
+- **IDENTITY:** A child, Age: 5).
+- **OUTFIT:** Wearing strictly: "Tiko is a 5-year-old boy with brown hair, wearing blue overalls with a cloud patch on the knee, and always carrying his blue kite with a cloud patch. He has a determined expression.". 
+- **FIXED ASSET MANDATE:** The character in IMAGE 1 is a fixed visual asset. Place them in the scene described below without modifying their face, body proportions, or rendering technique.
+- **SCENE EXTENSION:** Render the environment to match the specific artistic textures found in IMAGE 1. Build the world around the child using their style heritage.
+
+**COMPOSITION:**
+- **SUBJECT PLACEMENT:** Place the character from IMAGE 1 on the **RIGHT** side.
+- **OPEN CANVAS:** The **LEFT** side must be open/uncluttered background for illustration. 
+- **FRAMING:** Close-up on Tiko's hand and the block. No dutch angles or extreme cinematic lenses.
+
+**SCENE DESCRIPTION:**
+- Setting: Tiko's bedroom, near a pile of blocks (Interior)
+- Action: Tiko picking up the right block with determination.
+
+**MANDATORY OUTPUT RULES:**
+- **Inherit Technique:** Use the exact same brushwork, line quality, and color temperature as IMAGE 1.
+- **Zero Realism:** Do not apply realistic photography physics (lighting decay, shadows). Keep the lighting consistent with the art style in IMAGE 1.
+- **Anatomy:** Ensure correct number of limbs/fingers.
+- No illustration, symbols, or split lines.
+
+Spread 7
+Prompt for spread 7:
+**GOAL:** Generate a panoramic storybook illustration with perfect style consistency.
+
+**REFERENCE INPUTS:**
+- **Character/Style Anchor (IMAGE 1):** The Master Reference for identity and artistic technique.
+
+**ID & STYLE LOCK:**
+- **IDENTITY:** A child, Age: 5).
+- **OUTFIT:** Wearing strictly: "Tiko is a 5-year-old boy with brown hair, wearing blue overalls with a cloud patch on the knee, and always carrying his blue kite with a cloud patch. He has a determined expression.". 
+- **FIXED ASSET MANDATE:** The character in IMAGE 1 is a fixed visual asset. Place them in the scene described below without modifying their face, body proportions, or rendering technique.
+- **SCENE EXTENSION:** Render the environment to match the specific artistic textures found in IMAGE 1. Build the world around the child using their style heritage.
+
+**COMPOSITION:**
+- **SUBJECT PLACEMENT:** Place the character from IMAGE 1 on the **RIGHT** side.
+- **OPEN CANVAS:** The **LEFT** side must be open/uncluttered background for illustration. 
+- **FRAMING:** Showing the reinforced tower from a safe distance. No dutch angles or extreme cinematic lenses.
+
+**SCENE DESCRIPTION:**
+- Setting: Castle tower, reinforced (Interior)
+- Action: Tiko reinforcing the tower with blocks, toy knight figure safe.
+
+**MANDATORY OUTPUT RULES:**
+- **Inherit Technique:** Use the exact same brushwork, line quality, and color temperature as IMAGE 1.
+- **Zero Realism:** Do not apply realistic photography physics (lighting decay, shadows). Keep the lighting consistent with the art style in IMAGE 1.
+- **Anatomy:** Ensure correct number of limbs/fingers.
+- No illustration, symbols, or split lines.
+
+Spread 8
+Prompt for spread 8:
+**GOAL:** Generate a panoramic storybook illustration with perfect style consistency.
+
+**REFERENCE INPUTS:**
+- **Character/Style Anchor (IMAGE 1):** The Master Reference for identity and artistic technique.
+
+**ID & STYLE LOCK:**
+- **IDENTITY:** A child, Age: 5).
+- **OUTFIT:** Wearing strictly: "Tiko is a 5-year-old boy with brown hair, wearing blue overalls with a cloud patch on the knee, and always carrying his blue kite with a cloud patch. He has a determined expression.". 
+- **FIXED ASSET MANDATE:** The character in IMAGE 1 is a fixed visual asset. Place them in the scene described below without modifying their face, body proportions, or rendering technique.
+- **SCENE EXTENSION:** Render the environment to match the specific artistic textures found in IMAGE 1. Build the world around the child using their style heritage.
+
+**COMPOSITION:**
+- **SUBJECT PLACEMENT:** Place the character from IMAGE 1 on the **RIGHT** side.
+- **OPEN CANVAS:** The **LEFT** side must be open/uncluttered background for illustration. 
+- **FRAMING:** Eye-level. No dutch angles or extreme cinematic lenses.
+
+**SCENE DESCRIPTION:**
+- Setting: Tiko's normal bedroom (Interior)
+- Action: Tiko playing with toys, content.
+
+**MANDATORY OUTPUT RULES:**
+- **Inherit Technique:** Use the exact same brushwork, line quality, and color temperature as IMAGE 1.
+- **Zero Realism:** Do not apply realistic photography physics (lighting decay, shadows). Keep the lighting consistent with the art style in IMAGE 1.
+- **Anatomy:** Ensure correct number of limbs/fingers.
+- No illustration, symbols, or split lines.
+

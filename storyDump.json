@@ -1,0 +1,111 @@
+{
+  "orderNum": "RWY-2VGGRXYF9",
+  "childName": "Rayan",
+  "language": "en",
+  "script": [
+    {
+      "text": "Rayan often felt like a tiny boat, far out on a wide lake. His toys couldn't fill the quiet space inside him. As the sun dipped low, Rayan sat by his window. He wished he could meet the Man in the Moon, and hoped he wasn't lonely too. A shimmer caught his eye from the toy box.",
+      "spreadNumber": 1
+    },
+    {
+      "text": "Inside the box, Rayan found a magnifying glass he’d forgotten. When he picked it up, a beam of light zipped out, touching the moon! \"Wow!\" he breathed. Could it reach the Man in the Moon? Rayan hurried to try it, bumping into his brother, Zayn, who wore a bright blue onesie.",
+      "spreadNumber": 2
+    },
+    {
+      "text": "Rayan dashed outside, leaving Zayn behind. He pointed the magnifying glass at the moon. \"Hello, Moon Man!\" he called. Only silence answered. The moon felt so far away. The wind blew, swirling leaves around him, and Rayan felt smaller than ever.",
+      "spreadNumber": 3
+    },
+    {
+      "text": "Zayn wobbled into the yard and watched Rayan. \"Moon?\" Zayn asked, reaching for the glass. Rayan, annoyed, snatched it back. The glass slipped, shining light on a small cardboard box. The box began to glow with a soft, strange light.",
+      "spreadNumber": 4
+    },
+    {
+      "text": "The box glowed brighter and brighter. Rayan sat on the grass, feeling down. The Man in the Moon seemed too far away. Maybe space was just too big. He hugged his knees, wishing he wasn't so alone. Zayn patted Rayan's arm softly.",
+      "spreadNumber": 5
+    },
+    {
+      "text": "Rayan saw Zayn pointing at the glowing box, his eyes wide with wonder. Zayn wasn't sad or scared. He just wanted to explore. Rayan understood. Even if space was big, he wasn't alone. Zayn was with him, ready for an adventure! He smiled. ",
+      "spreadNumber": 6
+    },
+    {
+      "text": "Rayan and Zayn climbed into the glowing box together. The world turned into stars! The box floated gently to the moon. A friendly face peeked out. The Man in the Moon smiled. He was happy to see he wasn't alone either. He waved them closer.",
+      "spreadNumber": 7
+    },
+    {
+      "text": "Back in their room, Rayan and Zayn sat by the window. The magnifying glass lay on the floor. Rayan wasn't lonely now. He shared his adventure, and that made all the difference. He knew having a friend made every journey better and brighter.",
+      "spreadNumber": 8
+    }
+  ],
+  "pages": [
+    {
+      "pg": 1,
+      "text": "Rayan often felt like a tiny boat, far out on a wide lake. His toys couldn't fill the quiet space inside him. As the sun dipped low, Rayan sat by his window. He wished he could meet the Man in the Moon, and hoped he wasn't lonely too. A shimmer caught his eye from the toy box."
+    },
+    {
+      "pg": 2,
+      "text": "Inside the box, Rayan found a magnifying glass he’d forgotten. When he picked it up, a beam of light zipped out, touching the moon! \"Wow!\" he breathed. Could it reach the Man in the Moon? Rayan hurried to try it, bumping into his brother, Zayn, who wore a bright blue onesie."
+    },
+    {
+      "pg": 3,
+      "text": "Rayan dashed outside, leaving Zayn behind. He pointed the magnifying glass at the moon. \"Hello, Moon Man!\" he called. Only silence answered. The moon felt so far away. The wind blew, swirling leaves around him, and Rayan felt smaller than ever."
+    },
+    {
+      "pg": 4,
+      "text": "Zayn wobbled into the yard and watched Rayan. \"Moon?\" Zayn asked, reaching for the glass. Rayan, annoyed, snatched it back. The glass slipped, shining light on a small cardboard box. The box began to glow with a soft, strange light."
+    },
+    {
+      "pg": 5,
+      "text": "The box glowed brighter and brighter. Rayan sat on the grass, feeling down. The Man in the Moon seemed too far away. Maybe space was just too big. He hugged his knees, wishing he wasn't so alone. Zayn patted Rayan's arm softly."
+    },
+    {
+      "pg": 6,
+      "text": "Rayan saw Zayn pointing at the glowing box, his eyes wide with wonder. Zayn wasn't sad or scared. He just wanted to explore. Rayan understood. Even if space was big, he wasn't alone. Zayn was with him, ready for an adventure! He smiled. "
+    },
+    {
+      "pg": 7,
+      "text": "Rayan and Zayn climbed into the glowing box together. The world turned into stars! The box floated gently to the moon. A friendly face peeked out. The Man in the Moon smiled. He was happy to see he wasn't alone either. He waved them closer."
+    },
+    {
+      "pg": 8,
+      "text": "Back in their room, Rayan and Zayn sat by the window. The magnifying glass lay on the floor. Rayan wasn't lonely now. He shared his adventure, and that made all the difference. He knew having a friend made every journey better and brighter."
+    }
+  ],
+  "prompts": [
+    {
+      "spread": 0,
+      "storyText": ""
+    },
+    {
+      "spread": 1,
+      "storyText": "Sarah dreams of talking to animals. She imagines racing a cheetah to the edge of the world and winning."
+    },
+    {
+      "spread": 2,
+      "storyText": "Sarah finds a talking bird outside. The bird speaks in riddles, inviting her to race the cheetah if she can understand it. فرح, her sibling, peeks her head out to see what's happening."
+    },
+    {
+      "spread": 3,
+      "storyText": "Sarah tries to understand the riddle. She guesses wildly, but the bird shakes its head sadly. She feels frustrated, unable to communicate."
+    },
+    {
+      "spread": 4,
+      "storyText": "The bird gives another clue, more confusing than the first. Suddenly, a cheetah appears! He taunts Sarah, saying she'll never solve the riddles in time for the race."
+    },
+    {
+      "spread": 5,
+      "storyText": "Sarah sits down, feeling defeated. The riddles are too hard, the cheetah is too fast, and the edge of the world seems too far away. She buries her face in her hands."
+    },
+    {
+      "spread": 6,
+      "storyText": "Sarah notices فرح giggling at her silly guesses. She realizes that two heads are better than one! Maybe فرح can help her understand the bird's riddles."
+    },
+    {
+      "spread": 7,
+      "storyText": "Together, Sarah and فرح put their minds together. فرح suggests the riddle answer, and the bird chirps happily! They understand! Sarah and the cheetah start the race, but now Sarah has a translator!"
+    },
+    {
+      "spread": 8,
+      "storyText": "Sarah, with فرح's help, understands all the animal riddles and races the cheetah to the edge of the world! They reach the beautiful horizon, having learned that working together makes even the toughest challenges fun!"
+    }
+  ]
+}

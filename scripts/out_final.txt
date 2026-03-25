@@ -1,0 +1,30 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+cmd : Γ¥î CRITICAL TEST 
+FAILURE:  Could not 
+create hero: Could not 
+find the 'dob' column of 
+'heroes' in the schema 
+cache
+At line:1 char:1
++ cmd /c npx tsx 
+scripts/test-pipeline.ts 
+2>&1 | Out-File 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpe    
+cified: (Γ¥î CRI    
+TICAL TE...he sc    hema 
+cache:Strin    g) [], 
+RemoteExc    eption
+    + FullyQualified    
+ErrorId : Native    
+CommandError
+ 
+
+≡ƒÄë Test Run Complete: 0 Passed, 0 Failed.

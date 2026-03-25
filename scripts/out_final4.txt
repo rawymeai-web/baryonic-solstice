@@ -1,0 +1,32 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+cmd : Γ¥î CRITICAL TEST 
+FAILURE:  Could not 
+create sub: Could not 
+find the 
+'shipping_address' 
+column of 
+'subscriptions' in the 
+schema cache
+At line:1 char:1
++ cmd /c npx tsx 
+scripts/test-pipeline.ts 
+2>&1 | Out-File 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (Γ¥î CRITICAL TE...h   
+ e schema cache:Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+
+≡ƒÄë Test Run Complete: 0 Passed, 0 Failed.

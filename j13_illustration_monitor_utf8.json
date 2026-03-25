@@ -1,0 +1,16 @@
+﻿[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+[
+  {
+    "id": "41dc9cd0-b7f0-46c2-8f0c-361bcc93921a",
+    "order_id": "RWY-J13I0G07L",
+    "job_type": "illustration",
+    "status": "running",
+    "attempts": 0,
+    "started_at": "2026-03-10T11:23:11.383+00:00",
+    "finished_at": null,
+    "error_message": null,
+    "worker_name": null,
+    "artifact_refs": null,
+    "created_at": "2026-03-10T11:23:11.039265+00:00"
+  }
+]

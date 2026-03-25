@@ -1,0 +1,80 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+Γ£à Test entities created successfully.
+
+--- 2. Testing Subscription Deduplication ---
+cmd : Γ¥î FAIL: First 
+order inserted 
+successfully for cycle.
+At line:1 char:1
++ cmd /c npx tsx 
+scripts/test-pipeline.ts 
+2>&1 | Out-File 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (Γ¥î FAIL: First...u   
+ lly for cycle.:Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+Γ¥î FAIL: Duplicate 
+cycle order correctly 
+blocked by unique 
+constraint.
+
+--- 3. Testing Theme Engine Assignment (No Repeats) ---
+[ThemeEngine] Starting assignment for Order: TEST-ORD-1, Hero: 5e76734b-cc13-4d69-81a3-c8b09dc051b7
+[ThemeEngine] Critical 
+Failure Error: Could not 
+load themes catalog
+    at Function.assignThe
+meForOrder (C:\Users\s_em
+e\.gemini\antigravity\pla
+yground\baryonic-solstice
+\src\services\workers\the
+meEngine.ts:30:47)
+    at process.processTic
+ksAndRejections (node:int
+ernal/process/task_queues
+:105:5)
+    at async runTests (C:
+\Users\s_eme\.gemini\anti
+gravity\playground\baryon
+ic-solstice\scripts\test-
+pipeline.ts:110:22)
+Γ¥î FAIL: Assigned first 
+theme via engine for 
+order
+[ThemeEngine] Starting assignment for Order: TEST-ORD-3, Hero: 5e76734b-cc13-4d69-81a3-c8b09dc051b7
+[ThemeEngine] Critical 
+Failure Error: Could not 
+load themes catalog
+    at Function.assignThe
+meForOrder (C:\Users\s_em
+e\.gemini\antigravity\pla
+yground\baryonic-solstice
+\src\services\workers\the
+meEngine.ts:30:47)
+    at process.processTic
+ksAndRejections (node:int
+ernal/process/task_queues
+:105:5)
+    at async runTests (C:
+\Users\s_eme\.gemini\anti
+gravity\playground\baryon
+ic-solstice\scripts\test-
+pipeline.ts:129:22)
+Γ¥î FAIL: Assigned 
+second theme: undefined 
+(different from first)
+
+≡ƒÄë Test Run Complete: 0 Passed, 4 Failed.

@@ -1,0 +1,94 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ΓÜÖ∩╕Å  override existing env vars with { override: true }
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+Γ£à Test entities created successfully.
+
+--- 2. Testing Subscription Deduplication ---
+Γ£à PASS: First order inserted successfully for cycle.
+Γ£à PASS: Duplicate cycle order correctly blocked by unique constraint.
+
+--- 3. Testing Theme Engine Assignment (No Repeats) ---
+[ThemeEngine] Starting assignment for Order: TEST-ORD-1, Hero: c881b0ed-72aa-458b-a41d-952d70c20dde
+cmd : [ThemeEngine] 
+Supabase Theme Load 
+Error: {
+At line:1 char:1
++ cmd /c npx tsx 
+scripts/test-pipeline.ts 
+2>&1 | Out-File 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  ([ThemeEngine] S...e   
+  Load Error: {:Strin    
+g) [], RemoteExcepti    
+on
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column 
+themes.active_to does 
+not exist'
+}
+[ThemeEngine] Critical 
+Failure Error: Could not 
+load themes catalog
+    at Function.assignThe
+meForOrder (C:\Users\s_em
+e\.gemini\antigravity\pla
+yground\baryonic-solstice
+\src\services\workers\the
+meEngine.ts:32:23)
+    at process.processTic
+ksAndRejections (node:int
+ernal/process/task_queues
+:105:5)
+    at async runTests (C:
+\Users\s_eme\.gemini\anti
+gravity\playground\baryon
+ic-solstice\scripts\test-
+pipeline.ts:113:22)
+Γ¥î FAIL: Assigned first 
+theme via engine for 
+order
+[ThemeEngine] Starting assignment for Order: TEST-ORD-3, Hero: c881b0ed-72aa-458b-a41d-952d70c20dde
+[ThemeEngine] Supabase 
+Theme Load Error: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column 
+themes.active_to does 
+not exist'
+}
+[ThemeEngine] Critical 
+Failure Error: Could not 
+load themes catalog
+    at Function.assignThe
+meForOrder (C:\Users\s_em
+e\.gemini\antigravity\pla
+yground\baryonic-solstice
+\src\services\workers\the
+meEngine.ts:32:23)
+    at process.processTic
+ksAndRejections (node:int
+ernal/process/task_queues
+:105:5)
+    at async runTests (C:
+\Users\s_eme\.gemini\anti
+gravity\playground\baryon
+ic-solstice\scripts\test-
+pipeline.ts:132:22)
+
+≡ƒÄë Test Run Complete: 2 Passed, 2 Failed.
+Γ¥î FAIL: Assigned 
+second theme: undefined 
+(different from first)

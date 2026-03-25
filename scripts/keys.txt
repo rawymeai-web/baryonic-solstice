@@ -1,0 +1,10 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+KEYS_ARE: [
+  'id',
+  'email',
+  'name',
+  'phone',
+  'first_order_date',
+  'last_order_date',
+  'order_count'
+]

@@ -1,0 +1,14 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+ORDERS KEYS: [
+  'order_number',
+  'customer_id',
+  'customer_name',
+  'total',
+  'status',
+  'created_at',
+  'story_data',
+  'shipping_details',
+  'production_cost',
+  'ai_cost',
+  'shipping_cost'
+]

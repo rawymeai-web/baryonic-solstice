@@ -1,0 +1,447 @@
+﻿[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ΓÜÖ∩╕Å  load multiple .env files with { path: ['.env.local', '.env'] }
+{
+  "order_number": "RWY-J13I0G07L",
+  "customer_id": "s_emera@yahoo.com",
+  "customer_name": "Shady Emera",
+  "total": 43.379999999999995,
+  "status": "story_ready",
+  "created_at": "2026-03-10T10:04:20.794+00:00",
+  "story_data": {
+    "pages": [],
+    "theme": "╪º┘ä╪¬╪¡╪»╪½ ┘à╪╣ ╪º┘ä╪¡┘è┘ê╪º┘å╪º╪¬ ┘ê┘ü┘ç┘à ┘ä╪║╪¬┘ç╪º.",
+    "script": [
+      {
+        "text": "╪│╪º╪▒╪⌐ loved the forest more than anything. Every day was spent amongst the trees, listening intently. The rustle of leaves, the creak of branches ΓÇô these were ╪│╪º╪▒╪⌐'s favorite sounds. More than anything, ╪│╪º╪▒╪⌐ wished to understand the animals' secret language. What were the birds singing? What stories did the squirrels chatter about? ╪│╪º╪▒╪⌐ longed to know, to truly hear what the forest was saying. This dream filled every thought and every woodland walk.",
+        "spreadNumber": 1
+      },
+      {
+        "text": "One bright morning, while exploring a new, sun-dappled corner of the woods, ╪│╪º╪▒╪⌐ spotted something glinting beneath the roots of a giant oak. Kneeling down, ╪│╪º╪▒╪⌐ brushed away the leaves. It was a small acorn, but unlike any seen before. This one shimmered with a golden light. As ╪│╪º╪▒╪⌐ picked it up, a faint, whispery sound drifted from the trees. It was as though the woods themselves were trying to speak.",
+        "spreadNumber": 2
+      },
+      {
+        "text": "╪│╪º╪▒╪⌐ wanted so much to understand what the forest was saying, but the path forward was blocked. A thick, thorny briar patch stood between ╪│╪º╪▒╪⌐ and the deeper woods. Pushing against the prickly branches, the thorns snagged on a small, hand-stitched satchel. Ouch! Pricking some fingers, ╪│╪º╪▒╪⌐ realized the briar patch was too strong and tangled. With a sigh, ╪│╪º╪▒╪⌐ sat down, resting a head in hand. Would ╪│╪º╪▒╪⌐ ever understand the forest's whispers?",
+        "spreadNumber": 3
+      },
+      {
+        "text": "Suddenly, a tiny squirrel with a large, bushy tail popped out from behind a tree. It was Squeaky! Squeaky chattered excitedly, pointing a tiny paw towards the briar patch. Squeaky seemed to be warning ╪│╪º╪▒╪⌐, bouncing with energy, clearly ready to help. ╪│╪º╪▒╪⌐ watched, confused, as Squeaky continued to chatter and point towards the briar patch.",
+        "spreadNumber": 4
+      },
+      {
+        "text": "Then, an amazing thing happened. ╪│╪º╪▒╪⌐ understood what Squeaky was saying! Squeaky chattered that the briar patch protected the Elder Tree, a place of great wisdom. But Squeaky warned that the briar patch was also home to grumpy, sleepy insects that would sting if woken. ╪│╪º╪▒╪⌐'s shoulders slumped. Disappointment flooded in. The Elder Tree sounded wonderful, but no one wanted to get stung!",
+        "spreadNumber": 5
+      },
+      {
+        "text": "╪│╪º╪▒╪⌐ sat, dejected, then a new thought sparked. If Squeaky could be understood, what if listening even closer to everything around worked? Maybe the insects could be understood too! Closing their eyes, ╪│╪º╪▒╪⌐ focused. Feeling the forest floor beneath their hands, ╪│╪º╪▒╪⌐ asked the forest for a quiet way to pass and asked the Elder Tree for advice. An idea began to form...",
+        "spreadNumber": 6
+      },
+      {
+        "text": "Taking a deep breath, ╪│╪º╪▒╪⌐ approached the briar patch, this time with a new plan. A soft, gentle voice spoke to the insects, offering a quiet song, a peaceful melody just for them. Slowly and carefully, the insects stirred. The thorny branches shifted aside, making a small path. With the path clear, ╪│╪º╪▒╪⌐ stepped carefully through the briar patch, deeper into the woods.",
+        "spreadNumber": 7
+      },
+      {
+        "text": "Finally, ╪│╪º╪▒╪⌐ stood beneath the Elder Tree. The whispers of the forest were clear, the songs of the birds, the secrets of the squirrels! Thanking Squeaky for the help, ╪│╪º╪▒╪⌐ promised to always listen to the forest with an open heart. From that day on, ╪│╪º╪▒╪⌐ continued their adventures, always understanding and respecting the voices of the woods. Listening and understanding were the keys that unlocked the forest.",
+        "spreadNumber": 8
+      }
+    ],
+    "prompts": [
+      "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n\n**STYLE:**\nundefined\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Forest Edge\n- Mood: Enchanting and Mysterious\n- Action: Sarah is kneeling down and reaching out to pick up the golden acorn that is partially obscured by leaves. The background shows the depths of the forest. There is a glow emanating from the acorn, hinting at the magic within. Birds are flying overhead towards the acorn.\n\n**COMPOSITION:**\n- **FRONT COVER (RIGHT):** The main character occupies the right two-thirds of the frame.\n- **BACK COVER (LEFT):** Completely open and uncluttered background (e.g., clear sky or simple terrain) to leave space for the title logo.\n- Framing: Wide panoramic shot. No dutch angles.\n\n--no typography, watermarks, photorealistic lighting",
+      "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Edge of the Woods (Outdoor)\n- Time of Day: Morning\n- Mood: Curious\n- Action: Sarah sitting quietly under a tree, eyes closed, listening intently.\n\n**COMPOSITION:**\n- [IMAGE 1] occupies the left two-thirds of the frame.\n- The right side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+      "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Beneath an Oak Tree (Outdoor)\n- Time of Day: Morning\n- Mood: Surprised\n- Action: Sarah picking up the glowing acorn.\n\n**COMPOSITION:**\n- [IMAGE 1] occupies the left two-thirds of the frame.\n- The right side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+      "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Edge of a Berry Bush (Outdoor)\n- Time of Day: Midday\n- Mood: Frustrated\n- Action: Sarah attempting to push through the berry bush, looking frustrated.\n\n**COMPOSITION:**\n- [IMAGE 1] occupies the left two-thirds of the frame.\n- The right side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+      "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Near Berry Bush (Outdoor)\n- Time of Day: Afternoon\n- Mood: Intrigued\n- Action: Squeaky pointing towards the berry bush.\n\n**COMPOSITION:**\n- [IMAGE 1] occupies the left two-thirds of the frame.\n- The right side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+      "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Near Berry Bush (Outdoor)\n- Time of Day: Afternoon\n- Mood: Discouraged\n- Action: Sarah sitting with her head in her hands.\n\n**COMPOSITION:**\n- [IMAGE 1] occupies the left two-thirds of the frame.\n- The right side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+      "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Near Berry Bush (Outdoor)\n- Time of Day: Late Afternoon\n- Mood: Hopeful\n- Action: Sarah listening intently, acorn in hand.\n\n**COMPOSITION:**\n- [IMAGE 1] occupies the left two-thirds of the frame.\n- The right side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+      "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Berry Bush (Outdoor)\n- Time of Day: Late Afternoon\n- Mood: Careful\n- Action: Sarah quietly tiptoeing past the sleeping insects.\n\n**COMPOSITION:**\n- [IMAGE 1] occupies the left two-thirds of the frame.\n- The right side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+      "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Beneath the Elder Tree (Outdoor)\n- Time of Day: Dusk\n- Mood: Joyful\n- Action: Sarah listening to the animals and smiling.\n\n**COMPOSITION:**\n- [IMAGE 1] occupies the left two-thirds of the frame.\n- The right side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting"
+    ],
+    "language": "en",
+    "blueprint": {
+      "structure": {
+        "spreads": [
+          {
+            "purpose": "Normal World",
+            "narrative": "Sarah loves to listen to the sounds of the forest. She often wonders what the birds are singing and what the squirrels are chattering about. She longs to understand their secret language.",
+            "timeOfDay": "Morning",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sunlight dappled forest floor, Sarah sitting and listening to nature.",
+            "spreadNumber": 1,
+            "emotionalBeat": "Curious",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "One sunny morning, while exploring a new part of the woods, Sarah stumbles upon something unusual.",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah sitting quietly under a tree, eyes closed, listening intently.",
+            "specificLocation": "Edge of the Woods"
+          },
+          {
+            "purpose": "Catalyst",
+            "narrative": "Hidden beneath the roots of a giant oak tree, Sarah discovers a shimmering, golden acorn. As she picks it up, she hears a faint voice whispering from the trees.",
+            "timeOfDay": "Morning",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "The golden acorn glowing softly in Sarah's hand.",
+            "spreadNumber": 2,
+            "emotionalBeat": "Surprised",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "But as Sarah tries to decipher the whispers, she finds her path blocked by something unexpected.",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah picking up the glowing acorn.",
+            "specificLocation": "Beneath an Oak Tree"
+          },
+          {
+            "purpose": "First Attempt",
+            "narrative": "A thick and thorny briar patch blocks the path deeper into the woods. Sarah tries to push through, but the thorns prick her fingers and snag her satchel.",
+            "timeOfDay": "Midday",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah struggling to push through a dense briar patch.",
+            "spreadNumber": 3,
+            "emotionalBeat": "Frustrated",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "Frustrated, Sarah sits down to rest, wondering if she will ever understand the forest's secrets.",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah attempting to push through the briar patch, looking frustrated.",
+            "specificLocation": "Edge of Briar Patch"
+          },
+          {
+            "purpose": "Complication",
+            "narrative": "Suddenly, a tiny squirrel, Squeaky, pops out from behind a tree. He chatters excitedly, pointing towards the briar patch.",
+            "timeOfDay": "Afternoon",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Squeaky the squirrel chattering at Sarah.",
+            "spreadNumber": 4,
+            "emotionalBeat": "Intrigued",
+            "newCharacters": [
+              "Squeaky"
+            ],
+            "transitionHook": "Squeaky continues to chatter, and Sarah realizes that with the acorn, she can understand him!",
+            "environmentType": "Outdoor",
+            "highlightAction": "Squeaky pointing towards the briar patch.",
+            "specificLocation": "Near Briar Patch"
+          },
+          {
+            "purpose": "Lowest Point",
+            "narrative": "Squeaky explains that the briar patch protects the entrance to the Elder Tree, a place of great wisdom, but it is also home to grumpy, sleepy insects, which will sting if woken. Sarah is saddened.",
+            "timeOfDay": "Afternoon",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah looking dejected and sitting by the briar patch.",
+            "spreadNumber": 5,
+            "emotionalBeat": "Discouraged",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "Sarah thinks hard about how to pass the briar patch safely.",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah sitting with her head in her hands.",
+            "specificLocation": "Near Briar Patch"
+          },
+          {
+            "purpose": "Insight",
+            "narrative": "Sarah realizes she can listen to the insects. Maybe she can speak to them too. She focuses, and asks the forest for a quiet way to pass.",
+            "timeOfDay": "Late Afternoon",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah focusing and listening intently with closed eyes.",
+            "spreadNumber": 6,
+            "emotionalBeat": "Hopeful",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "With newfound resolve, Sarah approaches the briar patch, ready to try a different approach.",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah listening intently, acorn in hand.",
+            "specificLocation": "Near Briar Patch"
+          },
+          {
+            "purpose": "Final Attempt",
+            "narrative": "Sarah asks the insects, who are indeed asleep, to let her pass. She offers the insects a song. They move.",
+            "timeOfDay": "Late Afternoon",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah carefully stepping through the briar patch.",
+            "spreadNumber": 7,
+            "emotionalBeat": "Careful",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "With the path clear, Sarah steps into the Elder Tree and listens to the animals.",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah quietly tiptoeing past the sleeping insects.",
+            "specificLocation": "Briar Patch"
+          },
+          {
+            "purpose": "Resolution",
+            "narrative": "Sarah finally arrives at the Elder Tree, she can understand the whispers of the forest. She thanks Squeaky and promises to always listen to the forest. From that day on, Sarah continued her adventure.",
+            "timeOfDay": "Dusk",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah standing beneath the Elder Tree, surrounded by animals.",
+            "spreadNumber": 8,
+            "emotionalBeat": "Joyful",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "The End.",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah listening to the animals and smiling.",
+            "specificLocation": "Beneath the Elder Tree"
+          }
+        ],
+        "arcSummary": "Sarah wants to understand the animals. She finds a magic acorn but faces a thorny obstacle. She learns to listen to the animals, overcomes the challenge, and understands them."
+      },
+      "characters": {
+        "heroProfile": "Sarah is curious, observant, and loves exploring the woods near her home. She is especially drawn to the sounds of nature and dreams of understanding them.",
+        "supportingRoles": [
+          {
+            "name": "Squeaky",
+            "role": "Helper",
+            "visualKey": "A small, energetic squirrel with a large bushy tail",
+            "functionType": "To provide information about the briar patch and guide Sarah.",
+            "influenceSpreads": [
+              4,
+              5,
+              8
+            ],
+            "appearanceSpreads": [
+              4
+            ]
+          }
+        ]
+      },
+      "foundation": {
+        "moral": "Listening and understanding are key to overcoming challenges.",
+        "title": "Sarah's Whispering Woods",
+        "storyCore": "Sarah, who loves listening to the sounds of the forest, discovers she can understand the animals when she finds a special, lost acorn.",
+        "targetAge": "undefined",
+        "heroDesire": "To understand what the animals in the forest are saying.",
+        "insightSpread": 6,
+        "mainChallenge": "A tangled briar patch blocking the path to the elder tree.",
+        "failedAttemptSpread": 3,
+        "finalSolutionMethod": "Understanding the squirrel's warning about the briar patch leads to a solution.",
+        "primaryVisualAnchor": "A small, hand-stitched satchel."
+      }
+    },
+    "childName": "╪│╪º╪▒╪⌐",
+    "rawScript": [
+      {
+        "text": "╪│╪º╪▒╪⌐ loved the forest more than anything. He spent hours among the trees, listening. He loved the rustle of leaves, the creak of branches. More than anything, ╪│╪º╪▒╪⌐ wished he could understand the secret language of the animals. What were the birds singing? What stories did the squirrels chatter about? He longed to know, to truly hear what the forest was saying. It was a dream that filled his every thought, every woodland walk.",
+        "spreadNumber": 1
+      },
+      {
+        "text": "One bright morning, exploring a new, sun-dappled corner of the woods, ╪│╪º╪▒╪⌐ spotted something glinting beneath the roots of a giant oak. He knelt down, brushing away the leaves. It was a small acorn, but unlike any he'd ever seen. This one shimmered with a golden light. As ╪│╪º╪▒╪⌐ picked it up, a faint, whispery sound drifted from the trees. It was as though the woods themselves were trying to speak. ",
+        "spreadNumber": 2
+      },
+      {
+        "text": "╪│╪º╪▒╪⌐ wanted to understand what the forest was saying, but his path was blocked. A thick, thorny briar patch stood between him and the deeper woods. He pushed against the prickly branches, but the thorns snagged on his small, hand-stitched satchel. Ouch! He pricked his fingers. The briar patch was too strong, too tangled. ╪│╪º╪▒╪⌐ sighed, and sat down, resting his head. Would he ever understand the forest's whispers?",
+        "spreadNumber": 3
+      },
+      {
+        "text": "Suddenly, a tiny squirrel with a large, bushy tail popped out from behind a tree. It was Squeaky! Squeaky chattered excitedly, pointing a tiny paw towards the briar patch. He seemed to be warning ╪│╪º╪▒╪⌐, bouncing with energy, ready to help. ╪│╪º╪▒╪⌐ watched, confused, but Squeaky continued to chatter and point towards the briar patch. ",
+        "spreadNumber": 4
+      },
+      {
+        "text": "Then, something amazing happened. ╪│╪º╪▒╪⌐ understood what Squeaky was saying! He chattered that the briar patch protected the Elder Tree, a place of great wisdom. But, he warned, the briar patch was also home to grumpy, sleepy insects, ones that would sting if woken. ╪│╪º╪▒╪⌐'s shoulders slumped. His face grew warm with sadness. He felt stuck. The Elder Tree sounded wonderful, but he didn't want to get stung!",
+        "spreadNumber": 5
+      },
+      {
+        "text": "╪│╪º╪▒╪⌐ sat, dejected, then something shifted. He could understand Squeaky, so what if he listened even closer? Maybe he could understand the insects too! ╪│╪º╪▒╪⌐ closed his eyes, focusing. He felt the forest floor beneath his hands. He asked the forest for a quiet way to pass, and asked the Elder Tree for advice. That was when it came to him...",
+        "spreadNumber": 6
+      },
+      {
+        "text": "╪│╪º╪▒╪⌐ took a deep breath and approached the briar patch, this time with a new plan. He spoke to the insects in a soft, gentle voice. He offered them a quiet song, a peaceful melody just for them. Slowly, carefully, the insects stirred. The thorny branches shifted aside, making a small path. With the path clear, ╪│╪º╪▒╪⌐ stepped carefully through the briar patch, deeper into the woods.",
+        "spreadNumber": 7
+      },
+      {
+        "text": "Finally, ╪│╪º╪▒╪⌐ stood beneath the Elder Tree. He could hear the whispers of the forest, the songs of the birds, the secrets of the squirrels! He thanked Squeaky for his help and promised to always listen to the forest with an open heart. From that day on, ╪│╪º╪▒╪⌐ continued his adventures, always understanding and respecting the voices of the woods. Listening and understanding were the keys that opened the forest to him.",
+        "spreadNumber": 8
+      }
+    ],
+    "visualPlan": {
+      "spreads": [
+        {
+          "mood": "Enchanting and Mysterious",
+          "props": "Golden acorn, forest leaves, birds",
+          "emotion": "Excitement",
+          "setting": "Forest Edge",
+          "lighting": "Sun-Dappled",
+          "timeOfDay": "Morning",
+          "keyActions": "╪│╪º╪▒╪⌐ is kneeling down and reaching out to pick up the golden acorn that is partially obscured by leaves. The background shows the depths of the forest. There is a glow emanating from the acorn, hinting at the magic within. Birds are flying overhead towards the acorn.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Greens, Golds, Browns, with a touch of magical light",
+          "spreadNumber": 0,
+          "continuityNotes": "Leave the left side of the image as negative space for the title. The golden acorn will be the focal point, drawing the viewer's eye.",
+          "environmentType": "Outdoor",
+          "mainContentSide": "Right"
+        },
+        {
+          "mood": "Curious",
+          "props": "Large tree, leaves, sunlight, forest floor",
+          "emotion": "Curious",
+          "setting": "Edge of the Woods",
+          "lighting": "Sun-Dappled",
+          "timeOfDay": "Morning",
+          "keyActions": "╪│╪º╪▒╪⌐ is sitting quietly under a large tree, eyes closed and head tilted upwards, listening intently to the rustling leaves and sounds of the forest. Sunlight filters through the branches, creating a warm and inviting atmosphere. Birds are perched in the trees, but not clearly visible.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Greens, browns, and soft golden light",
+          "spreadNumber": 1,
+          "continuityNotes": "Establish ╪│╪º╪▒╪⌐'s love for the forest sounds.",
+          "environmentType": "Outdoor",
+          "mainContentSide": "Left"
+        },
+        {
+          "mood": "Surprised",
+          "props": "Giant oak tree, golden acorn, leaves, roots",
+          "emotion": "Surprised",
+          "setting": "Beneath an Oak Tree",
+          "lighting": "Sun-Dappled",
+          "timeOfDay": "Morning",
+          "keyActions": "╪│╪º╪▒╪⌐ is kneeling beneath the roots of a giant oak tree, picking up the golden acorn. The acorn is glowing softly in ╪│╪º╪▒╪⌐'s hand. Wisps of light are rising from the acorn towards the tree branches above.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Greens, browns, and golden light",
+          "spreadNumber": 2,
+          "continuityNotes": "The golden acorn is the focal point, emphasizing its magical nature.",
+          "environmentType": "Outdoor",
+          "mainContentSide": "Left"
+        },
+        {
+          "mood": "Frustrated",
+          "props": "Briar patch, thorns, hand-stitched satchel",
+          "emotion": "Frustrated",
+          "setting": "Edge of Briar Patch",
+          "lighting": "Bright Daylight",
+          "timeOfDay": "Midday",
+          "keyActions": "╪│╪º╪▒╪⌐ is attempting to push through a dense briar patch. The thorns are snagged on ╪│╪º╪▒╪⌐'s hand-stitched satchel and pricking at ╪│╪º╪▒╪⌐'s fingers. ╪│╪º╪▒╪⌐ is looking frustrated and struggling against the prickly branches. ",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Greens, browns, and red from the scratches",
+          "spreadNumber": 3,
+          "continuityNotes": "The briar patch is thick and imposing, blocking the path.",
+          "environmentType": "Outdoor",
+          "mainContentSide": "Left"
+        },
+        {
+          "mood": "Intrigued",
+          "props": "Squeaky the squirrel, briar patch, trees",
+          "emotion": "Intrigued",
+          "setting": "Near Briar Patch",
+          "lighting": "Natural Light",
+          "timeOfDay": "Afternoon",
+          "keyActions": "Squeaky the squirrel is chattering excitedly at ╪│╪º╪▒╪⌐, pointing a tiny paw towards the briar patch. ╪│╪º╪▒╪⌐ is watching Squeaky, looking intrigued and confused. Squeaky is partially obscured by a tree trunk.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Greens, browns, and grays",
+          "spreadNumber": 4,
+          "continuityNotes": "Squeaky's energy and gestures should be emphasized.",
+          "environmentType": "Outdoor",
+          "mainContentSide": "Left"
+        },
+        {
+          "mood": "Discouraged",
+          "props": "Briar patch, Squeaky, golden acorn",
+          "emotion": "Discouraged",
+          "setting": "Near Briar Patch",
+          "lighting": "Natural Light",
+          "timeOfDay": "Afternoon",
+          "keyActions": "╪│╪º╪▒╪⌐ is sitting dejectedly near the briar patch, head in hands. The golden acorn is in ╪│╪º╪▒╪⌐'s lap. The briar patch looms behind her, appearing menacing. Squeaky watches from a nearby branch.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Muted greens and browns",
+          "spreadNumber": 5,
+          "continuityNotes": "Show ╪│╪º╪▒╪⌐'s disappointment and the challenge posed by the briar patch.",
+          "environmentType": "Outdoor",
+          "mainContentSide": "Left"
+        },
+        {
+          "mood": "Hopeful",
+          "props": "Golden acorn, trees, forest floor",
+          "emotion": "Hopeful",
+          "setting": "Near Briar Patch",
+          "lighting": "Soft Light",
+          "timeOfDay": "Late Afternoon",
+          "keyActions": "╪│╪º╪▒╪⌐ is listening intently with closed eyes, holding the golden acorn in hand. ╪│╪º╪▒╪⌐ is surrounded by trees. ",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Soft greens, browns, and golden hues",
+          "spreadNumber": 6,
+          "continuityNotes": "Focus on ╪│╪º╪▒╪⌐'s concentration and connection with nature.",
+          "environmentType": "Outdoor",
+          "mainContentSide": "Left"
+        },
+        {
+          "mood": "Careful",
+          "props": "Briar patch, sleeping insects",
+          "emotion": "Careful",
+          "setting": "Briar Patch",
+          "lighting": "Soft Light",
+          "timeOfDay": "Late Afternoon",
+          "keyActions": "╪│╪º╪▒╪⌐ is quietly tiptoeing carefully through the briar patch. The thorny branches are slightly parted. Sleeping insects are subtly blended in on the branches. ",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Greens and browns, with muted colors",
+          "spreadNumber": 7,
+          "continuityNotes": "Show the insects subtly and emphasize ╪│╪º╪▒╪⌐'s cautious movement.",
+          "environmentType": "Outdoor",
+          "mainContentSide": "Left"
+        },
+        {
+          "mood": "Joyful",
+          "props": "Elder Tree, Squeaky",
+          "emotion": "Joyful",
+          "setting": "Beneath the Elder Tree",
+          "lighting": "Warm Dusk",
+          "timeOfDay": "Dusk",
+          "keyActions": "╪│╪º╪▒╪⌐ is standing beneath the Elder Tree, listening to the animals and smiling. Squeaky is perched on a branch nearby. The tree is a large, ancient tree. ",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Warm greens, browns, and golden hues",
+          "spreadNumber": 8,
+          "continuityNotes": "Show ╪│╪º╪▒╪⌐'s happiness and connection with the forest.",
+          "environmentType": "Outdoor",
+          "mainContentSide": "Left"
+        }
+      ],
+      "characters": {
+        "heroProfile": "Sarah is curious, observant, and loves exploring the woods near her home. She is especially drawn to the sounds of nature and dreams of understanding them.",
+        "supportingRoles": [
+          {
+            "name": "Squeaky",
+            "role": "Helper",
+            "visualKey": "A small, energetic squirrel with a large bushy tail",
+            "functionType": "To provide information about the briar patch and guide Sarah.",
+            "influenceSpreads": [
+              4,
+              5,
+              8
+            ],
+            "appearanceSpreads": [
+              4
+            ]
+          }
+        ]
+      },
+      "visualAnchors": {
+        "heroTraits": "Curious, Introspective, Empathetic",
+        "spatialLogic": "The story progresses from the edge of the forest, deeper into the woods, encountering the briar patch as an obstacle before finally reaching the Elder Tree.",
+        "signatureItems": "Hand-stitched satchel, Golden Acorn",
+        "persistentProps": "Trees, Golden Acorn, Briar Patch, Hand-Stitched Satchel",
+        "recurringLocations": "Edge of the Woods, Underneath the Oak Tree, Briar Patch, The Elder Tree"
+      }
+    },
+    "childGender": "boy",
+    "prompt_version": "v4-agentic-worker-1"
+  },
+  "shipping_details": {
+    "city": "Hawalli",
+    "name": "Shady Emera",
+    "email": "s_emera@yahoo.com",
+    "phone": "66664020",
+    "address": "Salwa Block 11\n24 Mohamed Wasmi Alwasmi, Apartment A4"
+  },
+  "production_cost": 0,
+  "ai_cost": 0,
+  "shipping_cost": 0,
+  "subscription_id": null,
+  "billing_cycle_date": null,
+  "shipping_snapshot": {
+    "city": "Hawalli",
+    "name": "Shady Emera",
+    "email": "s_emera@yahoo.com",
+    "phone": "66664020",
+    "address": "Salwa Block 11\n24 Mohamed Wasmi Alwasmi, Apartment A4"
+  },
+  "generation_snapshot": {}
+}

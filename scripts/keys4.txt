@@ -1,0 +1,8 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: ≡ƒöÉ encrypt with Dotenvx: https://dotenvx.com
+HEROES: {
+  code: 'PGRST205',
+  details: null,
+  hint: "Perhaps you meant the table 'public.themes'",
+  message: "Could not find the table 'public.heroes' in the schema cache"
+}
+SUBS: err

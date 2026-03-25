@@ -1,0 +1,37 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env.local -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+cmd : Γ¥î CRITICAL 
+TEST FAILURE:  Could 
+not create sub: 
+Could not find the 
+'current_period_end' 
+column of 
+'subscriptions' in 
+the schema cache
+At line:1 char:1
++ cmd /c npx tsx scri
+pts/test-pipeline.ts 
+2>&1 | Out-File 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~
+    + CategoryInfo   
+           : 
+NotSpecified:     
+(Γ¥î CRITICAL TE...h 
+   e schema 
+cache:Strin    g) 
+[], RemoteExcepti    
+on
+    + 
+FullyQualifiedErro   
+ rId : 
+NativeCommandE    
+rror
+ 
+
+≡ƒÄë Test Run Complete: 0 Passed, 0 Failed.

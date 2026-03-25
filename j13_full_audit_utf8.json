@@ -1,0 +1,502 @@
+﻿[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+{
+  "order_number": "RWY-J13I0G07L",
+  "customer_id": "s_emera@yahoo.com",
+  "customer_name": "Shady Emera",
+  "total": 43.379999999999995,
+  "status": "story_ready",
+  "created_at": "2026-03-10T10:04:20.794+00:00",
+  "story_data": {
+    "pages": [],
+    "theme": "When the room turns into a castle or outer space.",
+    "script": [
+      {
+        "text": "Young ╪│╪º╪▒╪⌐ loved dreaming, it's plain,\nWith her star, through sunshine or rain.\nShe would play in her room every day,\nWhere her dreams always showed her the way.",
+        "spreadNumber": 1
+      },
+      {
+        "text": "The walls gave a shimmer, a castle so grand!\nWith towers and flags, in this magical land.\n╪│╪º╪▒╪⌐ stepped inside with a skip and a twirl,\nTo explore all the wonders, this curious girl!",
+        "spreadNumber": 2
+      },
+      {
+        "text": "But soon ╪│╪º╪▒╪⌐ was lost, in the halls such a maze,\nThe long corridors looked the same in a haze.\nShe looked for her bed, but she couldn't find how,\nShe wished for her room, she wanted it now.",
+        "spreadNumber": 3
+      },
+      {
+        "text": "Now floating in space, with bright stars all around,\n╪│╪º╪▒╪⌐ then saw Sparkle, without any ground!\nΓÇ£Hello!ΓÇ¥ called out Sparkle, with a sweet alien face,\nΓÇ£Space is so grand, such a wonderful place!",
+        "spreadNumber": 4
+      },
+      {
+        "text": "But space felt too big, like a wide, endless sea,\n╪│╪º╪▒╪⌐ missed her warm room, as sad as could be.\nHer shoulders were slumped, as she started to frown,\nShe hugged her toy star, wishing she weren't so down.",
+        "spreadNumber": 5
+      },
+      {
+        "text": "╪│╪º╪▒╪⌐ looked at her star, in her hand held so tight.\nA warm, cozy feeling, shone ever so bright.\nIt felt safe, it felt kind, like a thought in her head,\n'My star knows the way! It can lead me,' she said.",
+        "spreadNumber": 6
+      },
+      {
+        "text": "╪│╪º╪▒╪⌐ held her star, and pictured her bed,\nWith blankets and pillows all soft on her head.\nThe star gave a glow, a path she could trace,\nShe followed its light, to her own happy place.",
+        "spreadNumber": 7
+      },
+      {
+        "text": "The stars faded out, space no longer was there,\nAnd ╪│╪º╪▒╪⌐ was back, without a care!\nSparkle waved goodbye, from stars up above,\n╪│╪º╪▒╪⌐ knew it's good to be home, full of love.",
+        "spreadNumber": 8
+      }
+    ],
+    "prompts": [
+      {
+        "storyText": "",
+        "imagePrompt": "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n- [IMAGE 2]: Match IMAGE 2 ΓÇö face, age, outfit, art style.\n\n**STYLE:**\nundefined\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Panoramic View of Sarah's Bedroom Transforming into a Cosmic Castle\n- Mood: Exciting, whimsical, adventurous\n- Action: Sarah is jumping from her bed, holding her plush star, as the bedroom wall behind her is being magically transformed into a medieval castle, with bright stars shining through the newly formed castle windows.\n\n**COMPOSITION:**\n- **FRONT COVER (RIGHT):** Both characters occupy the right two-thirds of the frame, angled slightly inward toward each other.\n- **BACK COVER (LEFT):** Completely open and uncluttered background (e.g., clear sky or simple terrain) to leave space for the title logo.\n- Framing: Wide panoramic shot. No dutch angles.\n\n--no typography, watermarks, photorealistic lighting",
+        "spreadNumber": 0
+      },
+      {
+        "storyText": "Sarah is in her room, playing with her toy star and imagining grand adventures.",
+        "imagePrompt": "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n- [IMAGE 2]: Match IMAGE 2 ΓÇö face, age, outfit, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Bedroom (Indoor)\n- Time of Day: Morning\n- Mood: Cozy and familiar\n- Action: Sarah holding her toy star, smiling.\n\n**COMPOSITION:**\n- [IMAGE 1] and [IMAGE 2] occupy the right two-thirds of the frame, angled slightly inward toward each other.\n- The left side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+        "spreadNumber": 1
+      },
+      {
+        "storyText": "The room transforms into a grand castle with towering walls and fluttering banners. Sarah is excited to explore.",
+        "imagePrompt": "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n- [IMAGE 2]: Match IMAGE 2 ΓÇö face, age, outfit, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Castle Hall (Indoor)\n- Time of Day: Morning\n- Mood: Excited and grand\n- Action: Sarah stepping into the castle, looking around in awe.\n\n**COMPOSITION:**\n- [IMAGE 1] and [IMAGE 2] occupy the right two-thirds of the frame, angled slightly inward toward each other.\n- The left side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+        "spreadNumber": 2
+      },
+      {
+        "storyText": "Sarah tries to find her way back to her bed but gets lost in the maze of hallways. Everything looks the same, and she feels turned around.",
+        "imagePrompt": "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n- [IMAGE 2]: Match IMAGE 2 ΓÇö face, age, outfit, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Castle Hallway (Indoor)\n- Time of Day: Morning\n- Mood: Confused\n- Action: Sarah turning a corner, looking unsure.\n\n**COMPOSITION:**\n- [IMAGE 1] and [IMAGE 2] occupy the right two-thirds of the frame, angled slightly inward toward each other.\n- The left side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+        "spreadNumber": 3
+      },
+      {
+        "storyText": "The castle disappears, and Sarah finds herself floating in outer space, surrounded by twinkling stars and swirling nebulas. She meets Sparkle, a friendly alien.",
+        "imagePrompt": "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n- [IMAGE 2]: Match IMAGE 2 ΓÇö face, age, outfit, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Outer Space (Outdoor)\n- Time of Day: Afternoon\n- Mood: Intrigued\n- Action: Sparkle waving hello to Sarah.\n\n**COMPOSITION:**\n- [IMAGE 1] and [IMAGE 2] occupy the right two-thirds of the frame, angled slightly inward toward each other.\n- The left side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+        "spreadNumber": 4
+      },
+      {
+        "storyText": "Sarah feels overwhelmed by the vastness of space. She misses her room and the comfort of her bed. She hugs her toy star tightly.",
+        "imagePrompt": "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n- [IMAGE 2]: Match IMAGE 2 ΓÇö face, age, outfit, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Outer Space (Outdoor)\n- Time of Day: Afternoon\n- Mood: Overwhelmed and sad\n- Action: Sarah clutching the star, looking sad.\n\n**COMPOSITION:**\n- [IMAGE 1] and [IMAGE 2] occupy the right two-thirds of the frame, angled slightly inward toward each other.\n- The left side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+        "spreadNumber": 5
+      },
+      {
+        "storyText": "Looking at her toy star, Sarah realizes it's a reminder of home. It feels warm and familiar. Maybe it can help her.",
+        "imagePrompt": "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n- [IMAGE 2]: Match IMAGE 2 ΓÇö face, age, outfit, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Outer Space (Outdoor)\n- Time of Day: Afternoon\n- Mood: Hopeful\n- Action: Sarah staring at the toy star, a hopeful expression on her face.\n\n**COMPOSITION:**\n- [IMAGE 1] and [IMAGE 2] occupy the right two-thirds of the frame, angled slightly inward toward each other.\n- The left side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+        "spreadNumber": 6
+      },
+      {
+        "storyText": "Clutching the toy star, Sarah focuses on her room, picturing her bed and favorite things. She follows the star's gentle glow.",
+        "imagePrompt": "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n- [IMAGE 2]: Match IMAGE 2 ΓÇö face, age, outfit, art style.\n\n**STYLE:**\nundefined\nWarm color palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Outer Space (Outdoor)\n- Time of Day: Dusk\n- Mood: Determined\n- Action: Sarah moving forward with determination, following the star's light.\n\n**COMPOSITION:**\n- [IMAGE 1] and [IMAGE 2] occupy the right two-thirds of the frame, angled slightly inward toward each other.\n- The left side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+        "spreadNumber": 7
+      },
+      {
+        "storyText": "The stars fade away, and Sarah is back in her room, snuggled in her bed. Sparkle waves goodbye from the window. Home is the best place to be!",
+        "imagePrompt": "**CHARACTER REFERENCES:**\n- [IMAGE 1]: Match IMAGE 1 ΓÇö face, hair, skin tone, clothing, art style.\n- [IMAGE 2]: Match IMAGE 2 ΓÇö face, age, outfit, art style.\n\n**STYLE:**\nundefined\nCool, soft ambient palette ΓÇö consistent with IMAGE 1's art style.\nPainterly brushwork, soft linework ΓÇö consistent with IMAGE 1.\nFlat 2D illustrated rendering. Stylized lighting only. No photographic shadows or lens effects.\n\n**SCENE:**\n- Setting: Bedroom (Indoor)\n- Time of Day: Night\n- Mood: Safe and loved\n- Action: Sarah yawning, drifting off to sleep with her toy star.\n\n**COMPOSITION:**\n- [IMAGE 1] and [IMAGE 2] occupy the right two-thirds of the frame, angled slightly inward toward each other.\n- The left side is open, uncluttered background for text overlay.\n- Framing: Wide establishing shot, Wide Establishing Shot. No dutch angles.\n\n--no text, watermarks, photorealistic lighting",
+        "spreadNumber": 8
+      }
+    ],
+    "childAge": "4",
+    "language": "en",
+    "blueprint": {
+      "structure": {
+        "spreads": [
+          {
+            "purpose": "Normal World",
+            "narrative": "Sarah is in her room, playing with her toy star and imagining grand adventures.",
+            "timeOfDay": "Morning",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah's bedroom, cozy and familiar, with the toy star prominently displayed.",
+            "spreadNumber": 1,
+            "emotionalBeat": "Curious",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "Suddenly, the walls start to shimmer!",
+            "environmentType": "Indoor",
+            "highlightAction": "Sarah holding her toy star, smiling.",
+            "specificLocation": "Bedroom"
+          },
+          {
+            "purpose": "Catalyst",
+            "narrative": "The room transforms into a grand castle with towering walls and fluttering banners. Sarah is excited to explore.",
+            "timeOfDay": "Morning",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "The transformed room as a medieval castle with stone walls.",
+            "spreadNumber": 2,
+            "emotionalBeat": "Excited",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "But as she ventures deeper, the castle starts to feel a little too big...",
+            "environmentType": "Indoor",
+            "highlightAction": "Sarah stepping into the castle, looking around in awe.",
+            "specificLocation": "Castle Hall"
+          },
+          {
+            "purpose": "First Attempt",
+            "narrative": "Sarah tries to find her way back to her bed but gets lost in the maze of hallways. Everything looks the same, and she feels turned around.",
+            "timeOfDay": "Morning",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah walking down a long corridor in the castle, looking confused.",
+            "spreadNumber": 3,
+            "emotionalBeat": "Confused",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "Just when she thinks she's found a way out, the castle melts away!",
+            "environmentType": "Indoor",
+            "highlightAction": "Sarah turning a corner, looking unsure.",
+            "specificLocation": "Castle Hallway"
+          },
+          {
+            "purpose": "Complication",
+            "narrative": "The castle disappears, and Sarah finds herself floating in outer space, surrounded by twinkling stars and swirling nebulas. She meets Sparkle, a friendly alien.",
+            "timeOfDay": "Afternoon",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Outer space with stars and nebulas; Sarah is floating with Sparkle.",
+            "spreadNumber": 4,
+            "emotionalBeat": "Intrigued",
+            "newCharacters": [
+              "Sparkle"
+            ],
+            "transitionHook": "Sparkle tells Sarah about all the amazing places in space, but...",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sparkle waving hello to Sarah.",
+            "specificLocation": "Outer Space"
+          },
+          {
+            "purpose": "Lowest Point",
+            "narrative": "Sarah feels overwhelmed by the vastness of space. She misses her room and the comfort of her bed. She hugs her toy star tightly.",
+            "timeOfDay": "Afternoon",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah floating alone in space, hugging her toy star.",
+            "spreadNumber": 5,
+            "emotionalBeat": "Homesick",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "Lost and missing home...",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah clutching the star, looking sad.",
+            "specificLocation": "Outer Space"
+          },
+          {
+            "purpose": "Insight",
+            "narrative": "Looking at her toy star, Sarah realizes it's a reminder of home. It feels warm and familiar. Maybe it can help her.",
+            "timeOfDay": "Afternoon",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Close-up on Sarah's face as she looks at the toy star.",
+            "spreadNumber": 6,
+            "emotionalBeat": "Hopeful",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "Can the little plush star guide her back?",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah staring at the toy star, a hopeful expression on her face.",
+            "specificLocation": "Outer Space"
+          },
+          {
+            "purpose": "Final Attempt",
+            "narrative": "Clutching the toy star, Sarah focuses on her room, picturing her bed and favorite things. She follows the star's gentle glow.",
+            "timeOfDay": "Dusk",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah floating through space, following the glow of her toy star.",
+            "spreadNumber": 7,
+            "emotionalBeat": "Determined",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "As she follows the star, something is starting to change...",
+            "environmentType": "Outdoor",
+            "highlightAction": "Sarah moving forward with determination, following the star's light.",
+            "specificLocation": "Outer Space"
+          },
+          {
+            "purpose": "Resolution",
+            "narrative": "The stars fade away, and Sarah is back in her room, snuggled in her bed. Sparkle waves goodbye from the window. Home is the best place to be!",
+            "timeOfDay": "Night",
+            "cameraAngle": "Wide Establishing Shot",
+            "visualFocus": "Sarah back in her bed, safe and sound; Sparkle is visible outside the window.",
+            "spreadNumber": 8,
+            "emotionalBeat": "Safe",
+            "newCharacters": [
+              "None"
+            ],
+            "transitionHook": "",
+            "environmentType": "Indoor",
+            "highlightAction": "Sarah yawning, drifting off to sleep with her toy star.",
+            "specificLocation": "Bedroom"
+          }
+        ],
+        "arcSummary": "Sarah's room magically transforms into a castle, leading her on an unexpected adventure. Feeling overwhelmed when it morphs into outer space, she remembers her toy star, which guides her back to the comforting familiarity of her own bed."
+      },
+      "characters": {
+        "heroProfile": "Sarah is imaginative, curious, and loves to play. She can be a little timid when things get too unfamiliar, but she is also brave.",
+        "supportingRoles": [
+          {
+            "name": "Sparkle",
+            "role": "Companion",
+            "visualKey": "A small, friendly-looking alien with large, kind eyes and a single antenna.",
+            "functionType": "To offer gentle encouragement and a different perspective.",
+            "influenceSpreads": [
+              4,
+              5,
+              8
+            ],
+            "appearanceSpreads": [
+              4
+            ]
+          }
+        ]
+      },
+      "foundation": {
+        "moral": "It's fun to explore, but it's also good to be home.",
+        "title": "Sarah's Cosmic Castle",
+        "storyCore": "Sarah's room transforms into a castle and then outer space, and she must find her way back to her cozy bed.",
+        "targetAge": "4",
+        "heroDesire": "To explore and have fun, but ultimately to feel safe and secure in her own bed.",
+        "insightSpread": 6,
+        "mainChallenge": "Getting lost and a little scared in the vastness of her imagination.",
+        "failedAttemptSpread": 3,
+        "finalSolutionMethod": "Realizing that her star toy is a reminder of home and safety and using it as a guide.",
+        "primaryVisualAnchor": "A small, plush toy star she always carries."
+      }
+    },
+    "childName": "╪│╪º╪▒╪⌐",
+    "rawScript": [
+      {
+        "text": "Young ╪│╪º╪▒╪⌐, a dreamer so grand,\nWith her star, always close in her hand.\nShe loved to imagine and play all day,\nIn her room, where her dreams light the way.",
+        "spreadNumber": 1
+      },
+      {
+        "text": "The walls gave a shimmer, a castle so tall!\nWith banners and towers, enchanting to all.\n╪│╪º╪▒╪⌐ stepped inside with a skip and a hop,\nTo see what grand wonders the castle had got.",
+        "spreadNumber": 2
+      },
+      {
+        "text": "But soon ╪│╪º╪▒╪⌐ was lost, turned around in the maze,\nThe hallways all looked the same in a haze.\nShe looked for her bed, but she couldn't find how.\nThen the castle just vanished! Oh no, not now!",
+        "spreadNumber": 3
+      },
+      {
+        "text": "Now floating in space, with stars all around,\n╪│╪º╪▒╪⌐ saw Sparkle, no longer on ground.\nΓÇ£Hello!ΓÇ¥ called out Sparkle, with a kind alien face,\nΓÇ£Space is so grand, it's a wonderful place!ΓÇ¥",
+        "spreadNumber": 4
+      },
+      {
+        "text": "But space felt too big, ╪│╪º╪▒╪⌐ felt small,\nShe missed her warm room, her bed, and her wall.\nA quiet tear slid down her cheek,\nHer small toy star began to creak.",
+        "spreadNumber": 5
+      },
+      {
+        "text": "╪│╪º╪▒╪⌐ looked at her star, held tight in her hand.\nA home feeling it brought, in this sparkly land.\nIt felt warm, it felt safe, a thought in her head,\nΓÇ£My star can help me!ΓÇ¥ is what ╪│╪º╪▒╪⌐ then said.",
+        "spreadNumber": 6
+      },
+      {
+        "text": "╪│╪º╪▒╪⌐ held her star, and thought of her bed,\nOf blankets and pillows all soft on her head.\nThe star gave a glow, she knew what to do.\nShe followed its light, her true home to view.",
+        "spreadNumber": 7
+      },
+      {
+        "text": "The stars faded out, the space disappeared,\nAnd ╪│╪º╪▒╪⌐ was back, with nothing to be feared!\nSparkle waved goodbye, a twinkle so bright,\n╪│╪º╪▒╪⌐ knew it's good to be home for the night.",
+        "spreadNumber": 8
+      }
+    ],
+    "visualPlan": {
+      "spreads": [
+        {
+          "mood": "Exciting, whimsical, adventurous",
+          "props": "Plush toy star, partially transformed bedroom objects (bed, chair), castle walls, stars",
+          "emotion": "Wonder",
+          "setting": "Panoramic View of Sarah's Bedroom Transforming into a Cosmic Castle",
+          "lighting": "Warm, magical lighting with hints of starlight",
+          "timeOfDay": "Morning",
+          "keyActions": "╪│╪º╪▒╪⌐ is jumping from her bed, holding her plush star, as the bedroom wall behind her is being magically transformed into a medieval castle, with bright stars shining through the newly formed castle windows.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Warm yellows, blues, and purples blending together, with a touch of starlight silver.",
+          "spreadNumber": 0,
+          "continuityNotes": "Leave the left side open for the title placement.",
+          "environmentType": "Indoor/Outdoor",
+          "mainContentSide": "Right"
+        },
+        {
+          "mood": "Cozy and familiar",
+          "props": "Toy star, bed, pillows, blankets, bookshelf",
+          "emotion": "Curious",
+          "setting": "Bedroom",
+          "lighting": "Soft morning light",
+          "timeOfDay": "Morning",
+          "keyActions": "╪│╪º╪▒╪⌐ is holding her toy star and smiling as she imagines grand adventures in her room. The toy star is prominently displayed in her hands.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Warm and inviting colors: soft yellows, pastel blues, and gentle pinks.",
+          "spreadNumber": 1,
+          "continuityNotes": "Establish the cozy and familiar setting of Sarah's bedroom.",
+          "environmentType": "Indoor"
+        },
+        {
+          "mood": "Excited and grand",
+          "props": "Stone walls, fluttering banners, arched doorways, toy star held by ╪│╪º╪▒╪⌐",
+          "emotion": "Excited",
+          "setting": "Castle Hall",
+          "lighting": "Bright, magical light filtering through tall windows",
+          "timeOfDay": "Morning",
+          "keyActions": "╪│╪º╪▒╪⌐ is stepping into the transformed room, now a grand castle hall, looking around in awe at the tall stone walls and fluttering banners.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Deep blues, regal purples, and gold accents.",
+          "spreadNumber": 2,
+          "continuityNotes": "The room must look like a medieval castle.",
+          "environmentType": "Indoor"
+        },
+        {
+          "mood": "Confused",
+          "props": "Long corridor, stone walls, arched doorways, toy star held by ╪│╪º╪▒╪⌐",
+          "emotion": "Confused",
+          "setting": "Castle Hallway",
+          "lighting": "Dim and hazy light",
+          "timeOfDay": "Morning",
+          "keyActions": "╪│╪º╪▒╪⌐ is walking down a long castle corridor, turning a corner and looking unsure as she tries to find her way back to her bed.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Monochromatic grays and browns to emphasize the maze-like quality.",
+          "spreadNumber": 3,
+          "continuityNotes": "The hallway should look identical, making it hard to navigate.",
+          "environmentType": "Indoor"
+        },
+        {
+          "mood": "Intrigued",
+          "props": "Stars, nebulas, friendly alien Sparkle, toy star held by ╪│╪º╪▒╪⌐",
+          "emotion": "Intrigued",
+          "setting": "Outer Space",
+          "lighting": "Bright starlight with swirling nebulas",
+          "timeOfDay": "Afternoon",
+          "keyActions": "Sparkle is waving hello to ╪│╪º╪▒╪⌐, who is floating in outer space surrounded by twinkling stars and swirling nebulas.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Vibrant blues, purples, pinks, and oranges representing the nebulas.",
+          "spreadNumber": 4,
+          "continuityNotes": "Outer space should feel vast and open.",
+          "environmentType": "Outdoor"
+        },
+        {
+          "mood": "Overwhelmed and sad",
+          "props": "Toy star held by ╪│╪º╪▒╪⌐",
+          "emotion": "Homesick",
+          "setting": "Outer Space",
+          "lighting": "Dim starlight",
+          "timeOfDay": "Afternoon",
+          "keyActions": "╪│╪º╪▒╪⌐ is floating alone in space, clutching her toy star and looking sad and homesick.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Dark blues and purples to emphasize the vastness of space.",
+          "spreadNumber": 5,
+          "continuityNotes": "Focus on Sarah's emotional state of being lost and missing her room.",
+          "environmentType": "Outdoor"
+        },
+        {
+          "mood": "Hopeful",
+          "props": "Toy star held by ╪│╪º╪▒╪⌐",
+          "emotion": "Hopeful",
+          "setting": "Outer Space",
+          "lighting": "A soft glow emanating from the toy star.",
+          "timeOfDay": "Afternoon",
+          "keyActions": "╪│╪º╪▒╪⌐ is staring at the toy star with a hopeful expression on her face, realizing it's a reminder of home and maybe it can help her.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Gentle blues and purples, with a warm glow emanating from the star.",
+          "spreadNumber": 6,
+          "continuityNotes": "The focus is on Sarah's realization and the star's importance.",
+          "environmentType": "Outdoor"
+        },
+        {
+          "mood": "Determined",
+          "props": "Toy star held by ╪│╪º╪▒╪⌐",
+          "emotion": "Determined",
+          "setting": "Outer Space",
+          "lighting": "Soft, directional light coming from the toy star",
+          "timeOfDay": "Dusk",
+          "keyActions": "╪│╪º╪▒╪⌐ is moving forward with determination, floating through space and following the glow of her toy star, determined to find her way back.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Dark blues and purples with a glowing path illuminated by the star.",
+          "spreadNumber": 7,
+          "continuityNotes": "Emphasize the forward motion and the guiding light of the star.",
+          "environmentType": "Outdoor"
+        },
+        {
+          "mood": "Safe and loved",
+          "props": "Bed, blankets, pillows, toy star, bedside lamp, Sparkle outside the window",
+          "emotion": "Safe",
+          "setting": "Bedroom",
+          "lighting": "Soft, warm light from a bedside lamp",
+          "timeOfDay": "Night",
+          "keyActions": "╪│╪º╪▒╪⌐ is yawning and drifting off to sleep in her bed with her toy star, while Sparkle waves goodbye from the window.",
+          "cameraAngle": "Wide Establishing Shot",
+          "colorPalette": "Warm yellows, soft blues, and gentle pinks to create a feeling of comfort and security.",
+          "spreadNumber": 8,
+          "continuityNotes": "The scene should be cozy and peaceful, representing Sarah's safe return home.",
+          "environmentType": "Indoor"
+        }
+      ],
+      "characters": {
+        "heroProfile": "Sarah is imaginative, curious, and loves to play. She can be a little timid when things get too unfamiliar, but she is also brave.",
+        "supportingRoles": [
+          {
+            "name": "Sparkle",
+            "role": "Companion",
+            "visualKey": "A small, friendly-looking alien with large, kind eyes and a single antenna.",
+            "functionType": "To offer gentle encouragement and a different perspective.",
+            "influenceSpreads": [
+              4,
+              5,
+              8
+            ],
+            "appearanceSpreads": [
+              4
+            ]
+          }
+        ]
+      },
+      "visualAnchors": {
+        "heroTraits": "Imaginative, adventurous, a little insecure, comforted by her toy star.",
+        "spatialLogic": "The spaces are transformed through Sarah's imagination, but her bedroom is always the anchor.",
+        "signatureItems": "A small, plush toy star named Sparkle.",
+        "persistentProps": "Bed, blankets, pillows, castle walls, stars, nebulas.",
+        "recurringLocations": "Sarah's bedroom, a grand castle, outer space."
+      }
+    },
+    "childGender": "boy",
+    "mainCharacter": {
+      "age": "",
+      "name": "Reem",
+      "type": "person",
+      "images": [
+        {}
+      ],
+      "description": "A child",
+      "imageBases64": "(base64)"
+    },
+    "prompt_version": "v4-agentic-worker-1",
+    "secondCharacter": {
+      "age": "12",
+      "name": "Rana",
+      "type": "person",
+      "gender": "girl",
+      "images": [
+        {}
+      ],
+      "description": "",
+      "imageBases64": "(base64)",
+      "relationship": "Sibling"
+    },
+    "selectedStyleNames": [
+      "Classic Illustration"
+    ],
+    "selectedStylePrompt": "A beautiful and whimsical digital watercolor style. Features soft, dreamy washes with light color bleeding and a textured paper feel. Edges are loose and organic."
+  },
+  "shipping_details": {
+    "city": "Hawalli",
+    "name": "Shady Emera",
+    "email": "s_emera@yahoo.com",
+    "phone": "66664020",
+    "address": "Salwa Block 11\n24 Mohamed Wasmi Alwasmi, Apartment A4"
+  },
+  "production_cost": 0,
+  "ai_cost": 0,
+  "shipping_cost": 0,
+  "subscription_id": null,
+  "billing_cycle_date": null,
+  "shipping_snapshot": {
+    "city": "Hawalli",
+    "name": "Shady Emera",
+    "email": "s_emera@yahoo.com",
+    "phone": "66664020",
+    "address": "Salwa Block 11\n24 Mohamed Wasmi Alwasmi, Apartment A4"
+  },
+  "generation_snapshot": {}
+}

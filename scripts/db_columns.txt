@@ -1,0 +1,11 @@
+order_number
+customer_id
+customer_name
+total
+status
+created_at
+story_data
+shipping_details
+production_cost
+ai_cost
+shipping_cost

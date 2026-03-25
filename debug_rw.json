@@ -1,0 +1,23 @@
+{
+  "order": "RWY-9BJD5J6UA",
+  "summary": {
+    "mainChar": "Zayn",
+    "secondChar": "Rayan",
+    "hasStyleRef": false,
+    "hasStyleUrl": true,
+    "styleUrl": "https://wqklukruzxicjaeblser.supabase.co/storage/v1/object/public/images/RWY-9BJD5J6UA/dna_reference.jpg",
+    "hasSecondRef": true,
+    "secondRefLength": 1068108,
+    "prompts": [
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {}
+    ]
+  }
+}

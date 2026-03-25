@@ -1,0 +1,20 @@
+﻿[dotenv@17.2.3] injecting env (6) from .env.local -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+-----------------------------------------
+≡ƒÜÇ Starting Pipeline Verification Tests...
+-----------------------------------------
+--- 1. Setting up test entities ---
+Γ£à Test entities created successfully.
+
+--- 2. Testing Subscription Deduplication ---
+Γ£à PASS: First order inserted successfully for cycle.
+Γ£à PASS: Duplicate cycle order correctly blocked by unique constraint.
+
+--- 3. Testing Theme Engine Assignment (No Repeats) ---
+[ThemeEngine] Starting assignment for Order: TEST-ORD-1-1772909504855, Hero: ae224122-b08f-4236-aae7-63ada9a14fbd
+[ThemeEngine] Selected Theme theme-test-B (Test B) for Hero ae224122-b08f-4236-aae7-63ada9a14fbd
+Γ£à PASS: Assigned first theme via engine for order
+[ThemeEngine] Starting assignment for Order: TEST-ORD-3-1772909506578, Hero: ae224122-b08f-4236-aae7-63ada9a14fbd
+[ThemeEngine] Selected Theme theme-test-A (Test A) for Hero ae224122-b08f-4236-aae7-63ada9a14fbd
+Γ£à PASS: Assigned second theme: theme-test-A (different from first)
+
+≡ƒÄë Test Run Complete: 4 Passed, 0 Failed.

@@ -1,0 +1,72 @@
+﻿node : file:///C:/Use
+rs/s_eme/.gemini/anti
+gravity/playground/ba
+ryonic-solstice/node_
+modules/@supabase/sup
+abase-js/dist/index.m
+js:200
+At line:1 char:1
++ node scripts/force_
+reset_j13.mjs > 
+debug_recovery.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (file://   
+ /C:/User...t/ind    
+ex.mjs:200:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+		if (!supabaseKey) 
+throw new 
+Error("supabaseKey 
+is required.");
+		                   
+     ^
+
+Error: supabaseKey 
+is required.
+    at new 
+SupabaseClient (file:
+///C:/Users/s_eme/.ge
+mini/antigravity/play
+ground/baryonic-solst
+ice/node_modules/@sup
+abase/supabase-js/dis
+t/index.mjs:200:27)
+    at createClient (
+file:///C:/Users/s_em
+e/.gemini/antigravity
+/playground/baryonic-
+solstice/node_modules
+/@supabase/supabase-j
+s/dist/index.mjs:390:
+9)
+    at file:///C:/Use
+rs/s_eme/.gemini/anti
+gravity/playground/ba
+ryonic-solstice/scrip
+ts/force_reset_j13.mj
+s:5:18
+    at ModuleJob.run 
+(node:internal/module
+s/esm/module_job:345:
+25)
+    at async onImport
+.tracePromise.__proto
+__ (node:internal/mod
+ules/esm/loader:665:2
+6)
+    at async asyncRun
+EntryPointWithESMLoad
+er (node:internal/mod
+ules/run_main:117:5)
+
+Node.js v22.20.0
