@@ -1,9 +1,11 @@
-
 import { NextResponse } from 'next/server';
 import { supabase } from '@/utils/supabaseClient';
 import { uploadBase64Image } from '@/services/imageStore';
 import { MasterScheduler } from '@/services/workers/scheduler';
 
+export const maxDuration = 60; // 60 seconds (Hobby max, adjust if Pro)
+// Explicitly increase body size limit for App Router Vercel functions
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
     console.log('--- Draft Order POST Started ---');
