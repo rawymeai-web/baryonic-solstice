@@ -109,7 +109,12 @@ export async function generateVisualPlan(
                             { "name": "Wooden compass", "physical_description": "A pocket-sized circular compass carved from dark mahogany wood with a cracked glass face" }
                         ],
                         "continuityNotes": "Title placed on Left (Empty Space)" 
+                    },
+                    {
+                        "spreadNumber": 1,
+                        "setting": "..."
                     }
+                    // CRITICAL: YOU MUST OUTPUT EXACTLY ${script.length + 1} SPREAD OBJECTS (COVER [0] + SPREADS 1 THROUGH ${script.length}) IN THIS ARRAY. DO NOT TRUNCATE OR DUPLICATE THEM.
                 ]
             }
             `;

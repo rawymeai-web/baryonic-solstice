@@ -207,7 +207,12 @@ export async function generateBlueprint(
                             "environmentType": "Indoor OR Outdoor",
                             "timeOfDay": "Morning / Midday / Afternoon / Dusk / Night",
                             "newCharacters": ["Only NEW characters appearing FOR THE FIRST TIME. Use 'None' if no new characters."]
+                        },
+                        {
+                            "spreadNumber": 2,
+                            "purpose": "..."
                         }
+                        // CRITICAL INSTRUCTION: YOU MUST OUTPUT EXACTLY 8 SPREAD OBJECTS (SPREADS 1 THROUGH 8) IN THIS ARRAY.
                     ]
                 }
             }
