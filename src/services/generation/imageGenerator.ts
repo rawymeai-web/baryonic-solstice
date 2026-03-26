@@ -226,7 +226,7 @@ ${masterGuardrails}`;
 
             // Using the Vision-Capable Image Generation Model
             const model = ai().getGenerativeModel({
-                model: 'gemini-2.0-flash-exp'
+                model: 'gemini-2.0-flash'
             });
 
             console.log("Calling model.generateContent...");
@@ -349,7 +349,7 @@ ${sanitizedPrompt}
 
         // 2. Call Gemini Vision Model
         const model = ai().getGenerativeModel({
-            model: 'gemini-2.0-flash-exp'
+            model: 'gemini-2.0-flash'
         });
 
         // Ensure generationConfig explicitly filters out invalid fields for this model version
