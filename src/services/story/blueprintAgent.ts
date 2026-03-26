@@ -40,8 +40,8 @@ export async function generateBlueprint(
             - Challenge: ${storyData.customChallenge || "Standard theme challenge"}.
 
             **LANGUAGE RULE:**
-            - The "title", "storyCore", "moral", "heroDesire", and "mainChallenge" fields MUST be in **${targetLang}**.
-            - The "narrative" summaries in the spreads MUST BE IN ENGLISH ONLY (this is fed to the English image generation model).
+            - The "title", "storyCore", "moral", "heroDesire", and "mainChallenge" fields MUST be strictly in **${targetLang}**.
+            - EVERYTHING ELSE MUST BE IN ENGLISH ONLY! This includes ALL visual properties: "narrative" summaries, "setting", "timeOfDay", "highlightAction", "visualFocus", and especially the "primaryVisualAnchor". These fields are fed directly to an English-only Image Generation AI, so they must not contain ${targetLang} unless that is English.
             - Ensure the title is catchy and evocative in ${targetLang}.
             
             ${storyData.occasion ? `**SPECIAL OCCASION (CRITICAL):**
