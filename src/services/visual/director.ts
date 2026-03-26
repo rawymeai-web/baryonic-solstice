@@ -78,6 +78,11 @@ export async function generateVisualPlan(
                - Good: "A brown corrugated cardboard box with torn flaps, glowing gently from the inside"
                - The Primary Visual Anchor (${blueprint.foundation?.primaryVisualAnchor || "Hero's item"}) MUST be explicitly included in this array if it is present in the scene.
 
+            13. **NO REPETITION ALLOWED (CRITICAL VISUAL PROGRESSION):**
+               - The \`keyActions\` MUST distinctly change and progress from spread to spread.
+               - DO NOT copy-paste the same \`keyActions\` or \`pose_orientation\` across multiple spreads. 
+               - Every single spread MUST showcase a distinctly unique physical action based on its respective script segment. If the hero is sitting in spread 1, they should be doing something different in spread 2.
+
             OUTPUT JSON (Must contain ${script.length + 1} items in "spreads" array):
             {
                 "visualAnchors": {
