@@ -51,18 +51,25 @@ export async function generatePrompts(
 
             let safeAction = spread.keyActions || blueprintFocus || "Hero stands heroically";
             let safeSetting = spread.setting || "";
-            try {
-                if (childName) {
-                    const r1 = new RegExp(`\\b${childName}\\b`, 'gi');
-                    safeAction = safeAction.replace(r1, '[IMAGE 1]');
-                    safeSetting = safeSetting.replace(r1, '[IMAGE 1]');
+            
+            // Unicode-safe Name Wrapper
+            const applyNameMask = (text: string, name: string, mask: string) => {
+                if (!name || name.length < 2) return text;
+                try {
+                    const safeName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const r = new RegExp(`(^|[^\\p{L}])(${safeName})(?=[^\\p{L}]|$)`, 'giu');
+                    return text.replace(r, `$1${mask}`);
+                } catch {
+                    return text.split(name).join(mask); // Fallback
                 }
-                if (secondCharacter?.name) {
-                    const r2 = new RegExp(`\\b${secondCharacter.name}\\b`, 'gi');
-                    safeAction = safeAction.replace(r2, '[IMAGE 2]');
-                    safeSetting = safeSetting.replace(r2, '[IMAGE 2]');
-                }
-            } catch (e) { }
+            };
+            
+            safeAction = applyNameMask(safeAction, childName, '[IMAGE 1]');
+            safeSetting = applyNameMask(safeSetting, childName, '[IMAGE 1]');
+            if (secondCharacter?.name) {
+                safeAction = applyNameMask(safeAction, secondCharacter.name, '[IMAGE 2]');
+                safeSetting = applyNameMask(safeSetting, secondCharacter.name, '[IMAGE 2]');
+            }
 
             const isCover = spread.spreadNumber === 0;
             const oppSide = isCover ? (isAr ? 'right' : 'left') : opp.toLowerCase();
