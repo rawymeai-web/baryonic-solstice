@@ -45,7 +45,7 @@ export async function describeSubject(imageBase64: string): Promise<string> {
     return withRetry(async () => {
         try {
             const model = ai().getGenerativeModel({ 
-                model: 'gemini-2.0-flash-thinking-preview',
+                model: 'gemini-2.0-flash',
                 generationConfig: { responseMimeType: 'application/json' }
             });
             const response = await model.generateContent([
@@ -226,7 +226,7 @@ ${masterGuardrails}`;
 
             // Using the Vision-Capable Image Generation Model
             const model = ai().getGenerativeModel({
-                model: 'gemini-3-pro-image-preview'
+                model: 'gemini-2.0-flash-exp'
             });
 
             console.log("Calling model.generateContent...");
@@ -349,7 +349,7 @@ ${sanitizedPrompt}
 
         // 2. Call Gemini Vision Model
         const model = ai().getGenerativeModel({
-            model: 'gemini-3-pro-image-preview'
+            model: 'gemini-2.0-flash-exp'
         });
 
         // Ensure generationConfig explicitly filters out invalid fields for this model version
