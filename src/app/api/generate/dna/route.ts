@@ -19,26 +19,27 @@ export async function POST(req: Request) {
             ? describeSubject(secondCharacter.imageBases64[0]) 
             : Promise.resolve("");
 
-        const primaryPromise = generateThemeStylePreview(
-            mainCharacter,
-            undefined, // Do NOT combine them!
-            theme, style, age, undefined, occasion, customGoal
-        );
-
-        const secondaryPromise = (secondCharacter && secondCharacter.imageBases64 && secondCharacter.imageBases64.length > 0)
-            ? generateThemeStylePreview(
-                secondCharacter as any,
-                undefined,
-                theme, style, secondCharacter.age || age, undefined, occasion, customGoal
-            )
-            : Promise.resolve(null);
-
-        // Await all 4 promises concurrently (cuts time from ~50s down to ~20s)
-        const [description, secondDescription, primaryResult, secondaryResult] = await Promise.all([
+        // Step 1: Generate textual physical descriptions concurrently (2 API calls)
+        const [description, secondDescription] = await Promise.all([
             desc1Promise,
-            desc2Promise,
-            primaryPromise,
-            secondaryPromise
+            desc2Promise
+        ]);
+
+        // Step 2: Generate rendering previews concurrently AFTER identity is done (2 API calls)
+        // This avoids hitting Google API with 4 massive concurrent multimodal requests which causes throttling/504s.
+        const [primaryResult, secondaryResult] = await Promise.all([
+            generateThemeStylePreview(
+                mainCharacter,
+                undefined, // Do NOT combine them!
+                theme, style, age, undefined, occasion, customGoal
+            ),
+            (secondCharacter && secondCharacter.imageBases64 && secondCharacter.imageBases64.length > 0)
+                ? generateThemeStylePreview(
+                    secondCharacter as any,
+                    undefined,
+                    theme, style, secondCharacter.age || age, undefined, occasion, customGoal
+                )
+                : Promise.resolve(null)
         ]);
 
         return NextResponse.json({
