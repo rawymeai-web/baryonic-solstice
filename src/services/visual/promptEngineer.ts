@@ -162,13 +162,20 @@ export async function generatePrompts(
             }
 
             // 5. Inject Occasion / Elements
+            // Bug 4: sanitize ALL text fields before embedding in the image prompt schema
+            // so Arabic theme text, old anchors from previous orders, etc. cannot leak in.
             if (occasion || extraItems || visualAnchor || theme) {
                 promptJson.objects.push({
                     id: "obj_extras",
                     label: "Thematic Props",
                     category: "Props",
                     relationships: [{ type: "integrated naturally", target_object_id: "obj_hero_1" }],
-                    reconstruction_notes: [theme || "", occasion || "", extraItems || "", visualAnchor || ""].filter(Boolean)
+                    reconstruction_notes: [
+                        sanitizePrompt(theme || ""),
+                        sanitizePrompt(occasion || ""),
+                        sanitizePrompt(extraItems || ""),
+                        sanitizePrompt(visualAnchor || "")
+                    ].filter(Boolean)
                 } as any);
             }
 
