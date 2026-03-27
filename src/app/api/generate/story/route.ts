@@ -1,21 +1,20 @@
-export const maxDuration = 60;
+﻿export const maxDuration = 60;
 
 import { NextResponse } from 'next/server';
-import { generateBlueprint } from '@/services/story/blueprintAgent';
 import { generateStoryDraft } from '@/services/story/narrativeAgent';
 import { runEditorPass } from '@/services/story/editorAgent';
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { storyData, language, blueprint } = body;
+        const { storyData, language, blueprint, spreadCount = 8 } = body;
 
         if (!storyData || !language || !blueprint) {
             return NextResponse.json({ error: "Missing story data, language, or blueprint" }, { status: 400 });
         }
 
         // 1. Generate Narrative (Raw Draft) using the provided Blueprint
-        const narrativeResponse = await generateStoryDraft(blueprint, language, storyData.childName, storyData.childGender, storyData.secondCharacter);
+        const narrativeResponse = await generateStoryDraft(blueprint, language, storyData.childName, storyData.childGender, storyData.secondCharacter, Number(spreadCount));
         if (narrativeResponse.log.status === 'Failed') {
             return NextResponse.json({ error: "Narrative generation failed", details: narrativeResponse.log.outputs.error }, { status: 500 });
         }
@@ -30,8 +29,8 @@ export async function POST(req: Request) {
         );
 
         return NextResponse.json({
-            rawScript: narrativeResponse.result, // Send RAW script
-            script: editorResponse.result, // Send the EDITED script
+            rawScript: narrativeResponse.result,
+            script: editorResponse.result,
             logs: [narrativeResponse.log, editorResponse.log]
         });
 
@@ -40,4 +39,3 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
-

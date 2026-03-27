@@ -1,4 +1,4 @@
-export const maxDuration = 60;
+﻿export const maxDuration = 60;
 
 import { NextResponse } from 'next/server';
 import { generateVisualPlan } from '@/services/visual/director';
@@ -6,13 +6,13 @@ import { generateVisualPlan } from '@/services/visual/director';
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { script, blueprint, visualDNA } = body;
+        const { script, blueprint, visualDNA, spreadCount = 8 } = body;
 
         if (!script || !blueprint || !visualDNA) {
             return NextResponse.json({ error: "Missing required inputs for visual planning" }, { status: 400 });
         }
 
-        const planResponse = await generateVisualPlan(script, blueprint, visualDNA);
+        const planResponse = await generateVisualPlan(script, blueprint, visualDNA, Number(spreadCount));
 
         return NextResponse.json({
             plan: planResponse.result,
@@ -24,4 +24,3 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
-

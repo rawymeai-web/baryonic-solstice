@@ -1,17 +1,17 @@
-export const maxDuration = 60;
+﻿export const maxDuration = 60;
 import { NextResponse } from 'next/server';
 import { generateBlueprint } from '@/services/story/blueprintAgent';
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { storyData, language } = body;
+        const { storyData, language, spreadCount = 8 } = body;
 
         if (!storyData || !language) {
             return NextResponse.json({ error: "Missing story data or language" }, { status: 400 });
         }
 
-        const blueprintResponse = await generateBlueprint(storyData, language as 'en' | 'ar');
+        const blueprintResponse = await generateBlueprint(storyData, language as 'en' | 'ar', Number(spreadCount));
         if (blueprintResponse.log.status === 'Failed') {
             return NextResponse.json({ error: "Blueprint generation failed", details: blueprintResponse.log.outputs.error }, { status: 500 });
         }
@@ -26,4 +26,3 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
-

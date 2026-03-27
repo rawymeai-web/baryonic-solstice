@@ -7,7 +7,8 @@ import { StoryBlueprint, SpreadDesignPlan, WorkflowLog } from '../../types';
 export async function generateVisualPlan(
     script: { text: string }[],
     blueprint: StoryBlueprint,
-    visualDNA: string
+    visualDNA: string,
+    spreadCount: number = 8
 ): Promise<{ result: SpreadDesignPlan, log: WorkflowLog }> {
 
     const startTime = Date.now();
@@ -27,7 +28,7 @@ export async function generateVisualPlan(
     
             INSTRUCTIONS:
             1. **DESIGN THE COVER (Spread 0):** This is the most critical art. It must be a continuous 16:9 panoramic scene. Assign the characters to one side ("Right" or "Left"), and leave the other side explicitly as uncluttered negative space for the title. **CRITICAL STORYTELLING MANDATE:** The cover MUST tell a story. Do not just have the characters standing and posing. They must be actively engaged in an exciting, story-representative action (e.g., exploring, running from danger, casting a spell).
-            2. **DESIGN THE SPREADS (1-${script.length}):** You MUST generate a spread for EVERY text segment in the script. Total spreads needed: ${script.length} + 1 (Cover).
+            2. **DESIGN THE SPREADS (1-${spreadCount}):** You MUST generate a spread for EVERY text segment in the script. Total spreads needed: ${spreadCount} + 1 (Cover).
             3. **INJECT Visual DNA:** If DNA says "Space/Neon", the scene MUST be "Space/Neon".
                 - **Follow Visual DNA:** The plan MUST prioritize the rendering technique and mood defined in the "Visual DNA" input.
                 - **Cohesive Mood:** Ensure the emotional resonance matches the story beat while staying within the selected art style.
@@ -83,7 +84,7 @@ export async function generateVisualPlan(
                - DO NOT copy-paste the same \`keyActions\` or \`pose_orientation\` across multiple spreads. 
                - Every single spread MUST showcase a distinctly unique physical action based on its respective script segment. If the hero is sitting in spread 1, they should be doing something different in spread 2.
 
-            OUTPUT JSON (Must contain ${script.length + 1} items in "spreads" array):
+            OUTPUT JSON (Must contain exactly ${spreadCount + 1} items in "spreads" array: Cover [0] + Spreads 1–${spreadCount}):
             {
                 "visualAnchors": {
                     "heroTraits": "...",
@@ -114,7 +115,7 @@ export async function generateVisualPlan(
                         "spreadNumber": 1,
                         "setting": "..."
                     }
-                    // CRITICAL: YOU MUST OUTPUT EXACTLY ${script.length + 1} SPREAD OBJECTS (COVER [0] + SPREADS 1 THROUGH ${script.length}) IN THIS ARRAY. DO NOT TRUNCATE OR DUPLICATE THEM.
+                    // CRITICAL: YOU MUST OUTPUT EXACTLY ${spreadCount + 1} SPREAD OBJECTS (COVER [0] + SPREADS 1 THROUGH ${spreadCount}) IN THIS ARRAY. DO NOT TRUNCATE OR DUPLICATE THEM.
                 ]
             }
             `;
@@ -133,7 +134,7 @@ export async function generateVisualPlan(
             console.log("Parsed Plan Spreads:", plan.spreads?.length || 0);
             console.log("Expected Spreads:", script.length);
 
-            if (!Validator.validateVisualPlan(plan, script.length)) {
+            if (!Validator.validateVisualPlan(plan, spreadCount)) {
                 console.error("Validation Failed. Plan:", JSON.stringify(plan, null, 2));
                 throw new Error("Visual Plan has insufficient spreads.");
             }

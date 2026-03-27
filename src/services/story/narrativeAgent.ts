@@ -9,7 +9,8 @@ export async function generateStoryDraft(
     language: Language,
     childName: string,
     childGender?: 'boy' | 'girl',
-    secondCharacter?: any
+    secondCharacter?: any,
+    spreadCount: number = 8
 ): Promise<{ result: { text: string }[], log: WorkflowLog }> {
 
     const startTime = Date.now();
@@ -58,16 +59,16 @@ export async function generateStoryDraft(
             - Structure: STRICTLY follow the Blueprint 'spreads'. Do not invent new plot points.
             - Language: ${targetLang}.
             
-            **THE 8-PART STRUCTURAL FRAMEWORK (MANDATORY TONE GUIDES):**
+            **THE ${spreadCount}-PART STRUCTURAL FRAMEWORK (MANDATORY TONE GUIDES):**
             You must write the text for each spread to match its exact psychological purpose in the sequence:
             - **Spread 1 (Intro):** Establish the Normal World, Setting, and point clearly to the Hero's Desire.
             - **Spread 2 (Catalyst):** Introduce the Problem/Obstacle that disrupts the Normal World.
             - **Spread 3 (First Attempt):** Show the Hero actively trying to solve the problem and failing/struggling.
             - **Spread 4 (Complication):** The situation gets harder or a secondary issue/character arises.
             - **Spread 5 (Lowest Point):** The hardest emotional beat. The Hero feels sad, hopeless, or stuck. 
-            - **Spread 6 (Insight):** The "Aha!" moment. A shift in strategy or realization.
-            - **Spread 7 (Final Attempt):** The Hero tries the new strategy and succeeds.
-            - **Spread 8 (Resolution):** You MUST explicitly state the moral of the story in the final sentences so a child perfectly understands the lesson (e.g., "And they learned that sharing makes playing more fun!"). Callback to the beginning to show growth.
+            - **Spread ${Math.ceil(spreadCount * 0.75)} (Insight):** The "Aha!" moment. A shift in strategy or realization.
+            - **Spread ${spreadCount - 1} (Final Attempt):** The Hero tries the new strategy and succeeds.
+            - **Spread ${spreadCount} (Resolution):** You MUST explicitly state the moral of the story in the final sentences so a child perfectly understands the lesson (e.g., "And they learned that sharing makes playing more fun!"). Callback to the beginning to show growth.
     
             **CRITICAL QUALITY GUIDELINES (Must Follow):**
             1. **STORYBOOK PROSE (BE CREATIVE & SENSORY):**
@@ -169,7 +170,7 @@ export async function generateStoryDraft(
             OUTPUT JSON SCHEMA:
             [
                 { "spreadNumber": 1, "text": "String" },
-                ... (8 items)
+                ... (${spreadCount} items total, spreadNumber 1 through ${spreadCount})
             ]
             `;
 

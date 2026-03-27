@@ -5,7 +5,8 @@ import { StoryData, StoryBlueprint, WorkflowLog } from '../../types';
 
 export async function generateBlueprint(
     storyData: StoryData,
-    language: 'en' | 'ar'
+    language: 'en' | 'ar',
+    spreadCount: number = 8
 ): Promise<{ result: StoryBlueprint, log: WorkflowLog }> {
 
     const startTime = Date.now();
@@ -90,18 +91,20 @@ export async function generateBlueprint(
             - Example: Hero is afraid to ask for help → Obstacle can only be solved with help → Moral is about courage to ask.
             - DO NOT invent a conflict unrelated to who the hero IS internally.
 
-            **NARRATIVE ARC REQUIREMENTS (8 SPREADS — STRICT SKELETON):**
-            1. **Spread 1 (Normal World):** Establish the hero's name, their ONE key internal trait, and a specific desire. MUST show the hero in their most comfortable, familiar setting. Set a clear physical ANCHOR IMAGE (location + object) — this will be echoed in Spread 8.
+            **NARRATIVE ARC REQUIREMENTS (${spreadCount} SPREADS — STRICT SKELETON):**
+            - You MUST generate EXACTLY ${spreadCount} spread objects.
+            - Do NOT produce fewer or more than ${spreadCount}.
+            1. **Spread 1 (Normal World):** Establish the hero's name, their ONE key internal trait, and a specific desire. MUST show the hero in their most comfortable, familiar setting. Set a clear physical ANCHOR IMAGE (location + object) — this will be echoed in Spread ${spreadCount}.
             2. **Spread 2 (Catalyst):** The problem/obstacle appears and directly targets the hero's flaw. The hero's desire is now blocked.
             3. **Spread 3 (First Attempt):** Hero tries their default approach. It fails or makes things worse BECAUSE of their internal flaw.
             4. **Spread 4 (Complication):** The situation escalates. A supporting character may appear. Things get harder, not easier.
             5. **Spread 5 (Near-Quit Beat — CRITICAL):** The hero's lowest emotional point. They MUST explicitly consider giving up. This beat must be written as: (a) the physical result of the failure, and (b) a quiet moment where the hero sits/stops and nearly decides to quit. The solution MUST NOT appear here.
-            6. **Spread 6 (Insight):** The "Aha!" moment. Something small the hero NOTICES (not something told to them) triggers a realization. This must be a direct logical response to the flaw revealed in Spread 3.
-            7. **Spread 7 (Final Attempt):** Hero uses their new approach/insight. They succeed through their own effort. The supporting character may assist but CANNOT be the one who solves it.
-            8. **Spread 8 (Resolution + Echo):** MUST return to the EXACT same location/setting as Spread 1 (the anchor image), but SHOW THE CHANGE through the hero's body language and environment. Explicitly state the moral in a simple, earned final sentence.
+            6. **Spread ${Math.ceil(spreadCount * 0.75)} (Insight):** The "Aha!" moment. Something small the hero NOTICES (not something told to them) triggers a realization. This must be a direct logical response to the flaw revealed in Spread 3.
+            7. **Spread ${spreadCount - 1} (Final Attempt):** Hero uses their new approach/insight. They succeed through their own effort. The supporting character may assist but CANNOT be the one who solves it.
+            8. **Spread ${spreadCount} (Resolution + Echo):** MUST return to the EXACT same location/setting as Spread 1 (the anchor image), but SHOW THE CHANGE through the hero's body language and environment. Explicitly state the moral in a simple, earned final sentence.
 
             **HERO DESIRE CONSISTENCY (REQUIRED):**
-            - The hero's desire from Spread 1 MUST be the thing resolved in Spread 7 or 8.
+            - The hero's desire from Spread 1 MUST be the thing resolved in Spread ${spreadCount - 1} or ${spreadCount}.
             - Do NOT change the hero's core goal mid-story. The "Moral" is what they LEARN; the "Desire" is what they WANT.
             - The moral MUST be the direct answer to the hero's internal flaw, not a generic life lesson.
 
@@ -109,7 +112,7 @@ export async function generateBlueprint(
             - The plot MUST be EXTREMELY SIMPLE and physically localized to ONE core action.
             - Do not invent complex societal stakes, multiple concurrent problems, or over-complicated sequences (no "understanding animals and racing cheetahs" at the same time).
             - Keep the action grounded, direct, and focused strictly on the age group. The simpler, the better!
-            - The conflict must be personal to the child and easily solvable within an 8-point physical progression.
+            - The conflict must be personal to the child and easily solvable within a ${spreadCount}-point physical progression.
             
             **CHARACTER ROLE RULES:**
             - **Limit:** Max 1 Support Character introduced per spread.
@@ -212,7 +215,7 @@ export async function generateBlueprint(
                             "spreadNumber": 2,
                             "purpose": "..."
                         }
-                        // CRITICAL INSTRUCTION: YOU MUST OUTPUT EXACTLY 8 SPREAD OBJECTS (SPREADS 1 THROUGH 8) IN THIS ARRAY.
+                        // CRITICAL INSTRUCTION: YOU MUST OUTPUT EXACTLY ${spreadCount} SPREAD OBJECTS (SPREADS 1 THROUGH ${spreadCount}) IN THIS ARRAY.
                     ]
                 }
             }
