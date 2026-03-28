@@ -25,6 +25,9 @@ export function sanitizePrompt(text: string, namesToKeep: string[] = []): string
 
     // 3. Remove non-ASCII characters (this catches Arabic and other symbols that crash some models)
     sanitized = sanitized.replace(/[^\x00-\x7F]/g, '');
+    
+    // 3.5. Strip solitary punctuation that gets left behind (e.g. Arabic phrase with an English period leaves a single '.')
+    sanitized = sanitized.replace(/^[.,\s]+|[.,\s]+$/g, '');
 
     // 4. Remove common character names if they exist in the prompt text
     // (User requested sticking to IMAGE 1 / IMAGE 2 to reduce confusion)

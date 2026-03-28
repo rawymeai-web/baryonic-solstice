@@ -76,8 +76,14 @@ export async function generatePrompts(
             safeSetting = safeSetting.replace(/\[Hero 1\]/gi, '[IMAGE 1]').replace(/\[Hero 2\]/gi, '[IMAGE 2]');
 
             const isCover = spread.spreadNumber === 0;
-            const oppSide = isCover ? (isAr ? 'right' : 'left') : opp.toLowerCase();
-            const coverSubjectSide = isAr ? 'left' : 'right';
+            // The empty space (where the title will go) MUST be the front cover.
+            // English Front Cover = right. Arabic Front Cover = left.
+            const emptySide = isAr ? 'left' : 'right';
+            const oppSide = isCover ? emptySide : opp.toLowerCase();
+            
+            // The Subject (Hero) MUST be on the back cover to not overlap the title.
+            // English Back Cover = left. Arabic Back Cover = right.
+            const coverSubjectSide = isAr ? 'right' : 'left';
             const finalSubjectSide = isCover ? coverSubjectSide : subjectSide.toLowerCase();
 
             const secComp = secondCharacter 
