@@ -416,6 +416,7 @@ export interface VisionPromptSchema {
         environment_type?: string;
         time_of_day?: string;
         weather_atmosphere?: string;
+        environment_constraint?: string; // Grounding constraint to prevent environment drift (e.g. tropical backyard)
         lighting?: {
             source?: string;
             direction?: string;
