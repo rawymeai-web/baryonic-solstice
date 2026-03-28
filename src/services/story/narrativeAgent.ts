@@ -93,8 +93,17 @@ export async function generateStoryDraft(
                - **DISPOSABLE SUB-CHARACTERS:** Any secondary characters (e.g., animals, villagers, guides) that are NOT the main hero(es) should ideally belong to a single setting. When the hero leaves that location in the next spread, leave the secondary character behind and introduce someone new if needed. Do NOT drag random sub-characters across multiple spreads.
             
             **5. INTRODUCTION PROTOCOL (CRITICAL):**
-            - **Spread 1 (The Hero & World):** You MUST explicitly state the hero's name (${childName}) in the first sentence. You MUST explicitly describe the physical location/setting so the reader knows where the story begins. Focus on their emotions and personality (e.g., curious, dreamy). STRICTLY DO NOT discuss ANY physical body traits, clothing, or skin colors.
-            - **New Entry:** If a later spread introduces a new character (e.g. Zara, the Town Elder), you MUST introduce them explicitly (who they are, or their relation to the hero) BEFORE they take an action. STRICTLY DO NOT invent physical traits or clothing for them either.
+            - **Spread 1 (The Hero & World):** Open with a VIVID SCENE, ACTION, or EMOTION that drops the reader right into the story world. The hero's name (${childName}) MUST appear naturally within the first 1-2 sentences, but NEVER as the subject of the very first sentence as a bare factual introduction.
+            - STRICTLY FORBIDDEN OPENING PATTERNS — NEVER write these:
+              - ❌ BAD (English): "Her name is ${childName}. ${childName} likes watching ants..."
+              - ❌ BAD (Arabic): "اسمها ${childName}. تحب ${childName} مراقبة النمل..."
+              - ❌ BAD: Any sentence that starts with "اسمها/اسمه" or "Her name is / His name is".
+            - REQUIRED OPENING PATTERNS — Use one of these approaches:
+              - ✅ GOOD: Open with the setting/world first, then the hero's name appears in it. (e.g., "Deep in the garden, where the grass grew tall and the beetles held secret meetings, ${childName} knelt down and pressed her ear to the earth.")
+              - ✅ GOOD (Arabic): "في أعماق الحديقة، حيث الأعشاب طويلة وصوت الحشرات لا يكاد يُسمع، كانت ${childName} تركع وتضع أذنها قرب التراب..."
+              - ✅ GOOD: Open with an action or emotion the hero is feeling at the start of the adventure, then introduce their name in the next sentence.
+            - Focus on their personality and emotions (e.g., curious, dreamy). STRICTLY DO NOT discuss ANY physical body traits, clothing, or skin colors.
+            - **New Entry:** If a later spread introduces a new character (e.g. Zara, the Town Elder), you MUST introduce them explicitly before they act. STRICTLY DO NOT invent physical traits or clothing for them either.
             
             ${secondCharacter ? `**DUAL HERO PROTOCOL (STRICT):**
             - The companion ${secondCharacter.name} MUST be explicitly introduced by name in Spread 1 or Spread 2 alongside the hero. You MUST write a clear, warm welcome sentence giving 1-2 personality traits (e.g., "And right by her side was her sister Farah — the one who always knew how to listen."). Do NOT have them silently appear mid-scene with just a comma clause.
