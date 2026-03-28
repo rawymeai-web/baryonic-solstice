@@ -14,180 +14,180 @@ const themeLibrary: Record<string, ThemeContent> = {
         heritageContext: "The Vast Arabian Night & Bedouin Hospitality.",
         visualStyle: "Indigo/gold palette, Mashrabiya patterns, glowing crescent moon.",
         goals: [
-            "To prepare for the great Dream Festival.",
-            "To recharge magic powers for tomorrow.",
-            "To catch the falling stars before they fade.",
-            "To find the softest cloud for the Moon to rest on.",
-            "To visit the Castle of Sleep."
+            "To tuck the baby moon into its cloud blanket before sunrise.",
+            "To collect all the runaway stars and return them to the night sky.",
+            "To find the magical lullaby hidden inside the old Dallah coffee pot.",
+            "To race the sandman to the dreaming dunes before the desert cools.",
+            "To light the lanterns of the Dream Souq before the night children arrive."
         ],
         challenges: [
-            "The 'Noisy Giggles' keeping everyone awake.",
-            "The Tickle-Monster lurking under the bed.",
-            "The bright lights of the Firefly Parade.",
-            "A lost lullaby that needs to be sung.",
-            "The excitement of tomorrow's big race."
+            "The 'Noisy Giggles' that bounce around the tent and keep everyone awake.",
+            "A mischievous djinn who hides pillows under the palm trees.",
+            "The lantern light that keeps luring curious desert butterflies inside.",
+            "A baby camel that lost its sleepy song and needs comforting.",
+            "The excitement of tomorrow's big pearl diving trip."
         ]
     },
     'val-respect': {
         heritageContext: "The Majlis and the Wisdom of Roots.",
         visualStyle: "Cedar wood textures, Zellige tiles, golden Dallah (coffee pots).",
         goals: [
-            "To learn the secret of the 'Oldest Star'.",
-            "To help the Ancient Living Tree.",
-            "To listen to the Mountain's story.",
-            "To unlock the Library of Echoes.",
-            "To find the path that only the wise know."
+            "To carry the Dallah of respect to the elder of the ancient Majlis.",
+            "To find the wise old turtle who guards the secrets of the wadi.",
+            "To help Jiddo (grandfather) repair the treasure chest of family memories.",
+            "To listen to the Sidr tree's story before the desert wind carries it away.",
+            "To earn the golden thobe pin given only to the most respectful young one."
         ],
         challenges: [
-            "Listening quietly to hear the whispers of history.",
-            "Waiting patiently for the 'Time Turtle'.",
-            "Understanding a riddle spoken in an old language.",
-            "Showing respect to the Guardian of the Gate.",
-            "Helping an elder creature cross the River of Time."
+            "Staying patient and quiet during a long and important elder's story.",
+            "The 'Interruption Imps' who whisper distracting things during the Majlis.",
+            "Crossing the river of echoes without repeating unkind words.",
+            "Learning to greet the Mountain Guardian in the ancient tongue.",
+            "Waiting for the slowest member of the caravan without rushing ahead."
         ]
     },
     'val-teamwork': {
         heritageContext: "The Bond of the Tribe and the Pearl Divers.",
         visualStyle: "Coastal blues, nautical ropes, sparkling pearl finishes.",
         goals: [
-            "To combine powers to unlock the Magic Gate.",
-            "To sail the 'Double-Deck' ship across the sky.",
-            "To balance the Great Scales of Harmony.",
-            "To solve the Puzzle of Two Minds.",
-            "To build a bridge that meets in the middle."
+            "To haul up the giant net full of glowing pearls together before the tide turns.",
+            "To sail the small dhow safely home by working the sails as a team.",
+            "To build a Barasti shelter before the evening tide comes in.",
+            "To solve the puzzle of the twin lighthouses flashing in the Arabian Gulf.",
+            "To carry the Falaj water channel stones together to save the oasis garden."
         ],
         challenges: [
-            "Realizing that two magic wands are stronger than one.",
-            "Learning to row in the same direction.",
-            "Sharing the captain's hat.",
-            "Listening to each other's ideas.",
-            "The 'Echo Canyon' where you must speak as one."
+            "Learning to row the dhow in the same direction at the same time.",
+            "Sharing the ship captain's hat fairly so everyone feels important.",
+            "A sudden Gulf squall that mixes everyone's jobs on the boat.",
+            "Agreeing on which route across the coral reef is the safest.",
+            "The 'Solo Spirit' — a pesky little voice that says 'I can do it faster alone!'"
         ]
     },
     'val-bravery': {
         heritageContext: "The Bravery of the Desert Knight.",
-        visualStyle: "Pristine whites, tech-futurism mixed with soft nursery colors.",
+        visualStyle: "Pristine whites, golden falcon wings, starlit desert sky.",
         goals: [
-            "To defeat the 'Shadow Spots' on the Crystal Shield.",
-            "To polish the Pearl of Brightness.",
-            "To visit the Healer of Gems.",
-            "To stand guard at the White Castle.",
-            "To uncover the smile of the Stone Statue."
+            "To climb to the top of the tall sand dune to rescue the falcon's lost feather.",
+            "To speak up at the Majlis and share an important idea with the elders.",
+            "To walk through the dark date palm grove to save the baby hedgehog.",
+            "To try the new food at the big family feast without making a face.",
+            "To be the first one to jump into the cool, clear wadi water."
         ],
         challenges: [
-            "Standing still while the 'Healing Wizard' works.",
-            "The 'Buzzing Bee' sound of the polisher.",
-            "Keeping the mouth open like a hippo.",
-            "The bright light of the Truth Sun.",
-            "Trusting the Healer's gentle hand."
+            "The long shadows in the date grove that look a bit like giants at night.",
+            "The crowd of cousins all watching and waiting at the Majlis.",
+            "Knees that wobble at the edge of the high dune.",
+            "A stomach that feels like it has sand inside it before the big moment.",
+            "The little voice that says 'what if I'm not brave enough?'"
         ]
     },
     'val-honesty': {
         heritageContext: "The Clarity of the Oasis Spring.",
         visualStyle: "Crystal clear water reflections, bright sunbeams, lush palm greenery.",
         goals: [
-            "To see one's true reflection in the Sacred Pool.",
-            "To find the clear crystal that never fogs.",
-            "To speak the password that opens the Glass Door.",
-            "To return the 'Jewel of Trust' to its pedestal.",
-            "To wash away the 'Grey Paint' of a lie."
+            "To return the shopkeeper's extra change at the old Souq before closing time.",
+            "To tell the truth about the broken falcon perch to the keeper.",
+            "To find the crystal-clear spring by following the honest path, not the shortcut.",
+            "To speak the true words that unlock the Door of the Oasis Garden.",
+            "To clean the muddy reflection in the Falaj so the truth can shine through."
         ],
         challenges: [
-            "The 'Fog of Little Lies' that hides the path.",
-            "The heavy weight of a secret in the pocket.",
-            "Admitting a mistake to the Guardian.",
-            "The fear that the truth might hurt.",
-            "The tempting 'Short-Cut' that leads nowhere."
+            "The 'Fog of Little Lies' that blurs the path through the desert.",
+            "The tempting shortcut that promises to hide the broken thing forever.",
+            "The heavy, heavy weight of a secret carried in a small pocket all day long.",
+            "The fear that telling the truth will mean missing the camel race.",
+            "The 'maybe they won't notice' whisper that floats on the hot desert breeze."
         ]
     },
     'val-helping': {
         heritageContext: "Planting the Ghaf Tree (The National Tree of Giving).",
         visualStyle: "Earthy tones, detailed Ghaf leaf textures, warm communal energy.",
         goals: [
-            "To bring gathered light to the Dark Valley.",
-            "To water the thirsty flowers of the Wasteland.",
-            "To fix the broken wing of the Wind-Bird.",
-            "To build a shelter for the Rain-Sprites.",
-            "To share the 'Bread of Life' with the hungry."
+            "To water every single thirsty Ghaf tree in the neighbourhood before sunset.",
+            "To bring the heavy shopping bags home for the tired neighbour, Um Khalid.",
+            "To help rebuild the sand castle that the little ones worked so hard on.",
+            "To deliver fresh dates to every home on the lane during Ramadan.",
+            "To dig the little channel so the Falaj water reaches the struggling garden."
         ],
         challenges: [
-            "The basket of light is heavy and the path is long.",
-            "The sun is hot and the water is scarce.",
-            "Giving up play-time to help another.",
-            "Getting muddy hands to do good work.",
-            "The 'Selfish Stone' that blocks the way."
+            "The water bucket is very heavy and the garden is very far away.",
+            "The afternoon sun is blazing hot on the helping-trail.",
+            "Choosing to help instead of going to play football in the courtyard.",
+            "Bringing enough dates for everyone without eating too many on the way.",
+            "Getting dusty hands digging the channel right before the family arrives."
         ]
     },
     'val-tidy': {
         heritageContext: "Protecting the Beauty of our Land.",
         visualStyle: "Clean geometric compositions, soft pastel 'organized' spaces.",
         goals: [
-            "To banish the 'Chaos Gremlins' from the castle.",
-            "To sort the treasures of the Dragon's Cave.",
-            "To align the books in the Infinite Library.",
-            "To clear the path for the King's Parade.",
-            "To find the lost Crown hidden in the mess."
+            "To sort all the toys and books before Teta (grandmother) comes to visit.",
+            "To collect every piece of litter from the beautiful Corniche promenade.",
+            "To organize the colourful spice jars in the kitchen Souq cabinet.",
+            "To fold all the prayer rugs neatly before the call to prayer echoes.",
+            "To return every storytelling carpet to its rightful scroll in the library tent."
         ],
         challenges: [
-            "Finding the rightful place for every magical artifact.",
-            "The 'Dust Bunnies' that multiply when you look away.",
-            "The distraction of finding old toys.",
-            "The 'Lazy Fog' that makes you want to stop.",
-            "Deciding what to keep and what to give away."
+            "The 'Chaos Djinn' that un-folds everything the moment you turn away.",
+            "Finding the right jar for each spice when they all look the same.",
+            "The irresistible distraction of an old toy found buried in the pile.",
+            "The Corniche is very long and there seems to be litter around every bend.",
+            "Folding the big, silky prayer rugs alone without them sliding away."
         ]
     },
     'val-sharing-toys': {
         heritageContext: "The Tradition of the Shared Plate (Karam).",
         visualStyle: "Warm candlelight, rich textile patterns (Sadu), generous portions.",
         goals: [
-            "To host a feast where the food never runs out.",
-            "To divide the Golden Apple so everyone gets a piece.",
-            "To let the 'Guest Knight' ride the favorite horse.",
-            "To open the 'Play-Chest' for the whole village.",
-            "To trade treasures in the Market of Joy."
+            "To set a beautiful shared Machboos feast where everyone gets a golden piece.",
+            "To let the visiting cousin borrow the favourite toy camel for the whole day.",
+            "To divide the box of special Ramadan sweets so every child gets their share.",
+            "To open the toy chest at Eid and let all the younger cousins choose first.",
+            "To trade Sadu woven friendship bracelets in the Market of Joy."
         ],
         challenges: [
-            "The fear that sharing means having less.",
-            "Wanting the shiniest gem for oneself.",
-            "The 'Mine-Mine Bird' squawking in the ear.",
-            "Seeing someone else play with your favorite wand.",
-            "Understanding that shared joy is double joy."
+            "The fear that sharing the toy camel means it might come back a little dented.",
+            "Looking at the cousin's happy face while they enjoy YOUR favourite sweet.",
+            "The 'Mine-Mine Bird' squawking very loudly in the ear during Eid morning.",
+            "Waiting to eat at the Machboos table until every single guest is seated.",
+            "Understanding that Karam (generosity) always fills your heart back up double."
         ]
     },
     'val-school': {
         heritageContext: "The House of Wisdom (Bayt al-Hikmah).",
         visualStyle: "Floating books, magical chalk dust, owl motifs, starlit libraries.",
         goals: [
-            "To pass the entrance exam for the 'Sky Academy'.",
-            "To learn the 'Spell of Curiosity'.",
-            "To make friends with the Class Dragon.",
-            "To find the 'Library of All Answers'.",
-            "To earn the badge of the 'Smart Explorer'."
+            "To solve the riddle written on the ancient Souq blackboard by the old teacher.",
+            "To earn the shining badge of the 'Curious Explorer' from the Owl Scholar.",
+            "To find the hidden Library of All Answers inside the old Arabian fort.",
+            "To teach the baby desert fox a new word before the school bell rings.",
+            "To collect all five golden seals of knowledge from the Bayt al-Hikmah."
         ],
         challenges: [
-            "The 'Butterfly of Distraction'.",
-            "Afraid to raise a hand to ask the Giant Owl a question.",
-            "The backpack feels heavy with new books.",
-            "Getting lost in the Hall of Hallways.",
-            "Missing the comfort of home."
+            "The 'Butterfly of Distraction' that flutters past the classroom window.",
+            "Feeling shy about raising a hand to ask the giant wise Owl a question.",
+            "The new school bag feeling very heavy with so many exciting new books.",
+            "Getting lost in the long, treasure-filled Hall of Learning Hallways.",
+            "Missing the warmth of home during the very first day of school."
         ]
     },
     'val-potty': {
         heritageContext: "The Rite of Passage to Growing Up.",
         visualStyle: "Gold and royal blue, sparkle effects, trumpets, clean white marble.",
         goals: [
-            "To become the King/Queen of the 'Golden Throne'.",
-            "To say goodbye to the 'Diaper Kingdom'.",
-            "To earn the 'Underwear of Big Kids'.",
-            "To defeat the 'Wetness Wizard'.",
-            "To master the 'Flush Button' power."
+            "To become the official Royal Guardian of the Golden Palace Throne.",
+            "To wave goodbye to the Nappy Kingdom and collect the Big Kid Crown.",
+            "To master the secret flushing waterfall power all by oneself.",
+            "To earn the sparkling 'Big Kid Thobe/Abaya' from the Growing-Up Fairy.",
+            "To light the celebratory Eid sparkler that only brave big kids can hold."
         ],
         challenges: [
-            "Listening to the body's secret signal.",
-            "Stopping play-time to run to the castle.",
-            "Waiting too long to start the journey.",
-            "The fear of the flushing sound.",
-            "Sitting still on the high seat."
+            "Learning to hear the body's very quiet and important secret signal in time.",
+            "Pausing an extremely exciting game of sand-castle building to answer the signal.",
+            "Sitting still on the tall grown-up seat without wobbling.",
+            "The surprising sound of the waterfall flush in the echoing marble bathroom.",
+            "Remembering to wash hands with the lovely rose-water soap after."
         ]
     },
 
@@ -196,198 +196,198 @@ const themeLibrary: Record<string, ThemeContent> = {
         heritageContext: "Falconry (Al Miqnas) and the Singing Dunes.",
         visualStyle: "Wide-angle desert vistas, soaring falcon silhouettes, orange/teal contrast.",
         goals: [
-            "To find the lost Heart of the Island.",
-            "To return the Baby Star to the sky.",
-            "To locate the missing key to the Secret Garden.",
-            "To find the compass that points to tomorrow.",
-            "To recover the stolen voice of the Songbird."
+            "To follow the falcon's circles in the sky and find the lost baby oryx.",
+            "To return the pearl necklace found in the sand to its rightful Souq owner.",
+            "To trace the caravan's tracks back across the dunes and find what was dropped.",
+            "To recover the singing dune's stolen echo and restore the desert's music.",
+            "To find the small brass compass that points the way home through the fog."
         ],
         challenges: [
-            "The clues are hidden in riddles by the Trickster Fox.",
-            "The path keeps shifting like a sand dune.",
-            "The wind blows the tracks away.",
-            "The item is guarded by a sleepy Dragon.",
-            "Looking in the dark without a lantern."
+            "The desert wind that sweeps the footprints away as fast as you can follow them.",
+            "A clever desert fox who speaks only in riddles and guards the clue.",
+            "The shimmering heat haze makes everything look far away and wobbly.",
+            "Night is falling fast and the dunes look different in the dark.",
+            "The falcon is circling — but which direction is it pointing today?"
         ]
     },
     'adv-mini-nature': {
         heritageContext: "The Hidden Aflaj in a Palm Grove.",
         visualStyle: "Dappled sunlight through palm leaves, sparkling water, vibrant dragonflies.",
         goals: [
-            "To discover a creature no one has ever seen.",
-            "To find the flower that blooms only once a year.",
-            "To collect a dewdrop from the Giant Leaf.",
-            "To follow the trail of the Golden Ant.",
-            "To meet the Spirit of the Palm Tree."
+            "To gently guide the lost dragonfly back to the cool Aflaj water channel.",
+            "To find the rare date palm flower that blooms only once a year at dawn.",
+            "To follow the trail of the golden dung beetle across the garden stones.",
+            "To help the desert hedgehog find a safe crossing over the garden wall.",
+            "To fill a tiny jar with morning dew from the biggest palm leaf for the fairies."
         ],
         challenges: [
-            "Being quiet enough to not scare the whispers away.",
-            "The tall grass is a maze of green.",
-            "The sun is setting fast.",
-            "Crossing the 'Great Puddle Ocean'.",
-            "Not stepping on the tiny houses of the bugs."
+            "Being absolutely quiet enough to not startle the shy little creatures away.",
+            "The tall grass around the Aflaj is like a soft, green maze of paths.",
+            "The dawn comes very early and the alarm of the morning birds is easy to sleep through.",
+            "Crossing the narrow Aflaj channel without getting the best shoes wet.",
+            "Not picking the flower — just looking closely and that is the real adventure."
         ]
     },
     'adv-city': {
         heritageContext: "The Sensory Magic of the Old Souq.",
         visualStyle: "Crimson saffron piles, glowing lanterns, bustling market energy.",
         goals: [
-            "To find the secret 'Magic Shop' hidden in the city.",
-            "To catch the 'Ghost Bus' that goes to the moon.",
-            "To gather all the ingredients for the Ultimate Feast.",
-            "To deliver the Mayor's lost hat.",
-            "To find the street that isn't on the map."
+            "To find the secret spice shop hidden behind the third blue door of the Old Souq.",
+            "To deliver the beloved Uncle's lost Khanjar back to his stall before closing.",
+            "To gather all seven Ramadan lantern colours from the different Souq lanes.",
+            "To catch the runaway gold thread ball before it tangles every carpet stall.",
+            "To find the street of the calligraphers that doesn't appear on any modern map."
         ],
         challenges: [
-            "The city streets keep changing like a maze.",
-            "The traffic lights turn into robots.",
-            "Navigating the crowd of busy giants.",
-            "The 'Impulse Buy' shop that traps you with toys.",
-            "The noise of the city drowns out the clues."
+            "The winding Souq alleyways that twist and turn and look the same.",
+            "The wonderful smell of cardamom and saffron that makes you want to stop and sniff forever.",
+            "Navigating politely through the crowd of tall, busy grown-up shoppers.",
+            "The beautiful toys in the shop windows that call out 'buy me! buy me!'",
+            "The old Souq closes exactly at sunset — and the sun is moving fast."
         ]
     },
     'adv-animal': {
         heritageContext: "The Mystery of the Arabian Oryx.",
         visualStyle: "Ethereal moonlight, silvery Oryx coats, glowing desert flora.",
         goals: [
-            "To learn the song of the Great Rain.",
-            "To become an honorary member of the Wolf Pack.",
-            "To deliver a message to the Wise Lion King.",
-            "To help the Elephant remember a forgotten memory.",
-            "To race the Cheetah to the edge of the world."
+            "To find the lost baby oryx calf and guide it safely back to its herd.",
+            "To carry fresh desert grass to the tired old Arabian horse at the farm.",
+            "To help the confused migratory bird find the right direction on its long journey.",
+            "To earn the trust of the wild desert fox by being patient and very still.",
+            "To call back the escaped racing camel before the big race in the morning."
         ],
         challenges: [
-            "The animals only speak in riddles.",
-            "Walking softly on the crunchiest leaves.",
-            "The River of Roars is hard to cross.",
-            "The fear of the sharp teeth.",
-            "Keeping up with the fast herd."
+            "Animals only communicate through gentle sounds and body language — no words.",
+            "Moving softly and slowly across the loud, crunchy desert pebble floor.",
+            "Crossing the wide wadi river that the animals use as their road.",
+            "Earning the animal's trust takes patience and sitting very, very still.",
+            "The desert is wide and the herd moves fast under the silver moon."
         ]
     },
     'adv-magic': {
         heritageContext: "1001 Nights & The Flying Carpet.",
         visualStyle: "High-altitude views, intricate carpet fringes, wind-blown hair.",
         goals: [
-            "To master the unruly 'Flying Carpet'.",
-            "To learn the spell that fixes broken toys.",
-            "To fly to the City of Clouds.",
-            "To capture a jar of starlight.",
-            "To open the jar of Genie Wind."
+            "To steer the Sadu-patterned flying carpet safely home before it rains.",
+            "To learn the three Arabic words that make broken toys whole again.",
+            "To capture a glowing jar of desert starlight to keep the camp lantern burning.",
+            "To find the Genie's lost brass lamp rolling around in the old Souq basement.",
+            "To polish the magic Dallah coffee pot and politely ask it for one good wish."
         ],
         challenges: [
-            "The item has a mind of its own!",
-            "The magic words are hard to pronounce.",
-            "Controlling the flight during a storm.",
-            "The magic fades if you stop believing.",
-            "The object tries to return to its master."
+            "The flying carpet has a very strong opinion about which direction to go.",
+            "The magic words sound simple but must be pronounced exactly right in Arabic.",
+            "Carrying a jar of starlight without letting any of the sparkle spill out.",
+            "The Genie's lamp keeps rolling into different Souq stalls and hiding.",
+            "The magic only works for the pure of heart — no trickery allowed."
         ]
     },
     'adv-fantasy': {
         heritageContext: "The Legend of the Sea Djinn.",
         visualStyle: "Bioluminescent corals, turquoise water, shimmering scales.",
         goals: [
-            "To defend the Pillow Fort from invisible dragons.",
-            "To sail the Bed-Boat to the edge of the rug.",
-            "To climb the Bookshelf Mountain.",
-            "To rescue the Princess/Prince from the Tower.",
-            "To map the uncharted lands of 'Under-Bed'."
+            "To protect the glowing coral garden from the Shadow Jellyfish invasion.",
+            "To sail the Bed-Dhow safely to the edge of the glowing Sea of Dreams.",
+            "To climb to the top of the Lighthouse of Imagination before the light goes out.",
+            "To rescue the little merfolk child from the Cave of Forgotten Songs.",
+            "To map the undiscovered islands of the Gentle Arabian Fantasy Sea."
         ],
         challenges: [
-            "The floor is made of molten lava!",
-            "The closet door is opening...",
-            "The 'Shadows' look scary in the dark.",
-            "Running out of imagination fuel.",
-            "The fort walls are crumbling."
+            "The bedroom floor has turned completely into sparkling Arabian Gulf water!",
+            "The wardrobe door is slowly, quietly opening and something magical is coming.",
+            "Dark shadows on the wall look very big when the night light flickers.",
+            "Running out of imagination power just before reaching the lost island.",
+            "The Djinn's riddle must be answered in three heartbeats or the adventure resets."
         ]
     },
     'adv-treasure': {
         heritageContext: "The Lost City of Ubar.",
         visualStyle: "Red sandstone textures, ancient carvings, dusty sunbeams.",
         goals: [
-            "To find the chest that holds 'The Greatest Joy'.",
-            "To dig up the pirate's forgotten snack stash.",
-            "To solve the riddle of the Golden Skull.",
-            "To find the key that opens the Moon.",
-            "To claim the title of 'Captain Curiosity'."
+            "To decode the ancient Nabataean inscription carved into the Hegra canyon wall.",
+            "To find the treasure chest of Ubar buried beneath the shifting red dunes.",
+            "To solve the three riddles of the Sphinx of the Lost City at the golden gate.",
+            "To uncover the lost recipe scroll for the world's most delicious Luqaimat.",
+            "To find the key that was dropped into the old Arabian falaj centuries ago."
         ],
         challenges: [
-            "Reading the faded map of the Ancients.",
-            "The parrot keeps giving wrong directions.",
-            "Digging in the hard, hot sand.",
-            "Avoiding the 'Trap of Tickles'.",
-            "Sharing the treasure with the crew."
+            "The ancient map is written in faded script that needs a magnifying glass.",
+            "A very friendly but very unhelpful talking hoopoe bird keeps pointing the wrong way.",
+            "Digging through the hot, heavy sandstone in the midday heat.",
+            "The trap of beautiful sparkling gems that distract from the real treasure.",
+            "Sharing the discovered treasure fairly with every member of the expedition."
         ]
     },
     'adv-dino': {
         heritageContext: "Prehistoric Arabia.",
         visualStyle: "Deep jungle greens, massive scale contrasts, prehistoric mist.",
         goals: [
-            "To walk with the Giants of old.",
-            "To save the Dino-Egg from the volcano.",
-            "To find the 'Leaf of Healing' for the T-Rex.",
-            "To learn how to roar like a King.",
-            "To hide from the meteor shower."
+            "To walk alongside the giant gentle dinosaurs through the ancient Arabian forest.",
+            "To save the dinosaur egg from rolling into the bubbling prehistoric wadi.",
+            "To find the rare healing leaf that grows only at the top of the volcano.",
+            "To teach the lonely baby dinosaur how to find its family again.",
+            "To hide safely in the ancient Arabian cave shelter as the meteor shower begins."
         ],
         challenges: [
-            "Not getting stepped on by a clumsy Brachiosaurus.",
-            "The roars are very loud!",
-            "The ground shakes when they dance.",
-            "Finding food in a strange land.",
-            "The volcano is starting to smoke."
+            "Not getting accidentally stepped on by the very friendly but very clumsy giant.",
+            "The dinosaur roars echo so loudly they shake the date palm fruit down.",
+            "The prehistoric ground shakes and rumbles every time the giant herd passes.",
+            "Finding food that grew millions of years before the first Souq existed.",
+            "The prehistoric volcano is beginning to glow orange at the very top."
         ]
     },
     'adv-space': {
         heritageContext: "The Hope Probe & Mars Mission.",
         visualStyle: "Cosmic purples, high-tech suits, the blue marble of Earth.",
         goals: [
-            "To find a new home for the Star-Plant.",
-            "To race a comet around the rings of Saturn.",
-            "To plant the flag of Friendship on Mars.",
-            "To fix the satellite that broadcasts lullabies.",
-            "To meet the Man in the Moon."
+            "To plant the Arab Hope Probe flag on the red mountains of planet Mars.",
+            "To fix the satellite dish that broadcasts all the GCC children's bedtime stories.",
+            "To find a new planet for the lonely Star-Plant to grow in the universe.",
+            "To race a shooting star all the way around the rings of Saturn and back.",
+            "To meet the kind Moon Guardian and return the Earth's borrowed moonbeam."
         ],
         challenges: [
-            "Dodging the Asteroid Belt of Bumps.",
-            "Zero gravity makes floating tricky.",
-            "The rocket needs 'Imagination Fuel'.",
-            "It's very quiet and lonely in space.",
-            "The alien language is hard to understand."
+            "Dodging the very bumpy Asteroid Belt of the Great Unknown.",
+            "Zero gravity makes walking sideways, upside down, and in circles all at once.",
+            "The rocket engine needs 'Imagination and Determination' fuel to start.",
+            "Space is very quiet and very vast and tomorrow feels very far away.",
+            "The Star Map is written in a language of spinning constellations, not words."
         ]
     },
     'adv-pyramid': {
         heritageContext: "The Rock Tombs of Hegra.",
         visualStyle: "Dramatic lighting, ultra-detailed rock, cinematic scope.",
         goals: [
-            "To open the Door of Sands.",
-            "To wake the Sleeping Sphinx.",
-            "To find the scroll of Ancient Jokes.",
-            "To return the Mummy's cat.",
-            "To light the torch of the Deep Tomb."
+            "To open the sealed Hegra rock tomb door and find what is waiting inside.",
+            "To wake the ancient stone guardian and ask it the secret of the old kingdom.",
+            "To light every single ancient torch in the dark labyrinth before the oil runs out.",
+            "To return the lost scroll of riddles to its carved niche in the Hegra wall.",
+            "To find the room where the ancient Nabataean children painted the ceiling."
         ],
         challenges: [
-            "Answering the Sphinx's three questions.",
-            "The torch keeps flickering out.",
-            "The maze of the pyramid shifts.",
-            "Deciphering hieroglyphs.",
-            "The scarab beetles tickle your feet."
+            "Answering the carved stone guardian's three impossible-sounding questions.",
+            "The ancient torch keeps flickering out in the windless underground chamber.",
+            "The Hegra labyrinth's sandstone corridors all look exactly the same.",
+            "Deciphering the Nabataean carvings using only the faded drawings as clues.",
+            "The very ticklish feeling of many, many little golden scarab beetles underfoot."
         ]
     },
     'adv-cooking': {
         heritageContext: "The Royal Kitchens of the Sultan.",
-        visualStyle: "Flour clouds, colorful ingredients, warm oven glow, copper pots.",
+        visualStyle: "Flour clouds, colourful ingredients, warm oven glow, copper pots.",
         goals: [
-            "To bake the 'Giant Cake of Happiness'.",
-            "To find the secret ingredient for the Royal Soup.",
-            "To cook a feast for the hungry Forest Giants.",
-            "To open a restaurant that serves starlight.",
-            "To win the Golden Spoon in the Great Cook-off."
+            "To bake the most enormous and delicious Ka'ak Eid biscuits the family has ever seen.",
+            "To find the last missing secret spice — the pinch of rose water — for the royal Umm Ali.",
+            "To cook a great Ramadan Iftar feast for the whole hungry neighbourhood.",
+            "To win the Golden Wooden Spoon in the Great Children's Cook-Off.",
+            "To recreate Great-grandmother's legendary Balaleet recipe from memory and taste."
         ],
         challenges: [
-            "The dough keeps growing and growing!",
-            "The recipe is written in invisible ink.",
-            "The naughty 'Salt Sprites' trying to ruin the taste.",
-            "The oven is a grumpy dragon mouth.",
-            "The ingredients keep running away."
+            "The Eid dough keeps growing and growing until it fills the whole kitchen!",
+            "The royal recipe is written in invisible ink that only appears when sprinkled with saffron.",
+            "The naughty 'Salt Sprite' who sneaks in to make everything too salty.",
+            "The great oven is a grumpy, sleepy dragon that must be woken politely.",
+            "All the best ingredients keep sprinting around the kitchen trying to escape."
         ]
     }
 };
@@ -411,8 +411,12 @@ export function getGuidelineForTheme(storyData: StoryData): string {
 `;
     }
 
-    const goal = storyData.customGoal || themeContent.goals[0];
-    const challenge = storyData.customChallenge || themeContent.challenges[0];
+    // FIX: Truly randomize goal & challenge every single run.
+    // Previously, goals[0] was ALWAYS selected regardless of available options.
+    const randomGoalIndex = Math.floor(Math.random() * themeContent.goals.length);
+    const randomChallengeIndex = Math.floor(Math.random() * themeContent.challenges.length);
+    const goal = storyData.customGoal || themeContent.goals[randomGoalIndex];
+    const challenge = storyData.customChallenge || themeContent.challenges[randomChallengeIndex];
 
     let contextLock = "";
     if (themeId) {
