@@ -6,10 +6,12 @@ interface ThemeContent {
     visualStyle: string;
     goals: string[];
     challenges: string[];
+    // Optional override pools for single-hero mode
+    singleHeroGoals?: string[];
+    singleHeroChallenges?: string[];
 }
 
 const themeLibrary: Record<string, ThemeContent> = {
-    // --- VALUES ---
     'val-sleep': {
         heritageContext: "The Vast Arabian Night & Bedouin Hospitality.",
         visualStyle: "Indigo/gold palette, Mashrabiya patterns, glowing crescent moon.",
@@ -190,8 +192,44 @@ const themeLibrary: Record<string, ThemeContent> = {
             "Remembering to wash hands with the lovely rose-water soap after."
         ]
     },
+    // val-siblings: Two completely different story paths based on 1 vs 2 heroes.
+    'val-siblings': {
+        heritageContext: "The Bond of the Arabian Family and the Wisdom of Nature.",
+        visualStyle: "Warm golden light, lush garden greens, soft duo framing, connected pathways.",
 
-    // --- ADVENTURES ---
+        // DUAL-HERO PATH: The two real heroes interact and learn the value directly.
+        goals: [
+            "To fix the broken lantern together before Grandmother's Eid dinner begins.",
+            "To get the lost kite unstuck from the old fig tree by working as a team.",
+            "To haul the heavy basket of dates home before the evening call to prayer.",
+            "To finish building the Barasti den together before the rain comes in.",
+            "To pack the Iftar picnic basket together so no one is left carrying everything."
+        ],
+        challenges: [
+            "One hero wants to carry everything alone, the other wants to do it a different way.",
+            "An argument about whose idea is better slows everything down.",
+            "One gets tired and the other must decide — push on alone, or wait and help?",
+            "The task is impossible for one person but feels too crowded with two trying at once.",
+            "A moment where one hurts the other's feelings without meaning to — and must repair it."
+        ],
+
+        // SINGLE-HERO PATH: Hero observes animals in nature and learns the value by watching.
+        singleHeroGoals: [
+            "To understand why the two young falcon chicks always hunt together and never alone.",
+            "To find out how the oryx calves always know where to go — because they follow each other.",
+            "To discover why the baby turtles always race to the sea in a group, never one by one.",
+            "To learn the secret of how the pearl-diving dhow crew hauls up the net that no one person can lift.",
+            "To figure out why the desert ants can carry the date seed, but only when they walk in a line."
+        ],
+        singleHeroChallenges: [
+            "The hero tries to solve the same problem alone — and gets stuck, just like the lone animal did.",
+            "One animal breaks away from the group and immediately struggles — the hero watches carefully.",
+            "The hero tries to lift something heavy alone first, fails, and must think about what the animals did differently.",
+            "The hero gets bored watching and wanders off — but comes back just in time to see the key moment.",
+            "The hero doesn't understand at first why the animals keep waiting for the slowest one in the group."
+        ]
+    },
+
     'adv-lost-found': {
         heritageContext: "Falconry (Al Miqnas) and the Singing Dunes.",
         visualStyle: "Wide-angle desert vistas, soaring falcon silhouettes, orange/teal contrast.",
@@ -392,7 +430,7 @@ const themeLibrary: Record<string, ThemeContent> = {
     }
 };
 
-export function getGuidelineForTheme(storyData: StoryData): string {
+export function getGuidelineForTheme(storyData: StoryData, useSecondCharacter?: boolean): string {
     const themeId = storyData.themeId || '';
     const themeContent = themeLibrary[themeId];
 
@@ -411,12 +449,22 @@ export function getGuidelineForTheme(storyData: StoryData): string {
 `;
     }
 
+    // --- ROUTING: pick the correct goal/challenge pool based on hero count ---
+    // If this theme has a single-hero override and we are NOT using a second character,
+    // use the dedicated single-hero animal-observation pool instead of the dual-hero pool.
+    const isSingleHero = !useSecondCharacter;
+    const goalPool = (isSingleHero && themeContent.singleHeroGoals?.length)
+        ? themeContent.singleHeroGoals
+        : themeContent.goals;
+    const challengePool = (isSingleHero && themeContent.singleHeroChallenges?.length)
+        ? themeContent.singleHeroChallenges
+        : themeContent.challenges;
+
     // FIX: Truly randomize goal & challenge every single run.
-    // Previously, goals[0] was ALWAYS selected regardless of available options.
-    const randomGoalIndex = Math.floor(Math.random() * themeContent.goals.length);
-    const randomChallengeIndex = Math.floor(Math.random() * themeContent.challenges.length);
-    const goal = storyData.customGoal || themeContent.goals[randomGoalIndex];
-    const challenge = storyData.customChallenge || themeContent.challenges[randomChallengeIndex];
+    const randomGoalIndex = Math.floor(Math.random() * goalPool.length);
+    const randomChallengeIndex = Math.floor(Math.random() * challengePool.length);
+    const goal = storyData.customGoal || goalPool[randomGoalIndex];
+    const challenge = storyData.customChallenge || challengePool[randomChallengeIndex];
 
     let contextLock = "";
     if (themeId) {
@@ -426,7 +474,17 @@ export function getGuidelineForTheme(storyData: StoryData): string {
         contextLock = `STRICT SETTING LOCK: This is a ${category} story specifically about ${name}. Do NOT use generic 'backyards' or 'gardens' unless that is the Heritage Context below.\n`;
     }
 
-    return `${contextLock}
+    // Extra narrative directive for the sibling theme in single-hero mode
+    const siblingDirective = (themeId === 'val-siblings' && isSingleHero) ? `
+**SIBLING VALUE — SINGLE HERO MODE (CRITICAL NARRATIVE RULE):**
+- There is NO second hero or sibling character in this story.
+- The hero MUST learn the value of helping and supporting a sibling by OBSERVING animals in nature (e.g., falcon chicks, oryx calves, desert ants, baby turtles).
+- The story structure is: Hero notices animals helping each other → Hero tries the same challenge alone and struggles → Hero understands why the animals do not work alone → Hero internalizes the lesson.
+- DO NOT invent a sibling, brother, or sister character. The lesson comes entirely through animal observation.
+- The animal(s) observed MUST be regionally appropriate: Arabian oryx, falcons, desert ants, dhow crew, baby turtles on the coast, etc.
+` : '';
+
+    return `${contextLock}${siblingDirective}
 **Heritage Context:** ${themeContent.heritageContext}
 **Goal:** ${goal}
 **Challenge:** ${challenge}
@@ -440,6 +498,7 @@ export function getGuidelineForTheme(storyData: StoryData): string {
 `.replace(/{child_name}/g, storyData.childName)
         .replace(/{child_age}/g, storyData.childAge);
 }
+
 
 export function getGuidelineComponentsForTheme(themeId: string): { goal: string; challenge: string; illustrationNotes: string } | null {
     const theme = themeLibrary[themeId];

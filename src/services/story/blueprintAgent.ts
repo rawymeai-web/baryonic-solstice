@@ -173,6 +173,28 @@ export async function generateBlueprint(
             - The companion MUST actively influence the story and help solve the problem. Do not make them a passive bystander.
             - The companion MUST NOT appear in the \`visualFocus\` or \`newCharacters\` array of any spread *before* their official introduction.` : ''}
 
+            ${storyData.themeId === 'val-siblings' ? (storyData.useSecondCharacter && storyData.secondCharacter ? `
+**SIBLING VALUE — DUAL HERO MODE (CRITICAL NARRATIVE RULE):**
+- This story is explicitly about the love between siblings. The two heroes ARE the siblings.
+- The story MUST show a realistic small conflict or disagreement between the two heroes — they are family, not perfect teammates.
+- The arc MUST follow: (1) They try to do something together, (2) A moment of friction or misunderstanding arises, (3) One of them makes a sacrifice or apologizes first, (4) They succeed together and both feel the warmth of the resolved bond.
+- DO NOT skip the friction. The emotional payoff only works if the challenge felt real.
+- The final moral must be explicitly about sibling love (e.g., "They learned that a sister/brother is the best teammate there will ever be.").
+` : `
+**SIBLING VALUE — SINGLE HERO MODE (CRITICAL NARRATIVE RULE):**
+- There is NO second hero or sibling character in this story. DO NOT invent one.
+- The hero MUST learn the value of sibling love and mutual support by OBSERVING animals in nature who help each other.
+- The story structure MUST follow this arc:
+  1. Hero has a task they want to complete alone.
+  2. Hero notices animals (e.g., falcon chicks, oryx calves, desert ants, pearl-diving crew) working together, noticing specifically HOW they help each other.
+  3. Hero tries to do the same task alone and struggles.
+  4. Hero reflects on what the animals did differently — and understands why helping and relying on a partner (or sibling) makes everything possible.
+  5. The moral is delivered NOT through a sibling appearing — but through the hero's own quiet realization, perhaps thinking of their sibling at home and understanding their value.
+- The animal(s) MUST be regionally appropriate: Arabian oryx, falcon chicks, desert ants, pearl-diving dhow crew, baby sea turtles on the Gulf coast, etc.
+- This is an OBSERVATION-LED discovery arc, not an action-adventure arc. The hero watches, tries, fails softly, and then understands.
+`) : ''}
+
+
             OUTPUT JSON FORMAT:
             {
                 "foundation": {
