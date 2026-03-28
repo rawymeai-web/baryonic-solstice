@@ -323,10 +323,16 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
                 rectH = rectW * (blobImg.height / blobImg.width);
             }
 
-            let finalIsLeft = isLeft;
-            if (language === 'ar') finalIsLeft = !isLeft;
+            let textOnLeft: boolean;
+            if (spread.textSide === 'left') {
+                textOnLeft = true;
+            } else if (spread.textSide === 'right') {
+                textOnLeft = false;
+            } else {
+                textOnLeft = language === 'ar'; // Legacy fallback logic if textSide is undefined
+            }
 
-            const rectX = finalIsLeft ? pdfW * 0.05 : pdfW * 0.60;
+            const rectX = textOnLeft ? pdfW * 0.05 : pdfW * 0.60;
             const rectY = (pdfH * 0.382) - (rectH / 2);
 
             if (blobImg && blobImg.dataUrl) {
@@ -548,8 +554,14 @@ export const generateStitchedPdf = async (
             const marginX = pdfW * 0.05;
             const marginY = pdfH * 0.08;
 
-            let isLeft = true;
-            if (language === 'ar') isLeft = false;
+            let isLeft: boolean;
+            if (pages[i] && (pages[i] as any).textSide === 'left') {
+                isLeft = true;
+            } else if (pages[i] && (pages[i] as any).textSide === 'right') {
+                isLeft = false;
+            } else {
+                isLeft = language !== 'ar'; // Legacy fallback for Stitched: English left page, Arabic right page.
+            }
 
             const txtX = isLeft ? marginX : (pdfW - txtW - marginX);
             const txtY = pdfH - txtH - marginY;
@@ -724,7 +736,7 @@ export async function createTextImage(titleData: { title: string }, lang: Langua
     const textShadow = '4px 4px 0 #203A72, -2px -2px 0 #203A72, 2px -2px 0 #203A72, -2px 2px 0 #203A72, 2px 2px 0 #203A72, 0 8px 15px rgba(0,0,0,0.3)';
     const transform = isEn ? 'rotate(-2deg)' : 'none';
 
-    container.style.cssText = `position:absolute;left:-9999px;font-family:${fontFamily};color:${color};background:transparent;font-weight:900;text-shadow:${textShadow};padding:20px;text-align:center;width:1000px;line-height:1.1;font-size:90px;text-transform:uppercase;letter-spacing:${letterSpacing};transform:${transform};`;
+    container.style.cssText = `position:absolute;left:-9999px;font-family:${fontFamily};color:${color};background:rgba(0,0,0,0.35);border-radius:24px;font-weight:900;text-shadow:${textShadow};padding:28px 40px;text-align:center;width:1000px;line-height:1.1;font-size:90px;text-transform:uppercase;letter-spacing:${letterSpacing};transform:${transform};`;
     container.dir = lang === 'ar' ? 'rtl' : 'ltr';
     container.innerHTML = titleData.title;
     document.body.appendChild(container);

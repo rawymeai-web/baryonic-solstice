@@ -119,7 +119,12 @@ export const StitchingScreen: React.FC<{ language: Language, onExit: () => void 
             }
 
             setProcessingStatus("Generating PDF...");
-            const pages = storyTexts.map((text, i) => ({ text, pageNumber: i + 1 }));
+            // Use window interface to pass spread textSide if available
+            const pages = storyTexts.map((text, i) => {
+                const spreadData = (window as any).cachedStoryData?.spreadPlan?.spreads?.[i + 1];
+                const textSide = spreadData?.mainContentSide?.toLowerCase().includes('left') ? 'right' : 'left';
+                return { text, pageNumber: i + 1, textSide };
+            });
             const pdfBlob = await fileService.generateStitchedPdf(
                 coverBlob,
                 spreadBlobs,
