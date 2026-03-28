@@ -109,6 +109,12 @@ export async function generateStoryDraft(
             - The companion ${secondCharacter.name} MUST be explicitly introduced by name in Spread 1 or Spread 2 alongside the hero. You MUST write a clear, warm welcome sentence giving 1-2 personality traits (e.g., "And right by her side was her sister Farah — the one who always knew how to listen."). Do NOT have them silently appear mid-scene with just a comma clause.
             - The companion MUST actively say or do something that directly helps solve the page's problem. They cannot be a passive bystander.` : ''}
 
+            **OPENING SCENE RULES (CRITICAL):**
+            - The very first sentence of Spread 1 MUST NOT be a generic statement of love, interest, or personality (e.g. "her name is Sarah. She loves animals very much!").
+            - You MUST start the story in the middle of a specific, physical, and mundane action occurring right now in a specific location.
+            - BAD: "Her name is Sarah. She loves animals very much! In her big room, she dreams of understanding what they say."
+            - GOOD: "Sarah sat quietly on the edge of the woven rug, holding her small wooden toy, watching a tiny bird tap against the glass window."
+
             **WORLD-INTRODUCTION RULES (CRITICAL — READ BEFORE WRITING SPREAD 1):**
             1. **NO STRANGER CHARACTERS IN SPREAD 1:** Every named non-hero character or mythical figure (e.g., "The Man in the Moon", "The Star Queen", "The Night Owl") MUST have a reason WHY this child already knows them. 
                - You MUST provide a maximum 5-word context bridge BEFORE the desire is stated.
