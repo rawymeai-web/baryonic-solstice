@@ -312,34 +312,35 @@ export async function generateMethod4Image(
         const sanitizedStyle = sanitizePrompt(stylePrompt);
         const sanitizedDesc = sanitizePrompt(characterDescription);
 
-        const basePromptText = `**CHARACTER REFERENCE (IMAGE 1):**
-- Identity: ${sanitizedDesc}
-- Focus: Match the face, hair features, and physical traits of the child in the first attached image exactly.
+        // NOTE: When called from the pipeline (Phase 5), the `prompt` parameter already contains
+        // the full Vision Blueprint V2 JSON with `entities` and the double-bound [[HERO_A]] preamble
+        // assembled by promptEngineer.ts. The wrapper text below acts as the final generation mandate.
+        const basePromptText = `**PHOTO-BOUND CHARACTER TOKEN:**
+- [[HERO_A]] → Attached Image 1 (inlineData[0]). This token IS that specific child. Derive ALL appearance strictly from this photo. DO NOT apply name-based ethnic defaults, statistical averages, or training data assumptions. Replicate the face, hair style, skin tone, and body proportions exactly as they appear in the attached photo.
 
-**SCENE DESCRIPTION:**
+**STYLE LOCK:** Render this scene in the following Art Style: "${sanitizedStyle}". Maintain consistent rendering technique with the reference imagery.
+
+**GENERATION MANDATE:**
 ${sanitizedPrompt}
 
-**VISUAL CONSISTENCY MANDATE:**
-1. **HERO IDENTITY:** The attached IMAGE 1 is the primary reference. Replicate facial features, hair pattern, and body proportions exactly based on the photo and description.
-2. **STYLE LOCK:** Render the scene using the provided art style keywords: "${sanitizedStyle}". Ensure the rendering technique (brushwork/color grading) matches IMAGE 1.
-3. **AESTHETIC:** Maintain a consistent painterly aesthetic. Keep lighting soft and artistic.
-4. **ASPECT RATIO:** Generate a horizontal 16:9 panoramic image.
-5. **QUALITY:** Render in ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece, maximum resolution available.`;
+**FINAL QUALITY REQUIREMENTS:**
+- Aspect Ratio: Horizontal 16:9 panoramic image.
+- Quality: Ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece.
+- NO text, words, or typography anywhere in the image.`;
 
-        const dualPromptText = `**CHARACTER REFERENCES:**
-- [IMAGE 1]: Main Hero. Identity: ${sanitizedDesc}. Match the first attached photo exactly.
-- [IMAGE 2]: Secondary Character. Match the second attached photo's identity and features.
+        const dualPromptText = `**PHOTO-BOUND CHARACTER TOKENS:**
+- [[HERO_A]] → Attached Image 1 (inlineData[0]). This token IS that specific child. Derive ALL appearance strictly from this photo. DO NOT apply name-based ethnic defaults. Replicate exactly.
+- [[HERO_B]] → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the second photo exactly — face, hair, skin tone, proportions.
 
-**SCENE DESCRIPTION:**
+**STYLE LOCK:** Render this scene in the following Art Style: "${sanitizedStyle}". Maintain consistent rendering technique across both characters.
+
+**GENERATION MANDATE:**
 ${sanitizedPrompt}
 
-**VISUAL CONSISTENCY MANDATE:**
-1. **PRIMARY HERO (IMAGE 1):** Replicate the facial features and proportions of the child in the first image exactly.
-2. **SECONDARY SUBJECT (IMAGE 2):** Replicate the specific visual features of the second image. Ensure they are interacting as described.
-3. **STYLE LOCK:** Render the scene in the following Art Style: "${sanitizedStyle}". Match the rendering technique of IMAGE 1 for cohesion.
-4. **AESTHETIC:** Maintain a consistent painterly aesthetic. Keep lighting soft and artistic.
-5. **ASPECT RATIO:** Generate a horizontal 16:9 panoramic image.
-6. **QUALITY:** Render in ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece, maximum resolution available.`;
+**FINAL QUALITY REQUIREMENTS:**
+- Aspect Ratio: Horizontal 16:9 panoramic image.
+- Quality: Ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece.
+- NO text, words, or typography anywhere in the image.`;
 
         contents.push({
             text: `\n\n=== GENERATION INSTRUCTIONS ===\n` + (secondReferenceBase64 ? dualPromptText : basePromptText)

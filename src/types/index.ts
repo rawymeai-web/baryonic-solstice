@@ -400,6 +400,47 @@ export interface EventAuditLog {
 // VISION AI PROMPT SCHEMA (JSON ARCHITECTURE)
 // ==========================================
 
+export interface VisionPersonEntitySchema {
+    id: string;
+    unique_token_name: string;
+    entity_type: 'person_entity';
+    source_reference: {
+        image_input: string;
+        binding_instruction: string;
+        weight: string;
+    };
+    spatial_anchor: string;
+    immutable_identity: {
+        facial_structure?: string;
+        hair_style_and_color?: string;
+        distinct_marks?: string;
+    };
+    current_variables: {
+        pose_action: string;
+        attire?: string;
+        emotion?: string;
+    };
+}
+
+export interface VisionPropEntitySchema {
+    id: string;
+    unique_token_name: string;
+    entity_type: 'prop_entity';
+    source_reference: {
+        image_input: string;
+        binding_instruction: string;
+        weight: string;
+    };
+    spatial_anchor: string;
+    physical_description?: string;
+    color_details?: {
+        base_color_hex?: string;
+        secondary_colors?: string[];
+        gradient_or_pattern?: string;
+    };
+    current_variables: { pose_action: string; };
+}
+
 export interface VisionPromptSchema {
     meta: {
         image_quality?: string;
@@ -411,6 +452,8 @@ export interface VisionPromptSchema {
             lens_type_estimation?: string;
         };
     };
+    // Character entities — strictly typed, photo-bound via tokens [[HERO_A]] / [[HERO_B]]
+    entities?: (VisionPersonEntitySchema | VisionPropEntitySchema)[];
     global_context: {
         scene_description?: string;
         environment_type?: string;
