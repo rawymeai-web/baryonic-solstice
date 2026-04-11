@@ -178,6 +178,23 @@ export async function getCustomers(): Promise<AdminCustomer[]> {
     }));
 }
 
+export async function getSubscriptions() {
+    const { data, error } = await supabase
+        .from('subscriptions')
+        .select(`
+            *,
+            hero:heroes(*),
+            customer:customers!user_id(*)
+        `)
+        .order('next_billing_date', { ascending: true });
+
+    if (error) {
+        console.error("Failed to fetch subscriptions:", error);
+        return [];
+    }
+    return data;
+}
+
 // ============================================================================
 // TERMINAL ALPHA (PHASE 5): API ROUTE CALLERS FOR RBAC & AUDIT LOGGING
 // ============================================================================

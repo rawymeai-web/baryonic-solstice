@@ -1,5 +1,5 @@
 import { supabase } from '@/utils/supabaseClient';
-import { describeSubject, generateThemeStylePreview } from '@/services/generation/imageGenerator';
+import { describeSubject, describeObjectProp, generateThemeStylePreview } from '@/services/generation/imageGenerator';
 import { WorkerUtils } from './workerUtils';
 import { MasterScheduler } from './scheduler';
 
@@ -45,6 +45,17 @@ export class CharacterWorker {
             console.log(`[CharacterWorker] Processing Text DNA for ${orderId}...`);
             const description = await WorkerUtils.withTimeout(describeSubject(mainChar.imageBases64[0]));
 
+            // Process Second Character DNA if it exists
+            let secondDescription = "";
+            if (storyData.secondCharacter && storyData.secondCharacter.imageBases64 && storyData.secondCharacter.imageBases64[0]) {
+                console.log(`[CharacterWorker] Processing Text DNA for second character in ${orderId}...`);
+                if (storyData.secondCharacter.type === 'object') {
+                    secondDescription = await WorkerUtils.withTimeout(describeObjectProp(storyData.secondCharacter.imageBases64[0]));
+                } else {
+                    secondDescription = await WorkerUtils.withTimeout(describeSubject(storyData.secondCharacter.imageBases64[0]));
+                }
+            }
+
             console.log(`[CharacterWorker] Processing Visual DNA for ${orderId}...`);
             const stylePreview = await WorkerUtils.withTimeout(
                 generateThemeStylePreview(
@@ -64,6 +75,10 @@ export class CharacterWorker {
                     description: description,
                     imageDNA: [stylePreview.imageBase64] // This is the definitive visual anchor
                 },
+                secondCharacter: storyData.secondCharacter ? {
+                    ...storyData.secondCharacter,
+                    description: secondDescription || storyData.secondCharacter.description
+                } : undefined,
                 selectedStylePrompt: stylePreview.prompt // Lock the style prompt used
             };
 

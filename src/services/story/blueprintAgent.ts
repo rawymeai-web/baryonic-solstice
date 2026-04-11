@@ -50,18 +50,24 @@ export async function generateBlueprint(
             - The core goal, climax, and resolution MUST heavily weave in the emotions surrounding this event.
             ` : ''}
             
-            ${storyData.useSecondCharacter && storyData.secondCharacter ? `**DUAL-HERO / BUDDY DYNAMIC (CRITICAL MUST USE):**
+            ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type === 'object' ? `**SPECIAL ITEM ANCHOR (CRITICAL MUST USE):**
+            - The user provided a special object to feature in the story: **${storyData.secondCharacter.name || 'Special Item'}**.
+            - Description/Nature: ${storyData.secondCharacter.description || 'A special item'}.
+            - You MUST set this EXACT object description as the "primaryVisualAnchor" in the foundation.
+            - The story MUST be a SINGLE-HERO adventure, but the hero must use, carry, or interact with this specific object throughout the journey.` : ''}
+            
+            ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `**DUAL-HERO / BUDDY DYNAMIC (CRITICAL MUST USE):**
             - The Hero (${storyData.childName}) has a companion: **${storyData.secondCharacter.name}**.
             - Companion Type: **${storyData.secondCharacter.type}**.
             - Relationship/Age: ${storyData.secondCharacter.relationship || 'Friend/Companion'} ${storyData.secondCharacter.age ? `(Age: ${storyData.secondCharacter.age})` : ''}.
             - The story MUST be a Dual-Hero Buddy Adventure where ${storyData.childName} and ${storyData.secondCharacter.name} work together to overcome the obstacle.
-            - Ensure ${storyData.secondCharacter.name} is included in the "supportingRoles" JSON array and appears consistently across the narrative.` : `
-            **IMMEDIATE FAMILY RESTRICTION (CRITICAL):**
+            - Ensure ${storyData.secondCharacter.name} is included in the "supportingRoles" JSON array and appears consistently across the narrative.` : ''}
+
+            ${(!storyData.useSecondCharacter || !storyData.secondCharacter || storyData.secondCharacter.type === 'object') ? `**IMMEDIATE FAMILY RESTRICTION (CRITICAL):**
             - Do NOT include real-life immediate family members: mother, father, siblings, grandparents, aunts, uncles, cousins.
             - *Reason:* These roles are personal to the child. We must not misreality.
             - **Exceptions:** You MAY include generic adults (guides, shopkeepers, owls, neighbors) ONLY IF they are NOT presented as family and do NOT act as saviors.
-            - **Rule:** Adults may guide or observe, but the **HERO MUST SOLVE THE PROBLEM**.
-            `}
+            - **Rule:** Adults may guide or observe, but the **HERO MUST SOLVE THE PROBLEM**.` : ''}
 
             ${storyData.selectedStylePrompt === 'PORTALS_OF_WONDER_DYNAMIC' ? `**PORTALS OF WONDER THEME (CRITICAL NARRATIVE RULE):**
             - The plot MUST revolve around discovering and traveling through magical portals.
@@ -168,12 +174,12 @@ export async function generateBlueprint(
             - ONLY USE FICTIONAL SUPPORTING CHARACTERS (e.g., wizards, talking animals, aliens). DO NOT use real-world grounded figures.
             - If writing a mystery or adventure, use kid-friendly props like compasses, maps, glowing crystals, or keys.
 
-            ${storyData.useSecondCharacter && storyData.secondCharacter ? `**SECONDARY CHARACTER PACING (CRITICAL SCREEN-TIME RULE):**
+            ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `**SECONDARY CHARACTER PACING (CRITICAL SCREEN-TIME RULE):**
             - This is a Dual-Hero book. You MUST officially introduce the companion (${storyData.secondCharacter.name}) no later than **Spread 2**.
             - The companion MUST actively influence the story and help solve the problem. Do not make them a passive bystander.
             - The companion MUST NOT appear in the \`visualFocus\` or \`newCharacters\` array of any spread *before* their official introduction.` : ''}
 
-            ${storyData.themeId === 'val-siblings' ? (storyData.useSecondCharacter && storyData.secondCharacter ? `
+            ${storyData.themeId === 'val-siblings' ? (storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `
 **SIBLING VALUE — DUAL HERO MODE (CRITICAL NARRATIVE RULE):**
 - This story is explicitly about the love between siblings. The two heroes ARE the siblings.
 - The story MUST show a realistic small conflict or disagreement between the two heroes — they are family, not perfect teammates.

@@ -99,6 +99,55 @@ const MODEL_FALLBACKS = [
     "imagen-3.0-generate-001"
 ];
 
+// Helper to describe inanimate objects, pets, or theme items
+export async function describeObjectProp(imageBase64: string): Promise<string> {
+    return withRetry(async () => {
+        try {
+            const model = ai().getGenerativeModel({ 
+                model: 'gemini-2.0-flash',
+                generationConfig: { responseMimeType: 'application/json' }
+            });
+            const response = await model.generateContent([
+                { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } },
+                { text: `ROLE: Props & Assets Analyst. 
+TASK: Analyze the provided photo of an object (or pet/item) and extract its physical identity into a strict JSON object.
+FOCUS: Material, shape, color, apparent scale, texture, and distinguishing marks.
+
+MANDATE: Output a valid JSON object following this exact schema structure:
+{
+  "objects": [{
+    "label": "The Object",
+    "material": "Describe the main material/substance (e.g. fluffy wool, matte plastic, worn leather)",
+    "surface_properties": {
+      "texture": "Describe the exact texture, wear and tear, or pattern"
+    },
+    "color_details": {
+      "base_color_hex": "Estimate exact hex color for the main body",
+      "secondary_colors": ["Estimate hex for secondary details"]
+    }
+  }],
+  "reconstruction_notes": {
+    "mandatory_elements_for_recreation": ["List 4-5 hyper-specific physical traits (shape, labels, unique structural quirks) that MUST be preserved"],
+    "sensitivity_factors": ["List physical features that, if altered, ruin the likeness of this specific object or item"]
+  }
+}
+Output ONLY valid JSON. No markdown formatting.` }
+            ]);
+            
+            const rawText = response.response.text().trim();
+            // Gemini sometimes wraps JSON in markdown blocks even with responseMimeType, so clean it safely
+            let cleaned = rawText;
+            if (cleaned.startsWith('\`\`\`json')) cleaned = cleaned.replace(/^\`\`\`json\n/, '').replace(/\n\`\`\`$/, '');
+            else if (cleaned.startsWith('\`\`\`')) cleaned = cleaned.replace(/^\`\`\`\n/, '').replace(/\n\`\`\`$/, '');
+            
+            return JSON.stringify(JSON.parse(cleaned));
+        } catch (e) {
+            console.error("Describe Object JSON Payload Failed", e);
+            throw e; // Rethrow to let withRetry handle it
+        }
+    }, 2, 5000, "{}");
+}
+
 export async function generateImagenImage(
     prompt: string,
     aspectRatio: "1:1" | "16:9" | "9:16" = "1:1",

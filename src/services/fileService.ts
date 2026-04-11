@@ -194,12 +194,15 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
 
     if (coverData && coverData.length > 50) {
         let cleanB64 = coverData.includes(',') ? coverData.split(',')[1] : coverData;
-        if (language === 'ar') {
+        // AI generates covers in Arabic-native layout (heroes on left = front for RTL).
+        // For English/LTR books, the front cover is the RIGHT half — so we flip the cover
+        // to move the heroes to the correct side. Arabic books need no flip.
+        if (language !== 'ar') {
             try {
                 const flippedDataUrl = await flipImageHorizontal(cleanB64);
                 cleanB64 = flippedDataUrl.split(',')[1];
             } catch (e) {
-                console.error("Failed to flip Arabic cover", e);
+                console.error("Failed to flip English cover", e);
             }
         }
 
@@ -210,19 +213,21 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
         } catch (e) { console.warn("PDF Cover Add Failed", e); }
 
         const isAr = language === 'ar';
-        const titleB64 = await createTextImage({ title: storyData.title }, language);
+        if (storyData.title && storyData.title.trim()) {
+            const titleB64 = await createTextImage({ title: storyData.title }, language);
 
-        const tw = pdfW * 0.4;
-        const titleAspect = 1000 / 200;
-        const th = tw / titleAspect;
-        let tx;
-        if (isAr) {
-            tx = (pdfW * 0.25) - (tw / 2);
-        } else {
-            tx = (pdfW * 0.75) - (tw / 2);
+            const tw = pdfW * 0.4;
+            const titleAspect = 1000 / 200;
+            const th = tw / titleAspect;
+            let tx;
+            if (isAr) {
+                tx = (pdfW * 0.25) - (tw / 2);
+            } else {
+                tx = (pdfW * 0.75) - (tw / 2);
+            }
+            const ty = pdfH * 0.08;
+            pdf.addImage(titleB64, 'PNG', tx, ty, tw, th);
         }
-        const ty = pdfH * 0.08;
-        pdf.addImage(titleB64, 'PNG', tx, ty, tw, th);
 
         if (orderNumber) {
             const stripWidthMm = 3;
@@ -432,12 +437,15 @@ export const generateStitchedPdf = async (
     }
 
     if (cleanCover) {
-        if (language === 'ar') {
+        // AI generates covers in Arabic-native layout (heroes on left = front for RTL).
+        // For English/LTR books, the front cover is the RIGHT half — so we flip the cover
+        // to move the heroes to the correct side. Arabic books need no flip.
+        if (language !== 'ar') {
             try {
                 const flippedDataUrl = await flipImageHorizontal(cleanCover);
                 cleanCover = flippedDataUrl.split(',')[1];
             } catch (e) {
-                console.error("Failed to flip Arabic cover (Stitched)", e);
+                console.error("Failed to flip English cover (Stitched)", e);
             }
         }
 
@@ -448,19 +456,21 @@ export const generateStitchedPdf = async (
         } catch (e) { console.warn("PDF Cover Add Failed", e); }
 
         const isAr = language === 'ar';
-        const titleB64 = await createTextImage({ title: storyDetails.title }, language);
+        if (storyDetails.title && storyDetails.title.trim()) {
+            const titleB64 = await createTextImage({ title: storyDetails.title }, language);
 
-        const tw = pdfW * 0.4;
-        const titleAspect = 1000 / 200;
-        const th = tw / titleAspect;
-        let tx;
-        if (isAr) {
-            tx = (pdfW * 0.25) - (tw / 2);
-        } else {
-            tx = (pdfW * 0.75) - (tw / 2);
+            const tw = pdfW * 0.4;
+            const titleAspect = 1000 / 200;
+            const th = tw / titleAspect;
+            let tx;
+            if (isAr) {
+                tx = (pdfW * 0.25) - (tw / 2);
+            } else {
+                tx = (pdfW * 0.75) - (tw / 2);
+            }
+            const ty = pdfH * 0.08;
+            pdf.addImage(titleB64, 'PNG', tx, ty, tw, th);
         }
-        const ty = pdfH * 0.08;
-        pdf.addImage(titleB64, 'PNG', tx, ty, tw, th);
 
         if (orderNumber) {
             const stripWidthMm = 3;
@@ -736,9 +746,11 @@ export async function createTextImage(titleData: { title: string }, lang: Langua
     const textShadow = '4px 4px 0 #203A72, -2px -2px 0 #203A72, 2px -2px 0 #203A72, -2px 2px 0 #203A72, 2px 2px 0 #203A72, 0 8px 15px rgba(0,0,0,0.3)';
     const transform = isEn ? 'rotate(-2deg)' : 'none';
 
-    container.style.cssText = `position:absolute;left:-9999px;font-family:${fontFamily};color:${color};background:rgba(0,0,0,0.35);border-radius:24px;font-weight:900;text-shadow:${textShadow};padding:28px 40px;text-align:center;width:1000px;line-height:1.1;font-size:90px;text-transform:uppercase;letter-spacing:${letterSpacing};transform:${transform};`;
+    // Use position:fixed (not absolute left:-9999px) so html2canvas can capture the element
+    // even when it's rendered off the visible scroll area.
+    container.style.cssText = `position:fixed;top:-9999px;left:-9999px;font-family:${fontFamily};color:${color};background:rgba(0,0,0,0.35);border-radius:24px;font-weight:900;text-shadow:${textShadow};padding:28px 40px;text-align:center;width:1000px;line-height:1.1;font-size:90px;text-transform:uppercase;letter-spacing:${letterSpacing};transform:${transform};`;
     container.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    container.innerHTML = titleData.title;
+    container.innerHTML = titleData.title || '&nbsp;';
     document.body.appendChild(container);
 
     const fontLink = document.createElement('link');

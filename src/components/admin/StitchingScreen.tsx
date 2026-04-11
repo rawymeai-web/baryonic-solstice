@@ -162,6 +162,74 @@ export const StitchingScreen: React.FC<{ language: Language, onExit: () => void 
                 <h2 className="text-3xl font-bold text-brand-navy">🧵 Stitching Module</h2>
                 <Button onClick={onExit} variant="outline" className="text-sm">Exit Admin</Button>
             </div>
+            <Section title="Book Metadata">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-xs font-bold mb-1">Order Number</label>
+                        <input
+                            type="text"
+                            value={orderNumber}
+                            onChange={e => setOrderNumber(e.target.value)}
+                            placeholder="RWY-XXXXXXXX"
+                            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold mb-1">Book Title</label>
+                        <input
+                            type="text"
+                            value={bookTitle}
+                            onChange={e => setBookTitle(e.target.value)}
+                            placeholder="e.g. Sharing Toys"
+                            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold mb-1">Child Name</label>
+                        <input
+                            type="text"
+                            value={childName}
+                            onChange={e => setChildName(e.target.value)}
+                            placeholder="e.g. Leena"
+                            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold mb-1">Child Age</label>
+                        <input
+                            type="number"
+                            value={childAge}
+                            onChange={e => setChildAge(e.target.value)}
+                            placeholder="5"
+                            min="2" max="14"
+                            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold mb-1">Language</label>
+                        <select
+                            value={selectedLanguage}
+                            onChange={e => setSelectedLanguage(e.target.value as Language)}
+                            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                        >
+                            <option value="en">English (LTR)</option>
+                            <option value="ar">Arabic (RTL)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold mb-1">Book Size</label>
+                        <select
+                            value={selectedSizeId}
+                            onChange={e => setSelectedSizeId(e.target.value)}
+                            className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                        >
+                            {allSizes.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </Section>
             <Section title="Asset Upload">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
