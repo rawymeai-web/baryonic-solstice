@@ -77,7 +77,11 @@ export class IllustrationWorker {
                 try {
                     // HERO DNA: We prioritze the processed illustration DNA over the raw photo
                     const heroDNA = storyData.mainCharacter?.imageDNA?.[0] || storyData.mainCharacter?.imageBases64?.[0];
-                    const secondaryDNA = storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacter?.imageBases64?.[0];
+                    let secondaryDNA = storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacter?.imageBases64?.[0];
+
+                    if (storyData.secondCharacter?.type === 'object') {
+                        secondaryDNA = undefined;
+                    }
 
                     // Impose a 2 minute timeout per single generation
                     const imgRes = await WorkerUtils.withTimeout(

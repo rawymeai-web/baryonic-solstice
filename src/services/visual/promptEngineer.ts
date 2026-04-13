@@ -375,8 +375,6 @@ export async function generatePrompts(
 
             if (isDualHeroPerson) {
                 heroPreamble += `\n- [[HERO_B]] → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the second photo exactly.`;
-            } else if (isSingleHeroItem) {
-                heroPreamble += `\n- [[HERO_B]] → Attached Image 2 (inlineData[1]). THIS TOKEN IS A SPECIFIC OBJECT. Match the exact shape, color, material, and texture seen in the photo. DO NOT treat this as a human. NO facial or anatomical rules apply.`;
             }
 
             const imagePrompt = `${heroPreamble}
