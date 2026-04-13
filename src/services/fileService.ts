@@ -739,12 +739,13 @@ export function createMetadataStripElement(orderNumber: string, spreadIndex: num
 export async function createTextImage(titleData: { title: string }, lang: Language): Promise<string> {
     const html2canvas = getHtml2Canvas();
     const container = document.createElement('div');
-    const isEn = lang !== 'ar';
-    const fontFamily = isEn ? "'Luckiest Guy', cursive" : "'Tajawal', sans-serif";
-    const letterSpacing = isEn ? '2px' : 'normal';
+    const isAr = lang === 'ar';
+    const isEn = lang === 'en';
+    const fontFamily = isAr ? "'Tajawal', sans-serif" : (isEn ? "'Luckiest Guy', cursive" : "'Nunito', sans-serif");
+    const letterSpacing = isAr ? 'normal' : '2px';
     const color = '#FFFFFF';
     const textShadow = '4px 4px 0 #203A72, -2px -2px 0 #203A72, 2px -2px 0 #203A72, -2px 2px 0 #203A72, 2px 2px 0 #203A72, 0 8px 15px rgba(0,0,0,0.3)';
-    const transform = isEn ? 'rotate(-2deg)' : 'none';
+    const transform = isAr ? 'none' : 'rotate(-2deg)';
 
     // Use position:fixed (not absolute left:-9999px) so html2canvas can capture the element
     // even when it's rendered off the visible scroll area.
@@ -754,7 +755,7 @@ export async function createTextImage(titleData: { title: string }, lang: Langua
     document.body.appendChild(container);
 
     const fontLink = document.createElement('link');
-    fontLink.href = 'https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Tajawal:wght@400;700;900&display=swap';
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Tajawal:wght@400;700;900&family=Nunito:wght@900&display=swap';
     fontLink.rel = 'stylesheet';
     document.head.appendChild(fontLink);
     await document.fonts.ready;
