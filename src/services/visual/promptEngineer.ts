@@ -155,19 +155,26 @@ export async function generatePrompts(
                 }
             };
 
+            // Determine the Workflow Branch
+            const isSingleHeroItem = secondCharacter && secondCharacter.type === 'object';
+            const isDualHeroPerson = secondCharacter && secondCharacter.type === 'person';
+
+            // Determine dynamic token for the second input
+            const secondToken = isSingleHeroItem ? '[[OBJECT_A]]' : '[[HERO_B]]';
+
             // Replace real names with photo-bound tokens
             safeAction = applyNameMask(safeAction, childName, '[[HERO_A]]');
             safeSetting = applyNameMask(safeSetting, childName, '[[HERO_A]]');
             if (secondCharacter?.name) {
-                safeAction = applyNameMask(safeAction, secondCharacter.name, '[[HERO_B]]');
-                safeSetting = applyNameMask(safeSetting, secondCharacter.name, '[[HERO_B]]');
+                safeAction = applyNameMask(safeAction, secondCharacter.name, secondToken);
+                safeSetting = applyNameMask(safeSetting, secondCharacter.name, secondToken);
             }
             // Also replace legacy [Hero 1]/[Hero 2] labels
-            safeAction = safeAction.replace(/\[Hero 1\]/gi, '[[HERO_A]]').replace(/\[Hero 2\]/gi, '[[HERO_B]]');
-            safeSetting = safeSetting.replace(/\[Hero 1\]/gi, '[[HERO_A]]').replace(/\[Hero 2\]/gi, '[[HERO_B]]');
+            safeAction = safeAction.replace(/\[Hero 1\]/gi, '[[HERO_A]]').replace(/\[Hero 2\]/gi, secondToken);
+            safeSetting = safeSetting.replace(/\[Hero 1\]/gi, '[[HERO_A]]').replace(/\[Hero 2\]/gi, secondToken);
             // Also replace legacy [IMAGE 1]/[IMAGE 2]
-            safeAction = safeAction.replace(/\[IMAGE 1\]/gi, '[[HERO_A]]').replace(/\[IMAGE 2\]/gi, '[[HERO_B]]');
-            safeSetting = safeSetting.replace(/\[IMAGE 1\]/gi, '[[HERO_A]]').replace(/\[IMAGE 2\]/gi, '[[HERO_B]]');
+            safeAction = safeAction.replace(/\[IMAGE 1\]/gi, '[[HERO_A]]').replace(/\[IMAGE 2\]/gi, secondToken);
+            safeSetting = safeSetting.replace(/\[IMAGE 1\]/gi, '[[HERO_A]]').replace(/\[IMAGE 2\]/gi, secondToken);
 
             const isCover = spread.spreadNumber === 0;
             const emptySide = isAr ? 'left' : 'right';
@@ -180,17 +187,13 @@ export async function generatePrompts(
             const parsedStyleDNA = safeParseJSON(safeDNA);
             const parsedSecondDNA = secondCharacter ? safeParseJSON(secondCharacter.description) : null;
 
-            // Determine second character type
-            const mainCharType: 'person' | 'object' = 'person'; // main is always person
-            const secondCharType: 'person' | 'object' = secondCharacter?.type === 'object' ? 'object' : 'person';
-
             // Determine if second character is in this scene
             const actionTextLower = safeAction.toLowerCase();
             const settingTextLower = safeSetting.toLowerCase();
             const secondNameLower = secondCharacter?.name?.toLowerCase() || '';
             const isSecondCharacterInScene = secondNameLower &&
                 (actionTextLower.includes(secondNameLower) ||
-                 actionTextLower.includes('[[hero_b]]') ||
+                 actionTextLower.includes(secondToken.toLowerCase()) ||
                  actionTextLower.includes('they') ||
                  actionTextLower.includes('together') ||
                  actionTextLower.includes('companion') ||
@@ -199,17 +202,17 @@ export async function generatePrompts(
             // Build scene_dynamics sentence (natural-language cinematic directive)
             let sceneDynamics: string;
             if (secondCharacter && isSecondCharacterInScene) {
-                sceneDynamics = `SCENE DYNAMICS: [[HERO_A]] and [[HERO_B]] are ${safeAction}. Their bodies and expressions must reflect active, natural engagement with each other — not two subjects standing stiffly side by side.`;
+                if (isSingleHeroItem) {
+                    sceneDynamics = `SCENE DYNAMICS: [[HERO_A]] is interacting with ${secondToken}. ${safeAction}.`;
+                } else {
+                    sceneDynamics = `SCENE DYNAMICS: [[HERO_A]] and ${secondToken} are ${safeAction}. Their bodies and expressions must reflect active, natural engagement with each other — not two subjects standing stiffly side by side.`;
+                }
             } else {
                 sceneDynamics = `SCENE DYNAMICS: [[HERO_A]] is ${safeAction}.`;
             }
 
             // Build entities array
             const entities: (import('../../types').VisionPersonEntitySchema | import('../../types').VisionPropEntitySchema)[] = [];
-
-            // Determine the Workflow Branch
-            const isSingleHeroItem = secondCharacter && secondCharacter.type === 'object';
-            const isDualHeroPerson = secondCharacter && secondCharacter.type === 'person';
 
             // 1. Primary hero entity (Always present)
             entities.push(buildEntity(
@@ -225,14 +228,14 @@ export async function generatePrompts(
             // 2. Secondary entity (Conditional based on Workflow Branch)
             if (isDualHeroPerson && isSecondCharacterInScene) {
                 let hero2Action = "Actively participating in the scene";
-                const img2Idx = safeAction.indexOf('[[HERO_B]]');
+                const img2Idx = safeAction.indexOf(secondToken);
                 if (img2Idx !== -1) {
                     hero2Action = safeAction.substring(img2Idx).trim();
                 }
                 const secondEmotion = EMOTION_MAP[rawEmotionalBeat] || resolvedEmotion;
                 entities.push(buildEntity(
                     parsedSecondDNA,
-                    '[[HERO_B]]',
+                    secondToken,
                     1,
                     `Also in the ${finalSubjectSide} two-thirds, facing [[HERO_A]]`,
                     hero2Action,
@@ -242,7 +245,7 @@ export async function generatePrompts(
             } else if (isSingleHeroItem && isSecondCharacterInScene) {
                 entities.push(buildEntity(
                     parsedSecondDNA,
-                    '[[HERO_B]]',
+                    secondToken,
                     1,
                     `Integrated naturally with [[HERO_A]]`,
                     "In use or present in the scene",
@@ -288,7 +291,7 @@ export async function generatePrompts(
                     camera_angle: isCover ? "Eye-level" : finalCameraAngle,
                     framing: "Wide panoramic establishing shot. No dutch angles.",
                     depth_of_field: "Shallow — subjects in sharp focus, background in soft painterly blur",
-                    focal_point: isSecondCharacterInScene ? "[[HERO_A]] and [[HERO_B]]" : "[[HERO_A]]",
+                    focal_point: isSecondCharacterInScene ? `[[HERO_A]] and ${secondToken}` : "[[HERO_A]]",
                     symmetry_type: "Asymmetric — subject(s) weighted to one side, open negative space on the other",
                     rule_of_thirds_alignment: `The ${oppSide} side must be completely open and empty background space. Do NOT generate text, lettering, or words in this space.`
                 },
@@ -348,9 +351,9 @@ export async function generatePrompts(
 
                     const maskedDesc = finalDesc
                         .replace(/\[Hero 1\]/gi, '[[HERO_A]]')
-                        .replace(/\[Hero 2\]/gi, '[[HERO_B]]')
+                        .replace(/\[Hero 2\]/gi, secondToken)
                         .replace(/\[IMAGE 1\]/gi, '[[HERO_A]]')
-                        .replace(/\[IMAGE 2\]/gi, '[[HERO_B]]');
+                        .replace(/\[IMAGE 2\]/gi, secondToken);
 
                     promptJson.objects.push({
                         id: `obj_scene_prop_${index}`,
@@ -374,7 +377,9 @@ export async function generatePrompts(
             let heroPreamble = `**PHOTO-BOUND TOKENS:**\n- [[HERO_A]] → Attached Image 1 (inlineData[0]). This token IS that specific child. Derive ALL appearance strictly from this photo. DO NOT apply name-based ethnic defaults. Replicate face, hair, skin tone, and proportions exactly as seen in the photo.`;
 
             if (isDualHeroPerson) {
-                heroPreamble += `\n- [[HERO_B]] → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the second photo exactly.`;
+                heroPreamble += `\n- ${secondToken} → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the second photo exactly.`;
+            } else if (isSingleHeroItem) {
+                heroPreamble += `\n- ${secondToken} → Attached Image 2 (inlineData[1]). ${secondToken} IS this specific object. Match its exact shape, style, and material.`;
             }
 
             const imagePrompt = `${heroPreamble}

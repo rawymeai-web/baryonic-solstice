@@ -1,5 +1,5 @@
 import { supabase } from '@/utils/supabaseClient';
-import { describeSubject, describeObjectProp, generateThemeStylePreview } from '@/services/generation/imageGenerator';
+import { describeSubject, describeObjectProp, generateThemeStylePreview, generateObjectStylePreview } from '@/services/generation/imageGenerator';
 import { WorkerUtils } from './workerUtils';
 import { MasterScheduler } from './scheduler';
 
@@ -47,20 +47,41 @@ export class CharacterWorker {
 
             // Process Second Character DNA if it exists
             let secondDescription = "";
+            let secondImageDNA = "";
             if (storyData.secondCharacter && storyData.secondCharacter.imageBases64 && storyData.secondCharacter.imageBases64[0]) {
                 console.log(`[CharacterWorker] Processing Text DNA for second character in ${orderId}...`);
                 if (storyData.secondCharacter.type === 'object') {
                     secondDescription = await WorkerUtils.withTimeout(describeObjectProp(storyData.secondCharacter.imageBases64[0]));
+                    console.log(`[CharacterWorker] Processing Visual DNA for Object in ${orderId}...`);
+                    const objectStylePreview = await WorkerUtils.withTimeout(
+                        generateObjectStylePreview(
+                            storyData.secondCharacter.imageBases64[0],
+                            storyData.selectedStylePrompt || "high quality storybook illustration",
+                            secondDescription
+                        )
+                    );
+                    secondImageDNA = objectStylePreview.imageBase64;
                 } else {
                     secondDescription = await WorkerUtils.withTimeout(describeSubject(storyData.secondCharacter.imageBases64[0]));
+                    console.log(`[CharacterWorker] Processing Visual DNA for Second Character in ${orderId}...`);
+                    const charStylePreview = await WorkerUtils.withTimeout(
+                        generateThemeStylePreview(
+                            storyData.secondCharacter as any,
+                            undefined,
+                            storyData.theme || "story setting",
+                            storyData.selectedStylePrompt || "high quality storybook illustration",
+                            storyData.secondCharacter.age || storyData.childAge || "5"
+                        )
+                    );
+                    secondImageDNA = charStylePreview.imageBase64;
                 }
             }
 
-            console.log(`[CharacterWorker] Processing Visual DNA for ${orderId}...`);
+            console.log(`[CharacterWorker] Processing Visual DNA for Primary Character ${orderId}...`);
             const stylePreview = await WorkerUtils.withTimeout(
                 generateThemeStylePreview(
                     mainChar,
-                    storyData.secondCharacter,
+                    undefined, // NEVER BUNDLE THEM TOGETHER IN THE VISION V2 ARCHITECTURE
                     storyData.theme || "story setting",
                     storyData.selectedStylePrompt || "high quality storybook illustration",
                     storyData.childAge || "5"
@@ -77,7 +98,8 @@ export class CharacterWorker {
                 },
                 secondCharacter: storyData.secondCharacter ? {
                     ...storyData.secondCharacter,
-                    description: secondDescription || storyData.secondCharacter.description
+                    description: secondDescription || storyData.secondCharacter.description,
+                    imageDNA: secondImageDNA ? [secondImageDNA] : undefined // Persist the stylized object!
                 } : undefined,
                 selectedStylePrompt: stylePreview.prompt // Lock the style prompt used
             };

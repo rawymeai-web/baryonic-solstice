@@ -476,3 +476,61 @@ Output ONLY valid JSON. No markdown formatting.`;
         }
     }, 2, 3000, "{}");
 }
+
+/**
+ * Transforms an object/prop strictly into the target art style to prevent 
+ * photorealistic bleed when used alongside characters.
+ */
+export async function generateObjectStylePreview(
+    objectBase64: string,
+    style: string,
+    description: string
+): Promise<{ imageBase64: string }> {
+    return withRetry(async () => {
+        console.log("=== GENERATE OBJECT STYLE PREVIEW ===");
+        
+        const contents: any[] = [
+            { inlineData: { mimeType: 'image/jpeg', data: objectBase64 } },
+            { text: `**TASK:** Transform the reference Object (Image 1) into the selected Art Style.
+            
+**REFERENCE INPUTS:**
+- **Source:** See attached IMAGE 1 (The Object).
+- **Style:** ${style}
+- **Description:** ${description || "An object"}
+
+**STRICT IDENTITY AND STYLE LOCK:**
+- **Likeness:** The output MUST look like the specific object in Image 1.
+- **Retain Structural Geometry:** You MUST perfectly preserve the shape, unique details, and material properties.
+- **Change Only:** The rendering style (brushstrokes, lighting softness, shading logic). The geometry of the object MUST NOT CHANGE.
+- **Isolation:** Completely isolate it on a plain white or very simple, deeply blurred background. Do NOT add humans or external scenes.
+
+**TECHNICAL MANDATES:**
+- 1:1 Aspect Ratio.
+- No text, no frames.
+- Perfect application of the '${style}' aesthetic.` }
+        ];
+
+        try {
+            const model = ai().getGenerativeModel({
+                model: 'gemini-3-pro-image-preview'
+            });
+
+            console.log("Calling model.generateContent for Object Styling...");
+            const response = await model.generateContent(contents);
+
+            let b64 = "";
+            if (response.response.candidates && response.response.candidates[0].content.parts) {
+                for (const part of response.response.candidates[0].content.parts) {
+                    if (part.inlineData) b64 = part.inlineData.data;
+                }
+            }
+
+            if (!b64) throw new Error("Object styling generation failed (No data returned from model)");
+
+            return { imageBase64: b64 };
+        } catch (e: any) {
+            console.error("=== OBJECT STYLE GENERATION ERROR ===", e.status, e.message);
+            throw e;
+        }
+    });
+}
