@@ -28,6 +28,8 @@ export async function generateBlueprint(
         const targetLang = languageMap[language] || 'English';
 
         return await withRetry(async () => {
+
+
             const prompt = `
             ROLE: Master Story Architect.
             TASK: Create a structural BLUEPRINT for a story.
@@ -204,13 +206,13 @@ export async function generateBlueprint(
             OUTPUT JSON FORMAT:
             {
                 "foundation": {
-                    "title": "Story Title",
+                    "title": "[MUST BE IN ${targetLang}]",
                     "targetAge": "${storyData.childAge}",
-                    "storyCore": "1 sentence summary",
-                    "heroDesire": "What they want",
-                    "mainChallenge": "What stops them",
+                    "storyCore": "[MUST BE IN ${targetLang}]",
+                    "heroDesire": "[MUST BE IN ${targetLang}]",
+                    "mainChallenge": "[MUST BE IN ${targetLang}]",
                     "primaryVisualAnchor": "The object that stays with hero (e.g. Red Scarf)",
-                    "moral": "The lesson",
+                    "moral": "[MUST BE IN ${targetLang}]",
                     "failedAttemptSpread": 3,
                     "insightSpread": 6,
                     "finalSolutionMethod": "How they fixed it"
