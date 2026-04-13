@@ -60,8 +60,8 @@ FOCUS: Hair color/style, eye color, face shape, skin tone, unique identifiers, a
 MANDATE: Output a valid JSON object following this exact schema structure:
 {
   "objects": [{
-    "label": "Main Character",
-    "material": "Describe the clothing material if visible (e.g. Cotton, Matte)",
+    "label": "Main Character Identity",
+    "material": "Describe the clothing material if visible",
     "surface_properties": {
       "texture": "Describe hair texture and skin texture"
     },
@@ -71,8 +71,8 @@ MANDATE: Output a valid JSON object following this exact schema structure:
     }
   }],
   "reconstruction_notes": {
-    "mandatory_elements_for_recreation": ["List 4-5 hyper-specific physical traits that MUST be preserved"],
-    "sensitivity_factors": ["List physical features that, if altered, ruin the likeness"]
+    "mandatory_elements_for_recreation": ["Describe the exact facial geometry in high detail (jawline shape, eye spacing and shape, nose bridge/width, lip fullness). Do not list generic categories; describe the physical structure."],
+    "sensitivity_factors": ["List specific physical quirks, asymmetries, or defining traits that MUST be preserved to maintain exact likeness"]
   }
 }
 Output ONLY valid JSON. No markdown formatting.` }
@@ -228,9 +228,9 @@ export async function generateThemeStylePreview(
 - **Style:** ${style}
 
 **STRICT IDENTITY PRESERVATION:**
-- **Likeness is Critical:** The output MUST look like the specific child in Image 1.
-- **Retain:** Facial features, eye brightness, nose structure, and specific hair curl/pattern.
-- **Change Only:** The rendering style (brushstrokes, lighting softness, shading logic).
+- **Likeness is Critical:** The output MUST look exactly like the specific child in Image 1.
+- **Retain Structural Bone Geometry:** You MUST perfectly preserve the eye spacing, lip thickness, specific nose shape, jawline, and unique facial asymmetries. Do not snap to statistical generic child faces.
+- **Change Only:** The rendering style (brushstrokes, lighting softness, shading logic). The geometry of the face MUST NOT CHANGE.
 - **Age Lock:** Keep them looking approx ${age || "Child"} years old.
 
 **SCENE CONTEXT:**
@@ -365,9 +365,9 @@ export async function generateMethod4Image(
         // the full Vision Blueprint V2 JSON with `entities` and the double-bound [[HERO_A]] preamble
         // assembled by promptEngineer.ts. The wrapper text below acts as the final generation mandate.
         const basePromptText = `**PHOTO-BOUND CHARACTER TOKEN:**
-- [[HERO_A]] → Attached Image 1 (inlineData[0]). This token IS that specific child. Derive ALL appearance strictly from this photo. DO NOT apply name-based ethnic defaults, statistical averages, or training data assumptions. Replicate the face, hair style, skin tone, and body proportions exactly as they appear in the attached photo.
+- [[HERO_A]] → Attached Image 1 (inlineData[0]). IDENTITY LOCK. This token IS the exact child in the photo. The image is GROUND TRUTH. You must exactly replicate their specific facial geometry, eye spacing, nose structure, jawline, and skin tone. DO NOT use cartoonish defaults or statistical averages that lose resemblance. The text description is secondary metadata to help you interpret the photo, but the photo rules all.
 
-**STYLE LOCK:** Render this scene in the following Art Style: "${sanitizedStyle}". Maintain consistent rendering technique with the reference imagery.
+**STYLE LOCK:** Render this scene in the following Art Style: "${sanitizedStyle}". Apply the stylistic brushing, shading, and lighting to the character without changing their underlying bone structure or likeness.
 
 **GENERATION MANDATE:**
 ${sanitizedPrompt}
@@ -378,10 +378,10 @@ ${sanitizedPrompt}
 - NO text, words, or typography anywhere in the image.`;
 
         const dualPromptText = `**PHOTO-BOUND CHARACTER TOKENS:**
-- [[HERO_A]] → Attached Image 1 (inlineData[0]). This token IS that specific child. Derive ALL appearance strictly from this photo. DO NOT apply name-based ethnic defaults. Replicate exactly.
-- [[HERO_B]] → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the second photo exactly — face, hair, skin tone, proportions.
+- [[HERO_A]] → Attached Image 1 (inlineData[0]). IDENTITY LOCK. The image is GROUND TRUTH. You must exactly replicate their specific facial geometry, eye spacing, nose structure, and jawline. DO NOT use generic face defaults.
+- [[HERO_B]] → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the exact structural identity of the second photo.
 
-**STYLE LOCK:** Render this scene in the following Art Style: "${sanitizedStyle}". Maintain consistent rendering technique across both characters.
+**STYLE LOCK:** Render this scene in the following Art Style: "${sanitizedStyle}". Apply the stylistic brushing, shading, and lighting to the characters without changing their underlying bone structure or likeness.
 
 **GENERATION MANDATE:**
 ${sanitizedPrompt}

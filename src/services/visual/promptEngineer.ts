@@ -79,7 +79,7 @@ function buildEntity(
         entity_type: 'person_entity',
         source_reference: {
             image_input: `inlineData[${imageIndex}] — Attached Image ${imageIndex + 1}`,
-            binding_instruction: `${token} IS this specific child. Derive ALL appearance strictly from this photo. DO NOT apply name-based ethnic defaults, statistical averages, or training data assumptions. Replicate the face, hair pattern, and skin tone exactly.`,
+            binding_instruction: `IDENTITY LOCK: ${token} IS the person in this specific photo. The photo is the absolute ground truth. You MUST perfectly preserve the resemblance. Use the provided facial structural geometry to replicate the exact eye spacing, nose shape, lip thickness, and jawline seen in the reference photo. This is a strict rotoscope requirement. Do NOT fall back on generic structural defaults.`,
             weight: '1.0 — IDENTITY IS NON-NEGOTIABLE'
         },
         spatial_anchor: spatialAnchor,
