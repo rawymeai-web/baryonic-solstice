@@ -207,7 +207,11 @@ export async function generatePrompts(
             // Build entities array
             const entities: (import('../../types').VisionPersonEntitySchema | import('../../types').VisionPropEntitySchema)[] = [];
 
-            // Primary hero entity
+            // Determine the Workflow Branch
+            const isSingleHeroItem = secondCharacter && secondCharacter.type === 'object';
+            const isDualHeroPerson = secondCharacter && secondCharacter.type === 'person';
+
+            // 1. Primary hero entity (Always present)
             entities.push(buildEntity(
                 parsedChildDNA,
                 '[[HERO_A]]',
@@ -215,12 +219,12 @@ export async function generatePrompts(
                 `The ${finalSubjectSide} two-thirds of the frame`,
                 safeAction,
                 resolvedEmotion,
-                mainCharType
+                'person'
             ));
 
-            // Secondary character entity (conditional)
-            if (secondCharacter && isSecondCharacterInScene) {
-                let hero2Action = "Actively participating in the scene described above";
+            // 2. Secondary entity (Conditional based on Workflow Branch)
+            if (isDualHeroPerson && isSecondCharacterInScene) {
+                let hero2Action = "Actively participating in the scene";
                 const img2Idx = safeAction.indexOf('[[HERO_B]]');
                 if (img2Idx !== -1) {
                     hero2Action = safeAction.substring(img2Idx).trim();
@@ -233,15 +237,28 @@ export async function generatePrompts(
                     `Also in the ${finalSubjectSide} two-thirds, facing [[HERO_A]]`,
                     hero2Action,
                     secondEmotion,
-                    secondCharType
+                    'person'
+                ));
+            } else if (isSingleHeroItem && isSecondCharacterInScene) {
+                entities.push(buildEntity(
+                    parsedSecondDNA,
+                    '[[HERO_B]]',
+                    1,
+                    `Integrated naturally with [[HERO_A]]`,
+                    "In use or present in the scene",
+                    "Neutral",
+                    'object'
                 ));
             }
+
+            const dynamicStyleType = safeDNA.length > 5 ? safeDNA : "Stylized illustration";
+            const dynamicQuality = "High quality masterpiece, perfectly faithful to the selected art style.";
 
             // Build the Schema Object
             const promptJson: VisionPromptSchema = {
                 meta: {
-                    image_quality: "Ultra-high resolution, 4K quality, flawless rendering, masterpiece",
-                    image_type: "Flat 2D illustrated rendering",
+                    image_quality: dynamicQuality,
+                    image_type: dynamicStyleType,
                 },
                 entities,
                 global_context: {
@@ -271,20 +288,20 @@ export async function generatePrompts(
                     camera_angle: isCover ? "Eye-level" : finalCameraAngle,
                     framing: "Wide panoramic establishing shot. No dutch angles.",
                     depth_of_field: "Shallow — subjects in sharp focus, background in soft painterly blur",
-                    focal_point: secondCharacter && isSecondCharacterInScene ? "[[HERO_A]] and [[HERO_B]]" : "[[HERO_A]]",
+                    focal_point: isSecondCharacterInScene ? "[[HERO_A]] and [[HERO_B]]" : "[[HERO_A]]",
                     symmetry_type: "Asymmetric — subject(s) weighted to one side, open negative space on the other",
                     rule_of_thirds_alignment: `The ${oppSide} side must be completely open and empty background space. Do NOT generate text, lettering, or words in this space.`
                 },
                 objects: [],
                 background_details: parsedStyleDNA?.background_details || {
-                    texture: "Painterly brushwork, soft linework, consistent with [[HERO_A]].",
+                    texture: "Painterly brushwork, soft linework, consistent with art style.",
                     additional_elements: spread.sceneProps?.map((p: any) => p.name).filter(Boolean) || []
                 },
                 foreground_elements: parsedStyleDNA?.foreground_elements || {},
                 reconstruction_notes: {
                     mandatory_elements_for_recreation: [
                         "Absolutely NO text, typography, fonts, or words generated anywhere in the image.",
-                        "No photographic shadows or photorealism. This is a stylized 2D illustration.",
+                        "Strictly adhere to the selected art style. Avoid photographic realism unless explicitly requested.",
                         ...(parsedChildDNA?.reconstruction_notes?.mandatory_elements_for_recreation || []),
                         ...(parsedStyleDNA?.reconstruction_notes?.mandatory_elements_for_recreation || [])
                     ],
@@ -327,7 +344,7 @@ export async function generatePrompts(
                     const isDescriptionAdequate = rawDesc.trim().length >= 80;
                     const finalDesc = isDescriptionAdequate
                         ? rawDesc
-                        : `${prop.name || 'Object'} — ${rawDesc.trim() || 'present in scene'}. Draw this object with realistic physical detail matching the story context. Do not invent species or type not described here.`;
+                        : `${prop.name || 'Object'} — ${rawDesc.trim() || 'present in scene'}. Draw this object with detail matching the style context.`;
 
                     const maskedDesc = finalDesc
                         .replace(/\[Hero 1\]/gi, '[[HERO_A]]')
@@ -343,8 +360,8 @@ export async function generatePrompts(
                         material: maskedDesc,
                         reconstruction_notes: [
                             "Must perfectly match physical description above.",
-                            "Do NOT invent or substitute the animal species, object type, or colors.",
-                            "Draw exactly what is described — count, size, pose, and expression."
+                            "Do NOT invent or substitute the object type or colors.",
+                            "Draw exactly what is described — count, size, and layout."
                         ]
                     } as any);
                 });
@@ -354,8 +371,13 @@ export async function generatePrompts(
             const stringifiedSchema = JSON.stringify(promptJson, null, 2);
 
             // Build double-bound preamble
-            const heroPreamble = `**PHOTO-BOUND CHARACTER TOKENS:**
-- [[HERO_A]] → Attached Image 1 (inlineData[0]). This token IS that specific child. Derive ALL appearance strictly from this photo. DO NOT apply name-based ethnic defaults. Replicate face, hair, skin tone, and proportions exactly as seen in the photo.${secondCharacter ? `\n- [[HERO_B]] → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the second photo exactly.` : ""}`;
+            let heroPreamble = `**PHOTO-BOUND TOKENS:**\n- [[HERO_A]] → Attached Image 1 (inlineData[0]). This token IS that specific child. Derive ALL appearance strictly from this photo. DO NOT apply name-based ethnic defaults. Replicate face, hair, skin tone, and proportions exactly as seen in the photo.`;
+
+            if (isDualHeroPerson) {
+                heroPreamble += `\n- [[HERO_B]] → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the second photo exactly.`;
+            } else if (isSingleHeroItem) {
+                heroPreamble += `\n- [[HERO_B]] → Attached Image 2 (inlineData[1]). THIS TOKEN IS A SPECIFIC OBJECT. Match the exact shape, color, material, and texture seen in the photo. DO NOT treat this as a human. NO facial or anatomical rules apply.`;
+            }
 
             const imagePrompt = `${heroPreamble}
 
