@@ -141,12 +141,19 @@ export async function generateStoryDraft(
             **AGE ${age} SPECIAL CONSTRAINTS (STRICT):**
             A. **NO PRONOUNS:** NEVER use "He" or "She" for the main hero. Always use the character's Name (e.g. "Zayn runs").
                - *Reason:* Young kids get confused by pronouns.
-            ` : `
+            ` : childGender ? `
             **AGE ${age} PRONOUN GUIDANCE (CRITICAL):**
-            - The main hero(${childName}) is a **${childGender || 'child'}**.
-            ${secondCharacter?.gender ? `- The companion(${secondCharacter.name}) is a **${secondCharacter.gender}**.` : ''}
-            - When using pronouns, you MUST correctly use gendered pronouns ("He/His", "She/Her", or their equivalents in the target language) matching their respective genders. Do not guess the gender.
-            ` }
+            - The main hero (${childName}) is a **${childGender}**.
+            ${secondCharacter?.gender ? `- The companion (${secondCharacter.name}) is a **${secondCharacter.gender}**.` : ''}
+            - When using pronouns, you MUST correctly use gendered pronouns ("He/His", "She/Her", or their equivalents in the target language) matching their respective genders.
+            ` : `
+            **AGE ${age} PRONOUN RULE — GENDER UNKNOWN (CRITICAL):**
+            - The hero's gender is **not known**. You MUST NOT guess or assume.
+            - **NEVER use any gendered pronouns** for the main hero (no "He", "She", "Er", "Sie", "Il", "Elle", "Él", "Ella", or any equivalent in any language).
+            - **ALWAYS refer to the hero exclusively by their name: "${childName}".**
+            - This rule is absolute. Every single reference to the hero that would normally use a pronoun must instead repeat the name "${childName}".
+            - Example in German: Instead of "Er lief" → write "${childName} lief". Instead of "Sie fand" → write "${childName} fand".
+            `}
 
             **EMOTIONAL & CAUSALITY RULES (CRITICAL):**
             1. **DRAMATIZE, DON'T STATE (SHOW PHYSICALITY):**
