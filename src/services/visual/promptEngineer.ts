@@ -179,7 +179,7 @@ export async function generatePrompts(
             const isCover = spread.spreadNumber === 0;
             const emptySide = isAr ? 'left' : 'right';
             const oppSide = isCover ? emptySide : opp.toLowerCase();
-            const coverSubjectSide = isAr ? 'right' : 'left';
+            const coverSubjectSide = isAr ? 'left' : 'right'; // Hero on front cover: EN=right, AR=left
             const finalSubjectSide = isCover ? coverSubjectSide : subjectSide.toLowerCase();
 
             // Parse incoming DNA
