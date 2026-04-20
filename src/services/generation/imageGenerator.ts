@@ -10,8 +10,12 @@ const API_KEY = process.env.GEMINI_API_KEY || '';
  * 2. Stripping character names to rely on generic identifiers (IMAGE 1/2) as requested.
  * 3. Detecting and removing large blocks of base64/binary text (>500 chars with no spaces).
  */
-export function sanitizePrompt(text: string, namesToKeep: string[] = []): string {
+export function sanitizePrompt(text: any, namesToKeep: string[] = []): string {
     if (!text) return "";
+    // Coerce non-string values (e.g. accidental JSON objects stored as cover prompts)
+    if (typeof text !== 'string') {
+        text = typeof text === 'object' ? JSON.stringify(text) : String(text);
+    }
 
     let sanitized = text;
 
@@ -373,9 +377,11 @@ export async function generateMethod4Image(
 ${sanitizedPrompt}
 
 **FINAL QUALITY REQUIREMENTS:**
-- Aspect Ratio: Horizontal 16:9 panoramic image.
-- Quality: Ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece.
-- NO text, words, or typography anywhere in the image.`;
+- Aspect Ratio: Ultra-wide 16:9 horizontal panoramic image. This is a children's book double-page spread. Do NOT output square, portrait, or 4:3 proportions.
+- COMPOSITION (CRITICAL): Zoom out! The character(s) must occupy only a small portion of the scene. Show the full environment around them. Do not use close-ups. Frame as a wide-angle, full-body shot.
+- OPEN SPACE: The right 40% of the image must be a calm, visually empty region — soft sky, plain wall, or smooth blurred gradient. No characters, faces, limbs, or props in this region.
+- Quality: Ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece children's illustration.
+- NO text, letters, words, numbers, signs, or typography anywhere in the image.`;
 
         const dualPromptText = `**PHOTO-BOUND CHARACTER TOKENS:**
 - [[HERO_A]] → Attached Image 1 (inlineData[0]). IDENTITY LOCK. The image is GROUND TRUTH. You must exactly replicate their specific facial geometry, eye spacing, nose structure, and jawline. DO NOT use generic face defaults.
@@ -387,9 +393,11 @@ ${sanitizedPrompt}
 ${sanitizedPrompt}
 
 **FINAL QUALITY REQUIREMENTS:**
-- Aspect Ratio: Horizontal 16:9 panoramic image.
-- Quality: Ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece.
-- NO text, words, or typography anywhere in the image.`;
+- Aspect Ratio: Ultra-wide 16:9 horizontal panoramic image. This is a children's book double-page spread. Do NOT output square, portrait, or 4:3 proportions.
+- COMPOSITION (CRITICAL): Zoom out! The characters must occupy only a small portion of the scene. Show the full environment around them. Do not use close-ups. Frame as a wide-angle, full-body shot.
+- OPEN SPACE: The right 40% of the image must be a calm, visually empty region — soft sky, plain wall, or smooth blurred gradient. No characters, faces, limbs, or props in this region.
+- Quality: Ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece children's illustration.
+- NO text, letters, words, numbers, signs, or typography anywhere in the image.`;
 
         contents.push({
             text: `\n\n=== GENERATION INSTRUCTIONS ===\n` + (secondReferenceBase64 ? dualPromptText : basePromptText)

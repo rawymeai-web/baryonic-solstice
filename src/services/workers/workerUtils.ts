@@ -55,7 +55,7 @@ export class WorkerUtils {
         if (errorClass === 'deterministic') {
             // Deterministic errors immediately halt the pipeline. No retries.
             await supabase.from('order_jobs').update({ status: 'failed', error_message: `DETERMINISTIC: ${error.message}` }).eq('id', jobId);
-            await supabase.from('orders').update({ status: 'on_hold', error_message: `Halted due to deterministic AI error: ${error.message}` }).eq('id', orderId);
+            await supabase.from('orders').update({ status: 'on_hold', error_message: `Halted due to deterministic AI error: ${error.message}` }).eq('order_number', orderId);
             return;
         }
 
@@ -64,7 +64,7 @@ export class WorkerUtils {
         if (newAttempts >= 3) {
             // Exceeded max retries (3)
             await supabase.from('order_jobs').update({ status: 'failed', error_message: `MAX_RETRIES_EXCEEDED: ${error.message}` }).eq('id', jobId);
-            await supabase.from('orders').update({ status: 'on_hold', error_message: `Pipeline stalled. Max retries exceeded on job ${jobId}.` }).eq('id', orderId);
+            await supabase.from('orders').update({ status: 'on_hold', error_message: `Pipeline stalled. Max retries exceeded on job ${jobId}.` }).eq('order_number', orderId);
         } else {
             // Re-queue with backoff (We just mark it queued, the scheduler could respect a 'run_after' time or we just delay it inherently)
             // For now, setting status to 'queued' allows it to be picked up again immediately by the scheduler, 

@@ -10,7 +10,8 @@ export async function generateStoryDraft(
     childName: string,
     childGender?: 'boy' | 'girl',
     secondCharacter?: any,
-    spreadCount: number = 8
+    spreadCount: number = 8,
+    customStoryText?: string
 ): Promise<{ result: { text: string }[], log: WorkflowLog }> {
 
     const startTime = Date.now();
@@ -40,6 +41,14 @@ export async function generateStoryDraft(
             TASK: Write the final manuscript for individual spreads.
             
             BLUEPRINT: ${JSON.stringify(blueprint)}
+            
+            ${customStoryText ? `**CUSTOM SCRIPT OVERRIDE (CRITICAL MUST FOLLOW):**
+            - The user has provided an exact poem or text for the story:
+            """
+            ${customStoryText}
+            """
+            - **MANDATORY DIRECTIVE:** You MUST use this provided text across the spreads as the foundation of the story verbatim, or adapt it cleanly if needed to match the ${spreadCount} spreads. 
+            - Do NOT invent new plots that deviate from this text.` : ''}
             
             7. **NATIVE LANGUAGE & CULTURAL TRANSLATION:** 
                - The final text MUST be in **${targetLang}**.
@@ -186,7 +195,8 @@ export async function generateStoryDraft(
             8. **CONTENT SAFETY & APPROPRIATENESS (STRICT BAN):**
                - ABSOLUTELY NO skulls, skeletons, weapons, violence, or truly scary monsters.
                - ABSOLUTELY NO rainbows. Do not describe rainbows.
-               - ONLY use completely fictional supporting characters (e.g., talking animals, wizards).
+               - **NO PARENTS/ADULTS VISUALLY:** Even if the custom poem mentions parents ("Mama", "Dad"), treat them as OFF-SCREEN voices or presences. The visual focus AND the active narrative problem-solving MUST remain solely on the children. Do not write action beats that would require drawing an adult.
+               - ONLY use completely fictional supporting characters (e.g., talking animals, wizards) if needed.
                - This is a children's book. Even for "adventure" themes, use kid-friendly props like glowing crystals, ancient maps, compasses, or colorful keys instead.
 
             OUTPUT JSON SCHEMA:

@@ -166,10 +166,9 @@ export async function PUT(req: Request) {
             // When order is paid (queueing for production), freeze the shipping details 
             // so future profile updates don't alter this specific locked order.
             if (status === 'paid_confirmed') {
-                updates.status = 'queued'; // Fast-track to Queued for backend chron
-                if (shippingDetails) {
-                    updates.shipping_snapshot = shippingDetails;
-                }
+                updates.status = 'queued'; // Fast-track to Queued for backend cron
+                // NOTE: shipping_details snapshot is handled by line below (updates.shipping_details),
+                // no separate shipping_snapshot column needed.
                 // TRIGGER SCHEDULER asynchronously since local environment lacks cron
                 MasterScheduler.executeTick().catch(e => console.error("Async Scheduler failed:", e));
             }

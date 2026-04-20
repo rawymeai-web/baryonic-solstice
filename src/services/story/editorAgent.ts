@@ -8,7 +8,8 @@ export async function runEditorPass(
     blueprint: StoryBlueprint,
     language: Language,
     childName: string,
-    childAge: number
+    childAge: number,
+    customStoryText?: string
 ): Promise<{ result: { text: string }[], log: WorkflowLog }> {
 
     const startTime = Date.now();
@@ -75,6 +76,7 @@ export async function runEditorPass(
             Now make your edits based on all identified problems. Apply ALL of the following:
 
             1. **REWRITE FREELY:** You are allowed and expected to rewrite entire paragraphs or spreads that fail. Do not just polish a broken structure.
+            ${customStoryText ? `**CRITICAL EXCEPTION FOR CUSTOM POEM/TEXT:** The user has provided an exact poem/text: """${customStoryText}""". Under NO circumstances should you rewrite, "fix", or change the words of this provided poem. Your ONLY job in this rewrite phase is to distribute the provided words accurately across the spreads. Do not alter the rhythm or vocabulary of the provided text.` : ''}
             2. **CAUSAL CHAIN REPAIR:** Where a character finds something or moves somewhere without a causal trigger, add the physical action that creates the discovery.
             3. **CONTEXT BRIDGE REPAIR:** Where a mythical/new figure appears without context, add a one-sentence introduction that establishes why the child knows them.
             4. **SHOW, DON'T TELL — PHYSICALLY:** Replace every emotional statement with a physical sensation.

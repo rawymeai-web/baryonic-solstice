@@ -42,10 +42,22 @@ export async function generateBlueprint(
             - Moral/Goal: ${storyData.customGoal || "Standard theme goal"}.
             - Challenge: ${storyData.customChallenge || "Standard theme challenge"}.
 
+            **CRITICAL VARIETY RULE (MUST FOLLOW):**
+            - You MUST be highly creative and unpredictable.
+            - If "Standard theme goal" or "Standard theme challenge" is provided, you MUST completely invent a WILDLY NEW, original, and unexpected challenge and goal each time you run. 
+            - DO NOT repeat the same cliché story (e.g., losing a kite in a tree, afraid of the dark, or getting lost in a forest). Invent new scenarios: maybe they are building a spaceship out of cardboard, trying to catch a rogue firefly, or baking a cake that comes to life. Surprise the reader with true variety!
+
             **LANGUAGE RULE:**
             - The "title", "storyCore", "moral", "heroDesire", and "mainChallenge" fields MUST be strictly in **${targetLang}**.
             - EVERYTHING ELSE MUST BE IN ENGLISH ONLY! This includes ALL visual properties: "narrative" summaries, "setting", "timeOfDay", "highlightAction", "visualFocus", and especially the "primaryVisualAnchor". These fields are fed directly to an English-only Image Generation AI, so they must not contain ${targetLang} unless that is English.
             - Ensure the title is catchy and evocative in ${targetLang}.
+            
+            ${storyData.customStoryText ? `**CUSTOM STORY TEXT / POEM (CRITICAL MUST USE):**
+            - The user provided a specific text/poem to be used as the backbone of the story:
+            """
+            ${storyData.customStoryText}
+            """
+            - **MANDATORY DIRECTIVE:** You MUST structure the blueprint spreads explicitly to match the events, sequence, emotional beats, and logic provided in this custom text. Do NOT invent a completely different plot. Shape the Blueprint's Arc to fit this text perfectly across the ${spreadCount} spreads.` : ''}
             
             ${storyData.occasion ? `**SPECIAL OCCASION (CRITICAL):**
             - This story is celebrating a special occasion: **${storyData.occasion}**. 
@@ -65,11 +77,12 @@ export async function generateBlueprint(
             - The story MUST be a Dual-Hero Buddy Adventure where ${storyData.childName} and ${storyData.secondCharacter.name} work together to overcome the obstacle.
             - Ensure ${storyData.secondCharacter.name} is included in the "supportingRoles" JSON array and appears consistently across the narrative.` : ''}
 
-            ${(!storyData.useSecondCharacter || !storyData.secondCharacter || storyData.secondCharacter.type === 'object') ? `**IMMEDIATE FAMILY RESTRICTION (CRITICAL):**
-            - Do NOT include real-life immediate family members: mother, father, siblings, grandparents, aunts, uncles, cousins.
-            - *Reason:* These roles are personal to the child. We must not misreality.
-            - **Exceptions:** You MAY include generic adults (guides, shopkeepers, owls, neighbors) ONLY IF they are NOT presented as family and do NOT act as saviors.
-            - **Rule:** Adults may guide or observe, but the **HERO MUST SOLVE THE PROBLEM**.` : ''}
+            **PARENT & RELATIVE RESTRICTION (CRITICAL MUST FOLLOW):**
+            - ABSOLUTELY NO PARENTS OR REAL-LIFE FAMILY MEMBERS (mother, father, mama, dad, grandparents, aunts, uncles).
+            - Even if the user provided a "Custom Story Text / Poem" that explicitly mentions parents, you MUST keep them 100% OFF-SCREEN and out of the visuals.
+            - NON-RELATIVE ADULTS ARE ALLOWED: You MAY include non-relative fictional or narrative adults (e.g., wizards, teachers, bakers, friendly strangers) if the story requires them. BUT NO PARENTS!
+            - The children/heroes must solve the problem without their parents.
+            - ${(!storyData.useSecondCharacter || !storyData.secondCharacter || storyData.secondCharacter.type === 'object') ? `Do NOT invent siblings.` : `The ONLY allowed family member is the specifically named companion: ${storyData.secondCharacter.name}.`}
 
             ${storyData.selectedStylePrompt === 'PORTALS_OF_WONDER_DYNAMIC' ? `**PORTALS OF WONDER THEME (CRITICAL NARRATIVE RULE):**
             - The plot MUST revolve around discovering and traveling through magical portals.
@@ -253,7 +266,11 @@ export async function generateBlueprint(
 
             const model = ai().getGenerativeModel({
                 model: 'gemini-2.0-flash',
-                generationConfig: { responseMimeType: "application/json" }
+                generationConfig: { 
+                    responseMimeType: "application/json",
+                    temperature: 1.0, 
+                    topP: 0.95
+                }
             });
 
             const response = await model.generateContent(prompt);

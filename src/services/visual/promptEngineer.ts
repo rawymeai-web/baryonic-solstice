@@ -72,6 +72,7 @@ function buildEntity(
     const hairHex = charDNA?.objects?.[0]?.color_details?.base_color_hex || '';
     const hairTexture = charDNA?.objects?.[0]?.surface_properties?.texture || '';
     const hairDesc = [hairTexture, hairHex ? `Hex: ${hairHex}` : ''].filter(Boolean).join(' | ');
+    const clothingDesc = charDNA?.objects?.[0]?.material || '';
 
     const personEntity: VisionPersonEntitySchema = {
         id: token.toLowerCase().replace(/[\[\]]/g, ''),
@@ -86,11 +87,12 @@ function buildEntity(
         immutable_identity: {
             facial_structure: mandatoryElements,
             hair_style_and_color: hairDesc || 'Match attached photo',
+            clothing_lock: `NON-NEGOTIABLE: ${token} must wear the EXACT SAME outfit in every single spread — same color, same style, same fabric, same garment type as clearly visible in the attached reference photo (inlineData[${imageIndex}]). Do NOT change, upgrade, or reinvent the clothing between spreads. Clothing is as fixed as the face.${clothingDesc ? ` Clothing reference: ${clothingDesc}.` : ''}`,
             distinct_marks: sensitivityFactors
         },
         current_variables: {
             pose_action: action,
-            attire: charDNA?.objects?.[0]?.material || 'Consistent with prior spreads — do not invent new clothing',
+            attire: `LOCKED — see immutable_identity.clothing_lock above. Do not alter the outfit.`,
             emotion: emotion
         }
     };
@@ -289,11 +291,12 @@ export async function generatePrompts(
                 },
                 composition: {
                     camera_angle: isCover ? "Eye-level" : finalCameraAngle,
-                    framing: "Wide panoramic establishing shot. No dutch angles.",
+                    framing: "Ultra-wide cinematic 16:9 panoramic frame. Full horizontal sweep. No dutch angles. No square or portrait crops.",
                     depth_of_field: "Shallow — subjects in sharp focus, background in soft painterly blur",
                     focal_point: isSecondCharacterInScene ? `[[HERO_A]] and ${secondToken}` : "[[HERO_A]]",
-                    symmetry_type: "Asymmetric — subject(s) weighted to one side, open negative space on the other",
-                    rule_of_thirds_alignment: `The ${oppSide} side must be completely open and empty background space. Do NOT generate text, lettering, or words in this space.`
+                    symmetry_type: `Asymmetric composition — all characters and action are confined to the ${finalSubjectSide} 55% of the frame. The ${oppSide} 45% must be completely empty of characters, faces, limbs, and props.`,
+                    open_space_directive: `CRITICAL COMPOSITION RULE: The entire ${oppSide} 40-45% of the image must be a calm, visually simple open region — soft sky, a plain wall, gently blurred scenery, or a smooth gradient background. NO characters, NO faces, NO hands, NO props, NO dense foliage, NO complex objects of any kind may appear in this region. This region must be visually clean and uncluttered. Treat it as deliberate negative space.`,
+                    rule_of_thirds_alignment: `Keep all scene action and characters anchored to the ${finalSubjectSide} side. The ${oppSide} side is open breathing room — soft, empty, calm.`
                 },
                 objects: [],
                 background_details: parsedStyleDNA?.background_details || {
@@ -305,6 +308,7 @@ export async function generatePrompts(
                     mandatory_elements_for_recreation: [
                         "Absolutely NO text, typography, fonts, or words generated anywhere in the image.",
                         "Strictly adhere to the selected art style. Avoid photographic realism unless explicitly requested.",
+                        "STRICTLY NO PARENTS: Keep all parents and real-life adult family members completely out of the image. (Non-relative fictional adults like wizards or teachers are allowed if the story requires them).",
                         ...(parsedChildDNA?.reconstruction_notes?.mandatory_elements_for_recreation || []),
                         ...(parsedStyleDNA?.reconstruction_notes?.mandatory_elements_for_recreation || [])
                     ],
@@ -389,7 +393,14 @@ ${sceneDynamics}
 **VISION ARCHITECTURE BLUEPRINT:**
 \`\`\`json
 ${stringifiedSchema}
-\`\`\``;
+\`\`\`
+
+**FINAL OUTPUT MANDATES (NON-NEGOTIABLE):**
+- OUTPUT FORMAT: Ultra-wide 16:9 horizontal panoramic image. This is a children's book double-page spread. DO NOT output a square, portrait, or 4:3 crop.
+- STRICTLY NO PARENTS: Absolutely NO parents, mothers, fathers, or real-life family members allowed anywhere in the image. Keep them off-screen. (Fictional, non-relative adults like wizards or shopkeepers are permitted if the story requires them).
+- OPEN SPACE: The ${oppSide} 40% of the image must be a calm, visually empty region — soft sky, plain wall, or smooth gradient. No characters, no limbs, no props, no busy elements anywhere in this region.
+- QUALITY: Ultra-high resolution, 4K quality, sharp subject, softly blurred background, masterpiece children's illustration.
+- NO TEXT: Absolutely zero letters, words, numbers, signs, or typography anywhere in the rendered image.`;
 
             return {
                 spreadNumber: spread.spreadNumber,

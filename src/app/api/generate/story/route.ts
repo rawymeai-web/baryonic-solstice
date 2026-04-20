@@ -1,4 +1,4 @@
-﻿export const maxDuration = 60;
+export const maxDuration = 60;
 
 import { NextResponse } from 'next/server';
 import { generateStoryDraft } from '@/services/story/narrativeAgent';
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
         }
 
         // 1. Generate Narrative (Raw Draft) using the provided Blueprint
-        const narrativeResponse = await generateStoryDraft(blueprint, language, storyData.childName, storyData.childGender, storyData.secondCharacter, Number(spreadCount));
+        const narrativeResponse = await generateStoryDraft(blueprint, language, storyData.childName, storyData.childGender, storyData.secondCharacter, Number(spreadCount), storyData.customStoryText);
         if (narrativeResponse.log.status === 'Failed') {
             return NextResponse.json({ error: "Narrative generation failed", details: narrativeResponse.log.outputs.error }, { status: 500 });
         }
@@ -25,7 +25,8 @@ export async function POST(req: Request) {
             blueprint,
             language,
             storyData.childName,
-            storyData.childAge
+            storyData.childAge,
+            storyData.customStoryText
         );
 
         return NextResponse.json({
