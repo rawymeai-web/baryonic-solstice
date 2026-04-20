@@ -415,6 +415,7 @@ export interface VisionPersonEntitySchema {
         facial_structure?: string;
         hair_style_and_color?: string;
         distinct_marks?: string;
+        clothing_lock?: string;
     };
     current_variables: {
         pose_action: string;
