@@ -186,6 +186,7 @@ export interface StoryData {
     styleSeed?: number;
     customGoal?: string;
     customChallenge?: string;
+    customStoryText?: string; // NEW: Explicit script or poem provided by user
     customIllustrationNotes?: string;
     blueprint?: StoryBlueprint;
     rawScript?: any[]; // NEW: Capture raw unedited draft for diagnostics
