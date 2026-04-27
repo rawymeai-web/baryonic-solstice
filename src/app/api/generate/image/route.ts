@@ -6,20 +6,38 @@ import { generateMethod4Image } from '@/services/generation/imageGenerator';
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { prompt, stylePrompt, referenceBase64, characterDescription, age, seed, secondReferenceBase64 } = body;
+        const {
+            prompt,
+            stylePrompt,
+            characterDescription,
+            age,
+            seed,
+            // Support both old field name (referenceBase64) and new names (heroRawBase64/heroDNABase64)
+            referenceBase64,
+            heroRawBase64,
+            heroDNABase64,
+            secondReferenceBase64,
+            secondRawBase64,
+            secondDNABase64
+        } = body;
 
-        if (!prompt || !referenceBase64) {
+        // DNA is the primary anchor; fall back to raw photo if DNA is missing
+        const resolvedReference = heroDNABase64 || heroRawBase64 || referenceBase64;
+        const resolvedSecondary = secondDNABase64 || secondRawBase64 || secondReferenceBase64;
+
+        if (!prompt || !resolvedReference) {
+            console.error("Missing inputs — prompt:", !!prompt, "reference:", !!resolvedReference, "body keys:", Object.keys(body));
             return NextResponse.json({ error: "Missing required inputs for image generation" }, { status: 400 });
         }
 
         const result = await generateMethod4Image(
             prompt,
             stylePrompt,
-            referenceBase64,
+            resolvedReference,
             characterDescription,
             age,
             seed,
-            secondReferenceBase64
+            resolvedSecondary
         );
 
         return NextResponse.json(result);
