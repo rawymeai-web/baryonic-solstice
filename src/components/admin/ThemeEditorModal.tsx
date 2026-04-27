@@ -1,6 +1,4 @@
 
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import type { StoryTheme } from '../../types';
 import { Button } from '../ui/Button';
@@ -17,6 +15,7 @@ const newThemeTemplate: StoryTheme = {
     description: { ar: '', en: '' },
     emoji: '',
     category: 'values',
+    // Fix: Added missing visualDNA property to satisfy StoryTheme type
     visualDNA: '',
     skeleton: {
         storyCores: ['', '', ''],
@@ -111,6 +110,7 @@ export const ThemeEditorModal: React.FC<ThemeEditorModalProps> = ({ theme, onSav
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Title (English)</label>
                                     <input value={formData.title.en} onChange={e => setFormData({ ...formData, title: { ...formData.title, en: e.target.value } })} className="w-full p-2 bg-white border rounded-lg text-xs font-bold" />
                                 </div>
+                                {/* Added input for visualDNA to allow editing this required field */}
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Visual DNA (Top Level)</label>
                                     <textarea

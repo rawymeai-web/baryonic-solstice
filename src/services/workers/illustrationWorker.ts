@@ -1,5 +1,6 @@
 import { supabase } from '@/utils/supabaseClient';
 import { generateMethod4Image } from '@/services/generation/imageGenerator';
+import { QualityAgent } from '../visual/qualityAgent';
 import { WorkerUtils } from './workerUtils';
 import { MasterScheduler } from './scheduler';
 import { v4 as uuidv4 } from 'uuid';
@@ -76,51 +77,105 @@ export class IllustrationWorker {
 
                 try {
                     // HERO DNA: We prioritze the processed illustration DNA over the raw photo
-                    const heroDNA = storyData.mainCharacter?.imageDNA?.[0] || storyData.mainCharacter?.imageBases64?.[0];
-                    let secondaryDNA = storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacter?.imageBases64?.[0];
+                    const heroRaw = storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0];
+                    const heroDNA = storyData.mainCharacter?.imageDNA?.[0] || heroRaw;
+                    
+                    let secondaryRaw = storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0];
+                    let secondaryDNA = storyData.secondCharacter?.imageDNA?.[0] || secondaryRaw;
 
                     if (storyData.secondCharacter?.type === 'object') {
                         secondaryDNA = undefined;
+                        secondaryRaw = undefined;
                     }
 
-                    // Impose a 2 minute timeout per single generation
-                    const imgRes = await WorkerUtils.withTimeout(
-                        generateMethod4Image(
-                            promptBlock.imagePrompt,
-                            storyData.selectedStylePrompt || "high quality storybook illustration",
-                            heroDNA, // This is the PRIMARY anchor (Sarah)
-                            childDesc,
-                            childAge,
-                            Math.floor(Math.random() * 100000), // Random Seed
+                    const maxRetries = 3;
+                    let attempt = 0;
+                    let finalBase64 = "";
+                    let isFlagged = false;
+                    let finalFinalUrl = "";
+                    let finalRecommendedSide = promptBlock.mainContentSide || 'Right';
+
+                    while (attempt < maxRetries) {
+                        attempt++;
+                        console.log(`[IllustrationWorker] Spread ${i + 1} - Iteration ${attempt}`);
+                        
+                        // Impose a 2 minute timeout per single generation
+                        // DNA ONLY WORKFLOW: We use heroDNA as the only anchor to preserve style balance
+                        const imgRes = await WorkerUtils.withTimeout(
+                            generateMethod4Image(
+                                promptBlock.imagePrompt,
+                                storyData.selectedStylePrompt || "high quality storybook illustration",
+                                heroDNA, // Using DNA as the primary reference
+                                childDesc,
+                                childAge,
+                                Math.floor(Math.random() * 100000), // Random Seed
+                                secondaryDNA
+                            ),
+                            120000
+                        );
+
+                        const base64Out = imgRes.imageBase64;
+
+                        // Call Quality Agent (we still pass raw to QA to check identity drift if we can, but DNA is what was used to generate)
+                        const qcResult = await QualityAgent.evaluateImage(
+                            base64Out,
+                            heroRaw,
+                            heroDNA,
+                            i === 0 ? 'Cover' : 'Spread',
+                            promptBlock.mainContentSide || 'Right',
+                            secondaryRaw,
                             secondaryDNA
-                        ),
-                        120000
-                    );
+                        );
 
-                    // Image generated successfully.
-                    const base64Out = imgRes.imageBase64;
+                        // Upload to bucket anyway to keep history
+                        const bucket = 'images';
+                        const fileName = `${orderId}/spread_${i + 1}_iter_${attempt}_${Date.now()}.jpg`;
+                        const buffer = Buffer.from(base64Out, 'base64');
+                        const { error: uploadErr } = await supabase.storage.from(bucket).upload(fileName, buffer, { contentType: 'image/jpeg', upsert: true });
+                        
+                        let iterationUrl = `data:image/jpeg;base64,${base64Out}`;
+                        if (!uploadErr) {
+                            const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(fileName);
+                            if (publicData?.publicUrl) iterationUrl = publicData.publicUrl;
+                        } else {
+                            console.warn(`[IllustrationWorker] Failed to upload Spread ${i + 1} iter ${attempt} to bucket, falling back to base64.`, uploadErr);
+                        }
 
-                    // 1. Upload to Supabase Storage instead of inserting Base64 directly into Postgres!
-                    const bucket = 'images';
-                    const fileName = `${orderId}/spread_${i + 1}_${Date.now()}.jpg`;
-                    const buffer = Buffer.from(base64Out, 'base64');
-
-                    const { error: uploadErr } = await supabase.storage
-                        .from(bucket)
-                        .upload(fileName, buffer, {
-                            contentType: 'image/jpeg',
-                            upsert: true
+                        // Log to generation_quality_logs
+                        await supabase.from('generation_quality_logs').insert({
+                            order_id: orderId,
+                            spread_number: i + 1,
+                            iteration_number: attempt,
+                            image_url: iterationUrl,
+                            character_consistency_status: qcResult.characterConsistencyStatus,
+                            character_reasoning: qcResult.characterReasoning,
+                            style_consistency_status: qcResult.styleConsistencyStatus,
+                            style_reasoning: qcResult.styleReasoning,
+                            text_clearance_status: qcResult.textClearanceStatus,
+                            text_reasoning: qcResult.textReasoning,
+                            recommended_text_side: qcResult.recommendedTextSide,
+                            overall_decision: qcResult.overallDecision
                         });
 
-                    let finalUrl = `data:image/jpeg;base64,${base64Out}`; // fallback to base64 if bucket fails
+                        finalBase64 = base64Out;
+                        finalFinalUrl = iterationUrl;
+                        finalRecommendedSide = qcResult.recommendedTextSide;
 
-                    if (!uploadErr) {
-                        const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(fileName);
-                        if (publicData?.publicUrl) {
-                            finalUrl = publicData.publicUrl;
+                        if (qcResult.overallDecision === 'pass') {
+                            console.log(`[IllustrationWorker] Spread ${i + 1} passed QA on iteration ${attempt}.`);
+                            break; // Success!
+                        } else {
+                            console.warn(`[IllustrationWorker] Spread ${i + 1} failed QA on iteration ${attempt}.`);
                         }
-                    } else {
-                        console.warn(`[IllustrationWorker] Failed to upload Spread ${i + 1} to bucket, falling back to base64.`, uploadErr);
+
+                        if (attempt === maxRetries) {
+                            // If max retries hit and still failed, mark as flagged
+                            isFlagged = true;
+                            await supabase.from('generation_quality_logs').update({ overall_decision: 'flagged' })
+                                .eq('order_id', orderId)
+                                .eq('spread_number', i + 1)
+                                .eq('iteration_number', attempt);
+                        }
                     }
 
                     // 2. We patch storyData.pages safely (or initialize)
@@ -128,12 +183,16 @@ export class IllustrationWorker {
                     // Find the original page generated by the story worker to preserve text
                     const safeExistingPage = storyData.pages[i] || {};
 
+                    // Update mainContentSide if QA recommended a better side
+                    promptBlock.mainContentSide = finalRecommendedSide;
+
                     storyData.pages[i] = {
                         ...safeExistingPage,
                         pageNumber: i + 1,
                         text: safeExistingPage.text || promptBlock.storyText, // CRITICAL FIX: Retain original text
-                        illustrationUrl: finalUrl, // NOW USES BUCKET URL (~100 bytes) INSTEAD OF BASE64 (10 MB)
-                        promptDetails: promptBlock
+                        illustrationUrl: finalFinalUrl,
+                        promptDetails: promptBlock,
+                        qcStatus: isFlagged ? 'flagged' : 'pass'
                     };
 
                     pagesUpdated++;

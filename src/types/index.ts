@@ -210,7 +210,7 @@ export interface WorkflowLog {
     durationMs: number;
 }
 
-export type OrderStatus = 'New Order' | 'Processing' | 'Shipping' | 'Completed';
+export type OrderStatus = 'New Order' | 'Processing' | 'Shipping' | 'Completed' | 'draft' | 'pending_payment' | 'paid' | 'processing' | 'shipped' | 'cancelled' | 'failed' | 'paid_confirmed' | 'queued' | 'theme_assigned' | 'story_generating' | 'story_ready' | 'illustrations_generating' | 'illustrations_ready' | 'book_compiling' | 'softcopy_ready' | 'awaiting_preview_approval' | 'sent_to_print' | 'printing' | 'delivered' | 'on_hold' | 'Draft Intent';
 
 export interface AdminCustomer {
     id: string;
@@ -411,6 +411,8 @@ export interface VisionPersonEntitySchema {
         weight: string;
     };
     spatial_anchor: string;
+    position?: string;
+    x_coordinate?: number;
     immutable_identity: {
         facial_structure?: string;
         hair_style_and_color?: string;
@@ -434,6 +436,8 @@ export interface VisionPropEntitySchema {
         weight: string;
     };
     spatial_anchor: string;
+    position?: string;
+    x_coordinate?: number;
     physical_description?: string;
     color_details?: {
         base_color_hex?: string;
@@ -481,6 +485,8 @@ export interface VisionPromptSchema {
         focal_point?: string;
         symmetry_type?: string;
         rule_of_thirds_alignment?: string;
+        composition_rule?: string;
+        do_not_center?: string;
     };
     objects: Array<{
         id?: string;

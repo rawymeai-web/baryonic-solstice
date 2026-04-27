@@ -40,7 +40,9 @@ function buildEntity(
     spatialAnchor: string,
     action: string,
     emotion: string,
-    charType: 'person' | 'object'
+    charType: 'person' | 'object',
+    position?: string,
+    xCoordinate?: number
 ): VisionPersonEntitySchema | VisionPropEntitySchema {
 
     if (charType === 'object') {
@@ -54,6 +56,8 @@ function buildEntity(
                 weight: '1.0 — MATCH EXACTLY'
             },
             spatial_anchor: spatialAnchor,
+            position: position,
+            x_coordinate: xCoordinate,
             physical_description: charDNA?.objects?.[0]?.material || 'Match the attached photo exactly — exact shape and color',
             color_details: charDNA?.objects?.[0]?.color_details || undefined,
             current_variables: { pose_action: action }
@@ -84,6 +88,8 @@ function buildEntity(
             weight: '1.0 — IDENTITY IS NON-NEGOTIABLE'
         },
         spatial_anchor: spatialAnchor,
+        position: position,
+        x_coordinate: xCoordinate,
         immutable_identity: {
             facial_structure: mandatoryElements,
             hair_style_and_color: hairDesc || 'Match attached photo',
@@ -183,6 +189,9 @@ export async function generatePrompts(
             const oppSide = isCover ? emptySide : opp.toLowerCase();
             const coverSubjectSide = isAr ? 'left' : 'right'; // Hero on front cover: EN=right, AR=left
             const finalSubjectSide = isCover ? coverSubjectSide : subjectSide.toLowerCase();
+            const alignPosition = finalSubjectSide === 'left' ? 'left-aligned' : 'right-aligned';
+            const alignX = finalSubjectSide === 'left' ? 0.2 : 0.8;
+            const alignXSecondary = finalSubjectSide === 'left' ? 0.35 : 0.65;
 
             // Parse incoming DNA
             const parsedChildDNA = safeParseJSON(childDescription);
@@ -224,7 +233,9 @@ export async function generatePrompts(
                 `The ${finalSubjectSide} two-thirds of the frame`,
                 safeAction,
                 resolvedEmotion,
-                'person'
+                'person',
+                alignPosition,
+                alignX
             ));
 
             // 2. Secondary entity (Conditional based on Workflow Branch)
@@ -242,7 +253,9 @@ export async function generatePrompts(
                     `Also in the ${finalSubjectSide} two-thirds, facing [[HERO_A]]`,
                     hero2Action,
                     secondEmotion,
-                    'person'
+                    'person',
+                    alignPosition,
+                    alignXSecondary
                 ));
             } else if (isSingleHeroItem && isSecondCharacterInScene) {
                 entities.push(buildEntity(
@@ -252,7 +265,9 @@ export async function generatePrompts(
                     `Integrated naturally with [[HERO_A]]`,
                     "In use or present in the scene",
                     "Neutral",
-                    'object'
+                    'object',
+                    alignPosition,
+                    alignXSecondary
                 ));
             }
 
@@ -296,8 +311,10 @@ export async function generatePrompts(
                     focal_point: isSecondCharacterInScene ? `[[HERO_A]] and ${secondToken}` : "[[HERO_A]]",
                     symmetry_type: `Asymmetric composition — all characters and action are confined to the ${finalSubjectSide} 55% of the frame. The ${oppSide} 45% must be completely empty of characters, faces, limbs, and props.`,
                     open_space_directive: `CRITICAL COMPOSITION RULE: The entire ${oppSide} 40-45% of the image must be a calm, visually simple open region — soft sky, a plain wall, gently blurred scenery, or a smooth gradient background. NO characters, NO faces, NO hands, NO props, NO dense foliage, NO complex objects of any kind may appear in this region. This region must be visually clean and uncluttered. Treat it as deliberate negative space.`,
-                    rule_of_thirds_alignment: `Keep all scene action and characters anchored to the ${finalSubjectSide} side. The ${oppSide} side is open breathing room — soft, empty, calm.`
-                },
+                    rule_of_thirds_alignment: `Keep all scene action and characters anchored to the ${finalSubjectSide} side. The ${oppSide} side is open breathing room — soft, empty, calm.`,
+                    composition_rule: `Force all subjects to the ${finalSubjectSide}-most 40% of the canvas; keep the ${oppSide}-most 60% entirely empty, containing only background wall texture or scenery.`,
+                    do_not_center: "Characters must not be positioned in the center of the frame under any circumstances."
+                } as any,
                 objects: [],
                 background_details: parsedStyleDNA?.background_details || {
                     texture: "Painterly brushwork, soft linework, consistent with art style.",

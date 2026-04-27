@@ -4,6 +4,7 @@ import { getProductSizeById } from './adminService';
 import * as imageStore from './imageStore';
 
 const getJsPDF = () => {
+    if (typeof window === 'undefined') return null;
     // @ts-ignore
     const jspdf = window.jspdf;
     if (jspdf && jspdf.jsPDF) return jspdf.jsPDF;
@@ -12,8 +13,8 @@ const getJsPDF = () => {
     return null;
 };
 
-const getHtml2Canvas = () => (window as any).html2canvas;
-const getJSZip = () => (window as any).JSZip;
+const getHtml2Canvas = () => typeof window !== 'undefined' ? (window as any).html2canvas : null;
+const getJSZip = () => typeof window !== 'undefined' ? (window as any).JSZip : null;
 
 const blobBorderRadii = [
     '47% 53% 70% 30% / 30% 43% 57% 70%',
@@ -412,9 +413,9 @@ export const generateStitchedPdf = async (
     coverBlob: Blob,
     spreadBlobs: Blob[],
     sizeConfig: ProductSize,
-    storyDetails: { title: string, childName: string, childAge: string },
+    storyDetails: { title: string, childName: string, childAge: string, secondCharacterName?: string },
     pages: { text: string }[],
-    language: 'en' | 'ar' = 'en',
+    language: import('../types').Language = 'en',
     orderNumber?: string
 ): Promise<Blob> => {
     const jsPDF = getJsPDF();
@@ -777,7 +778,7 @@ export function createBarcodeHtmlElement(orderNumber: string, width: number, hei
 }
 
 export async function createQrCodeElement(text: string, width: number, height: number): Promise<HTMLImageElement> {
-    const QRCode = (window as any).QRCode;
+    const QRCode = typeof window !== 'undefined' ? (window as any).QRCode : null;
     let dataUrl = "";
     if (QRCode && QRCode.toDataURL) {
         dataUrl = await QRCode.toDataURL(text, { width: width, margin: 0 });

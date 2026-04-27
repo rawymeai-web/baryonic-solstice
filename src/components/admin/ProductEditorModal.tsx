@@ -1,6 +1,4 @@
 
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import type { ProductSize } from '../../types';
 import { Button } from '../ui/Button';
@@ -11,6 +9,7 @@ interface ProductEditorModalProps {
     onClose: () => void;
 }
 
+// Fixed: Added missing 'format' property to coverContent to satisfy ProductSize type requirements (Line 20 fix)
 const newProductTemplate: ProductSize = {
     id: '',
     name: '',
@@ -82,7 +81,6 @@ export const ProductEditorModal: React.FC<ProductEditorModalProps> = ({ product,
         setFormData(prev => ({
             ...prev,
             [section]: {
-                // @ts-ignore
                 ...prev[section],
                 [subSection]: {
                     // @ts-ignore

@@ -57,26 +57,27 @@ export async function describeSubject(imageBase64: string): Promise<string> {
             });
             const response = await model.generateContent([
                 { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } },
-                { text: `ROLE: World-class character designer & architectural vision analyzer. 
+                { text: `ROLE: World-class character designer & architectural vision analyzer.
 TASK: Analyze the provided photo of the subject and extract their physical identity into a strict JSON object. 
 FOCUS: Hair color/style, eye color, face shape, skin tone, unique identifiers, and material properties.
+EXCLUSIONS: Do NOT include transient details such as logos on clothing, text on shirts, strange lighting artifacts, or temporary facial expressions like squints. Normalize expressions to neutral.
 
 MANDATE: Output a valid JSON object following this exact schema structure:
 {
   "objects": [{
     "label": "Main Character Identity",
-    "material": "Describe the clothing material if visible",
+    "material": "Describe the general clothing material/color if visible (IGNORE ALL LOGOS AND TEXT)",
     "surface_properties": {
-      "texture": "Describe hair texture and skin texture"
+      "texture": "Describe hair texture and natural skin texture"
     },
     "color_details": {
       "base_color_hex": "Estimate exact hex color for hair",
-      "secondary_colors": ["Estimate hex for eyes", "Estimate hex for skin tone"]
+      "secondary_colors": ["Estimate hex for eyes", "Estimate exact hex for skin tone"]
     }
   }],
   "reconstruction_notes": {
-    "mandatory_elements_for_recreation": ["Describe the exact facial geometry in high detail (jawline shape, eye spacing and shape, nose bridge/width, lip fullness). Do not list generic categories; describe the physical structure."],
-    "sensitivity_factors": ["List specific physical quirks, asymmetries, or defining traits that MUST be preserved to maintain exact likeness"]
+    "mandatory_elements_for_recreation": ["Describe the exact natural facial geometry in high detail (jawline shape, eye spacing and shape, nose bridge/width, lip fullness). Do not list generic categories; describe the physical structure."],
+    "sensitivity_factors": ["List specific permanent physical traits that MUST be preserved. Do NOT list squints, weird smiles, or transient expressions."]
   }
 }
 Output ONLY valid JSON. No markdown formatting.` }
@@ -233,7 +234,8 @@ export async function generateThemeStylePreview(
 
 **STRICT IDENTITY PRESERVATION:**
 - **Likeness is Critical:** The output MUST look exactly like the specific child in Image 1.
-- **Retain Structural Bone Geometry:** You MUST perfectly preserve the eye spacing, lip thickness, specific nose shape, jawline, and unique facial asymmetries. Do not snap to statistical generic child faces.
+- **Focus strictly on natural facial features and skin tones:** You MUST perfectly preserve the natural eye spacing, lip thickness, specific nose shape, jawline, and skin tone.
+- **IGNORE transient details:** Do not carry over weird expressions like squints, weird lighting artifacts, logos on clothing, or messy backgrounds. Normalize their expression to a pleasant, neutral/slight smile.
 - **Change Only:** The rendering style (brushstrokes, lighting softness, shading logic). The geometry of the face MUST NOT CHANGE.
 - **Age Lock:** Keep them looking approx ${age || "Child"} years old.
 
@@ -243,7 +245,7 @@ ${occasion ? `- **Special Occasion:** Incorporate subtle festive elements relate
 ${customGoal ? `- **Custom Theme Goal:** Match the vibe of "${customGoal}".` : ""}
 - **Shot:** Medium-Close Up (Head & Shoulders).
 - **Focus:** High-impact character portrait.
-- **Pose Request (CRITICAL):** The character MUST be facing directly forward, looking at the camera, with both eyes fully visible. ABSOLUTELY DO NOT generate side profiles, characters looking down, or looking away. This initial image acts as the primary facial mapping DNA for the character across an entire book. If the face is obscured, angled, or turned away, the subsequent illustrations will fail to match the child.
+- **Pose Request (CRITICAL):** DEAD-ON FRONT-FACING PORTRAIT. The character MUST be facing directly forward, looking perfectly straight at the camera, with both eyes fully visible and symmetrically aligned. ABSOLUTELY DO NOT generate side profiles, 3/4 angles, tilted heads, or characters looking away. This image is the strict facial DNA blueprint for the entire book; if the face is angled or obscured, the whole book will fail.
 
 **TECHNICAL MANDATES:**
 - 1:1 Aspect Ratio.
