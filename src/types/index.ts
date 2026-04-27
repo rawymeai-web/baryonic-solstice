@@ -30,6 +30,10 @@ export interface Character {
     description: string;
     refinedDescription?: string;
     relationship?: string;
+    // DNA & reference image fields
+    imageDNA?: string[];          // AI-processed DNA anchor images
+    imageRawUrl?: string;         // Supabase storage URL for the raw uploaded photo
+    dnaImageUrl?: string;         // Supabase storage URL for the processed DNA image
 }
 
 export interface StoryBlueprint {
@@ -133,6 +137,21 @@ export interface AppSettings {
     targetModel: string;
 }
 
+/** One visual unit = one illustration + its two halves of story text */
+export interface Spread {
+    spreadNumber: number;
+    illustrationUrl: string;
+    leftText: string;
+    rightText: string;
+    actualPrompt?: string;
+    textSide?: 'left' | 'right';
+    textOffsetX?: number;
+    textOffsetY?: number;
+    imageOffsetX?: number;
+    imageOffsetY?: number;
+    imageScale?: number;
+}
+
 export interface ShippingDetails {
     name: string;
     address: string;
@@ -186,19 +205,33 @@ export interface StoryData {
     styleSeed?: number;
     customGoal?: string;
     customChallenge?: string;
-    customStoryText?: string; // NEW: Explicit script or poem provided by user
+    customStoryText?: string;
     customIllustrationNotes?: string;
     blueprint?: StoryBlueprint;
-    rawScript?: any[]; // NEW: Capture raw unedited draft for diagnostics
+    rawScript?: any[];
     spreadPlan?: SpreadDesignPlan;
-    finalPrompts?: string[];
+    finalPrompts?: string[] | any[];
     styleReferenceImageBase64?: string;
-    secondCharacterImageBase64?: string; // NEW: Hosted / Raw base64 for secondary character DNA
-    // Added optional fields for debug and comparison
+    secondCharacterImageBase64?: string;
     coverDebugImages?: CoverDebugImages;
     selectedDebugMethods?: string[];
     workflowLogs?: WorkflowLog[];
     language?: Language;
+    // Editor / pipeline fields
+    orderId?: string;                      // Same as orderNumber — used by EditorScreen
+    orderNumber?: string;
+    spreads?: any[];                       // Processed spread objects with illustrationUrl etc.
+    script?: any[];                        // Raw story script
+    coverSubtitle?: string;
+    coverTextSide?: 'left' | 'right';
+    spreadCount?: number;
+    prompts?: any[];                       // Legacy prompts array
+    coverQcStatus?: string;                // QA status for cover (e.g. 'flagged')
+    themeVisualDNA?: string;               // Thematic visual DNA override
+    styleReferenceImageUrl?: string;       // Supabase storage URL for style reference
+    mainCharacterImageBase64?: string;     // Legacy alias for mainCharacter.imageBases64[0]
+    secondCharacterImageUrl?: string;      // Supabase storage URL for secondary character
+    readingDirection?: 'ltr' | 'rtl';     // Reading direction for RTL languages
 }
 
 export interface WorkflowLog {
@@ -210,7 +243,7 @@ export interface WorkflowLog {
     durationMs: number;
 }
 
-export type OrderStatus = 'New Order' | 'Processing' | 'Shipping' | 'Completed' | 'draft' | 'pending_payment' | 'paid' | 'processing' | 'shipped' | 'cancelled' | 'failed' | 'paid_confirmed' | 'queued' | 'theme_assigned' | 'story_generating' | 'story_ready' | 'illustrations_generating' | 'illustrations_ready' | 'book_compiling' | 'softcopy_ready' | 'awaiting_preview_approval' | 'sent_to_print' | 'printing' | 'delivered' | 'on_hold' | 'Draft Intent';
+export type OrderStatus = 'New Order' | 'Processing' | 'Shipping' | 'Completed' | 'draft' | 'pending_payment' | 'paid' | 'processing' | 'shipped' | 'cancelled' | 'failed' | 'paid_confirmed' | 'queued' | 'theme_assigned' | 'story_generating' | 'story_ready' | 'illustrations_generating' | 'illustrations_ready' | 'book_compiling' | 'softcopy_ready' | 'awaiting_preview_approval' | 'sent_to_print' | 'printing' | 'delivered' | 'on_hold' | 'Draft Intent' | 'prompts_ready';
 
 export interface AdminCustomer {
     id: string;

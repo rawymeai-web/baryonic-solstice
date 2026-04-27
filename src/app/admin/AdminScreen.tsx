@@ -15,6 +15,7 @@ import { ThemeEditorModal } from '../../components/admin/ThemeEditorModal';
 import { ThemePreviewView } from '../../components/admin/ThemePreviewView';
 import { StitchingScreen } from '../../components/admin/StitchingScreen';
 import { LegacyProcessModal } from '../../components/admin/LegacyProcessModal';
+import EditorScreen from '../../components/editor/EditorScreen';
 
 interface AdminScreenProps {
     onExit: () => void;
@@ -271,9 +272,11 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onExit, onEditOrder, language
 const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOrders: () => void, onEditOrder?: (order: AdminOrder, isLegacy?: boolean, isRestart?: boolean) => void }> = ({ orders, language, refreshOrders, onEditOrder }) => {
     const [allOrders, setAllOrders] = useState<AdminOrder[]>(orders);
     const [previewingOrder, setPreviewingOrder] = useState<AdminOrder | null>(null);
-    const [editingOrder, setEditingOrder] = useState<AdminOrder | null>(null);
-    const [editIsLegacy, setEditIsLegacy] = useState(false);
-    const [editIsRestart, setEditIsRestart] = useState(false);
+    // editorOrder → opens the full visual EditorScreen
+    const [editorOrder, setEditorOrder] = useState<AdminOrder | null>(null);
+    // isLegacyMode / isResume → when true the EditorScreen auto-runs the pipeline live
+    const [isLegacyMode, setIsLegacyMode] = useState(false);
+    const [isResumeMode, setIsResumeMode] = useState(false);
     const [activeTab, setActiveTab] = useState<'confirmed' | 'drafts'>('confirmed');
     const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -329,24 +332,42 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
         }
     }
 
-    const handleEdit = async (order: AdminOrder, isLegacy: boolean = false, isRestart: boolean = false) => {
-        console.log("AdminScreen: handleEdit called", { orderNumber: order.orderNumber, isLegacy, isRestart });
+    const handleOpenEditor = async (order: AdminOrder) => {
         try {
             setLoadingOrderId(order.orderNumber);
             setLoadingAction('edit');
             const fullOrder = await adminService.getOrderById(order.orderNumber);
             if (fullOrder && fullOrder.storyData) {
-                console.log("AdminScreen: Order fetched, calling onEditOrder", { isLegacy, isRestart });
                 if (onEditOrder) {
-                    onEditOrder(fullOrder, isLegacy, isRestart);
+                    onEditOrder(fullOrder, false, false);
                 } else {
-                    // Backend mode: open LegacyProcessModal inline
-                    setEditIsLegacy(isLegacy);
-                    setEditIsRestart(isRestart);
-                    setEditingOrder(fullOrder);
+                    setIsLegacyMode(false);
+                    setIsResumeMode(false);
+                    setEditorOrder(fullOrder);
                 }
             } else {
-                console.warn("AdminScreen: Order or storyData missing", { fullOrder });
+                alert("Could not load order data.");
+            }
+        } catch (error) {
+            console.error("Error fetching order:", error);
+            alert("Failed to load order details.");
+        } finally {
+            setLoadingOrderId(null);
+            setLoadingAction(null);
+        }
+    };
+
+    // Both Resume and Restart open EditorScreen with isLegacy=true so spreads paint live
+    const handleRunPipeline = async (order: AdminOrder, resume: boolean) => {
+        try {
+            setLoadingOrderId(order.orderNumber);
+            setLoadingAction(resume ? 'pipeline' : 'restart');
+            const fullOrder = await adminService.getOrderById(order.orderNumber);
+            if (fullOrder && fullOrder.storyData) {
+                setIsLegacyMode(true);
+                setIsResumeMode(resume);
+                setEditorOrder(fullOrder);
+            } else {
                 alert("Could not load order data.");
             }
         } catch (error) {
@@ -387,13 +408,28 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     return (
         <div className="space-y-4 animate-enter-forward">
             {previewingOrder && <OrderPreviewModal order={previewingOrder} onClose={() => setPreviewingOrder(null)} language={language} />}
-            {editingOrder && (
-                <LegacyProcessModal
-                    order={editingOrder}
-                    language={language}
-                    onSuccess={() => { setEditingOrder(null); refreshOrders(); }}
-                    onClose={() => { setEditingOrder(null); refreshOrders(); }}
-                />
+
+            {/* Full visual editor — also used for live pipeline painting (isLegacy=true) */}
+            {editorOrder && editorOrder.storyData && (
+                <div className="fixed inset-0 z-50 bg-white overflow-auto">
+                    <EditorScreen
+                        storyData={editorOrder.storyData as any}
+                        language={editorOrder.storyData.language || language}
+                        isGenerating={false}
+                        generationProgress={isLegacyMode ? 0 : 100}
+                        isLegacy={isLegacyMode}
+                        isResume={isResumeMode}
+                        onUpdateStory={async (updates) => {
+                            const merged = { ...editorOrder.storyData, ...updates } as any;
+                            await adminService.saveOrder(editorOrder.orderNumber, merged, editorOrder.shippingDetails, editorOrder.total);
+                            setEditorOrder({ ...editorOrder, storyData: merged });
+                        }}
+                        onFinalize={() => { setEditorOrder(null); refreshOrders(); }}
+                        onBack={() => { setEditorOrder(null); setIsLegacyMode(false); setIsResumeMode(false); }}
+                        shippingDetails={editorOrder.shippingDetails}
+                        total={editorOrder.total}
+                    />
+                </div>
             )}
             
             <div className="flex flex-col sm:flex-row justify-between items-center px-2 gap-4">
@@ -448,18 +484,18 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                         <Button variant="outline" className="!px-2 !py-1 text-[9px] font-black uppercase flex-1 whitespace-nowrap min-w-[100px]" onClick={() => handleInspect(order)} disabled={loadingOrderId === order.orderNumber}>
                                             {loadingOrderId === order.orderNumber && loadingAction === 'inspect' ? 'Loading...' : 'Inspect'}
                                         </Button>
-                                        <Button variant="outline" className="!px-2 !py-1 text-[9px] font-black uppercase border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-white flex-1 whitespace-nowrap min-w-[100px]" onClick={() => handleEdit(order)} disabled={loadingOrderId === order.orderNumber}>
+                                        <Button variant="outline" className="!px-2 !py-1 text-[9px] font-black uppercase border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-white flex-1 whitespace-nowrap min-w-[100px]" onClick={() => handleOpenEditor(order)} disabled={loadingOrderId === order.orderNumber}>
                                             {loadingOrderId === order.orderNumber && loadingAction === 'edit' ? 'Loading...' : 'Open Editor'}
                                         </Button>
-                                        <Button variant="secondary" className="!px-2 !py-1 text-[9px] font-black uppercase text-brand-teal hover:bg-brand-teal hover:text-white border-brand-teal flex-1 whitespace-nowrap min-w-[100px]" onClick={() => handleEdit(order, true, false)} disabled={loadingOrderId === order.orderNumber}>
-                                            Resume Pipeline
+                                        <Button variant="secondary" className="!px-2 !py-1 text-[9px] font-black uppercase text-brand-teal hover:bg-brand-teal hover:text-white border-brand-teal flex-1 whitespace-nowrap min-w-[100px]" onClick={() => handleRunPipeline(order, true)} disabled={loadingOrderId === order.orderNumber}>
+                                            {loadingOrderId === order.orderNumber && loadingAction === 'pipeline' ? 'Loading...' : '▶ Resume Pipeline'}
                                         </Button>
                                         <Button variant="outline" className="text-pink-500 border-pink-500 hover:bg-pink-50 !px-2 !py-1 text-[9px] font-black uppercase flex-1 whitespace-nowrap min-w-[100px]" onClick={() => {
                                             if (window.confirm(`DANGER: Restart ALL Pipeline phases for ${order.orderNumber}? DNA, Story, and Artwork will be permanently overwritten.`)) {
-                                                handleEdit(order, true, true);
+                                                handleRunPipeline(order, false);
                                             }
                                         }} disabled={loadingOrderId === order.orderNumber}>
-                                            Restart Pipeline
+                                            ↺ Restart Pipeline
                                         </Button>
                                         <Button variant="secondary" className="!px-2 !py-1 text-[9px] font-black uppercase flex-1 whitespace-nowrap min-w-[100px]" onClick={() => handleDownloadZip(order)} disabled={isExporting === order.orderNumber || loadingOrderId === order.orderNumber}>
                                             {isExporting === order.orderNumber ? 'Extracting...' : 'Export ZIP'}
