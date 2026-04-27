@@ -271,6 +271,9 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onExit, onEditOrder, language
 const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOrders: () => void, onEditOrder?: (order: AdminOrder, isLegacy?: boolean, isRestart?: boolean) => void }> = ({ orders, language, refreshOrders, onEditOrder }) => {
     const [allOrders, setAllOrders] = useState<AdminOrder[]>(orders);
     const [previewingOrder, setPreviewingOrder] = useState<AdminOrder | null>(null);
+    const [editingOrder, setEditingOrder] = useState<AdminOrder | null>(null);
+    const [editIsLegacy, setEditIsLegacy] = useState(false);
+    const [editIsRestart, setEditIsRestart] = useState(false);
     const [activeTab, setActiveTab] = useState<'confirmed' | 'drafts'>('confirmed');
     const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -337,7 +340,10 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                 if (onEditOrder) {
                     onEditOrder(fullOrder, isLegacy, isRestart);
                 } else {
-                    alert("Editor is not available in the backend app. Please use the frontend app to edit orders.");
+                    // Backend mode: open LegacyProcessModal inline
+                    setEditIsLegacy(isLegacy);
+                    setEditIsRestart(isRestart);
+                    setEditingOrder(fullOrder);
                 }
             } else {
                 console.warn("AdminScreen: Order or storyData missing", { fullOrder });
@@ -381,7 +387,14 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     return (
         <div className="space-y-4 animate-enter-forward">
             {previewingOrder && <OrderPreviewModal order={previewingOrder} onClose={() => setPreviewingOrder(null)} language={language} />}
-            {/* Removed LegacyProcessModal overlay to allow Editor live streaming */}
+            {editingOrder && (
+                <LegacyProcessModal
+                    order={editingOrder}
+                    language={language}
+                    onSuccess={() => { setEditingOrder(null); refreshOrders(); }}
+                    onClose={() => { setEditingOrder(null); refreshOrders(); }}
+                />
+            )}
             
             <div className="flex flex-col sm:flex-row justify-between items-center px-2 gap-4">
                 <div className="flex overflow-x-auto w-full sm:w-auto bg-gray-100 p-1 rounded-xl no-scrollbar">
