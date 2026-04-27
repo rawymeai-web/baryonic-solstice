@@ -44,3 +44,9 @@ next-env.d.ts
 .env*.local
 *.pdf
 
+# local admin/debug scripts (never commit — may contain secrets)
+fetch*.mjs
+test_*.js
+*.local.mjs
+*.sql
+
