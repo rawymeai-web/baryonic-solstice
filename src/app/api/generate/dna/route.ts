@@ -1,4 +1,4 @@
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 import { NextResponse } from 'next/server';
 import { generateThemeStylePreview, describeSubject, describeObjectProp, generateObjectStylePreview } from '@/services/generation/imageGenerator';
@@ -12,41 +12,40 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing character image" }, { status: 400 });
         }
 
-        // 1. Prepare Promises: Run physical descriptions and rendering completely in parallel to save time.
-        const desc1Promise = describeSubject(mainCharacter.imageBases64[0]);
-        
-        const desc2Promise = (secondCharacter && secondCharacter.imageBases64 && secondCharacter.imageBases64[0]) 
-            ? (secondCharacter.type === 'object' ? describeObjectProp(secondCharacter.imageBases64[0]) : describeSubject(secondCharacter.imageBases64[0]))
-            : Promise.resolve("");
+        const hasSecond = !!(secondCharacter && secondCharacter.imageBases64 && secondCharacter.imageBases64[0]);
 
-        // Step 1: Generate textual physical descriptions concurrently (2 API calls)
-        const [description, secondDescription] = await Promise.all([
-            desc1Promise,
-            desc2Promise
-        ]);
-
-        // Step 2: Generate rendering previews concurrently AFTER identity is done (2 API calls)
-        // This avoids hitting Google API with 4 massive concurrent multimodal requests which causes throttling/504s.
-        const [primaryResult, secondaryResult] = await Promise.all([
+        // Run ALL 4 calls fully in parallel — description + render for each character concurrently.
+        // Previously was 2 sequential waves; this cuts total wall-clock time roughly in half.
+        const [primaryResult, secondaryResult, description, secondDescription] = await Promise.all([
+            // 1. Render Hero A DNA image
             generateThemeStylePreview(
                 mainCharacter,
-                undefined, // Do NOT combine them!
+                undefined,
                 theme, style, age, undefined, occasion, customGoal
             ),
-            (secondCharacter && secondCharacter.imageBases64 && secondCharacter.imageBases64.length > 0)
-                ? (secondCharacter.type === 'object' 
-                    ? generateObjectStylePreview(secondCharacter.imageBases64[0], style, secondDescription)
+            // 2. Render Hero B DNA image (if present)
+            hasSecond
+                ? (secondCharacter.type === 'object'
+                    ? generateObjectStylePreview(secondCharacter.imageBases64[0], style, '')
                     : generateThemeStylePreview(
                         secondCharacter as any,
                         undefined,
                         theme, style, secondCharacter.age || age, undefined, occasion, customGoal
                     ))
-                : Promise.resolve(null)
+                : Promise.resolve(null),
+            // 3. Describe Hero A (for text output — used by downstream pipeline steps)
+            describeSubject(mainCharacter.imageBases64[0]),
+            // 4. Describe Hero B (if present)
+            hasSecond
+                ? (secondCharacter.type === 'object'
+                    ? describeObjectProp(secondCharacter.imageBases64[0])
+                    : describeSubject(secondCharacter.imageBases64[0]))
+                : Promise.resolve(""),
         ]);
 
         return NextResponse.json({
             artifiedHeroBase64: primaryResult.imageBase64,
-            secondArtifiedHeroBase64: secondaryResult?.imageBase64,
+            secondArtifiedHeroBase64: (secondaryResult as any)?.imageBase64,
             physicalDescription: description,
             secondPhysicalDescription: secondDescription,
             styleUsed: primaryResult.styleUsed,

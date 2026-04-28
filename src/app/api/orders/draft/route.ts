@@ -3,7 +3,7 @@ import { supabase } from '@/utils/supabaseClient';
 import { uploadBase64Image } from '@/services/imageStore';
 import { MasterScheduler } from '@/services/workers/scheduler';
 
-export const maxDuration = 60; // 60 seconds (Hobby max, adjust if Pro)
+export const maxDuration = 300;
 // Explicitly increase body size limit for App Router Vercel functions
 export const dynamic = 'force-dynamic';
 
