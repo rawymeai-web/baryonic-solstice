@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { StoryData } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
@@ -165,4 +165,3 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
         </div>
     );
 };
-

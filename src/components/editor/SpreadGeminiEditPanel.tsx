@@ -1,4 +1,4 @@
-﻿
+
 import React, { useState } from 'react';
 import { backendApi } from '@/services/backendApi';
 import { compressBase64Image } from '@/utils/imageUtils';
@@ -127,7 +127,7 @@ const SpreadGeminiEditPanel: React.FC<SpreadGeminiEditPanelProps> = ({
                             )}
                             {lastResult && (
                                 <div className="space-y-1">
-                                    <p className="text-[8px] font-black text-teal-500 uppercase tracking-widest">After âœ“</p>
+                                    <p className="text-[8px] font-black text-teal-500 uppercase tracking-widest">After ✓</p>
                                     <div className="aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 border-2 border-teal-300">
                                         <img
                                             src={lastResult.startsWith('data:') ? lastResult : `data:image/jpeg;base64,${lastResult}`}
@@ -161,7 +161,7 @@ const SpreadGeminiEditPanel: React.FC<SpreadGeminiEditPanelProps> = ({
                     {/* Error */}
                     {editError && (
                         <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-[10px] text-red-600 font-mono">
-                            âš  {editError}
+                            ⚠ {editError}
                         </div>
                     )}
 
@@ -206,4 +206,3 @@ const SpreadGeminiEditPanel: React.FC<SpreadGeminiEditPanelProps> = ({
 };
 
 export default SpreadGeminiEditPanel;
-

@@ -42,7 +42,7 @@ export const useLegacyPipeline = (
                 lastError = e;
                 const is429 = e.message?.includes('429') || e.message?.toLowerCase().includes('quota');
                 const delay = is429 ? 25000 : 5000;
-                logMsg(`âš ï¸ ${stepName} failed: ${e.message}. Waiting ${delay/1000}s...`);
+                logMsg(`⚠️ ${stepName} failed: ${e.message}. Waiting ${delay/1000}s...`);
                 await sleep(delay);
             }
         }
@@ -113,7 +113,7 @@ export const useLegacyPipeline = (
 
             // Step 1: DNA & Character
             logMsg(`Starting Phase 1: Visual DNA & Character Profiling`);
-            setStatus(t('Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„Ù‡ÙˆÙŠØ© Ø§Ù„Ø¨ØµØ±ÙŠØ©...', 'Processing Visual DNA...'));
+            setStatus(t('معالجة الهوية البصرية...', 'Processing Visual DNA...'));
             const mainChar = storyData.mainCharacter || {};
             if (!mainChar.imageDNA || mainChar.imageDNA.length === 0) {
                 logMsg(`Character DNA not found. Calling Vision AI API... (This may take 15-30 seconds)`);
@@ -169,14 +169,14 @@ export const useLegacyPipeline = (
                 storyDataRef.current = storyData;
                 onUpdateStory(storyData);
                 await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
-                logMsg(`âœ“ Visual DNA generated successfully.`);
+                logMsg(`✓ Visual DNA generated successfully.`);
             } else {
                 logMsg(`Visual DNA already exists, skipping.`);
             }
             setProgress(15);
 
             // Step 2A: Story Blueprint (Architect AI)
-            setStatus(t('ØªØµÙ…ÙŠÙ… Ø§Ù„Ù…Ø®Ø·Ø·...', 'Architecting the Story...'));
+            setStatus(t('تصميم المخطط...', 'Architecting the Story...'));
             if (!storyData.blueprint) {
                 logMsg(`Calling Architect AI API with Theme: ${ensureSafeString(storyData.theme, 'Birthday')}...`);
                 // Use stripped storyData to avoid Vercel 4.5MB payload limit crashing the text API
@@ -193,14 +193,14 @@ export const useLegacyPipeline = (
                 storyDataRef.current = storyData;
                 onUpdateStory(storyData);
                 await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
-                logMsg(`âœ“ Story Blueprint constructed successfully. Title: "${storyData.title}")`);
+                logMsg(`✓ Story Blueprint constructed successfully. Title: "${storyData.title}")`);
             } else {
                 logMsg(`Blueprint already exists, skipping Phase 2A.`);
             }
             setProgress(25);
 
             // Step 2B: Story Script (Writer AI) & Phase 3: Senior Writer Pass
-            setStatus(t('ÙƒØªØ§Ø¨Ø© Ø§Ù„Ù‚ØµØ© ÙˆÙ…Ø±Ø§Ø¬Ø¹ØªÙ‡Ø§...', 'Drafting & Polishing Script (Writer AI)...'));
+            setStatus(t('كتابة القصة ومراجعتها...', 'Drafting & Polishing Script (Writer AI)...'));
             const isScriptEmpty = !storyData.script || (Array.isArray(storyData.script) && storyData.script.every((s:any) => !s.text || s.text.length < 5));
             if (isScriptEmpty) {
                 logMsg(`Phase 2B: Drafting initial native-language narrative...`);
@@ -213,14 +213,14 @@ export const useLegacyPipeline = (
                 storyDataRef.current = storyData;
                 onUpdateStory(storyData);
                 await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
-                logMsg(`âœ“ Story script written successfully.`);
+                logMsg(`✓ Story script written successfully.`);
             } else {
                 logMsg(`Story details already exist, skipping Phase 2B.`);
             }
             setProgress(30);
 
             // Step 3: Visual Plan
-            setStatus(t('ØªØ®Ø·ÙŠØ· Ø§Ù„Ù…Ø´Ø§Ù‡Ø¯...', 'Planning Visual Layouts...'));
+            setStatus(t('تخطيط المشاهد...', 'Planning Visual Layouts...'));
             if (!storyData.spreadPlan) {
                 logMsg(`Calling Cinematographer AI API...`);
                 const planRes = await retryStep('Cinematographer AI Plan', () => backendApi.generateVisualPlan({ 
@@ -246,7 +246,7 @@ export const useLegacyPipeline = (
             
             // Step 4: Engineering Prompts & Phase 5: Illustrator AI Pass
             logMsg(`Starting Phase 4: AI Prompt Engineering`);
-            setStatus(t('Ù‡Ù†Ø¯Ø³Ø© ÙˆØªØ¯Ù‚ÙŠÙ‚ Ø§Ù„Ø£ÙˆØ§Ù…Ø±...', 'Engineering & Auditing Prompts...'));
+            setStatus(t('هندسة وتدقيق الأوامر...', 'Engineering & Auditing Prompts...'));
             const isPromptsEmpty = !storyData.finalPrompts || (Array.isArray(storyData.finalPrompts) && storyData.finalPrompts.every((p:any) => {
                 if (typeof p === 'string') return p.length < 5;
                 if (typeof p === 'object' && p !== null) return !p.prompt && !p.imagePrompt;
@@ -276,7 +276,7 @@ export const useLegacyPipeline = (
                 storyDataRef.current = storyData;
                 onUpdateStory(storyData);
                 await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
-                logMsg(`âœ“ Prompts engineered successfully.`);
+                logMsg(`✓ Prompts engineered successfully.`);
             } else {
                 logMsg(`Prompts already engineered, skipping.`);
             }
@@ -299,7 +299,7 @@ export const useLegacyPipeline = (
             const hasCoverPrompt = prompts.length > spreadCount;
             const coverPrompt = hasCoverPrompt ? prompts[0] : null;
             const rawInnerPrompts = hasCoverPrompt ? prompts.slice(1) : prompts;
-            // Bug 1: Clamp inner prompts to exactly spreadCount â€” AI sometimes returns N+1
+            // Bug 1: Clamp inner prompts to exactly spreadCount — AI sometimes returns N+1
             const innerPrompts = rawInnerPrompts.slice(0, spreadCount);
             const finalScript = storyData.script || [];
             
@@ -308,10 +308,10 @@ export const useLegacyPipeline = (
             if (!resolvedCoverPrompt && storyData.blueprint?.foundation) {
                 const bp = storyData.blueprint.foundation;
                 resolvedCoverPrompt = `Book cover illustration: ${bp.title || storyData.title}. Hero: ${bp.heroDesire || ''}. Setting: ${(storyData.blueprint.structure?.spreads?.[0]?.specificLocation) || 'magical world'}. Wide panoramic establishing shot.`;
-                logMsg(`âš ï¸ No cover prompt returned by AI â€” synthesized fallback from blueprint.`);
+                logMsg(`⚠️ No cover prompt returned by AI — synthesized fallback from blueprint.`);
             }
 
-            // Build the Spreads array â€” one object per spread, no i*2 duplication
+            // Build the Spreads array — one object per spread, no i*2 duplication
             let spreads: import('../types').Spread[] = storyData.spreads || [];
 
             // Ensure cover slot exists (spreadNumber: 0)
@@ -333,10 +333,10 @@ export const useLegacyPipeline = (
                 const mainContentSide = storyData.spreadPlan?.spreads?.[spreadNum]?.mainContentSide || '';
                 let textSide: 'left' | 'right';
                 if (mainContentSide.toLowerCase().includes('left')) {
-                    // Hero on LEFT â†’ Text on RIGHT
+                    // Hero on LEFT → Text on RIGHT
                     textSide = 'right';
                 } else if (mainContentSide.toLowerCase().includes('right')) {
-                    // Hero on RIGHT â†’ Text on LEFT
+                    // Hero on RIGHT → Text on LEFT
                     textSide = 'left';
                 } else {
                     // No mainContentSide from plan - parse the image prompt for the "empty side" instruction.
@@ -344,10 +344,10 @@ export const useLegacyPipeline = (
                     const rightEmptyMatch = /(?:the\s+)?right\s+(?:side|half)[^.]*empty/i.test(imagePrompt);
                     const leftEmptyMatch = /(?:the\s+)?left\s+(?:side|half)[^.]*empty/i.test(imagePrompt);
                     if (rightEmptyMatch) {
-                        // Right is empty â†’ text goes RIGHT
+                        // Right is empty → text goes RIGHT
                         textSide = 'right';
                     } else if (leftEmptyMatch) {
-                        // Left is empty â†’ text goes LEFT
+                        // Left is empty → text goes LEFT
                         textSide = 'left';
                     } else {
                         // Ultimate fallback: text goes right (right side kept empty by convention)
@@ -381,7 +381,7 @@ export const useLegacyPipeline = (
             await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
 
             const mainDNA = storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0] || storyData.mainCharacter?.imageBases64?.[0];
-            // Bug 5: Do NOT embed themeVisualDNA â€” it can carry old-order Arabic/Oryx data.
+            // Bug 5: Do NOT embed themeVisualDNA — it can carry old-order Arabic/Oryx data.
             // Style comes only from selectedStylePrompt (user's chosen art style).
             const visualStylePrompt = storyData.selectedStylePrompt || 'Painterly, flat 2D illustrated children\'s book style';
             // BUG FIX: Prioritize the stylized imageDNA[0] anchor over the raw uploaded photos to prevent realism bleed
@@ -399,7 +399,7 @@ export const useLegacyPipeline = (
             // --- Generate Cover (Spread 0) ---
             const coverAlreadyDone = storyData.coverImageUrl && storyData.coverImageUrl.length > 55 && !storyData.coverImageUrl.endsWith('...');
             if (!coverAlreadyDone && resolvedCoverPrompt && mainDNA) {
-                setStatus(t('Ø±Ø³Ù… Ø§Ù„ØºÙ„Ø§Ù...', 'Painting Cover...'));
+                setStatus(t('رسم الغلاف...', 'Painting Cover...'));
                 const rawCover = storyDataPropRef.current.finalPrompts?.[0] || resolvedCoverPrompt;
                 const coverImagePrompt = typeof rawCover === 'string' ? rawCover : (rawCover?.imagePrompt || rawCover?.prompt);
                 logMsg(`--> Painting Cover...`);
@@ -411,7 +411,7 @@ export const useLegacyPipeline = (
                 })) as any;
                 if (coverRes.imageBase64 || coverRes.data?.imageBase64) {
                     const b64 = coverRes.imageBase64 || coverRes.data?.imageBase64;
-                    logMsg(`âœ“ Cover perfectly generated.`);
+                    logMsg(`✓ Cover perfectly generated.`);
                     spreads[0] = { ...spreads[0], illustrationUrl: b64, actualPrompt: coverImagePrompt };
                     storyData = { ...storyData, coverImageUrl: b64, actualCoverPrompt: coverImagePrompt, spreads: [...spreads] };
                     storyDataRef.current = storyData;
@@ -426,7 +426,7 @@ export const useLegacyPipeline = (
             // --- Generate Inner Spreads (1..N) ---
             for (let i = 0; i < innerPrompts.length; i++) {
                 const spreadNum = i + 1;
-                setStatus(t(`Ø±Ø³Ù… Ø§Ù„Ù…Ø´Ù‡Ø¯ ${spreadNum}/${innerPrompts.length}...`, `Painting Spread ${spreadNum}/${innerPrompts.length}...`));
+                setStatus(t(`رسم المشهد ${spreadNum}/${innerPrompts.length}...`, `Painting Spread ${spreadNum}/${innerPrompts.length}...`));
 
                 const existingUrl = spreads[spreadNum]?.illustrationUrl;
                 const isCorrupted = existingUrl && (existingUrl.endsWith('...') || existingUrl.length < 55);
@@ -439,7 +439,7 @@ export const useLegacyPipeline = (
                     const imagePrompt = typeof latestRaw === 'string' ? latestRaw : (latestRaw?.imagePrompt || latestRaw?.prompt);
 
                     if (!imagePrompt || !mainDNA) {
-                        logMsg(`âš ï¸ Missing inputs for Spread ${spreadNum}, skipping.`);
+                        logMsg(`⚠️ Missing inputs for Spread ${spreadNum}, skipping.`);
                         continue;
                     }
 
@@ -454,7 +454,7 @@ export const useLegacyPipeline = (
 
                     if (imgRes.imageBase64 || imgRes.data?.imageBase64) {
                         const b64 = imgRes.imageBase64 || imgRes.data?.imageBase64;
-                        logMsg(`âœ“ Spread ${spreadNum} perfectly generated.`);
+                        logMsg(`✓ Spread ${spreadNum} perfectly generated.`);
                         await uploadSpreadImage(spreadNum, b64, imagePrompt);
                     }
                 } else {
@@ -479,7 +479,7 @@ export const useLegacyPipeline = (
             logMsg(`All phases complete!`);
             await adminService.updateOrderStatus(orderNumber, 'Processing' as any);
             setProgress(100);
-            setStatus(t('Ø§ÙƒØªÙ…Ù„ Ø¨Ù†Ø¬Ø§Ø­!', 'Complete!'));
+            setStatus(t('اكتمل بنجاح!', 'Complete!'));
 
         } catch (e: any) {
             console.error("Pipeline Error:", e);
@@ -499,4 +499,3 @@ export const useLegacyPipeline = (
         error
     };
 };
-

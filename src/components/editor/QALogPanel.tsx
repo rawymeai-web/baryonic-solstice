@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as adminService from '@/services/adminService';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -36,7 +36,7 @@ const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex }) => {
                 onClick={() => setIsOpen(true)}
                 className="text-[10px] font-black uppercase text-brand-navy border border-gray-200 hover:border-brand-navy rounded-lg px-3 py-1.5 transition-all mt-2 flex items-center gap-2"
             >
-                <span>ðŸ”</span> View QA Iterations
+                <span>🔍</span> View QA Iterations
             </button>
         );
     }
@@ -45,7 +45,7 @@ const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex }) => {
         <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl w-full">
             <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
                 <h4 className="text-xs font-black text-brand-navy uppercase tracking-widest flex items-center gap-2">
-                    <span>ðŸ”</span> QA Agent Logs
+                    <span>🔍</span> QA Agent Logs
                 </h4>
                 <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,4 +111,3 @@ const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex }) => {
 };
 
 export default QALogPanel;
-

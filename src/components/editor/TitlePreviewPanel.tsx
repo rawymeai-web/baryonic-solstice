@@ -175,12 +175,12 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
                         onClick={handleDownload}
                         className="text-[9px] font-black uppercase text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1.5 rounded-lg transition-all shadow-sm active:scale-95"
                     >
-                        â†“ Save PNG
+                        ↓ Save PNG
                     </button>
                 )}
             </div>
 
-            {/* PNG Preview Area â€” checkered bg shows transparency clearly */}
+            {/* PNG Preview Area — checkered bg shows transparency clearly */}
             <div
                 className="relative w-full rounded-xl overflow-hidden flex items-center justify-center border border-gray-200 shadow-inner"
                 style={{
@@ -234,7 +234,7 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
                             <span className="font-bold text-indigo-600">{tw.toFixed(1)} mm</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-400">Height (â‰ˆ)</span>
+                            <span className="text-gray-400">Height (≈)</span>
                             <span className="font-bold text-indigo-600">{th.toFixed(1)} mm</span>
                         </div>
                     </div>
@@ -296,10 +296,10 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
 
                         {/* Page labels */}
                         <div className="absolute top-1.5 left-2 text-[7px] font-black text-white bg-black/60 px-1.5 py-0.5 rounded-full">
-                            {isAr ? 'â† Front' : 'Back â†’'}
+                            {isAr ? '← Front' : 'Back →'}
                         </div>
                         <div className="absolute top-1.5 right-2 text-[7px] font-black text-white bg-black/60 px-1.5 py-0.5 rounded-full">
-                            {isAr ? 'Back â†’' : 'â† Front'}
+                            {isAr ? 'Back →' : '← Front'}
                         </div>
                     </div>
                 </div>
@@ -309,4 +309,3 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
 };
 
 export default TitlePreviewPanel;
-

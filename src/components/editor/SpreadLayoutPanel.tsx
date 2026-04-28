@@ -1,4 +1,4 @@
-﻿
+
 import React, { useMemo } from 'react';
 import type { Language } from '@/types';
 
@@ -20,9 +20,9 @@ interface SpreadLayoutPanelProps {
 }
 
 // Mirrors the PDF coordinate math in fileService.ts exactly
-const PDF_W = 400; // mm â€” spread page (2 Ã— 20cm)
+const PDF_W = 400; // mm — spread page (2 × 20cm)
 const PDF_H = 200; // mm
-const TEXT_W = PDF_W * 0.40; // 160mm â€” matches rectW in fileService
+const TEXT_W = PDF_W * 0.40; // 160mm — matches rectW in fileService
 
 const SliderRow: React.FC<{
     label: string;
@@ -120,7 +120,7 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
                 className="relative w-full rounded-xl overflow-hidden border border-gray-200 shadow-inner bg-gray-100"
                 style={{ aspectRatio: '2 / 1' }}
             >
-                {/* Blurred background fill â€” visible only when zoomed out below 100% */}
+                {/* Blurred background fill — visible only when zoomed out below 100% */}
                 {imgSrc && imageScale < 100 && (
                     <img
                         src={imgSrc}
@@ -167,7 +167,7 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
                     </div>
                 )}
                 <div className="absolute bottom-1 right-1.5 bg-black/40 text-white text-[7px] font-mono px-1.5 py-0.5 rounded-full">
-                    {PDF_W}Ã—{PDF_H} mm
+                    {PDF_W}×{PDF_H} mm
                 </div>
             </div>
 
@@ -178,13 +178,13 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
                     <div className="flex justify-between"><span className="text-gray-400">X</span><span className="font-bold text-indigo-600">{activeX.toFixed(1)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">Y</span><span className="font-bold text-indigo-600">{activeY.toFixed(1)}</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">W</span><span className="font-bold text-indigo-600">{TEXT_W.toFixed(1)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">H â‰ˆ</span><span className="font-bold text-indigo-600">{TEXT_H_EST.toFixed(1)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">H ≈</span><span className="font-bold text-indigo-600">{TEXT_H_EST.toFixed(1)}</span></div>
                 </div>
                 <div className="bg-white/80 rounded-xl p-2.5 border border-indigo-100 space-y-1 font-mono text-[9px]">
                     <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Image Pan & Zoom</p>
                     <div className="flex justify-between"><span className="text-gray-400">Zoom</span><span className="font-bold text-green-500">{imageScale}%</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">Pan</span><span className="font-bold text-orange-500">X:{activeImgOffset}% Y:{activeImgOffsetY}%</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">PDF Res</span><span className="font-bold text-indigo-600">{PDF_W}Ã—{PDF_H}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">PDF Res</span><span className="font-bold text-indigo-600">{PDF_W}×{PDF_H}</span></div>
                 </div>
             </div>
 
@@ -208,7 +208,7 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
                         }}
                         className="w-full text-[9px] font-black uppercase text-gray-400 hover:text-red-500 transition-colors py-1 mt-2 block"
                     >
-                        â†º Reset to defaults
+                        ↺ Reset to defaults
                     </button>
                 )}
             </div>
@@ -217,4 +217,3 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
 };
 
 export default SpreadLayoutPanel;
-

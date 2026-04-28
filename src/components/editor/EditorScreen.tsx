@@ -39,15 +39,15 @@ interface EditorScreenProps {
 
 const LANGUAGE_MAP: Record<string, string> = {
     'en': 'English',
-    'ar': 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© (Arabic)',
+    'ar': 'العربية (Arabic)',
     'de': 'Deutsch (German)',
-    'es': 'EspaÃ±ol (Spanish)',
-    'fr': 'FranÃ§ais (French)',
-    'pt': 'PortuguÃªs (Portuguese)',
+    'es': 'Español (Spanish)',
+    'fr': 'Français (French)',
+    'pt': 'Português (Portuguese)',
     'it': 'Italiano (Italian)',
-    'ru': 'Ð ÑƒÑÑÐºÐ¸Ð¹ (Russian)',
-    'ja': 'æ—¥æœ¬èªž (Japanese)',
-    'tr': 'TÃ¼rkÃ§e (Turkish)'
+    'ru': 'Русский (Russian)',
+    'ja': '日本語 (Japanese)',
+    'tr': 'Türkçe (Turkish)'
 };
 
 const EditorScreen: React.FC<EditorScreenProps> = ({
@@ -116,7 +116,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const coverPrompt = storyData.actualCoverPrompt || storyData.finalPrompts?.[0] || '';
     const masterDNA = storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0] || (storyData.mainCharacter?.imageBases64 && storyData.mainCharacter.imageBases64[0]);
     const masterDNA2 = storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0];
-    // Raw original photos â€” identity source (separate from styled DNA)
+    // Raw original photos — identity source (separate from styled DNA)
     const masterRaw = storyData.mainCharacter?.imageRawUrl || (storyData.mainCharacter?.imageBases64?.[0] && storyData.mainCharacter.imageBases64[0]);
     const masterRaw2 = storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0];
 
@@ -149,13 +149,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         }, delay);
     };
 
-    // Smart auto-computed subtitle â€” single hero vs double hero
+    // Smart auto-computed subtitle — single hero vs double hero
     const isAr = language === 'ar';
     const hasSecondHero = !!(storyData.useSecondCharacter && storyData.secondCharacter?.name);
     const computedSubtitle = hasSecondHero
-        ? `${storyData.childName} ${isAr ? 'Ùˆ' : '&'} ${storyData.secondCharacter!.name}`
+        ? `${storyData.childName} ${isAr ? 'و' : '&'} ${storyData.secondCharacter!.name}`
         : isAr
-            ? `Ù‚ØµØ© ${storyData.childName}`
+            ? `قصة ${storyData.childName}`
             : `A Story for ${storyData.childName}`;
     // Active subtitle: override if enabled, else auto
     const localSubtitle = useSubtitleOverride ? localSubtitleOverride : computedSubtitle;
@@ -278,7 +278,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         setRegeneratingIndex(index);
         try {
             const masterDNA = storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0] || (storyData.mainCharacter?.imageBases64 && storyData.mainCharacter.imageBases64[0]);
-        // Bug 5: never embed themeVisualDNA â€” use only the art style
+        // Bug 5: never embed themeVisualDNA — use only the art style
             let visualDNA = storyData.selectedStylePrompt || 'Painterly, flat 2D illustrated children\'s book style';
 
             let promptToUse = '';
@@ -475,7 +475,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
     const [isFinalizing, setIsFinalizing] = useState(false);
 
-    // â”€â”€ Global AI Edit state â”€â”€
+    // ── Global AI Edit state ──
     const [globalEditInstruction, setGlobalEditInstruction] = useState('');
     const [isGlobalRegenerating, setIsGlobalRegenerating] = useState(false);
     const [globalEditProgress, setGlobalEditProgress] = useState(0);
@@ -747,12 +747,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         <div className="flex justify-between items-center mb-3">
                             <h4 className="text-xs font-black text-brand-orange uppercase tracking-widest flex items-center gap-2">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                {t('Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ù…Ø±Ø¬Ø¹ÙŠØ© Ù„Ù„Ø¹Ù…ÙŠÙ„', 'Customer Locked DNA')}
+                                {t('الصورة المرجعية للعميل', 'Customer Locked DNA')}
                             </h4>
                             <Button variant="secondary" className="text-[10px] py-1 px-2 h-auto" onClick={() => setIsDNAManagerOpen(true)}>Manage DNA</Button>
                         </div>
 
-                        {/* Hero A â€” Raw Photo + DNA side by side */}
+                        {/* Hero A — Raw Photo + DNA side by side */}
                         {(masterRaw || masterDNA) && (
                             <div className="mb-3">
                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">
@@ -765,9 +765,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                 src={masterRaw.startsWith('http') ? masterRaw : `data:image/jpeg;base64,${masterRaw}`}
                                                 alt="Raw Original Photo"
                                                 className="w-full rounded-xl shadow-sm border-2 border-blue-200 object-cover aspect-square"
-                                                title="Original raw photo â€” identity source"
+                                                title="Original raw photo — identity source"
                                             />
-                                            <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest text-center">ðŸ“· Original Photo</span>
+                                            <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest text-center">📷 Original Photo</span>
                                         </div>
                                     )}
                                     {masterDNA && (
@@ -776,16 +776,16 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                 src={masterDNA.startsWith('http') ? masterDNA : `data:image/jpeg;base64,${masterDNA}`}
                                                 alt="DNA Style Anchor"
                                                 className="w-full rounded-xl shadow-sm border-2 border-orange-200 object-cover aspect-square"
-                                                title="DNA watercolor â€” art style source"
+                                                title="DNA watercolor — art style source"
                                             />
-                                            <span className="text-[8px] font-black text-brand-orange uppercase tracking-widest text-center">ðŸŽ¨ DNA Style</span>
+                                            <span className="text-[8px] font-black text-brand-orange uppercase tracking-widest text-center">🎨 DNA Style</span>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         )}
 
-                        {/* Hero B â€” Raw Photo + DNA side by side */}
+                        {/* Hero B — Raw Photo + DNA side by side */}
                         {(masterRaw2 || masterDNA2) && (
                             <div>
                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Hero B</p>
@@ -796,9 +796,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                 src={masterRaw2.startsWith('http') ? masterRaw2 : `data:image/jpeg;base64,${masterRaw2}`}
                                                 alt="Raw Original Photo B"
                                                 className="w-full rounded-xl shadow-sm border-2 border-blue-200 object-cover aspect-square"
-                                                title="Original raw photo â€” identity source"
+                                                title="Original raw photo — identity source"
                                             />
-                                            <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest text-center">ðŸ“· Original Photo</span>
+                                            <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest text-center">📷 Original Photo</span>
                                         </div>
                                     )}
                                     {masterDNA2 && (
@@ -807,9 +807,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                 src={masterDNA2.startsWith('http') ? masterDNA2 : `data:image/jpeg;base64,${masterDNA2}`}
                                                 alt="DNA Style Anchor B"
                                                 className="w-full rounded-xl shadow-sm border-2 border-orange-200 object-cover aspect-square"
-                                                title="DNA watercolor â€” art style source"
+                                                title="DNA watercolor — art style source"
                                             />
-                                            <span className="text-[8px] font-black text-brand-orange uppercase tracking-widest text-center">ðŸŽ¨ DNA Style</span>
+                                            <span className="text-[8px] font-black text-brand-orange uppercase tracking-widest text-center">🎨 DNA Style</span>
                                         </div>
                                     )}
                                 </div>
@@ -820,7 +820,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
                 {/* 3. STORY BLUEPRINT BLOCK */}
                 <div className="flex justify-between items-center mb-4 mt-2">
-                    <h2 className="text-xl font-bold text-brand-navy uppercase tracking-tighter">{t('Ù…Ø®Ø·Ø· Ø§Ù„Ù‚ØµØ©', 'Story Blueprint')}</h2>
+                    <h2 className="text-xl font-bold text-brand-navy uppercase tracking-tighter">{t('مخطط القصة', 'Story Blueprint')}</h2>
                     <Button onClick={handleDownloadBlueprint} variant="outline" className="text-[10px] py-1 px-3 shadow-none border-gray-200">
                         JSON
                     </Button>
@@ -848,7 +848,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         })}
                     </div>
                 ) : (
-                    <p className="text-gray-400 italic">{t('Ø¬Ø§Ø±ÙŠ Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©...', 'Architecting story...')}</p>
+                    <p className="text-gray-400 italic">{t('جاري المعالجة...', 'Architecting story...')}</p>
                 )}
             </div>
 
@@ -861,19 +861,19 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                 <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                             </button>
                         )}
-                        <h2 className="text-2xl font-black text-brand-navy shrink-0 uppercase tracking-tighter">{t('Ù…Ø­Ø±Ø± Ø§Ù„ØµÙØ­Ø§Øª', 'Spread Editor')}</h2>
+                        <h2 className="text-2xl font-black text-brand-navy shrink-0 uppercase tracking-tighter">{t('محرر الصفحات', 'Spread Editor')}</h2>
                         {(isAnyGenerating || currentError || isBackendProcessing) && (
                             <div className="p-2.5 px-5 rounded-2xl flex items-center gap-4 border bg-orange-50/80 border-orange-200/50 shadow-sm animate-in fade-in zoom-in duration-300">
                                 <Spinner size="sm" color="text-brand-orange" />
                                 <span className="text-xs font-black text-brand-navy uppercase tracking-widest">
-                                    {isBackendProcessing ? backendStatusText : (currentError ? `Error: ${currentError}` : (currentStatus || t('Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªÙˆÙ„ÙŠØ¯...', 'Generating...')))}
+                                    {isBackendProcessing ? backendStatusText : (currentError ? `Error: ${currentError}` : (currentStatus || t('جاري التوليد...', 'Generating...')))}
                                 </span>
                             </div>
                         )}
                     </div>
                     <div className="flex gap-2 lg:gap-3 flex-nowrap lg:flex-wrap overflow-x-auto pb-2 px-1 w-full lg:w-auto scroller-thin shrink-0 snap-x">
                         <Button onClick={() => setShowTerminal(!showTerminal)} variant="outline" className={`shrink-0 snap-start !py-2 !px-4 lg:!py-2.5 lg:!px-6 border-2 transition-all ${showTerminal ? 'bg-brand-navy text-white border-brand-navy' : 'border-gray-200 text-gray-500 hover:border-brand-navy hover:text-brand-navy'}`}>
-                            {showTerminal ? t('Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø³Ø¬Ù„', 'Hide Logs') : t('Ø¹Ø±Ø¶ Ø§Ù„Ø³Ø¬Ù„', 'Show Logs')}
+                            {showTerminal ? t('إخفاء السجل', 'Hide Logs') : t('عرض السجل', 'Show Logs')}
                         </Button>
                         <Button onClick={handleMassUploadText} variant="outline" className="shrink-0 snap-start !py-2 !px-3 lg:!py-2.5 lg:!px-4 border-2 border-gray-200 text-gray-500 hover:border-brand-teal hover:text-brand-teal text-[10px] lg:text-xs">
                             Upload Script
@@ -883,16 +883,16 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         </Button>
                         <div className="flex gap-2 lg:gap-4 shrink-0 snap-start">
                             <Button onClick={() => runPipeline(false)} disabled={isAnyGenerating} variant="secondary" className="!py-2 !px-3 lg:!py-2.5 lg:!px-4 border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-white transition-all font-black uppercase text-[9px] lg:text-[10px]">
-                                {t('Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©', 'Restart Pipeline')}
+                                {t('إعادة المعالجة', 'Restart Pipeline')}
                             </Button>
                             <Button onClick={() => runPipeline(true)} disabled={isAnyGenerating} variant="secondary" className="!py-2 !px-3 lg:!py-2.5 lg:!px-4 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all shadow-lg font-black uppercase text-[9px] lg:text-[10px]">
-                                {t('Ø¥Ø³ØªÙƒÙ…Ø§Ù„ Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©', 'Continue Pipeline')}
+                                {t('إستكمال المعالجة', 'Continue Pipeline')}
                             </Button>
                             <Button onClick={handleSilentSave} disabled={isAnyGenerating || isFinalizing} variant="secondary" className="!py-2 !px-4 lg:!py-2.5 lg:!px-6 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all font-black uppercase text-[9px] lg:text-[10px] flex items-center justify-center gap-2">
-                                ðŸ’¾ {t('Ø­ÙØ¸', 'Save to DB')}
+                                💾 {t('حفظ', 'Save to DB')}
                             </Button>
                             <Button onClick={applyAllEditsAndFinalize} disabled={isAnyGenerating || isFinalizing} className="!py-2 !px-4 lg:!py-2.5 lg:!px-6 shadow-xl shadow-brand-orange/30 font-black uppercase text-[9px] lg:text-[10px] flex items-center justify-center gap-2">
-                                {isFinalizing ? <><Spinner size="sm" color="text-white" /> {t('Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¥Ù†Ù‡Ø§Ø¡...', 'Finalizing...')}</> : t('Ø¥Ù†Ù‡Ø§Ø¡ ÙˆØ­ÙØ¸', 'Finalize')}
+                                {isFinalizing ? <><Spinner size="sm" color="text-white" /> {t('جاري الإنهاء...', 'Finalizing...')}</> : t('إنهاء وحفظ', 'Finalize')}
                             </Button>
                         </div>
                     </div>
@@ -904,10 +904,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
                             <h3 className="text-xl font-black mb-6 text-brand-navy uppercase tracking-tighter flex items-center gap-3">
                                 <div className="w-8 h-8 bg-brand-navy text-white rounded-lg flex items-center justify-center text-xs">C</div>
-                                {t('Ø§Ù„ØºÙ„Ø§Ù', 'Cover Design')}
+                                {t('الغلاف', 'Cover Design')}
                                 {storyData.coverQcStatus === 'flagged' && (
                                     <span className="ml-auto text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full font-bold border border-red-200">
-                                        âš ï¸ QA Flagged for Intervention
+                                        ⚠️ QA Flagged for Intervention
                                     </span>
                                 )}
                             </h3>
@@ -918,12 +918,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         <div className="absolute inset-0 bg-brand-navy/0 group-hover:bg-brand-navy/5 transition-colors duration-300 pointer-events-none"></div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <Button variant="secondary" onClick={() => handleUploadImage('cover')} className="flex-[2] text-xs py-3 font-black uppercase tracking-widest px-2">{t('Ø±ÙØ¹ ØµÙˆØ±Ø©', 'Upload Art')}</Button>
+                                        <Button variant="secondary" onClick={() => handleUploadImage('cover')} className="flex-[2] text-xs py-3 font-black uppercase tracking-widest px-2">{t('رفع صورة', 'Upload Art')}</Button>
                                         <Button variant="outline" onClick={handleFlipCover} disabled={regeneratingIndex === 'cover' || !coverUrl} className="flex-1 text-xs py-3 font-black uppercase tracking-widest px-1 text-gray-500 border-gray-200">
-                                            {regeneratingIndex === 'cover' ? <Spinner size="sm" /> : t('Ù‚Ù„Ø¨ â†”', 'Flip â†”')}
+                                            {regeneratingIndex === 'cover' ? <Spinner size="sm" /> : t('قلب ↔', 'Flip ↔')}
                                         </Button>
                                         <Button onClick={() => handleRegenerateImage('cover')} disabled={regeneratingIndex === 'cover'} className="flex-[2] text-xs py-3 font-black uppercase tracking-widest shadow-lg shadow-brand-orange/20 px-2">
-                                            {regeneratingIndex === 'cover' ? <Spinner size="sm" /> : t('Ø¥Ø¹Ø§Ø¯Ø© ØªÙˆÙ„ÙŠØ¯', 'Paint Art')}
+                                            {regeneratingIndex === 'cover' ? <Spinner size="sm" /> : t('إعادة توليد', 'Paint Art')}
                                         </Button>
                                     </div>
                                     
@@ -963,7 +963,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                      <div>
                                          <div className="flex justify-between items-center px-1 mb-1">
                                              <label className="text-[10px] font-black text-brand-teal uppercase tracking-widest">
-                                                 {storyData.useSecondCharacter ? 'ðŸ‘¥ Hero Names' : 'ðŸŒŸ Hero Name'}
+                                                 {storyData.useSecondCharacter ? '👥 Hero Names' : '🌟 Hero Name'}
                                              </label>
                                              <button
                                                  onClick={() => { setUseSubtitleOverride(v => !v); debouncedSave(100); }}
@@ -973,7 +973,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                          : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                                                  }`}
                                              >
-                                                 {useSubtitleOverride ? 'âœï¸ Custom' : 'âœ¨ Auto'}
+                                                 {useSubtitleOverride ? '✏️ Custom' : '✨ Auto'}
                                              </button>
                                          </div>
                                          {useSubtitleOverride ? (
@@ -987,7 +987,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                              />
                                          ) : (
                                              <div className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium text-gray-600 flex items-center gap-2">
-                                                 <span className="text-base">{storyData.useSecondCharacter ? 'ðŸ‘¥' : 'â­'}</span>
+                                                 <span className="text-base">{storyData.useSecondCharacter ? '👥' : '⭐'}</span>
                                                  <span>{computedSubtitle}</span>
                                                  <span className="ml-auto text-[8px] text-gray-300 font-mono uppercase">auto</span>
                                              </div>
@@ -1024,13 +1024,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             </div>
                         </div>
 
-                        {/* â”€â”€ GLOBAL AI INSTRUCTION BAR â”€â”€ */}
+                        {/* ── GLOBAL AI INSTRUCTION BAR ── */}
                         <div className="bg-gradient-to-br from-violet-950 to-indigo-900 p-8 rounded-[2.5rem] shadow-xl border border-violet-700/40">
                             <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3 mb-2">
                                 <div className="w-8 h-8 bg-violet-500/30 rounded-lg flex items-center justify-center shrink-0">
                                     <svg className="w-4 h-4 text-violet-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                                 </div>
-                                Global AI Edit â€” Apply to All Spreads
+                                Global AI Edit — Apply to All Spreads
                             </h3>
                             <p className="text-[10px] text-violet-300/70 mb-5 font-medium leading-relaxed">Type a visual instruction and paint all spreads with it at once. This gets prepended to every spread's prompt before regeneration.</p>
                             <textarea
@@ -1047,7 +1047,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                 >
                                     {isGlobalRegenerating
                                         ? <><Spinner size="sm" color="text-white" /> Painting All Spreads...</>
-                                        : 'ðŸŽ¨ Apply to All Spreads'}
+                                        : '🎨 Apply to All Spreads'}
                                 </Button>
                                 <button
                                     onClick={() => setGlobalEditInstruction('')}
@@ -1064,17 +1064,17 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             )}
                         </div>
 
-                        {/* Spreads â€” start at index 1; index 0 is the cover rendered above */}
+                        {/* Spreads — start at index 1; index 0 is the cover rendered above */}
                         {Array.from({ length: storyData.spreadCount || Math.max(8, spreads.length - 1) }).map((_, idx) => {
                         const i = idx + 1; // spreads[0] = cover, spreads[1..N] = inner spreads
                         return (
                             <div key={i} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
                                 <h3 className="text-xl font-black mb-6 text-brand-navy uppercase tracking-tighter flex items-center gap-3">
                                     <div className="w-8 h-8 bg-brand-orange/10 text-brand-orange rounded-lg flex items-center justify-center text-xs">{i}</div>
-                                    {t('ØµÙØ­Ø©', 'Spread')} {i}
+                                    {t('صفحة', 'Spread')} {i}
                                     {spreads[i]?.qcStatus === 'flagged' && (
                                         <span className="ml-auto text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full font-bold border border-red-200">
-                                            âš ï¸ QA Flagged for Intervention
+                                            ⚠️ QA Flagged for Intervention
                                         </span>
                                     )}
                                 </h3>
@@ -1090,14 +1090,14 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                             <Spinner size="md" color="text-brand-orange" />
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Painting...</span>
                                                         </div>
-                                                    ) : <span className="text-sm font-medium">{t('Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ¬Ù‡ÙŠØ²...', 'Ready to Paint')}</span>}
+                                                    ) : <span className="text-sm font-medium">{t('جاري التجهيز...', 'Ready to Paint')}</span>}
                                                 </div>
                                             )}
                                         </div>
                                         <div className="flex gap-3">
-                                            <Button variant="secondary" onClick={() => handleUploadImage(i)} className="flex-1 text-xs py-3 font-black uppercase tracking-widest">{t('Ø±ÙØ¹', 'Manual Upload')}</Button>
+                                            <Button variant="secondary" onClick={() => handleUploadImage(i)} className="flex-1 text-xs py-3 font-black uppercase tracking-widest">{t('رفع', 'Manual Upload')}</Button>
                                             <Button onClick={() => handleRegenerateImage(i)} disabled={regeneratingIndex === i} className="flex-1 text-xs py-3 font-black uppercase tracking-widest shadow-lg shadow-brand-orange/20">
-                                                {regeneratingIndex === i ? <Spinner size="sm" /> : t('Ø¥Ø¹Ø§Ø¯Ø©', 'Paint Spread')}
+                                                {regeneratingIndex === i ? <Spinner size="sm" /> : t('إعادة', 'Paint Spread')}
                                             </Button>
                                         </div>
                                         {/* Spread Layout Map + Position Controls */}
@@ -1159,7 +1159,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                             <textarea value={cleanupPromptText(pageEdits[i]?.prompt !== undefined ? pageEdits[i].prompt : getPromptForIndex(i, spreads[i]))} onChange={(e) => handlePromptChange(i, e.target.value)} onBlur={handleSilentSave} className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] text-xs h-64 focus:ring-2 focus:ring-brand-navy/10 outline-none transition-all font-mono leading-relaxed" spellCheck={false} />
                                         </div>
                                     </div>
-                                    {/* Gemini Image Edit Panel â€” collapsible, spans full width */}
+                                    {/* Gemini Image Edit Panel — collapsible, spans full width */}
                                     <div className="col-span-full">
                                         <SpreadGeminiEditPanel
                                             spreadIndex={i}
@@ -1205,7 +1205,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         ) : (
                             pipelineLogs.map((log, idx) => (
                                 <div key={idx} className="group animate-in fade-in slide-in-from-bottom-1 duration-300">
-                                    <div className={`${log.includes('ERROR') || log.includes('FATAL') ? 'text-red-400 bg-red-400/5 p-2 rounded-xl border border-red-400/20' : log.includes('âœ“') ? 'text-brand-teal font-bold' : log.includes('âš ï¸') ? 'text-orange-300' : 'text-gray-400'} leading-relaxed flex items-start gap-3`}>
+                                    <div className={`${log.includes('ERROR') || log.includes('FATAL') ? 'text-red-400 bg-red-400/5 p-2 rounded-xl border border-red-400/20' : log.includes('✓') ? 'text-brand-teal font-bold' : log.includes('⚠️') ? 'text-orange-300' : 'text-gray-400'} leading-relaxed flex items-start gap-3`}>
                                         <span className="text-[8px] font-light text-gray-600 mt-1 shrink-0">{log.split(']')[0]}]</span>
                                         <span className="flex-1">{log.split(']')[1] || log}</span>
                                     </div>
@@ -1241,4 +1241,3 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 };
 
 export default EditorScreen;
-
