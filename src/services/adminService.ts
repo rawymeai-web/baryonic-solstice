@@ -1,7 +1,7 @@
 
 import { supabase } from '../utils/supabaseClient';
-import type { AdminOrder, AdminCustomer, OrderStatus, StoryData, ShippingDetails, ProductSize, StoryTheme, AppSettings } from '../types';
-import { INITIAL_THEMES, ART_STYLE_OPTIONS } from '../constants';
+import type { AdminOrder, AdminCustomer, OrderStatus, StoryData, ShippingDetails, ProductSize, StoryTheme, AppSettings } from '@/types';
+import { INITIAL_THEMES, ART_STYLE_OPTIONS } from '@/constants';
 import * as imageStore from './imageStore';
 
 // --- DB Interfaces ---
@@ -132,8 +132,8 @@ export async function saveSettings(s: AppSettings): Promise<void> {
 
 // --- Connection Check (lightweight HTTP ping — no SQL needed) ---
 export async function checkConnection(): Promise<{ connected: boolean; reason?: string }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     return { connected: false, reason: 'Missing API Keys (.env)' };
@@ -167,7 +167,7 @@ const LOCAL_ORDERS_KEY = 'rawy_local_orders';
 
 function getLocalOrders(): AdminOrder[] {
   try {
-    const raw = window.localStorage.getItem(LOCAL_ORDERS_KEY);
+    const raw = (typeof window !== 'undefined' ? window.localStorage : null as any).getItem(LOCAL_ORDERS_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (e) { return []; }
 }
@@ -183,14 +183,14 @@ function saveLocalOrder(order: AdminOrder) {
   }
 
   try {
-    window.localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(current));
+    (typeof window !== 'undefined' ? window.localStorage : null as any).setItem(LOCAL_ORDERS_KEY, JSON.stringify(current));
   } catch (e: any) {
     if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
       console.warn("Local storage full, purging old orders...");
       // Remove the last 5 oldest orders
       const trimmed = current.slice(0, Math.max(1, current.length - 5));
       try {
-        window.localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(trimmed));
+        (typeof window !== 'undefined' ? window.localStorage : null as any).setItem(LOCAL_ORDERS_KEY, JSON.stringify(trimmed));
       } catch (e2) {
         console.error("Local storage still full after purge.");
       }
@@ -204,13 +204,13 @@ function updateLocalOrderStatus(orderNumber: string, status: OrderStatus) {
   if (index !== -1) {
     current[index].status = status;
     try {
-      window.localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(current));
+      (typeof window !== 'undefined' ? window.localStorage : null as any).setItem(LOCAL_ORDERS_KEY, JSON.stringify(current));
     } catch (e: any) {
       if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
         console.warn("Local storage full on status update, purging old orders...");
         const trimmed = current.slice(0, Math.max(1, current.length - 5));
         try {
-          window.localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(trimmed));
+          (typeof window !== 'undefined' ? window.localStorage : null as any).setItem(LOCAL_ORDERS_KEY, JSON.stringify(trimmed));
         } catch (e2) {}
       }
     }
@@ -299,9 +299,9 @@ export async function saveOrder(orderNumber: string, storyData: StoryData, shipp
 
   let calculatedTotal = total;
   if (calculatedTotal === undefined) {
-    if ((storyData as any).planType === 'monthly') {
+    if (storyData.planType === 'monthly') {
       calculatedTotal = 16.000;
-    } else if ((storyData as any).planType === 'yearly') {
+    } else if (storyData.planType === 'yearly') {
       calculatedTotal = 12.500; // Note: For single order record, we might store the cycle price
     } else {
       calculatedTotal = 18.000 + premiumAddon + 1.500;
@@ -313,7 +313,7 @@ export async function saveOrder(orderNumber: string, storyData: StoryData, shipp
   // OPTIMIZATION: Create a "Light" version of storyData for Fallback/Storage immediately
   // We MUST remove the massive Base64 strings to prevent "Invalid String Length" crashes in JSON.stringify
   const heavyStoryData = storyData;
-  const lightSpreads = ((heavyStoryData as any).spreads || []).map((p: any) => ({
+  const lightSpreads = (heavyStoryData.spreads || []).map(p => ({
     ...p,
     illustrationUrl: p.illustrationUrl?.substring(0, 50) + '...' // Truncate for safety in logs/fallback
   }));
@@ -346,7 +346,7 @@ export async function saveOrder(orderNumber: string, storyData: StoryData, shipp
       cover: heavyStoryData.coverImageUrl && heavyStoryData.coverImageUrl.length > 500 && !heavyStoryData.coverImageUrl.startsWith('http')
         ? new File([await (await fetch(`data:image/jpeg;base64,${heavyStoryData.coverImageUrl}`)).blob()], 'cover.jpeg', { type: 'image/jpeg' }) 
         : undefined,
-      spreads: await Promise.all(((heavyStoryData as any).spreads || []).map(async (p: any, i: number) => {
+      spreads: await Promise.all((heavyStoryData.spreads || []).map(async (p, i) => {
         if (!p.illustrationUrl || p.illustrationUrl.length < 500 || p.illustrationUrl.startsWith('http')) return undefined;
         return new File([await (await fetch(`data:image/jpeg;base64,${p.illustrationUrl}`)).blob()], `page_${i + 1}.jpeg`, { type: 'image/jpeg' });
       }))
@@ -357,21 +357,26 @@ export async function saveOrder(orderNumber: string, storyData: StoryData, shipp
     // 2. Prepare Final Data with URLs (No Base64)
     const finalStoryData = {
       ...lightStoryData,
-      coverImageUrl: imageUrls.cover || heavyStoryData.coverImageUrl, // Replace truncated with URL
-      spreads: ((heavyStoryData as any).spreads || []).map((spread: any, i: number) => {
+      // Fallback chain: new upload URL → existing http URL → heavy (base64 fallback)
+      coverImageUrl: imageUrls.cover || (heavyStoryData.coverImageUrl?.startsWith('http') ? heavyStoryData.coverImageUrl : heavyStoryData.coverImageUrl),
+      spreads: (heavyStoryData.spreads || []).map((spread, i) => {
+        const uploadedUrl = imageUrls.spreads[i];
+        const existingHttpUrl = spread.illustrationUrl?.startsWith('http') ? spread.illustrationUrl : undefined;
         return {
           ...spread,
-          illustrationUrl: imageUrls.spreads[i] || spread.illustrationUrl || ''
+          illustrationUrl: uploadedUrl || existingHttpUrl || spread.illustrationUrl || ''
         };
       }),
       // REQUIRED FOR LEGACY PIPELINE: Do NOT strip the original user portraits (Selfies) from the Cloud Database.
       mainCharacter: { 
         ...lightStoryData.mainCharacter, 
-        imageBases64: heavyStoryData.mainCharacter?.imageBases64 || [] 
+        imageBases64: heavyStoryData.mainCharacter?.imageBases64 || [],
+        imageDNA: heavyStoryData.mainCharacter?.imageDNA || []
       },
       secondCharacter: heavyStoryData.secondCharacter ? { 
         ...lightStoryData.secondCharacter, 
-        imageBases64: heavyStoryData.secondCharacter.imageBases64 || [] 
+        imageBases64: heavyStoryData.secondCharacter.imageBases64 || [],
+        imageDNA: heavyStoryData.secondCharacter.imageDNA || []
       } : undefined
     };
 
@@ -385,27 +390,37 @@ export async function saveOrder(orderNumber: string, storyData: StoryData, shipp
       last_order_date: new Date().toISOString(),
     }, { onConflict: 'id' });
 
-    // 4. Upsert Order
+    // 4. Upsert Order — fetch existing status first so we don't reset it on every save
+    const { data: existingOrder } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('order_number', orderNumber)
+      .single();
+    const preservedStatus = existingOrder?.status || 'New Order';
+
     const { error: orderError } = await supabase.from('orders').upsert({
       order_number: orderNumber,
       customer_id: customerId,
       customer_name: shippingDetails.name,
       total: totalPrice,
-      status: 'New Order',
+      status: preservedStatus, // Preserve existing status — never regress to 'New Order'
       story_data: {
         ...finalStoryData,
+        // CRITICAL: Preserve blueprint and finalPrompts — without these the editor shows 'Architecting story...' on refresh
+        blueprint: heavyStoryData.blueprint || finalStoryData.blueprint,
+        finalPrompts: heavyStoryData.finalPrompts || finalStoryData.finalPrompts,
         // CRITICAL: Re-merge character detail fields that might have been stripped in lightStoryData but are present in heavyStoryData
         mainCharacter: {
             ...finalStoryData.mainCharacter,
-            imageDNA: (heavyStoryData.mainCharacter as any)?.imageDNA || [],
-            imageBases64: (heavyStoryData.mainCharacter as any)?.imageBases64 || [],
-            images: (heavyStoryData.mainCharacter as any)?.images || []
+            imageDNA: heavyStoryData.mainCharacter?.imageDNA || [],
+            imageBases64: heavyStoryData.mainCharacter?.imageBases64 || [],
+            images: heavyStoryData.mainCharacter?.images || []
         },
         secondCharacter: heavyStoryData.secondCharacter ? {
             ...finalStoryData.secondCharacter,
-            imageDNA: (heavyStoryData.secondCharacter as any)?.imageDNA || [],
-            imageBases64: (heavyStoryData.secondCharacter as any)?.imageBases64 || [],
-            images: (heavyStoryData.secondCharacter as any)?.images || []
+            imageDNA: heavyStoryData.secondCharacter?.imageDNA || [],
+            imageBases64: heavyStoryData.secondCharacter?.imageBases64 || [],
+            images: heavyStoryData.secondCharacter?.images || []
         } : undefined
       },
       shipping_details: shippingDetails,
@@ -637,17 +652,39 @@ export async function getSubscriptions() {
   return data;
 }
 
-export async function getQualityLogs(orderId: string, spreadIndex: number) {
+export async function getQualityLogs(orderId: string, spreadNumber: number) {
   const { data, error } = await supabase
     .from('generation_quality_logs')
     .select('*')
     .eq('order_id', orderId)
-    .eq('spread_index', spreadIndex)
-    .order('iteration', { ascending: true });
+    .eq('spread_number', spreadNumber)
+    .order('iteration_number', { ascending: true });
 
   if (error) {
-    console.error(`Failed to fetch QA logs for order ${orderId} spread ${spreadIndex}:`, error);
+    console.error(`Failed to fetch QA logs for order ${orderId} spread ${spreadNumber}:`, error);
     return [];
   }
   return data;
+}
+
+export async function runQACheck(payload: {
+  orderId: string;
+  spreadIndex: number;
+  imageUrl: string;
+  blueprintJson: string;
+  dnaImages: { base64: string; label: string }[];
+  iterationNumber: number;
+}) {
+  const response = await fetch('/api/generate/qa', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to run QA check');
+  }
+
+  return response.json();
 }

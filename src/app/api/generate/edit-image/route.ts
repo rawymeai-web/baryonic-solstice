@@ -96,7 +96,7 @@ ${safeInstruction}
         contents.push({ text: editPrompt });
 
         const model = getAi().getGenerativeModel({
-            model: 'gemini-3-pro-image-preview',
+            model: 'gemini-2.5-flash-image',
         });
 
         const response = await model.generateContent(contents);

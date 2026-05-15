@@ -1,5 +1,7 @@
 -- Migration: Add generation_quality_logs table for QA Agent
 
+DROP TABLE IF EXISTS public.generation_quality_logs CASCADE;
+
 CREATE TABLE IF NOT EXISTS public.generation_quality_logs (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

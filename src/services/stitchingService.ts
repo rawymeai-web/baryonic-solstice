@@ -1,7 +1,7 @@
-import type { AdminOrder, Language, ProductSize, StoryData, Page } from '../types';
+import type { AdminOrder, Language, ProductSize, StoryData, Page } from '@/types';
 
 // @ts-ignore
-const getHtml2Canvas = () => typeof window !== 'undefined' ? (window as any).html2canvas : null;
+const html2canvas = typeof window !== 'undefined' ? (window as any).html2canvas : null;
 
 /**
  * The main orchestrator for stitching a single image. It creates an off-screen container,
@@ -48,8 +48,6 @@ export async function stitchImageWithOverlays(
     // Append to DOM to allow html2canvas to render it
     document.body.appendChild(container);
 
-    const html2canvas = getHtml2Canvas();
-    if (!html2canvas) throw new Error("html2canvas not loaded");
     const canvas = await html2canvas(container, {
         width: width,
         height: height,
@@ -62,7 +60,7 @@ export async function stitchImageWithOverlays(
     document.body.removeChild(container);
 
     return new Promise((resolve, reject) => {
-        canvas.toBlob((blob: Blob | null) => {
+        canvas.toBlob((blob: any) => {
             if (blob) {
                 resolve(blob);
             } else {

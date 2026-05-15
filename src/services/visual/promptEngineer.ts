@@ -1,428 +1,439 @@
+/**
+ * PROMPT ENGINEER — v6.0 (DNA-Only)
+ *
+ * PHILOSOPHY:
+ *   "Here is HERO_1 (DNA image). Here is HERO_2 (DNA image).
+ *    Put them in scene X doing action Y in style Z."
+ *
+ *   ONE image per hero = the approved stylized DNA reference.
+ *   No raw photos. No fusion. No identity anchors.
+ *   The DNA image IS the character authority.
+ */
 
-import { ai, cleanJsonString, withRetry } from '../generation/modelGateway';
-import { sanitizePrompt } from '../generation/imageGenerator';
-import { GUIDEBOOK } from '../rules/guidebook';
-import { SpreadDesignPlan, StoryBlueprint, WorkflowLog, Language, VisionPromptSchema, VisionPersonEntitySchema, VisionPropEntitySchema } from '../../types';
+import {
+    SpreadDesignPlan, SpreadPlan, StoryBlueprint, WorkflowLog,
+    StyleProfile, HeroProfile, SceneProp
+} from '../../types';
 
-// ============================================================
-// EMOTION EXPANSION MAP
-// Maps Blueprint emotionalBeat labels to cinematic descriptions
-// that the image model can directly translate to facial/body cues.
-// ============================================================
-const EMOTION_MAP: Record<string, string> = {
-    'Hopeful':     'soft upward gaze, gentle closed-mouth smile, shoulders relaxed and open',
-    'Curious':     'wide bright eyes, head tilted slightly to one side, one eyebrow subtly raised',
-    'Excited':     'open beaming smile, eyes wide and sparkling, body leaning eagerly forward',
-    'Sad':         'downcast eyes looking at the floor, small pressed lips, slumped shoulders, heavy posture',
-    'Scared':      'eyes wide and tense, jaw tight, body pulled slightly inward and hunched',
-    'Frustrated':  'tight lips pressed together, brow furrowed, hands balled at sides',
-    'Determined':  'firm set jaw, steady forward gaze, chin slightly raised, chest forward',
-    'Relieved':    'eyes gently closed in exhale, warm soft smile, visibly relaxed posture',
-    'Proud':       'head lifted high, wide genuine grin, standing tall with open chest',
-    'Lonely':      'eyes unfocused and distant, very still body, small and quiet — withdrawn posture',
-};
+// ---------------------------------------------------------------------------
+// VALIDATION & SANITIZATION
+// ---------------------------------------------------------------------------
 
-function safeParseJSON(text: string): any {
-    if (!text) return null;
-    try { return JSON.parse(text); }
-    catch { return null; }
+const UNNAMED_CHARACTER_TERMS = [
+    'other kids', 'the kids', 'other children', 'the children',
+    'a group of kids', 'some kids', 'some children', 'the crowd',
+    'crowd of', 'group of children', 'friends', 'classmates',
+    'bystanders', 'passersby', 'people around', 'children around',
+    'background children', 'other people', 'onlookers',
+];
+
+const FORBIDDEN_WORDS = [
+    'photobook', 'photo book', "children's book", 'kids book',
+    'double-page spread', 'double page spread', 'printed spread',
+    'crease', 'fold', 'book cover', 'story cover',
+    'real photo', 'identity anchor', 'raw photo', 'photograph',
+    'fuse', 'fusion',
+];
+
+const LOGO_BRANDS = ['NASA', 'Nike', 'Adidas', 'Apple', 'Disney'];
+
+export interface PromptValidationResult {
+    passed: boolean;
+    errors: string[];
+    warnings: string[];
 }
 
-// ============================================================
-// ENTITY BUILDER
-// Builds a strongly-typed entity object for the JSON prompt.
-// Branches on character type: 'person' vs 'object'.
-// ============================================================
-function buildEntity(
-    charDNA: any,
-    token: string,
-    imageIndex: number,
-    spatialAnchor: string,
-    action: string,
-    emotion: string,
-    charType: 'person' | 'object',
-    position?: string,
-    xCoordinate?: number
-): VisionPersonEntitySchema | VisionPropEntitySchema {
+function validateAssembledPrompt(prompt: string): PromptValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const lower = prompt.toLowerCase();
 
-    if (charType === 'object') {
-        const propEntity: VisionPropEntitySchema = {
-            id: token.toLowerCase().replace(/[\[\]]/g, ''),
-            unique_token_name: token,
-            entity_type: 'prop_entity',
-            source_reference: {
-                image_input: `inlineData[${imageIndex}] — Attached Image ${imageIndex + 1}`,
-                binding_instruction: `${token} IS this specific object. Match its exact shape, color, texture, and material as seen in the photo. Do not substitute a different object type.`,
-                weight: '1.0 — MATCH EXACTLY'
-            },
-            spatial_anchor: spatialAnchor,
-            position: position,
-            x_coordinate: xCoordinate,
-            physical_description: charDNA?.objects?.[0]?.material || 'Match the attached photo exactly — exact shape and color',
-            color_details: charDNA?.objects?.[0]?.color_details || undefined,
-            current_variables: { pose_action: action }
-        };
-        return propEntity;
+    // 1. HARD FAIL: unnamed character terms
+    UNNAMED_CHARACTER_TERMS.forEach(term => {
+        if (lower.includes(term.toLowerCase())) {
+            errors.push(`UNNAMED_CHARACTER: "${term}" found.`);
+        }
+    });
+
+    // 2. HARD FAIL: forbidden words
+    FORBIDDEN_WORDS.forEach(word => {
+        if (lower.includes(word.toLowerCase())) {
+            errors.push(`FORBIDDEN_WORD: "${word}" found.`);
+        }
+    });
+
+    // 3. WARNING: real brand logos that conflict with no-text rule
+    LOGO_BRANDS.forEach(brand => {
+        if (prompt.includes(brand)) {
+            warnings.push(`LOGO_RISK: "${brand}" brand name found — the AI may render real logo text. Replace with a generic description.`);
+        }
+    });
+
+    return { passed: errors.length === 0, errors, warnings };
+}
+
+function sanitizeText(text: string): string {
+    let clean = text;
+    // Only strip exact forbidden phrases — use \b boundaries to avoid destroying partial words
+    // e.g. 'photograph' should NOT strip from 'photographic'
+    const safeForbidden = [
+        'photobook', 'photo book', "children's book", 'kids book',
+        'double-page spread', 'double page spread', 'printed spread',
+        'crease', 'fold', 'book cover', 'story cover',
+        'real photo', 'identity anchor', 'raw photo',
+        'fuse', 'fusion',
+    ];
+    safeForbidden.forEach(word => {
+        clean = clean.replace(new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), '');
+    });
+    // Replace real-world logo names with safe alternatives
+    clean = clean.replace(/\bNASA\b/g, 'space-themed emblem');
+    return clean.replace(/\s{2,}/g, ' ').trim();
+}
+
+function sanitizeUnnamedCharacters(text: string, heroTokens: string[]): string {
+    let clean = text;
+    UNNAMED_CHARACTER_TERMS.forEach(term => {
+        const replacement = heroTokens.length >= 2 ? heroTokens[1] : 'the surrounding environment';
+        clean = clean.replace(new RegExp(term, 'gi'), replacement);
+    });
+    return clean;
+}
+
+// ---------------------------------------------------------------------------
+// SECTION A — HERO REFERENCE (DNA-ONLY)
+// ---------------------------------------------------------------------------
+function buildHeroReferenceParagraph(heroes: HeroProfile[]): string {
+    if (heroes.length === 0) return '';
+
+    const blocks: string[] = [];
+
+    // Image count header — tells Gemini upfront how many character images are attached
+    const imageCount = heroes.filter(h => (h as any).stylized_dna_image_index > 0).length;
+    if (imageCount > 0) {
+        blocks.push(
+            `This prompt is accompanied by ${imageCount} character reference image${imageCount > 1 ? 's' : ''}. ` +
+            `Each image shows the approved stylized character that must appear in this scene.`
+        );
     }
 
-    const sensitivityFactors = Array.isArray(charDNA?.reconstruction_notes?.sensitivity_factors)
-        ? charDNA.reconstruction_notes.sensitivity_factors.join('; ')
-        : (charDNA?.reconstruction_notes?.sensitivity_factors || 'As visible in photo');
+    heroes.forEach((h, idx) => {
+        const token = h.token || `[[HERO_${idx + 1}]]`;
+        const dnaIdx = (h as any).stylized_dna_image_index;
 
-    const mandatoryElements = Array.isArray(charDNA?.reconstruction_notes?.mandatory_elements_for_recreation)
-        ? charDNA.reconstruction_notes.mandatory_elements_for_recreation.join('; ')
-        : 'Match attached photo exactly';
-
-    const hairHex = charDNA?.objects?.[0]?.color_details?.base_color_hex || '';
-    const hairTexture = charDNA?.objects?.[0]?.surface_properties?.texture || '';
-    const hairDesc = [hairTexture, hairHex ? `Hex: ${hairHex}` : ''].filter(Boolean).join(' | ');
-    const clothingDesc = charDNA?.objects?.[0]?.material || '';
-
-    const personEntity: VisionPersonEntitySchema = {
-        id: token.toLowerCase().replace(/[\[\]]/g, ''),
-        unique_token_name: token,
-        entity_type: 'person_entity',
-        source_reference: {
-            image_input: `inlineData[${imageIndex}] — Attached Image ${imageIndex + 1}`,
-            binding_instruction: `IDENTITY LOCK: ${token} IS the person in this specific photo. The photo is the absolute ground truth. You MUST perfectly preserve the resemblance. Use the provided facial structural geometry to replicate the exact eye spacing, nose shape, lip thickness, and jawline seen in the reference photo. This is a strict rotoscope requirement. Do NOT fall back on generic structural defaults.`,
-            weight: '1.0 — IDENTITY IS NON-NEGOTIABLE'
-        },
-        spatial_anchor: spatialAnchor,
-        position: position,
-        x_coordinate: xCoordinate,
-        immutable_identity: {
-            facial_structure: mandatoryElements,
-            hair_style_and_color: hairDesc || 'Match attached photo',
-            clothing_lock: `NON-NEGOTIABLE: ${token} must wear the EXACT SAME outfit in every single spread — same color, same style, same fabric, same garment type as clearly visible in the attached reference photo (inlineData[${imageIndex}]). Do NOT change, upgrade, or reinvent the clothing between spreads. Clothing is as fixed as the face.${clothingDesc ? ` Clothing reference: ${clothingDesc}.` : ''}`,
-            distinct_marks: sensitivityFactors
-        },
-        current_variables: {
-            pose_action: action,
-            attire: `LOCKED — see immutable_identity.clothing_lock above. Do not alter the outfit.`,
-            emotion: emotion
+        if (dnaIdx > 0) {
+            blocks.push(
+                `Image ${dnaIdx} defines the character for ${token}. ` +
+                `Use it as the sole authoritative source for ${token}'s face, hairstyle, skin tone, ` +
+                `body proportions, gender, age, outfit, and overall character design. ` +
+                `Render ${token} as the exact character shown in Image ${dnaIdx} — ` +
+                `same face, same hair, same outfit, same body type. ` +
+                `Only change pose, expression, and action to fit this scene. ` +
+                `Do not redesign, age up, age down, or change the gender of ${token}.`
+            );
         }
-    };
-    return personEntity;
+    });
+
+    // Distinctness block — scales with hero count
+    if (heroes.length === 2) {
+        const [a, b] = heroes.map(h => h.token || '[[HERO_?]]');
+        blocks.push(
+            `${a} and ${b} are two different people. ` +
+            `Do not swap, blend, or share any facial features, hairstyles, ` +
+            `outfits, skin tones, or body types between them.`
+        );
+    } else if (heroes.length >= 3) {
+        const tokenList = heroes.map(h => h.token || '[[HERO_?]]').join(', ');
+        blocks.push(
+            `${tokenList} are three distinct people — each with their own unique face, ` +
+            `hairstyle, outfit, skin tone, and body type as shown in their respective reference images. ` +
+            `Do not blend, swap, or share any visual traits between any of them.`
+        );
+    }
+
+    return blocks.join('\n\n');
 }
 
+// ---------------------------------------------------------------------------
+// SECTION B — STYLE INSTRUCTION (fully dynamic from StyleProfile)
+// ---------------------------------------------------------------------------
+function buildStyleInstruction(style: StyleProfile): string {
+    const parts: string[] = [];
+
+    // Core style directive
+    if (style.positive_style_lock) {
+        parts.push(
+            `Create a wide 16:9 illustration in this exact visual style: ${sanitizeText(style.positive_style_lock)} ` +
+            `Keep the entire image — characters, environment, lighting, and all props — in this same unified stylized world.`
+        );
+    }
+
+    // Character rendering
+    if (style.character_rendering_rules) {
+        parts.push(`Character rendering: ${sanitizeText(style.character_rendering_rules)}`);
+    }
+
+    // Environment rendering
+    if (style.environment_rendering_rules) {
+        parts.push(`Environment rendering: ${sanitizeText(style.environment_rendering_rules)}`);
+    }
+
+    // Lighting
+    if ((style as any).lighting_rules) {
+        parts.push(`Lighting: ${sanitizeText((style as any).lighting_rules)}`);
+    }
+
+    // Color
+    if ((style as any).color_rules) {
+        parts.push(`Color: ${sanitizeText((style as any).color_rules)}`);
+    }
+
+    // Texture
+    if ((style as any).texture_rules) {
+        parts.push(`Texture: ${sanitizeText((style as any).texture_rules)}`);
+    }
+
+    // Line treatment (2D styles)
+    if ((style as any).line_treatment) {
+        parts.push(`Lines: ${sanitizeText((style as any).line_treatment)}`);
+    }
+
+    // Shading treatment (2D styles)
+    if ((style as any).shading_treatment) {
+        parts.push(`Shading: ${sanitizeText((style as any).shading_treatment)}`);
+    }
+
+    // Background treatment (2D styles)
+    if ((style as any).background_treatment) {
+        parts.push(`Background treatment: ${sanitizeText((style as any).background_treatment)}`);
+    }
+
+    // Hard forbidden styles
+    if (style.forbidden_styles?.length) {
+        parts.push(`Do NOT render in any of these styles: ${style.forbidden_styles.join(', ')}.`);
+    }
+
+    return parts.filter(s => s.trim().length > 0).join(' ');
+}
+
+// ---------------------------------------------------------------------------
+// SECTION C — SCENE INSTRUCTION
+// ---------------------------------------------------------------------------
+function buildSceneInstruction(spread: SpreadPlan): string {
+    const s = spread.setting;
+    const parts: string[] = [];
+
+    if (s.specific_location) parts.push(`The scene takes place in ${s.specific_location}`);
+    if (s.environment_type) parts.push(`(${s.environment_type})`);
+    if (s.time_of_day) parts.push(`during the ${s.time_of_day}`);
+    if (s.mood) parts.push(`with a ${s.mood} mood`);
+
+    let sentence = parts.join(' ') + '.';
+    if (s.lighting) sentence += ` Lighting: ${s.lighting}.`;
+    if (s.color_palette) sentence += ` Color palette: ${s.color_palette}.`;
+
+    return sentence.replace(/\.\./g, '.');
+}
+
+// ---------------------------------------------------------------------------
+// SECTION D — ACTION INSTRUCTION
+// ---------------------------------------------------------------------------
+function buildActionInstruction(spread: SpreadPlan, heroes: HeroProfile[]): string {
+    const actions = spread.hero_actions;
+    if (!actions || actions.length === 0) return '';
+
+    const heroTokens = heroes.map(h => h.token || '[[HERO_?]]');
+
+    const normalizeTokenCase = (text: string): string =>
+        text.replace(/\[\[hero_(\d+)\]\]/gi, (_, n) => `[[HERO_${n}]]`);
+
+    const lines = actions.map(a => {
+        const cleanAction = sanitizeUnnamedCharacters(normalizeTokenCase(sanitizeText(a.action)), heroTokens);
+        const token = normalizeTokenCase(a.token);
+
+        const expression = a.expression
+            ? normalizeTokenCase(a.expression).replace(/\.$/, '').trim()
+            : null;
+        const eyeLine = a.eye_line
+            ? normalizeTokenCase(a.eye_line).replace(/\.$/, '').trim()
+            : null;
+
+        let line = `Show ${token} ${cleanAction}`;
+        if (expression) line += `, with a ${expression} expression`;
+        if (eyeLine) line += `, ${eyeLine}`;
+
+        return line.trim().replace(/\.+$/, '') + '.';
+    });
+
+    const actionSide = spread.composition.action_zone_side || 'right';
+    const containmentGuard =
+        `All characters and actions must remain contained on the ${actionSide} side. ` +
+        `Do not let any action or limb cross into the opposite side.`;
+
+    return lines.join('\n') + '\n' + containmentGuard;
+}
+
+// ---------------------------------------------------------------------------
+// SECTION E — PROPS INSTRUCTION
+// ---------------------------------------------------------------------------
+function buildPropsInstruction(props: SceneProp[]): string {
+    if (!props || props.length === 0) return '';
+
+    const propLines = props.map(p => {
+        // Sanitize prop descriptions to strip forbidden words before they reach the validator
+        let desc = `${p.name}: ${sanitizeText(p.physical_description)}`;
+        if (p.text_safe_rendering && p.text_safe_rendering.trim().length > 0) {
+            desc += ` Important: ${p.text_safe_rendering}`;
+        } else if (p.text_risk && p.text_risk !== 'none') {
+            desc += ` No readable text, letters, or numbers on this prop.`;
+        }
+        return desc;
+    });
+
+    return `Key props: ${propLines.join(' | ')}.`;
+}
+
+// ---------------------------------------------------------------------------
+// SECTION F — COMPOSITION INSTRUCTION
+// ---------------------------------------------------------------------------
+function buildCompositionInstruction(spread: SpreadPlan): string {
+    const actionSide = spread.composition.action_zone_side || 'right';
+    const textSide = spread.composition.text_zone_side || 'left';
+    const pct = Number(spread.composition.text_zone_percentage) || 40;
+    const pctMax = pct + 5;
+
+    return (
+        `Place all characters, actions, and key props on the ${actionSide} side of the frame only. ` +
+        `Keep the ${textSide} ${pct}-${pctMax}% of the frame as calm negative space ` +
+        `with only simple background environment — no characters, no limbs, no faces, ` +
+        `no props, and no busy elements. ` +
+        `Do not let any part of the action spill into the negative-space side.`
+    );
+}
+
+// ---------------------------------------------------------------------------
+// SECTION G — BACKGROUND INSTRUCTION
+// ---------------------------------------------------------------------------
+function buildBackgroundInstruction(spread: SpreadPlan): string {
+    const required = spread.background_details?.required_elements || [];
+    const forbidden = spread.background_details?.forbidden_elements || [];
+    const parts: string[] = [];
+    if (required.length > 0) parts.push(`Background elements to include: ${required.join(', ')}.`);
+    if (forbidden.length > 0) parts.push(`Do not include in the background: ${forbidden.join(', ')}.`);
+    return parts.join(' ');
+}
+
+// ---------------------------------------------------------------------------
+// SECTION H — PRESERVATION INSTRUCTION
+// ---------------------------------------------------------------------------
+function buildPreservationInstruction(heroes: HeroProfile[]): string {
+    if (heroes.length === 0) return '';
+
+    const tokenList = heroes.map(h => h.token || '[[HERO_?]]').join(' and ');
+    const faceWord = heroes.length === 1 ? 'the face' : 'all faces';
+    const plural = heroes.length > 1;
+
+    return (
+        `Keep ${tokenList} clearly recognizable as the exact character${plural ? 's' : ''} ` +
+        `shown in their reference image${plural ? 's' : ''}. ` +
+        `Keep ${faceWord} clearly visible and unobstructed — ` +
+        `no hands, props, hair, or shadows covering the face. ` +
+        `No extra characters beyond the ${heroes.length} specified hero${plural ? 'es' : ''}. ` +
+        `No parents, adults, siblings, or unnamed people in the scene.`
+    );
+}
+
+// ---------------------------------------------------------------------------
+// SECTION I — HARD CONSTRAINTS
+// ---------------------------------------------------------------------------
+function buildConstraints(heroes: HeroProfile[]): string {
+    const lines = [
+        'No text, letters, numbers, logos, signs, watermarks, or typography anywhere in the image.',
+        'No square crop, no portrait crop, no 4:3 crop. Must be a wide 16:9 horizontal illustration.',
+        'Do not copy the background, pose, or framing from any of the reference images.',
+    ];
+
+    if (heroes.length === 2) {
+        lines.push('Do not blend or swap the two heroes — they must remain visually distinct individuals throughout.');
+    } else if (heroes.length >= 3) {
+        lines.push(`Do not blend or swap any of the ${heroes.length} heroes — each must remain a distinct, recognizable individual throughout.`);
+    }
+
+    return lines.join(' ');
+}
+
+// ---------------------------------------------------------------------------
+// MAIN ASSEMBLER
+// ---------------------------------------------------------------------------
+function assembleEnglishPrompt(
+    spread: SpreadPlan,
+    styleProfile: StyleProfile,
+    heroes: HeroProfile[]
+): { prompt: string; validation: PromptValidationResult } {
+
+    const schemaStamp = `[v6.0-dna-only]`;
+
+    const sections = [
+        schemaStamp,
+        buildSceneInstruction(spread),
+        buildActionInstruction(spread, heroes),
+        buildHeroReferenceParagraph(heroes),
+        buildStyleInstruction(styleProfile),
+        buildPropsInstruction(spread.scene_props),
+        buildCompositionInstruction(spread),
+        buildBackgroundInstruction(spread),
+        buildPreservationInstruction(heroes),
+        buildConstraints(heroes),
+    ].filter(s => s && s.trim().length > 0);
+
+    const prompt = sections.join('\n\n');
+    const validation = validateAssembledPrompt(prompt);
+
+    if (!validation.passed) {
+        const errorBlock = `\n\n[VALIDATOR_ERRORS: ${validation.errors.join(' | ')}]`;
+        return { prompt: prompt + errorBlock, validation };
+    }
+
+    return { prompt, validation };
+}
+
+// ---------------------------------------------------------------------------
+// PUBLIC EXPORT
+// ---------------------------------------------------------------------------
 export async function generatePrompts(
     plan: SpreadDesignPlan,
     blueprint: StoryBlueprint | undefined,
-    visualDNA: string,
-    childAge: string,
-    childDescription: string,
-    childName: string,
-    secondCharacter?: any,
-    language: Language = 'en',
-    occasion?: string,
-    extraItems?: string,
-    theme?: string
-): Promise<{ result: { spreadNumber: number, imagePrompt: string, storyText: string }[], log: WorkflowLog }> {
+    styleProfile: StyleProfile,
+    heroes: HeroProfile[]
+): Promise<{
+    result: { spreadNumber: number, imagePrompt: string, storyText: string, textSide?: string, mainContentSide?: string }[],
+    log: WorkflowLog
+}> {
 
     const startTime = Date.now();
-
-    // Sanitize visualDNA immediately to strip any leaked base64 or Arabic
-    const safeDNA = sanitizePrompt(visualDNA);
+    const allValidationErrors: string[] = [];
 
     try {
         if (!plan || !plan.spreads || !Array.isArray(plan.spreads)) {
-            throw new Error("Invalid plan structure: missing spreads array. Check AI response.");
+            throw new Error('Invalid plan structure.');
         }
 
         const prompts = plan.spreads.map(spread => {
-            const isAr = language === 'ar';
-            const targetSideRaw = (spread.mainContentSide || 'right').toLowerCase();
-            const subjectSide = isAr
-                ? (targetSideRaw === 'left' ? 'Right' : 'Left')
-                : (targetSideRaw === 'left' ? 'Left' : 'Right');
+            const bpSpread = blueprint?.structure?.spreads?.find(s => s.spreadNumber === spread.spread_index);
+            const isCover = spread.spread_index === 0;
 
-            const opp = subjectSide.toLowerCase() === 'left' ? 'Right' : 'Left';
+            const { prompt, validation } = assembleEnglishPrompt(spread, styleProfile, heroes);
 
-            // Reconcile Blueprint variables
-            const bpSpread = blueprint?.structure?.spreads?.find(s => s.spreadNumber === spread.spreadNumber);
-            const blueprintFocus = bpSpread ? (bpSpread.highlightAction || bpSpread.visualFocus) : "";
-            const finalCameraAngle = bpSpread ? (bpSpread.cameraAngle || spread.cameraAngle) : spread.cameraAngle;
-            const visualAnchor = blueprint?.foundation?.primaryVisualAnchor || "";
-
-            // Resolve emotion from Blueprint emotionalBeat
-            const rawEmotionalBeat = bpSpread?.emotionalBeat || 'Curious';
-            const resolvedEmotion = EMOTION_MAP[rawEmotionalBeat] || `${rawEmotionalBeat.toLowerCase()} expression`;
-
-            let safeAction = spread.keyActions || blueprintFocus || "Hero stands heroically";
-            let safeSetting = spread.setting || "";
-
-            // Unicode-safe Name Wrapper
-            const applyNameMask = (text: string, name: string, mask: string) => {
-                if (!name || name.length < 2) return text;
-                try {
-                    const safeName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const r = new RegExp(`(^|[^\\p{L}])(${safeName})(?=[^\\p{L}]|$)`, 'giu');
-                    return text.replace(r, `$1${mask}`);
-                } catch {
-                    return text.split(name).join(mask);
-                }
-            };
-
-            // Determine the Workflow Branch
-            const isSingleHeroItem = secondCharacter && secondCharacter.type === 'object';
-            const isDualHeroPerson = secondCharacter && secondCharacter.type === 'person';
-
-            // Determine dynamic token for the second input
-            const secondToken = isSingleHeroItem ? '[[OBJECT_A]]' : '[[HERO_B]]';
-
-            // Replace real names with photo-bound tokens
-            safeAction = applyNameMask(safeAction, childName, '[[HERO_A]]');
-            safeSetting = applyNameMask(safeSetting, childName, '[[HERO_A]]');
-            if (secondCharacter?.name) {
-                safeAction = applyNameMask(safeAction, secondCharacter.name, secondToken);
-                safeSetting = applyNameMask(safeSetting, secondCharacter.name, secondToken);
+            if (!validation.passed) {
+                allValidationErrors.push(`Spread ${spread.spread_index}: ${validation.errors.join('; ')}`);
             }
-            // Also replace legacy [Hero 1]/[Hero 2] labels
-            safeAction = safeAction.replace(/\[Hero 1\]/gi, '[[HERO_A]]').replace(/\[Hero 2\]/gi, secondToken);
-            safeSetting = safeSetting.replace(/\[Hero 1\]/gi, '[[HERO_A]]').replace(/\[Hero 2\]/gi, secondToken);
-            // Also replace legacy [IMAGE 1]/[IMAGE 2]
-            safeAction = safeAction.replace(/\[IMAGE 1\]/gi, '[[HERO_A]]').replace(/\[IMAGE 2\]/gi, secondToken);
-            safeSetting = safeSetting.replace(/\[IMAGE 1\]/gi, '[[HERO_A]]').replace(/\[IMAGE 2\]/gi, secondToken);
-
-            const isCover = spread.spreadNumber === 0;
-            const emptySide = isAr ? 'left' : 'right';
-            const oppSide = isCover ? emptySide : opp.toLowerCase();
-            const coverSubjectSide = isAr ? 'left' : 'right'; // Hero on front cover: EN=right, AR=left
-            const finalSubjectSide = isCover ? coverSubjectSide : subjectSide.toLowerCase();
-            const alignPosition = finalSubjectSide === 'left' ? 'left-aligned' : 'right-aligned';
-            const alignX = finalSubjectSide === 'left' ? 0.2 : 0.8;
-            const alignXSecondary = finalSubjectSide === 'left' ? 0.35 : 0.65;
-
-            // Parse incoming DNA
-            const parsedChildDNA = safeParseJSON(childDescription);
-            const parsedStyleDNA = safeParseJSON(safeDNA);
-            const parsedSecondDNA = secondCharacter ? safeParseJSON(secondCharacter.description) : null;
-
-            // Determine if second character is in this scene
-            const actionTextLower = safeAction.toLowerCase();
-            const settingTextLower = safeSetting.toLowerCase();
-            const secondNameLower = secondCharacter?.name?.toLowerCase() || '';
-            const isSecondCharacterInScene = secondNameLower &&
-                (actionTextLower.includes(secondNameLower) ||
-                 actionTextLower.includes(secondToken.toLowerCase()) ||
-                 actionTextLower.includes('they') ||
-                 actionTextLower.includes('together') ||
-                 actionTextLower.includes('companion') ||
-                 settingTextLower.includes(secondNameLower));
-
-            // Build scene_dynamics sentence (natural-language cinematic directive)
-            let sceneDynamics: string;
-            if (secondCharacter && isSecondCharacterInScene) {
-                if (isSingleHeroItem) {
-                    sceneDynamics = `SCENE DYNAMICS: [[HERO_A]] is interacting with ${secondToken}. ${safeAction}.`;
-                } else {
-                    sceneDynamics = `SCENE DYNAMICS: [[HERO_A]] and ${secondToken} are ${safeAction}. Their bodies and expressions must reflect active, natural engagement with each other — not two subjects standing stiffly side by side.`;
-                }
-            } else {
-                sceneDynamics = `SCENE DYNAMICS: [[HERO_A]] is ${safeAction}.`;
-            }
-
-            // Build entities array
-            const entities: (import('../../types').VisionPersonEntitySchema | import('../../types').VisionPropEntitySchema)[] = [];
-
-            // 1. Primary hero entity (Always present)
-            entities.push(buildEntity(
-                parsedChildDNA,
-                '[[HERO_A]]',
-                0,
-                `The ${finalSubjectSide} two-thirds of the frame`,
-                safeAction,
-                resolvedEmotion,
-                'person',
-                alignPosition,
-                alignX
-            ));
-
-            // 2. Secondary entity (Conditional based on Workflow Branch)
-            if (isDualHeroPerson && isSecondCharacterInScene) {
-                let hero2Action = "Actively participating in the scene";
-                const img2Idx = safeAction.indexOf(secondToken);
-                if (img2Idx !== -1) {
-                    hero2Action = safeAction.substring(img2Idx).trim();
-                }
-                const secondEmotion = EMOTION_MAP[rawEmotionalBeat] || resolvedEmotion;
-                entities.push(buildEntity(
-                    parsedSecondDNA,
-                    secondToken,
-                    1,
-                    `Also in the ${finalSubjectSide} two-thirds, facing [[HERO_A]]`,
-                    hero2Action,
-                    secondEmotion,
-                    'person',
-                    alignPosition,
-                    alignXSecondary
-                ));
-            } else if (isSingleHeroItem && isSecondCharacterInScene) {
-                entities.push(buildEntity(
-                    parsedSecondDNA,
-                    secondToken,
-                    1,
-                    `Integrated naturally with [[HERO_A]]`,
-                    "In use or present in the scene",
-                    "Neutral",
-                    'object',
-                    alignPosition,
-                    alignXSecondary
-                ));
-            }
-
-            const dynamicStyleType = safeDNA.length > 5 ? safeDNA : "Stylized illustration";
-            const dynamicQuality = "High quality masterpiece, perfectly faithful to the selected art style.";
-
-            // Build the Schema Object
-            const promptJson: VisionPromptSchema = {
-                meta: {
-                    image_quality: dynamicQuality,
-                    image_type: dynamicStyleType,
-                },
-                entities,
-                global_context: {
-                    scene_description: isCover ? "Panoramic book cover layout" : safeSetting,
-                    environment_type: spread.environmentType || "Unknown",
-                    time_of_day: spread.timeOfDay || "Day",
-                    weather_atmosphere: spread.mood || "Wonder",
-                    color_palette: parsedStyleDNA?.global_context?.color_palette || {
-                        contrast_level: (spread.timeOfDay || 'day').toLowerCase() === 'night' ? 'Cool, soft ambient palette' : 'Warm color palette'
-                    },
-                    lighting: parsedStyleDNA?.global_context?.lighting || undefined,
-                    environment_constraint: (() => {
-                        if (isCover) return undefined;
-                        const envType = (spread.environmentType || '').toLowerCase();
-                        const settingText = (safeSetting || '').toLowerCase();
-                        if (envType === 'indoor') return `This is a strictly INDOOR scene (${safeSetting}). Do NOT add outdoor elements, trees, or nature.`;
-                        if (settingText.includes('backyard') || settingText.includes('garden') || settingText.includes('حديقة')) {
-                            return `This is a standard residential backyard: green grass lawn, simple garden plants (no exotic or tropical vegetation), a wooden fence, and a large tree. NOT a jungle, NOT a forest, NOT a tropical garden.`;
-                        }
-                        if (settingText.includes('forest') || settingText.includes('wood')) {
-                            return `This is a temperate forest with tall oak or pine trees, fallen leaves on the ground, and dappled shade. NOT a tropical or jungle forest.`;
-                        }
-                        return undefined;
-                    })()
-                },
-                composition: {
-                    camera_angle: isCover ? "Eye-level" : finalCameraAngle,
-                    framing: "Ultra-wide cinematic 16:9 panoramic frame. Full horizontal sweep. No dutch angles. No square or portrait crops.",
-                    depth_of_field: "Shallow — subjects in sharp focus, background in soft painterly blur",
-                    focal_point: isSecondCharacterInScene ? `[[HERO_A]] and ${secondToken}` : "[[HERO_A]]",
-                    symmetry_type: `Asymmetric composition — all characters and action are confined to the ${finalSubjectSide} 55% of the frame. The ${oppSide} 45% must be completely empty of characters, faces, limbs, and props.`,
-                    open_space_directive: `CRITICAL COMPOSITION RULE: The entire ${oppSide} 40-45% of the image must be a calm, visually simple open region — soft sky, a plain wall, gently blurred scenery, or a smooth gradient background. NO characters, NO faces, NO hands, NO props, NO dense foliage, NO complex objects of any kind may appear in this region. This region must be visually clean and uncluttered. Treat it as deliberate negative space.`,
-                    rule_of_thirds_alignment: `Keep all scene action and characters anchored to the ${finalSubjectSide} side. The ${oppSide} side is open breathing room — soft, empty, calm.`,
-                    composition_rule: `Force all subjects to the ${finalSubjectSide}-most 40% of the canvas; keep the ${oppSide}-most 60% entirely empty, containing only background wall texture or scenery.`,
-                    do_not_center: "Characters must not be positioned in the center of the frame under any circumstances."
-                } as any,
-                objects: [],
-                background_details: parsedStyleDNA?.background_details || {
-                    texture: "Painterly brushwork, soft linework, consistent with art style.",
-                    additional_elements: spread.sceneProps?.map((p: any) => p.name).filter(Boolean) || []
-                },
-                foreground_elements: parsedStyleDNA?.foreground_elements || {},
-                reconstruction_notes: {
-                    mandatory_elements_for_recreation: [
-                        "Absolutely NO text, typography, fonts, or words generated anywhere in the image.",
-                        "Strictly adhere to the selected art style. Avoid photographic realism unless explicitly requested.",
-                        "STRICTLY NO PARENTS: Keep all parents and real-life adult family members completely out of the image. (Non-relative fictional adults like wizards or teachers are allowed if the story requires them).",
-                        ...(parsedChildDNA?.reconstruction_notes?.mandatory_elements_for_recreation || []),
-                        ...(parsedStyleDNA?.reconstruction_notes?.mandatory_elements_for_recreation || [])
-                    ],
-                    sensitivity_factors: [
-                        ...(parsedChildDNA?.reconstruction_notes?.sensitivity_factors || []),
-                        ...(parsedSecondDNA?.reconstruction_notes?.sensitivity_factors || [])
-                    ].filter(Boolean)
-                }
-            };
-
-            // Inject Occasion / Theme props into objects (not entities — these are not photo-bound)
-            if (occasion || extraItems || theme) {
-                const anchorKeyword = visualAnchor.toLowerCase();
-                const isAnchorRelevantToSpread = anchorKeyword.length > 0 && (
-                    safeAction.toLowerCase().includes(anchorKeyword.split(' ')[0]) ||
-                    safeSetting.toLowerCase().includes(anchorKeyword.split(' ')[0]) ||
-                    (spread.sceneProps || []).some((p: any) =>
-                        (p.name || '').toLowerCase().includes(anchorKeyword.split(' ')[0]) ||
-                        (p.physical_description || '').toLowerCase().includes(anchorKeyword.split(' ')[0])
-                    )
-                );
-                promptJson.objects.push({
-                    id: "obj_extras",
-                    label: "Thematic Props",
-                    category: "Props",
-                    relationships: [{ type: "integrated naturally", target_object_id: "hero_a" }],
-                    material: [
-                        sanitizePrompt(theme || ""),
-                        sanitizePrompt(occasion || ""),
-                        sanitizePrompt(extraItems || ""),
-                        isAnchorRelevantToSpread ? sanitizePrompt(visualAnchor) : ""
-                    ].filter(Boolean).join('. ')
-                } as any);
-            }
-
-            // Inject Scene Props
-            if (spread.sceneProps && Array.isArray(spread.sceneProps)) {
-                spread.sceneProps.forEach((prop, index) => {
-                    const rawDesc = prop.physical_description || '';
-                    const isDescriptionAdequate = rawDesc.trim().length >= 80;
-                    const finalDesc = isDescriptionAdequate
-                        ? rawDesc
-                        : `${prop.name || 'Object'} — ${rawDesc.trim() || 'present in scene'}. Draw this object with detail matching the style context.`;
-
-                    const maskedDesc = finalDesc
-                        .replace(/\[Hero 1\]/gi, '[[HERO_A]]')
-                        .replace(/\[Hero 2\]/gi, secondToken)
-                        .replace(/\[IMAGE 1\]/gi, '[[HERO_A]]')
-                        .replace(/\[IMAGE 2\]/gi, secondToken);
-
-                    promptJson.objects.push({
-                        id: `obj_scene_prop_${index}`,
-                        label: prop.name || "Story Object",
-                        category: "Story Prop",
-                        location: { relative_position: "Integrated accurately into the scene context" },
-                        material: maskedDesc,
-                        reconstruction_notes: [
-                            "Must perfectly match physical description above.",
-                            "Do NOT invent or substitute the object type or colors.",
-                            "Draw exactly what is described — count, size, and layout."
-                        ]
-                    } as any);
-                });
-            }
-
-            // Serialize the prompt JSON
-            const stringifiedSchema = JSON.stringify(promptJson, null, 2);
-
-            // Build double-bound preamble
-            let heroPreamble = `**PHOTO-BOUND TOKENS:**\n- [[HERO_A]] → Attached Image 1 (inlineData[0]). This token IS that specific child. Derive ALL appearance strictly from this photo. DO NOT apply name-based ethnic defaults. Replicate face, hair, skin tone, and proportions exactly as seen in the photo.`;
-
-            if (isDualHeroPerson) {
-                heroPreamble += `\n- ${secondToken} → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the second photo exactly.`;
-            } else if (isSingleHeroItem) {
-                heroPreamble += `\n- ${secondToken} → Attached Image 2 (inlineData[1]). ${secondToken} IS this specific object. Match its exact shape, style, and material.`;
-            }
-
-            const imagePrompt = `${heroPreamble}
-
-${sceneDynamics}
-
-**VISION ARCHITECTURE BLUEPRINT:**
-\`\`\`json
-${stringifiedSchema}
-\`\`\`
-
-**FINAL OUTPUT MANDATES (NON-NEGOTIABLE):**
-- OUTPUT FORMAT: Ultra-wide 16:9 horizontal panoramic image. This is a children's book double-page spread. DO NOT output a square, portrait, or 4:3 crop.
-- STRICTLY NO PARENTS: Absolutely NO parents, mothers, fathers, or real-life family members allowed anywhere in the image. Keep them off-screen. (Fictional, non-relative adults like wizards or shopkeepers are permitted if the story requires them).
-- OPEN SPACE: The ${oppSide} 40% of the image must be a calm, visually empty region — soft sky, plain wall, or smooth gradient. No characters, no limbs, no props, no busy elements anywhere in this region.
-- QUALITY: Ultra-high resolution, 4K quality, sharp subject, softly blurred background, masterpiece children's illustration.
-- NO TEXT: Absolutely zero letters, words, numbers, signs, or typography anywhere in the rendered image.`;
 
             return {
-                spreadNumber: spread.spreadNumber,
-                imagePrompt: imagePrompt,
-                storyText: isCover ? "" : (bpSpread?.narrative || "")
+                spreadNumber: spread.spread_index,
+                imagePrompt: prompt,
+                storyText: isCover ? '' : (bpSpread?.narrative || ''),
+                mainContentSide: spread.composition.action_zone_side,
+                textSide: spread.composition.text_zone_side,
             };
         });
 
@@ -431,12 +442,17 @@ ${stringifiedSchema}
             log: {
                 stage: 'Prompt Engineering',
                 timestamp: startTime,
-                inputs: { planSize: plan.spreads.length },
-                outputs: { promptCount: prompts.length, method: 'Vision Blueprint V2 — Entities + Emotion + Double-Bound Tokens' },
-                status: 'Success',
+                inputs: { planSize: plan.spreads.length, heroCount: heroes.length },
+                outputs: {
+                    promptCount: prompts.length,
+                    method: 'DNA-Only Assembler v6.0',
+                    validationErrors: allValidationErrors.length > 0 ? allValidationErrors : 'none',
+                },
+                status: allValidationErrors.length > 0 ? 'Warning' : 'Success',
                 durationMs: Date.now() - startTime
             }
         };
+
     } catch (e: any) {
         return {
             result: [],

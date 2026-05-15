@@ -114,8 +114,8 @@ export async function generateStoryDraft(
             - Focus on their personality and emotions (e.g., curious, dreamy). STRICTLY DO NOT discuss ANY physical body traits, clothing, or skin colors.
             - **New Entry:** If a later spread introduces a new character (e.g. Zara, the Town Elder), you MUST introduce them explicitly before they act. STRICTLY DO NOT invent physical traits or clothing for them either.
             
-            ${secondCharacter ? `**DUAL HERO PROTOCOL (STRICT):**
-            - The companion ${secondCharacter.name} MUST be explicitly introduced by name in Spread 1 or Spread 2 alongside the hero. You MUST write a clear, warm welcome sentence giving 1-2 personality traits (e.g., "And right by her side was her sister Farah — the one who always knew how to listen."). Do NOT have them silently appear mid-scene with just a comma clause.
+            ${secondCharacter && secondCharacter.name ? `**DUAL HERO PROTOCOL (STRICT):**
+            - The companion ${secondCharacter.name} MUST be explicitly introduced by name in Spread 1 or Spread 2 alongside the hero. You MUST write a clear, warm welcome sentence giving 1-2 personality traits (e.g., "And right by her side was her sister ${secondCharacter.name} — the one who always knew how to listen."). Do NOT have them silently appear mid-scene with just a comma clause.
             - The companion MUST actively say or do something that directly helps solve the page's problem. They cannot be a passive bystander.` : ''}
 
             **OPENING SCENE RULES (CRITICAL):**

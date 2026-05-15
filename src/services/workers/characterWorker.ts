@@ -56,7 +56,7 @@ export class CharacterWorker {
                     const objectStylePreview = await WorkerUtils.withTimeout(
                         generateObjectStylePreview(
                             storyData.secondCharacter.imageBases64[0],
-                            storyData.selectedStylePrompt || "high quality storybook illustration",
+                            storyData.technicalStyleGuide || storyData.selectedStylePrompt || "high quality storybook illustration",
                             secondDescription
                         )
                     );
@@ -69,7 +69,7 @@ export class CharacterWorker {
                             storyData.secondCharacter as any,
                             undefined,
                             storyData.theme || "story setting",
-                            storyData.selectedStylePrompt || "high quality storybook illustration",
+                            storyData.technicalStyleGuide || storyData.selectedStylePrompt || "high quality storybook illustration",
                             storyData.secondCharacter.age || storyData.childAge || "5"
                         )
                     );
@@ -77,13 +77,21 @@ export class CharacterWorker {
                 }
             }
 
+            // STYLE DNA: Use same priority chain as StoryWorker and IllustrationWorker.
+            // technicalStyleGuide is the locked style from the frontend StyleSelectionScreen.
+            const resolvedStyleDNA: string =
+                storyData.technicalStyleGuide ||
+                storyData.selectedStylePrompt ||
+                storyData.themeVisualDNA ||
+                "high quality painterly children's book illustration";
+
             console.log(`[CharacterWorker] Processing Visual DNA for Primary Character ${orderId}...`);
             const stylePreview = await WorkerUtils.withTimeout(
                 generateThemeStylePreview(
                     mainChar,
                     undefined, // NEVER BUNDLE THEM TOGETHER IN THE VISION V2 ARCHITECTURE
                     storyData.theme || "story setting",
-                    storyData.selectedStylePrompt || "high quality storybook illustration",
+                    resolvedStyleDNA,
                     storyData.childAge || "5"
                 )
             );

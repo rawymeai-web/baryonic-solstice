@@ -49,8 +49,17 @@ export async function generateBlueprint(
 
             **LANGUAGE RULE:**
             - The "title", "storyCore", "moral", "heroDesire", and "mainChallenge" fields MUST be strictly in **${targetLang}**.
-            - EVERYTHING ELSE MUST BE IN ENGLISH ONLY! This includes ALL visual properties: "narrative" summaries, "setting", "timeOfDay", "highlightAction", "visualFocus", and especially the "primaryVisualAnchor". These fields are fed directly to an English-only Image Generation AI, so they must not contain ${targetLang} unless that is English.
-            - Ensure the title is catchy and evocative in ${targetLang}.
+            - EVERYTHING ELSE MUST BE IN ENGLISH ONLY!
+            - **TITLE CREATIVITY:** The title MUST be catchy, evocative, and ORIGINAL. 
+            - DO NOT simply use the theme name (e.g., if theme is "Birthday", do not name it "The Birthday").
+            - DO NOT use cliché structures like "The Adventure of [Name]" or "[Name] and the [Object]".
+            - **ANTI-REPETITION:** Every title must be unique. Avoid starting every title with "The". Try using verbs, adjectives, or metaphors.
+            - **CREATIVE STRATEGY:** Use one of these styles randomly: 
+                a) Alliteration (e.g., "Brave Billy's Blue Balloon")
+                b) Abstract/Poetic (e.g., "Where the Whispering Wind Wanders")
+                c) Action-Oriented (e.g., "Racing the Midnight Moon")
+                d) Emotional/Thematic (e.g., "A Heart Full of Stardust")
+            - Ensure the title is evocative in ${targetLang}.
             
             ${storyData.customStoryText ? `**CUSTOM STORY TEXT / POEM (CRITICAL MUST USE):**
             - The user provided a specific text/poem to be used as the backbone of the story:
@@ -183,6 +192,12 @@ export async function generateBlueprint(
             - Invalid hooks include time jumps ("The next day..."), summaries, or passive statements.
             - Each hook must answer: "Why must the reader turn the page?"
 
+            **MILD EMOTIONS & GROUNDED ACTIONS (CRITICAL IMAGE STABILITY RULE):**
+            - Image AIs distort faces and bodies when generating extreme emotions or heavy physical interactions.
+            - You MUST NOT use extreme emotions like "terrified", "astonished", "shocked", "screaming", "weeping", or "very scared".
+            - Use milder, quiet expressions for the low points: e.g., "worried", "sad", "confused", "pensive", or "disappointed".
+            - You MUST NOT use weird or heavy physical situations like "carrying a person", "lifting heavy objects", "throwing", or extreme acrobatics. Keep physical actions grounded, gentle, and simple (e.g., "looking", "holding lightly", "pointing", "sitting").
+
             **CONTENT SAFETY & APPROPRIATENESS BAN (STRICT):**
             - ABSOLUTELY NO skulls, skeletons, weapons, violence, or truly scary monsters. 
             - ABSOLUTELY NO rainbows. Do not write or prompt rainbows.
@@ -248,7 +263,7 @@ export async function generateBlueprint(
                             "visualFocus": "The primary visual element that fills the foreground (e.g. 'the closed gate to the garden')",
                             "highlightAction": "The single most important physical action happening (a verb phrase, e.g. 'Hero pressing nose against the window')",
                             "cameraAngle": "Wide Establishing Shot (Mandatory — NO close-ups)",
-                            "emotionalBeat": "MUST be ONE of: [Hopeful, Curious, Excited, Sad, Scared, Frustrated, Determined, Relieved, Proud, Lonely]",
+                            "emotionalBeat": "MUST be ONE of: [Hopeful, Curious, Excited, Sad, Worried, Frustrated, Determined, Relieved, Proud, Lonely]",
                             "specificLocation": "Named specific real place (e.g. 'The Yellow Kitchen', 'The Old Oak Tree in the backyard')",
                             "environmentType": "Indoor OR Outdoor",
                             "timeOfDay": "Morning / Midday / Afternoon / Dusk / Night",

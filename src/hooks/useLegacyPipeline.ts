@@ -95,7 +95,8 @@ export const useLegacyPipeline = (
                 storyData.finalPrompts = [];
                 storyData.prompts = [];
                 storyData.actualCoverPrompt = undefined;
-                (storyData as any).coverImageUrl = undefined;
+                storyData.coverImageUrl = undefined;
+                storyData.title = ""; // Bug 6: Wipe title on restart so Creative Writer can think of a new one
                 storyData.themeVisualDNA = undefined;  // Bug 5: wipe old Oryx/anchor visual DNA
                 storyData.technicalStyleGuide = undefined; // Bug 5: wipe old style guide
                 
@@ -122,14 +123,14 @@ export const useLegacyPipeline = (
                 const originalMainBases = (mainChar.imageBases64 && mainChar.imageBases64.length > 0) 
                     ? mainChar.imageBases64 
                     : [storyData.mainCharacterImageBase64].filter(Boolean);
-                const compressedMainBases = await Promise.all(originalMainBases.map((b: any) => compressBase64Image(b, 1024, 0.8)));
+                const compressedMainBases = await Promise.all(originalMainBases.map((b: any) => compressBase64Image(b, 800, 0.7)));
 
                 let compressedSecondBases: string[] = [];
                 if (storyData.secondCharacter) {
                      const originalSecondBases = (storyData.secondCharacter.imageBases64 && storyData.secondCharacter.imageBases64.length > 0)
                         ? storyData.secondCharacter.imageBases64
                         : [storyData.secondCharacterImageBase64].filter(Boolean);
-                     compressedSecondBases = await Promise.all(originalSecondBases.map((b: any) => compressBase64Image(b, 1024, 0.8)));
+                     compressedSecondBases = await Promise.all(originalSecondBases.map((b: any) => compressBase64Image(b, 800, 0.7)));
                 }
 
                 const dnaPayload = {
@@ -187,8 +188,8 @@ export const useLegacyPipeline = (
                 storyData = { 
                     ...storyData, 
                     blueprint: blueprintRes.blueprint,
-                    // Extract title from blueprint so cover PDF includes it
-                    title: storyData.title || blueprintRes.blueprint?.foundation?.title || storyData.title
+                    // FIX: Prioritize AI-generated title from blueprint over existing DB title to satisfy 'Creative Writer' request
+                    title: blueprintRes.blueprint?.foundation?.title || storyData.title || "A Magical Story"
                 };
                 storyDataRef.current = storyData;
                 onUpdateStory(storyData);
@@ -226,7 +227,10 @@ export const useLegacyPipeline = (
                 const planRes = await retryStep('Cinematographer AI Plan', () => backendApi.generateVisualPlan({ 
                     script: storyData.script, 
                     blueprint: storyData.blueprint, 
-                    visualDNA: storyData.selectedStylePrompt || "Painterly illustration",
+                    selected_style_id: storyData.selected_style_id || "premium_3d_adventure",
+                    heroes: storyData.heroes || [],
+                    hasSecondHero: !!storyData.useSecondCharacter,
+                    secondCharacter: storyData.secondCharacter ? { ...storyData.secondCharacter, imageBases64: [], imageDNA: [] } : undefined,
                     spreadCount: storyData.spreadCount || 8
                 })) as any;
                 if (planRes.error) throw new Error(planRes.error);
@@ -242,48 +246,128 @@ export const useLegacyPipeline = (
             setProgress(45);
 
             // Refresh current state from props to pick up manual user edits before Step 4
-            storyData = { ...storyData, ...storyDataPropRef.current };
-            
+            // ONLY merge safe fields so we don't accidentally overwrite freshly generated pipeline data (like spreadPlan)
+            const safeProps = storyDataPropRef.current || {} as any;
+            storyData = { 
+                ...storyData, 
+                title: safeProps.title || storyData.title,
+                coverSubtitle: safeProps.coverSubtitle || storyData.coverSubtitle,
+                customIllustrationNotes: safeProps.customIllustrationNotes || storyData.customIllustrationNotes
+            };
             // Step 4: Engineering Prompts & Phase 5: Illustrator AI Pass
             logMsg(`Starting Phase 4: AI Prompt Engineering`);
             setStatus(t('هندسة وتدقيق الأوامر...', 'Engineering & Auditing Prompts...'));
+
+            // Helper: check if a prompt contains a v3.2+ schema stamp.
+            // v3.1 prompts are missing: anti-photorealism rules, logo block, zone guard.
+            const hasV3Stamp = (p: any): boolean => {
+                try {
+                    const str = typeof p === 'string' ? p : JSON.stringify(p || '');
+                    // Force upgrade if it's older than v6.0-dna-only
+                    return str.includes('v3.2') || str.includes('v4.0.1') || str.includes('v6.0');
+                } catch { return false; }
+            };
+
             const isPromptsEmpty = !storyData.finalPrompts || (Array.isArray(storyData.finalPrompts) && storyData.finalPrompts.every((p:any) => {
                 if (typeof p === 'string') return p.length < 5;
                 if (typeof p === 'object' && p !== null) return !p.prompt && !p.imagePrompt;
                 return true;
             }));
 
-            if (isPromptsEmpty) {
-                logMsg(`Phase 4: Translating narrative to technical prompt parameters...`);
+            // Version gate: prompts older than v3.2 are missing: logo block, zone guard, HERO_B fix.
+            // CRITICAL: Use .every() not .some() — ALL prompts must be v3.2.
+            // .some() caused a single regenerated spread to mask all remaining stale ones.
+            const hasLegacyPrompts = !isPromptsEmpty && Array.isArray(storyData.finalPrompts) &&
+                !storyData.finalPrompts.every(hasV3Stamp);
+
+            if (isPromptsEmpty || hasLegacyPrompts) {
+                if (hasLegacyPrompts) logMsg(`⚠️ Phase 4: Legacy prompts detected (no v3 schema stamp) — regenerating to latest version...`);
+                else logMsg(`Phase 4: Translating narrative to technical prompt parameters...`);
                 logMsg(`Phase 5: Illustrator Agent auditing prompts for typography & character consistency...`);
+                const mainRawPhoto = storyData.mainCharacter?.imageBases64?.[0] || storyData.mainCharacterImageBase64;
+                const heroASelectionIdx = storyData.dnaAudit?.heroA?.selectedPreviewIndex ?? 0;
+                const mainStylizedDNA = 
+                    storyData.mainCharacter?.imageDNA?.[heroASelectionIdx] ||
+                    storyData.mainCharacter?.imageDNA?.[0] || 
+                    storyData.styleReferenceImageUrl || 
+                    storyData.styleReferenceImageBase64 || 
+                    storyData.mainCharacter?.imageBases64?.[1];
+                const mainDNA = [mainRawPhoto, mainStylizedDNA].filter(Boolean);
+                
+                const secondRawPhoto = storyData.secondCharacter?.imageBases64?.[0] || storyData.secondCharacterImageBase64;
+                const heroBSelectionIdx = storyData.dnaAudit?.heroB?.selectedPreviewIndex ?? 0;
+                const secondStylizedDNA = 
+                    storyData.secondCharacter?.imageDNA?.[heroBSelectionIdx] ||
+                    storyData.secondCharacter?.imageDNA?.[0] || 
+                    storyData.secondCharacterImageUrl ||
+                    storyData.secondCharacterImageBase64 ||
+                    storyData.secondCharacter?.imageBases64?.[1];
+                const secondDNA = storyData.useSecondCharacter ? [secondRawPhoto, secondStylizedDNA].filter(Boolean) : [];
+
                 const promptsRes = await retryStep('Prompt Engineer AI', () => backendApi.generatePrompts({ 
                     plan: storyData.spreadPlan, 
                     blueprint: storyData.blueprint,  
-                    visualDNA: storyData.selectedStylePrompt || "Painterly illustration",
-                    childAge: storyData.childAge, 
-                    childDescription: storyData.mainCharacter?.description || "A child", 
-                    childName: storyData.childName, 
-                    secondCharacter: storyData.secondCharacter ? { ...storyData.secondCharacter, imageBases64: [], imageDNA: [] } : undefined, 
-                    language: lang,
-                    occasion: storyData.occasion,
-                    extraItems: storyData.customIllustrationNotes,
-                    theme: storyData.theme
+                    selected_style_id: storyData.selected_style_id || "premium_3d_adventure",
+                    heroes: [
+                        { 
+                            role: 'primary', 
+                            name: storyData.childName,
+                            has_real_photo: !!mainRawPhoto,
+                            has_stylized_dna: !!mainStylizedDNA 
+                        },
+                        { 
+                            role: 'secondary', 
+                            name: storyData.secondCharacter?.name,
+                            has_real_photo: !!secondRawPhoto,
+                            has_stylized_dna: !!secondStylizedDNA 
+                        }
+                    ].filter(h => h.name || h.role === 'primary'),
+                    hasSecondHero: !!storyData.useSecondCharacter,
+                    secondCharacter: storyData.secondCharacter ? { ...storyData.secondCharacter, imageBases64: [], imageDNA: [] } : undefined
                 })) as any;
                 if (promptsRes.error) throw new Error(promptsRes.error);
 
-                logMsg(`Prompt Engineer generated prompt templates accurately.`);
-                storyData = { ...storyData, finalPrompts: promptsRes.prompts };
+                // X-RAY DEBUG: Log exactly what is being sent to the illustrator
+                console.group(`%c 🧬 BULK PIPELINE DNA AUDIT `, 'background: #222; color: #00ff00; font-size: 14px; font-weight: bold;');
+                console.log("Master DNA (Hero A):", mainDNA);
+                console.log("Secondary DNA (Hero B):", secondDNA);
+                console.log("Style Mandate:", storyData.selectedStylePrompt);
+                console.groupEnd();
+
+                if (!promptsRes.prompts || !Array.isArray(promptsRes.prompts) || promptsRes.prompts.length === 0) {
+                    throw new Error("Prompt Engineer AI returned successfully but produced 0 prompts. Please verify your Visual Plan has spreads.");
+                }
+
+                logMsg(`Prompt Engineer generated ${promptsRes.prompts.length} prompt templates accurately.`);
+                
+                // CRITICAL: Wipe cached "actualPrompt" from all spreads to ensure the UI 
+                // displays the fresh numeric-token prompts instead of legacy versions.
+                const updatedSpreads = (storyData.spreads || []).map(s => ({
+                    ...s,
+                    actualPrompt: "" 
+                }));
+
+                storyData = { ...storyData, finalPrompts: promptsRes.prompts, spreads: updatedSpreads };
                 storyDataRef.current = storyData;
                 onUpdateStory(storyData);
                 await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
-                logMsg(`✓ Prompts engineered successfully.`);
+                logMsg(`✓ Prompts engineered successfully (Wiped legacy UI cache).`);
             } else {
-                logMsg(`Prompts already engineered, skipping.`);
+                logMsg(`Prompts already engineered (${storyData.finalPrompts?.length} prompts with v6 stamp), skipping.`);
             }
             setProgress(55);
 
             // Refresh current state from props to pick up manual user edits before Step 5
-            storyData = { ...storyData, ...storyDataPropRef.current };
+            const safeProps2 = storyDataPropRef.current || {} as any;
+            storyData = { 
+                ...storyData, 
+                title: safeProps2.title || storyData.title,
+                // SAFETY: If we JUST generated finalPrompts in Step 4, storyData.finalPrompts is authoritative.
+                // We only pull from props if the local variable is empty or null.
+                finalPrompts: (storyData.finalPrompts && storyData.finalPrompts.length > 0) 
+                    ? storyData.finalPrompts 
+                    : (safeProps2.finalPrompts || storyData.finalPrompts)
+            };
 
             // Step 5: Iterative Image Generation
             const settings = await adminService.getSettings();
@@ -363,15 +447,24 @@ export const useLegacyPipeline = (
                     spreads[spreadNum] = {
                         spreadNumber: spreadNum,
                         illustrationUrl: '',
-                        leftText: txt.substring(0, splitAt).trim(),
-                        rightText: txt.substring(splitAt).trim(),
+                        // Only set text if we actually have script content for this spread
+                        leftText: txt ? txt.substring(0, splitAt).trim() : '',
+                        rightText: txt ? txt.substring(splitAt).trim() : '',
                         actualPrompt: imagePrompt,
                         textSide
                     };
                 } else {
-                    // On resume: always update both actualPrompt AND textSide so they stay in sync with the plan.
+                    // On resume: update actualPrompt and textSide, but preserve existing text if script is empty
                     spreads[spreadNum].actualPrompt = imagePrompt;
                     spreads[spreadNum].textSide = textSide;
+                    // Backfill text from script if the spread currently has none
+                    if (txt && !spreads[spreadNum].leftText && !spreads[spreadNum].rightText && !(spreads[spreadNum] as any).text) {
+                        const mid = Math.ceil(txt.length / 2);
+                        const lastSpace = txt.lastIndexOf(' ', mid);
+                        const splitAt = lastSpace > 0 ? lastSpace : mid;
+                        spreads[spreadNum].leftText = txt.substring(0, splitAt).trim();
+                        spreads[spreadNum].rightText = txt.substring(splitAt).trim();
+                    }
                 }
             }
 
@@ -380,12 +473,36 @@ export const useLegacyPipeline = (
             onUpdateStory(storyData);
             await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
 
-            const mainDNA = storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0] || storyData.mainCharacter?.imageBases64?.[0];
-            // Bug 5: Do NOT embed themeVisualDNA — it can carry old-order Arabic/Oryx data.
-            // Style comes only from selectedStylePrompt (user's chosen art style).
+            // DUAL-REFERENCE FIX: Pass [rawPhoto, stylizedDNA] as a set for each hero.
+            // The raw photo anchors the real face geometry; the stylized DNA provides style consistency.
+            // Passing ONLY stylizedDNA caused: (1) identity drift, (2) background contamination from the DNA portrait scene.
+            const mainRawPhoto = storyData.mainCharacter?.imageBases64?.[0] || storyData.mainCharacterImageBase64;
+            const mainStylizedDNA = 
+                storyData.styleReferenceImageUrl || 
+                storyData.styleReferenceImageBase64 || 
+                storyData.mainCharacter?.imageDNA?.[0] || 
+                storyData.mainCharacter?.imageBases64?.[1];
+            
+            // DNA-ONLY v6.0: We only send the stylized DNA image to the illustrator.
+            // This ensures perfect alignment with the prompt engineer's "Image 1 = HERO_1" legend.
+            // Priority: imageDNA[0] -> styleReference -> imageBases64[0] (fallback)
+            const mainDNAResolved = mainStylizedDNA || mainRawPhoto || '';
+
+            const secondRawPhoto = storyData.secondCharacter?.imageBases64?.[0] || storyData.secondCharacterImageBase64;
+            const secondStylizedDNA = 
+                storyData.secondCharacterImageUrl ||
+                storyData.secondCharacterImageBase64 ||
+                storyData.secondCharacter?.imageDNA?.[0] || 
+                storyData.secondCharacter?.imageBases64?.[1];
+            const secondDNAResolved = secondStylizedDNA || secondRawPhoto || '';
+
             const visualStylePrompt = storyData.selectedStylePrompt || 'Painterly, flat 2D illustrated children\'s book style';
-            // BUG FIX: Prioritize the stylized imageDNA[0] anchor over the raw uploaded photos to prevent realism bleed
-            const secondDNA = storyData.useSecondCharacter ? (storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageBase64 || storyData.secondCharacterImageUrl || storyData.secondCharacter?.imageBases64?.[0]) : undefined;
+
+            logMsg(`Character Binding Status:`);
+            logMsg(`- HERO_1: ${mainStylizedDNA ? 'DNA-Matched ✓' : 'Raw Fallback ⚠️'}`);
+            if (storyData.useSecondCharacter) {
+                logMsg(`- HERO_2: ${secondStylizedDNA ? 'DNA-Matched ✓' : 'Raw Fallback ⚠️'}`);
+            }
 
             const uploadSpreadImage = async (spreadNum: number, base64: string, promptUsed: string) => {
                 // Store directly as base64 for now; Supabase upload can be added here
@@ -397,8 +514,9 @@ export const useLegacyPipeline = (
             };
 
             // --- Generate Cover (Spread 0) ---
-            const coverAlreadyDone = storyData.coverImageUrl && storyData.coverImageUrl.length > 55 && !storyData.coverImageUrl.endsWith('...');
-            if (!coverAlreadyDone && resolvedCoverPrompt && mainDNA) {
+            const coverUrl = storyData.coverImageUrl;
+            const coverAlreadyDone = coverUrl && coverUrl.length > 55 && !coverUrl.endsWith('...');
+            if (!coverAlreadyDone && resolvedCoverPrompt && mainDNAResolved) {
                 setStatus(t('رسم الغلاف...', 'Painting Cover...'));
                 const rawCover = storyDataPropRef.current.finalPrompts?.[0] || resolvedCoverPrompt;
                 const coverImagePrompt = typeof rawCover === 'string' ? rawCover : (rawCover?.imagePrompt || rawCover?.prompt);
@@ -406,20 +524,22 @@ export const useLegacyPipeline = (
                 await sleep(delayBetweenScenes);
                 const coverRes = await retryStep('Painting Cover', () => backendApi.generateImage({
                     prompt: coverImagePrompt, stylePrompt: visualStylePrompt,
-                    referenceBase64: mainDNA, characterDescription: storyData.mainCharacter?.description,
-                    age: storyData.childAge || '5', secondReferenceBase64: secondDNA
+                    referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
+                    age: storyData.childAge || '5', secondReferenceBase64: secondDNAResolved,
+                    secondCharacterDescription: storyData.secondCharacter?.description
                 })) as any;
                 if (coverRes.imageBase64 || coverRes.data?.imageBase64) {
                     const b64 = coverRes.imageBase64 || coverRes.data?.imageBase64;
                     logMsg(`✓ Cover perfectly generated.`);
-                    spreads[0] = { ...spreads[0], illustrationUrl: b64, actualPrompt: coverImagePrompt };
+                    const savedPrompt = coverRes.fullPrompt || coverImagePrompt;
+                    spreads[0] = { ...spreads[0], illustrationUrl: b64, actualPrompt: savedPrompt };
                     storyData = { ...storyData, coverImageUrl: b64, actualCoverPrompt: coverImagePrompt, spreads: [...spreads] };
                     storyDataRef.current = storyData;
                     onUpdateStory(storyData);
                     await adminService.saveOrder(orderNumber, storyData, initialShippingDetails, total);
                 }
             } else if (coverAlreadyDone) {
-                logMsg(`Cover already exists. Skipping.`);
+                logMsg(`Cover already exists (Source: ${coverUrl?.substring(0, 30)}...). Skipping.`);
             }
             setProgress(60);
 
@@ -435,11 +555,11 @@ export const useLegacyPipeline = (
                     if (isCorrupted) logMsg(`Repainting corrupted image for Spread ${spreadNum}...`);
                     logMsg(`--> Painting Spread ${spreadNum}/${innerPrompts.length}...`);
 
-                    const latestRaw = storyDataPropRef.current.finalPrompts?.[hasCoverPrompt ? spreadNum : i] || innerPrompts[i];
+                    const latestRaw = storyData.finalPrompts?.[hasCoverPrompt ? spreadNum : i] || innerPrompts[i];
                     const imagePrompt = typeof latestRaw === 'string' ? latestRaw : (latestRaw?.imagePrompt || latestRaw?.prompt);
 
-                    if (!imagePrompt || !mainDNA) {
-                        logMsg(`⚠️ Missing inputs for Spread ${spreadNum}, skipping.`);
+                    if (!imagePrompt || !mainDNAResolved) {
+                        logMsg(`⚠️ Missing prompt or character DNA for Spread ${spreadNum}, skipping.`);
                         continue;
                     }
 
@@ -448,14 +568,16 @@ export const useLegacyPipeline = (
 
                     const imgRes = await retryStep(`Painting Spread ${spreadNum}`, () => backendApi.generateImage({
                         prompt: imagePrompt, stylePrompt: visualStylePrompt,
-                        referenceBase64: mainDNA, characterDescription: storyData.mainCharacter?.description,
-                        age: storyData.childAge || '5', secondReferenceBase64: secondDNA
+                        referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
+                        age: storyData.childAge || '5', secondReferenceBase64: secondDNAResolved,
+                        secondCharacterDescription: storyData.secondCharacter?.description
                     })) as any;
 
                     if (imgRes.imageBase64 || imgRes.data?.imageBase64) {
                         const b64 = imgRes.imageBase64 || imgRes.data?.imageBase64;
                         logMsg(`✓ Spread ${spreadNum} perfectly generated.`);
-                        await uploadSpreadImage(spreadNum, b64, imagePrompt);
+                        const savedPrompt = imgRes.fullPrompt || imagePrompt;
+                        await uploadSpreadImage(spreadNum, b64, savedPrompt);
                     }
                 } else {
                     logMsg(`Spread ${spreadNum} already exists. Skipping.`);

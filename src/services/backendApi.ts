@@ -1,4 +1,4 @@
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.VITE_BACKEND_URL || '/api';
+export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '/api';
 
 /**
  * Interface for backend API responses to maintain consistency
@@ -109,6 +109,17 @@ export const backendApi = {
             method: 'POST',
             body: JSON.stringify(payload)
         }),
+
+    outpaintSpreadImage: (payload: { imageBase64: string; stylePrompt: string; childDNA?: string; secondDNA?: string }) =>
+        fetchBackend<{ imageBase64: string }>('/generate/outpaint', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
+
+    evaluateImageQA: (payload: { generatedImageBase64: string; heroRawBase64?: string; heroDNABase64?: string; pageType?: string; currentTextSide?: string; targetPrompt: string; secondRawBase64?: string; secondDNABase64?: string }) => fetchBackend<any>('/generate/qa', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    }),
 
 
     generatePreview: (payload: { character: any, secondCharacter?: any, themeDescription: string, themeId?: string, stylePrompt: string, age: string }) => fetchBackend<{ imageBase64: string, prompt: string, secondImageBase64?: string, secondPrompt?: string }>('/generate/preview', {

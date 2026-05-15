@@ -1,6 +1,6 @@
-
 import { ai, withRetry } from './modelGateway';
 import { Character } from '../../types';
+import { ServerLogger } from '@/utils/serverLogger';
 
 const API_KEY = process.env.GEMINI_API_KEY || '';
 
@@ -57,28 +57,56 @@ export async function describeSubject(imageBase64: string): Promise<string> {
             });
             const response = await model.generateContent([
                 { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } },
-                { text: `ROLE: World-class character designer & architectural vision analyzer.
-TASK: Analyze the provided photo of the subject and extract their physical identity into a strict JSON object. 
-FOCUS: Hair color/style, eye color, face shape, skin tone, unique identifiers, and material properties.
-EXCLUSIONS: Do NOT include transient details such as logos on clothing, text on shirts, strange lighting artifacts, or temporary facial expressions like squints. Normalize expressions to neutral.
+                { text: `ROLE: Expert character designer and facial-identity analyst.
 
-MANDATE: Output a valid JSON object following this exact schema structure:
+TASK:
+Analyze the provided subject photo and extract only the stable physical identity traits needed to recreate the same child consistently in stylized storybook artwork.
+
+FOCUS:
+Face shape, jaw/chin structure, cheek fullness, eye shape and spacing, eyebrow shape, nose proportions, mouth/lip proportions, hair color/style/texture, skin tone under neutral lighting, body proportions if visible, and stable identifiers such as glasses or permanent features.
+
+EXCLUDE:
+Do not preserve background, lighting artifacts, shadows, camera distortion, temporary facial expression, pose, hand gestures, clothing logos, printed text, temporary accessories, or scene-specific objects.
+
+COLOR RULE:
+Estimate normalized base color ranges under neutral lighting. Provide approximate hex values for hair, eyes, and skin, but do not sample shadows or highlights as base colors.
+
+OUTPUT:
+Return valid JSON only using this structure:
 {
-  "objects": [{
-    "label": "Main Character Identity",
-    "material": "Describe the general clothing material/color if visible (IGNORE ALL LOGOS AND TEXT)",
-    "surface_properties": {
-      "texture": "Describe hair texture and natural skin texture"
+  "identity": {
+    "face_shape": "",
+    "jaw_chin": "",
+    "cheeks": "",
+    "eye_shape": "",
+    "eye_spacing": "",
+    "eyebrows": "",
+    "nose": "",
+    "mouth_lips": "",
+    "ears": "",
+    "hair": {
+      "base_color_hex": "",
+      "style": "",
+      "length": "",
+      "texture": "",
+      "hairline": ""
     },
-    "color_details": {
-      "base_color_hex": "Estimate exact hex color for hair",
-      "secondary_colors": ["Estimate hex for eyes", "Estimate exact hex for skin tone"]
-    }
-  }],
-  "reconstruction_notes": {
-    "mandatory_elements_for_recreation": ["Describe the exact natural facial geometry in high detail (jawline shape, eye spacing and shape, nose bridge/width, lip fullness). Do not list generic categories; describe the physical structure."],
-    "sensitivity_factors": ["List specific permanent physical traits that MUST be preserved. Do NOT list squints, weird smiles, or transient expressions."]
-  }
+    "skin": {
+      "base_tone_hex": "",
+      "undertone": ""
+    },
+    "body_proportions": "",
+    "stable_identifiers": []
+  },
+  "excluded_photo_noise": {
+    "background": "",
+    "lighting_artifacts": "",
+    "temporary_expression": "",
+    "temporary_pose": "",
+    "logos_or_text": [],
+    "temporary_accessories": []
+  },
+  "identity_preservation_priorities": []
 }
 Output ONLY valid JSON. No markdown formatting.` }
             ]);
@@ -206,6 +234,7 @@ export async function generateThemeStylePreview(
     theme: string,
     style: string,
     age: string,
+    pose: 'front' | 'three_quarter' | 'full_body' = 'front',
     seed?: number,
     occasion?: string,
     customGoal?: string
@@ -225,31 +254,56 @@ export async function generateThemeStylePreview(
         // Hardcoded guardrails from the "Bible"
         const masterGuardrails = "MANDATE: Output safe, G-rated content only. No nudity, violence, or gore.";
 
-        // EXACT VERCEL PRODUCTION PROMPT (NO MODIFICATIONS)
-        const prompt = `**TASK:** Transform the reference Subject (Image 1) into the selected Art Style.
-        
-**REFERENCE INPUTS:**
-- **Source:** See attached IMAGE 1 (The Child).
-- **Style:** ${style}
+        // Determine Style Family for specific identity rules
+        const is3D = /\b(3d|pixar|unreal|octane|clay|realistic)\b/i.test(style);
+        const is2D = /\b(2d|flat|vector|cel|minimal)\b/i.test(style);
+        const isPainterly = /\b(watercolor|gouache|oil|painterly|sketch)\b/i.test(style);
 
-**STRICT IDENTITY PRESERVATION:**
-- **Likeness is Critical:** The output MUST look exactly like the specific child in Image 1.
-- **Focus strictly on natural facial features and skin tones:** You MUST perfectly preserve the natural eye spacing, lip thickness, specific nose shape, jawline, and skin tone.
-- **IGNORE transient details:** Do not carry over weird expressions like squints, weird lighting artifacts, logos on clothing, or messy backgrounds. Normalize their expression to a pleasant, neutral/slight smile.
-- **Change Only:** The rendering style (brushstrokes, lighting softness, shading logic). The geometry of the face MUST NOT CHANGE.
-- **Age Lock:** Keep them looking approx ${age || "Child"} years old.
+        let identityRule = "Preserve a clearly recognizable likeness of the specific child while faithfully adapting the face into the selected art style. Do not invent a generic child.";
+        if (is3D) {
+            identityRule = "Preserve a strong facial resemblance and natural proportions. The character should look like a high-quality stylized 3D version of the child in Image 1, capturing their unique essence while adhering to the 3D aesthetic.";
+        } else if (is2D) {
+            identityRule = "Preserve identity through silhouette, hair shape, and key facial proportions. Use simplified shapes without losing the child's recognizable likeness. Ensure the character remains distinct and identifiable as the child in Image 1.";
+        } else if (isPainterly) {
+            identityRule = "Preserve recognizable identity cues while simplifying details into artistic brushwork. Maintain the child's unique facial proportions and hairline accurately within the painterly style.";
+        }
+
+        let poseInstruction = "";
+        if (pose === 'front') {
+            poseInstruction = "Create a neutral, dead-on front-facing portrait. The face should look directly at the viewer with a calm neutral expression. Keep the head level, both eyes visible, and facial features symmetrical enough to serve as a downstream identity reference.";
+        } else if (pose === 'three_quarter') {
+            poseInstruction = "Create a 3/4 face view portrait. The character should be turned slightly away from the camera while still clearly showing their facial identity. This will serve as a reference for angled shots.";
+        } else if (pose === 'full_body') {
+            poseInstruction = "Create a full-body standing reference shot. Show the character's height, clothing style, and general proportions in the selected art style. Simple, clean background.";
+        }
+
+        const prompt = `**TASK:** Create a stylized character DNA portrait of the subject in Image 1 using the selected art style.
+
+**PURPOSE:** This image is the primary visual reference for character identity, style treatment, color palette, and facial proportion consistency across all story spreads.
+
+**IDENTITY ANCHOR:**
+The facial features in Image 1 are the ONLY source of truth. Preserve the unique eye shape, nose structure, mouth curvature, and face silhouette exactly. Do not shift to a generic "Pixar" or "Cartoon" face. The output character must look like the SAME child as in the photo, just rendered in the requested medium.
+
+**STYLE ADAPTATION:**
+${identityRule}
+Apply the selected art style ONLY to rendering technique, line treatment, texture, shading, and lighting. Keep the child’s identity recognizable within that style.
+
+**PHOTO NOISE REMOVAL:**
+Do not copy the original photo background, room lighting, shadows, camera distortion, logos, text, hand gestures, or temporary accessories. Render the subject in a clean, professional character-design environment.
+
+
+**POSE:**
+${poseInstruction}
 
 **SCENE CONTEXT:**
 - **Setting:** ${theme || "Neutral"} background.
+- **Shot:** ${pose === 'full_body' ? 'Full Body' : 'Medium-Close Up (Head & Shoulders)'}.
 ${occasion ? `- **Special Occasion:** Incorporate subtle festive elements related to "${occasion}" in the background or character accessories.` : ""}
 ${customGoal ? `- **Custom Theme Goal:** Match the vibe of "${customGoal}".` : ""}
-- **Shot:** Medium-Close Up (Head & Shoulders).
-- **Focus:** High-impact character portrait.
-- **Pose Request (CRITICAL):** DEAD-ON FRONT-FACING PORTRAIT. The character MUST be facing directly forward, looking perfectly straight at the camera, with both eyes fully visible and symmetrically aligned. ABSOLUTELY DO NOT generate side profiles, 3/4 angles, tilted heads, or characters looking away. This image is the strict facial DNA blueprint for the entire book; if the face is angled or obscured, the whole book will fail.
 
 **TECHNICAL MANDATES:**
 - 1:1 Aspect Ratio.
-- No text, no frames.
+- No text, no frames. No extra characters. No props.
 - Perfect application of the '${style}' aesthetic.
 ${masterGuardrails}`;
 
@@ -279,12 +333,12 @@ ${masterGuardrails}`;
 
         try {
             console.log("=== ATTEMPTING PRIMARY MODEL (VERIFIED CONFIG) ===");
-            console.log("Model: gemini-3-pro-image-preview");
+            console.log("Model: gemini-1.5-flash");
             console.log("Contents: 1 image + 1 text prompt");
 
             // Using the Vision-Capable Image Generation Model
             const model = ai().getGenerativeModel({
-                model: 'gemini-3-pro-image-preview'
+                model: 'gemini-1.5-flash'
             });
 
             console.log("Calling model.generateContent...");
@@ -318,119 +372,224 @@ ${masterGuardrails}`;
 export async function generateMethod4Image(
     prompt: string,
     stylePrompt: string,
-    referenceBase64OrUrl: string,
+    referenceBase64OrSet: string | string[],
     characterDescription: string,
     age: string,
     seed?: number,
-    secondReferenceBase64OrUrl?: string
-): Promise<{ imageBase64: string; fullPrompt: string }> {
+    secondReferenceBase64OrSet?: string | string[],
+    secondCharacterDescription?: string
+): Promise<{ imageBase64: string; fullPrompt: string; seedPrompt: string }> {
     return withRetry(async () => {
-        // We use the "Verify Hero" result (referenceBase64) as the Visual Anchor.
-        // This ensures the page illustrations look exactly like the approved hero.
-
-        let referenceBase64 = referenceBase64OrUrl;
-
-        // If it's a URL, download it first
-        if (referenceBase64OrUrl && referenceBase64OrUrl.startsWith('http')) {
-            const response = await fetch(referenceBase64OrUrl);
-            const arrayBuffer = await response.arrayBuffer();
-            referenceBase64 = Buffer.from(arrayBuffer).toString('base64');
-        }
-
-        // 1. Construct the Multi-Modal Input (Images MUST come first)
-        const contents: any[] = [
-            {
-                inlineData: {
-                    mimeType: 'image/jpeg',
-                    data: referenceBase64
-                }
+        // 1. Resolve Hero A references
+        const heroASet = Array.isArray(referenceBase64OrSet) ? referenceBase64OrSet : [referenceBase64OrSet];
+        const heroAImages: string[] = [];
+        for (const item of heroASet) {
+            if (item && item.startsWith('http')) {
+                const response = await fetch(item);
+                const arrayBuffer = await response.arrayBuffer();
+                heroAImages.push(Buffer.from(arrayBuffer).toString('base64'));
+            } else if (item) {
+                heroAImages.push(item);
             }
-        ];
-
-        let secondReferenceBase64 = secondReferenceBase64OrUrl;
-        if (secondReferenceBase64 && secondReferenceBase64.startsWith('http')) {
-            const response = await fetch(secondReferenceBase64);
-            const arrayBuffer = await response.arrayBuffer();
-            secondReferenceBase64 = Buffer.from(arrayBuffer).toString('base64');
         }
 
-        if (secondReferenceBase64) {
-            contents.push({
-                inlineData: {
-                    mimeType: 'image/jpeg',
-                    data: secondReferenceBase64
+        // 2. Resolve Hero B references
+        const heroBSet = Array.isArray(secondReferenceBase64OrSet) ? secondReferenceBase64OrSet : (secondReferenceBase64OrSet ? [secondReferenceBase64OrSet] : []);
+        const heroBImages: string[] = [];
+        for (const item of heroBSet) {
+            if (item && item.startsWith('http')) {
+                const response = await fetch(item);
+                const arrayBuffer = await response.arrayBuffer();
+                heroBImages.push(Buffer.from(arrayBuffer).toString('base64'));
+            } else if (item) {
+                heroBImages.push(item);
+            }
+        }
+
+        // 3. Construct Multi-Modal Input
+        const contents: any[] = [];
+        heroAImages.forEach(b64 => {
+            contents.push({ inlineData: { mimeType: 'image/jpeg', data: b64 } });
+        });
+        heroBImages.forEach(b64 => {
+            contents.push({ inlineData: { mimeType: 'image/jpeg', data: b64 } });
+        });
+        
+        let unifiedPromptText = sanitizePrompt(prompt);
+
+        // 4. Input Consistency Validation (Anti-Hallucination Guard)
+        const imageRefs = unifiedPromptText.match(/Image\s+(\d+)/gi);
+        if (imageRefs) {
+            let maxImageRef = 0;
+            imageRefs.forEach(ref => {
+                const match = ref.match(/\d+/);
+                if (match) {
+                    const num = parseInt(match[0], 10);
+                    if (num > maxImageRef) maxImageRef = num;
                 }
             });
+            
+            if (maxImageRef > contents.length) {
+                const errorMsg = `[FATAL BINDING ERROR] The generated prompt explicitly references up to "Image ${maxImageRef}", but only ${contents.length} images were passed in the payload array. This usually happens when a Dual-Hero prompt is used for a Single-Hero order. Aborting to prevent identity drift.`;
+                console.error(errorMsg);
+                throw new Error(errorMsg);
+            }
         }
 
-        const sanitizedPrompt = sanitizePrompt(prompt);
-        const sanitizedStyle = sanitizePrompt(stylePrompt);
-        const sanitizedDesc = sanitizePrompt(characterDescription);
+        // DNA-ONLY LEGEND (v6.0): Sequential numbering.
+        // This MUST match the prompt body exactly — no contradiction allowed.
+        const legendLines: string[] = ['CHARACTER IDENTITY REFERENCES:'];
+        let currentIdx = 1;
 
-        // NOTE: When called from the pipeline (Phase 5), the `prompt` parameter already contains
-        // the full Vision Blueprint V2 JSON with `entities` and the double-bound [[HERO_A]] preamble
-        // assembled by promptEngineer.ts. The wrapper text below acts as the final generation mandate.
-        const basePromptText = `**PHOTO-BOUND CHARACTER TOKEN:**
-- [[HERO_A]] → Attached Image 1 (inlineData[0]). IDENTITY LOCK. This token IS the exact child in the photo. The image is GROUND TRUTH. You must exactly replicate their specific facial geometry, eye spacing, nose structure, jawline, and skin tone. DO NOT use cartoonish defaults or statistical averages that lose resemblance. The text description is secondary metadata to help you interpret the photo, but the photo rules all.
+        heroAImages.forEach((_, i) => {
+            legendLines.push(`- Image ${currentIdx}: [[HERO_1]] — approved character reference.`);
+            currentIdx += 1;
+        });
 
-**STYLE LOCK:** Render this scene in the following Art Style: "${sanitizedStyle}". Apply the stylistic brushing, shading, and lighting to the character without changing their underlying bone structure or likeness.
+        heroBImages.forEach((_, i) => {
+            legendLines.push(`- Image ${currentIdx}: [[HERO_2]] — approved character reference.`);
+            currentIdx += 1;
+        });
 
-**GENERATION MANDATE:**
-${sanitizedPrompt}
+        const isFullyBaked = unifiedPromptText.includes('[v6.0-dna-only]');
+        const imageBindingHeader = isFullyBaked ? '' : legendLines.join('\n');
+        const masterGuardrails = "MANDATE: Output safe, G-rated content only. No nudity, violence, or gore. No text, no frames.";
+        const styleMandate = (isFullyBaked || !stylePrompt) ? '' : `\n\n**ARTISTIC STYLE MANDATE:**\nApply this specific aesthetic to the entire scene: ${stylePrompt}\n\n${masterGuardrails}`;
 
-**FINAL QUALITY REQUIREMENTS:**
-- Aspect Ratio: Ultra-wide 16:9 horizontal panoramic image. This is a children's book double-page spread. Do NOT output square, portrait, or 4:3 proportions.
-- COMPOSITION (CRITICAL): Zoom out! The character(s) must occupy only a small portion of the scene. Show the full environment around them. Do not use close-ups. Frame as a wide-angle, full-body shot.
-- OPEN SPACE: The right 40% of the image must be a calm, visually empty region — soft sky, plain wall, or smooth blurred gradient. No characters, faces, limbs, or props in this region.
-- Quality: Ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece children's illustration.
-- NO text, letters, words, numbers, signs, or typography anywhere in the image.`;
-
-        const dualPromptText = `**PHOTO-BOUND CHARACTER TOKENS:**
-- [[HERO_A]] → Attached Image 1 (inlineData[0]). IDENTITY LOCK. The image is GROUND TRUTH. You must exactly replicate their specific facial geometry, eye spacing, nose structure, and jawline. DO NOT use generic face defaults.
-- [[HERO_B]] → Attached Image 2 (inlineData[1]). Same strict rules apply as [[HERO_A]]. Match the exact structural identity of the second photo.
-
-**STYLE LOCK:** Render this scene in the following Art Style: "${sanitizedStyle}". Apply the stylistic brushing, shading, and lighting to the characters without changing their underlying bone structure or likeness.
-
-**GENERATION MANDATE:**
-${sanitizedPrompt}
-
-**FINAL QUALITY REQUIREMENTS:**
-- Aspect Ratio: Ultra-wide 16:9 horizontal panoramic image. This is a children's book double-page spread. Do NOT output square, portrait, or 4:3 proportions.
-- COMPOSITION (CRITICAL): Zoom out! The characters must occupy only a small portion of the scene. Show the full environment around them. Do not use close-ups. Frame as a wide-angle, full-body shot.
-- OPEN SPACE: The right 40% of the image must be a calm, visually empty region — soft sky, plain wall, or smooth blurred gradient. No characters, faces, limbs, or props in this region.
-- Quality: Ultra-high resolution, 4K quality, sharp details, flawless rendering, masterpiece children's illustration.
-- NO text, letters, words, numbers, signs, or typography anywhere in the image.`;
+        const finalPromptText = isFullyBaked ? unifiedPromptText : (imageBindingHeader + unifiedPromptText + styleMandate);
 
         contents.push({
-            text: `\n\n=== GENERATION INSTRUCTIONS ===\n` + (secondReferenceBase64 ? dualPromptText : basePromptText)
+            text: finalPromptText
         });
 
+
+        // Coerce to string to guard against JSON objects accidentally passed from DB
+        const toSafeStr = (v: any): string => {
+            if (typeof v === 'string') return v;
+            if (v === null || v === undefined) return '';
+            return typeof v === 'object' ? JSON.stringify(v) : String(v);
+        };
         console.log(`Generating Page via Hybrid Vision Logic (Backend)...`);
-        console.log(`- STYLE PROMPT: ${stylePrompt?.substring(0, 100)}...`);
-        console.log(`- REFERENCE IMAGE: ${referenceBase64 ? 'PRESENT (' + referenceBase64.length + ' chars)' : 'MISSING'}`);
-        console.log(`- SCENE PROMPT: ${prompt.substring(0, 100)}...`);
+        console.log(`- STYLE PROMPT: ${toSafeStr(stylePrompt).substring(0, 100)}...`);
+        console.log(`- HERO A IMAGES SENT: ${heroAImages.length} (Expected: 1 for photo, 1 for DNA style)`);
+        console.log(`- HERO B IMAGES SENT: ${heroBImages.length} (Expected: 1 for photo, 1 for DNA style)`);
+        console.log(`- SCENE PROMPT (Length): ${unifiedPromptText.length} characters`);
+
+        try {
+            const fs = require('fs');
+            const debugPayload = {
+                timestamp: new Date().toISOString(),
+                totalImages: contents.length - 1, // minus text part
+                heroAImages: heroAImages.length,
+                heroBImages: heroBImages.length,
+                promptText: unifiedPromptText
+            };
+            
+            ServerLogger.log('GEMINI_API_CALL_PAYLOAD', debugPayload);
+            
+            // ── VISUAL CONTACT SHEET ──────────────────────────────────────────────
+            // Opens in browser. Shows EXACTLY what Gemini receives, in slot order.
+            // Check this file after any generation to verify image binding.
+            // File: /last_gemini_contact_sheet.html
+            // ─────────────────────────────────────────────────────────────────────
+            try {
+                const imageSlots = [
+                    ...heroAImages.map((b64, i) => ({
+                        slot: i + 1,
+                        label: `[[HERO_1]] — Slot ${i + 1} (DNA reference, sole identity authority)`,
+                        b64,
+                    })),
+                    ...heroBImages.map((b64, i) => ({
+                        slot: heroAImages.length + i + 1,
+                        label: `[[HERO_2]] — Slot ${heroAImages.length + i + 1} (DNA reference, sole identity authority)`,
+                        b64,
+                    })),
+                ];
+
+                const cards = imageSlots.map(slot => `
+                    <div style="border:2px solid #333;border-radius:12px;padding:12px;background:#1a1a2e;min-width:220px">
+                        <div style="font-size:11px;font-weight:900;color:#00ff88;letter-spacing:2px;margin-bottom:6px;text-transform:uppercase">
+                            IMAGE ${slot.slot} — SENT TO GEMINI
+                        </div>
+                        <img src="data:image/jpeg;base64,${slot.b64.substring(0, 200000)}"
+                            style="width:200px;height:200px;object-fit:cover;border-radius:8px;border:2px solid #00ff88;display:block;margin-bottom:8px"
+                            onerror="this.style.background='#333';this.alt='[image too large to preview]'"
+                        />
+                        <div style="font-size:10px;color:#aaa;line-height:1.4">${slot.label}</div>
+                        <div style="font-size:9px;color:#666;margin-top:4px">base64 length: ${slot.b64.length} chars</div>
+                    </div>
+                `).join('');
+
+                const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gemini Payload Contact Sheet — ${new Date().toISOString()}</title>
+<style>
+  body { background:#0d0d1a; color:#eee; font-family:monospace; margin:0; padding:24px; }
+  h1 { color:#00ff88; font-size:14px; letter-spacing:3px; text-transform:uppercase; margin-bottom:4px; }
+  .meta { font-size:11px; color:#666; margin-bottom:20px; }
+  .slots { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:32px; }
+  .prompt-box { background:#111;border:1px solid #333;border-radius:8px;padding:16px;white-space:pre-wrap;font-size:11px;line-height:1.6;color:#ccc;max-height:600px;overflow-y:auto; }
+  .section-title { font-size:11px; font-weight:900; color:#ff9900; letter-spacing:2px; text-transform:uppercase; margin:20px 0 8px; }
+  .verdict { background:#002200;border:1px solid #00ff88;border-radius:8px;padding:12px;font-size:11px;line-height:1.7;color:#00ff88;margin-bottom:20px; }
+</style>
+</head>
+<body>
+<h1>🧬 Gemini Payload Contact Sheet</h1>
+<div class="meta">Generated: ${new Date().toISOString()} &nbsp;|&nbsp; Total images: ${imageSlots.length} &nbsp;|&nbsp; Pipeline: v6.0-dna-only</div>
+
+<div class="verdict">
+✅ Binding check: ${imageSlots.length} image(s) attached<br>
+${imageSlots.map(s => `→ Image ${s.slot} maps to: ${s.label}`).join('<br>')}
+</div>
+
+<div class="section-title">Images Sent (in slot order — must match prompt references)</div>
+<div class="slots">${cards}</div>
+
+<div class="section-title">Full Prompt Text Sent to Gemini (${unifiedPromptText.length} chars)</div>
+<div class="prompt-box">${finalPromptText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+</body>
+</html>`;
+
+                fs.writeFileSync('last_gemini_contact_sheet.html', html, 'utf8');
+                fs.writeFileSync('last_gemini_payload_debug.json', JSON.stringify(debugPayload, null, 2));
+                console.log(`[DEBUG] Contact sheet saved → last_gemini_contact_sheet.html (${imageSlots.length} image slots)`);
+            } catch (e) {
+                console.error("Failed to write contact sheet", e);
+            }
+
+        } catch (e) {
+            console.error("Failed to write debug payload", e);
+        }
 
         // 2. Call Gemini Vision Model
-        const model = ai().getGenerativeModel({
-            model: 'gemini-3-pro-image-preview'
-        });
+        const modelName = process.env.NEXT_PUBLIC_TARGET_MODEL || 'gemini-2.5-flash-image';
+        const model = ai().getGenerativeModel({ model: modelName });
 
-        // Ensure generationConfig explicitly filters out invalid fields for this model version
-        // gemini-3-pro-image-preview does not support 'aspectRatio' in the config block.
         const response = await model.generateContent(contents);
 
         // 3. Extract Image
         let b64 = "";
-        if (response.response.candidates && response.response.candidates[0].content.parts) {
-            for (const part of response.response.candidates[0].content.parts) {
-                if (part.inlineData) b64 = part.inlineData.data;
+        const candidates = response.response.candidates || [];
+        if (candidates.length > 0 && candidates[0].content?.parts) {
+            for (const part of candidates[0].content.parts) {
+                if (part.inlineData?.data) {
+                    b64 = part.inlineData.data;
+                    break;
+                }
             }
         }
 
-        if (!b64) throw new Error("Image generation failed (No data returned from backend vision model)");
+        if (!b64) {
+            throw new Error(`Vision Model Error: No image data returned. (Model: ${modelName})`);
+        }
 
-        // Return the 'clean' prompt (the original scene description) to avoid bloating the database with instructions
-        return { imageBase64: b64, fullPrompt: prompt };
+        return { 
+            imageBase64: b64, 
+            fullPrompt: finalPromptText, 
+            seedPrompt: unifiedPromptText 
+        };
     });
 }
 
@@ -522,7 +681,7 @@ export async function generateObjectStylePreview(
 
         try {
             const model = ai().getGenerativeModel({
-                model: 'gemini-3-pro-image-preview'
+                model: 'gemini-2.5-flash-image'
             });
 
             console.log("Calling model.generateContent for Object Styling...");

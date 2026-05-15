@@ -70,6 +70,16 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
         onClose();
     };
 
+    const handleDownload = (base64: string, filename: string) => {
+        if (!base64) return;
+        const link = document.createElement('a');
+        link.href = base64.startsWith('http') || base64.startsWith('data:') ? base64 : `data:image/jpeg;base64,${base64}`;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-4xl w-full flex flex-col max-h-[90vh]">
@@ -95,6 +105,11 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                                 ) : (
                                     <div className="w-full h-48 bg-gray-800 rounded-lg border border-gray-700 flex items-center justify-center text-gray-500">No raw photo</div>
                                 )}
+                                {mainRaw && (
+                                    <div className="flex gap-2 mt-3">
+                                        <Button variant="secondary" onClick={() => handleDownload(mainRaw, `${storyData.childName.replace(/\s+/g, '_')}_Identity_Anchor.jpg`)} className="flex-1 py-1.5 text-xs">Download {storyData.childName}</Button>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <p className="text-sm text-amber-400 mb-2 font-medium">Generated Visual DNA (Style Anchor)</p>
@@ -105,6 +120,7 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                                 )}
                                 <div className="flex gap-2 mt-3">
                                     <Button variant="secondary" onClick={() => handleUpload('main')} className="flex-1 py-1.5 text-xs">Upload Custom</Button>
+                                    {mainDNA && <Button variant="secondary" onClick={() => handleDownload(mainDNA, `${storyData.childName.replace(/\s+/g, '_')}_Style_DNA.jpg`)} className="flex-1 py-1.5 text-xs border-amber-500/30 text-amber-400">Download Style</Button>}
                                 </div>
                             </div>
                         </div>
@@ -122,6 +138,11 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                                     ) : (
                                         <div className="w-full h-48 bg-gray-800 rounded-lg border border-gray-700 flex items-center justify-center text-gray-500">No raw photo</div>
                                     )}
+                                    {secondRaw && (
+                                        <div className="flex gap-2 mt-3">
+                                            <Button variant="secondary" onClick={() => handleDownload(secondRaw, `${storyData.secondCharacter?.name?.replace(/\s+/g, '_') || 'Secondary'}_Identity_Anchor.jpg`)} className="flex-1 py-1.5 text-xs">Download {storyData.secondCharacter?.name}</Button>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <p className="text-sm text-amber-400 mb-2 font-medium">Generated Visual DNA (Style Anchor)</p>
@@ -132,6 +153,7 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                                     )}
                                     <div className="flex gap-2 mt-3">
                                         <Button variant="secondary" onClick={() => handleUpload('second')} className="flex-1 py-1.5 text-xs">Upload Custom</Button>
+                                        {secondDNA && <Button variant="secondary" onClick={() => handleDownload(secondDNA, `${storyData.secondCharacter?.name?.replace(/\s+/g, '_') || 'Secondary'}_Style_DNA.jpg`)} className="flex-1 py-1.5 text-xs border-amber-500/30 text-amber-400">Download Style</Button>}
                                     </div>
                                 </div>
                             </div>

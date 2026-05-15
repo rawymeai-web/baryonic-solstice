@@ -1,33 +1,98 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Nunito:wght@200;300;400;500;600;700;800;900&family=Tajawal:wght@200;300;400;500;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+  
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-  /* Brand Colors */
-  --color-brand-navy: #1a237e;
-  --color-brand-orange: #ff9800;
-  --color-brand-coral: #ff7043;
-  --color-brand-teal: #00897b;
-  --color-brand-baby-blue: #81d4fa;
-}
-
-@media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #FFF9F0;
+    --foreground: #001A40;
+    
+    --brand-navy: #001A40;
+    --brand-orange: #F78F50;
+    --brand-coral: #E66F5B;
+    --brand-teal: #006B5D;
+    --brand-yellow: #FCD000;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow-x: hidden;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --font-jakarta: 'Plus Jakarta Sans', sans-serif;
+  --font-nunito: 'Nunito', sans-serif;
+  --font-tajawal: 'Tajawal', sans-serif;
+
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-coral: var(--brand-coral);
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-yellow: var(--brand-yellow);
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+  }
+
+  .blob-bg {
+    @apply fixed inset-0 -z-10 overflow-hidden pointer-events-none;
+  }
+
+  .blob {
+    @apply absolute rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse;
+  }
+
+  .blob-1 {
+    @apply top-[-10%] left-[-10%] w-[500px] h-[500px] bg-brand-orange;
+    animation: blob-move 20s infinite alternate;
+  }
+
+  .blob-2 {
+    @apply top-[20%] right-[-5%] w-[400px] h-[400px] bg-brand-teal;
+    animation: blob-move 25s infinite alternate-reverse;
+  }
+
+  .blob-3 {
+    @apply bottom-[-10%] left-[20%] w-[600px] h-[600px] bg-brand-navy;
+    animation: blob-move 30s infinite alternate;
+  }
+
+  @keyframes blob-move {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  .scroller-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scroller-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroller-thin::-webkit-scrollbar-thumb {
+    @apply bg-brand-navy/10 rounded-full;
+  }
 }

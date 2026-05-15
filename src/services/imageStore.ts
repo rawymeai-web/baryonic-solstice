@@ -11,11 +11,15 @@ export interface UploadedImageUrls {
     spreads: string[];
 }
 
-export async function saveImagesForOrder(orderNumber: string, images: OrderImages): Promise<UploadedImageUrls> {
+export async function saveImagesForOrder(
+    orderNumber: string,
+    images: { cover?: File | undefined; spreads: (File | undefined)[] }
+): Promise<UploadedImageUrls> {
     const bucket = 'images';
     const folder = `${orderNumber}`;
 
-    const uploadFile = async (file: File, name: string): Promise<string> => {
+    const uploadFile = async (file: File | undefined, name: string): Promise<string | null> => {
+        if (!file) return null; // Nothing to upload — skip gracefully
         const path = `${folder}/${name}`;
         const { data, error } = await supabase.storage
             .from(bucket)
@@ -36,12 +40,12 @@ export async function saveImagesForOrder(orderNumber: string, images: OrderImage
     const coverUrl = await uploadFile(images.cover, 'cover.jpg');
 
     const spreadUrls = await Promise.all(
-        images.spreads.map((file, index) => uploadFile(file, `spread_${index + 1}.jpg`))
+        images.spreads.map((file, index) => (file ? uploadFile(file, `spread_${index + 1}.jpg`) : null))
     );
 
     return {
-        cover: coverUrl,
-        spreads: spreadUrls
+        cover: coverUrl || '',
+        spreads: spreadUrls.map(u => u || '')
     };
 }
 

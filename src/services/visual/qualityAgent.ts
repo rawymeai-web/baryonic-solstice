@@ -1,6 +1,7 @@
 import { ai, cleanJsonString, withRetry } from '../generation/modelGateway';
 
 export interface QualityCheckResult {
+    visualDescription: string;
     characterConsistencyStatus: 'pass' | 'fail';
     characterReasoning: string;
     styleConsistencyStatus: 'pass' | 'fail';
@@ -21,6 +22,7 @@ export class QualityAgent {
         heroDNABase64: string,
         pageType: 'Cover' | 'Spread',
         currentTextSide: 'Right' | 'Left' | string,
+        targetPrompt: string,
         secondRawBase64?: string,
         secondDNABase64?: string
     ): Promise<QualityCheckResult> {
@@ -45,7 +47,7 @@ Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided refer
 **REFERENCE INPUTS:**
 - **Image 1:** The newly generated image that needs to be evaluated.
 - **Image 2:** RAW PHOTO of Hero A (Provides strict facial geometry and identity).
-- **Image 3:** DNA WATERCOLOR of Hero A (Provides the target art style).
+- **Image 3:** DNA STYLE REFERENCE of Hero A (Provides the target art style).
 `;
 
             if (isDualHero) {
@@ -53,7 +55,7 @@ Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided refer
                 contents.push({ inlineData: { mimeType: 'image/jpeg', data: secondDNABase64 } });
                 promptContext += `
 - **Image 4:** RAW PHOTO of Hero B (Facial geometry).
-- **Image 5:** DNA WATERCOLOR of Hero B (Target art style).
+- **Image 5:** DNA STYLE REFERENCE of Hero B (Target art style).
 `;
             }
 
@@ -63,7 +65,7 @@ Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided refer
 
 **EVALUATION CRITERIA:**
 1. **Character Consistency:** Does the character(s) in Image 1 perfectly match the bone structure, facial geometry, and identity of the RAW PHOTO(s)? (Ignore style, focus on identity).
-2. **Style Consistency:** Does Image 1 match the watercolor/painterly art style shown in the DNA WATERCOLOR image(s)? 
+2. **Style Consistency:** Does Image 1 match the art style shown in the DNA STYLE REFERENCE image(s)? 
 3. **Text Clearance:** A large text box will be placed on the ${currentTextSide || 'Right'} side of the image. 
    - Is there enough empty "negative space" on the ${currentTextSide || 'Right'} side for text?
    - Will the text box cover the character's face or the main action? 
@@ -71,6 +73,7 @@ Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided refer
 
 **MANDATE:** Output your evaluation strictly as a JSON object following this exact schema:
 {
+  "visualDescription": "Write a highly detailed 2-sentence description of exactly what you see in Image 1 (characters, actions, background, style).",
   "characterConsistencyStatus": "pass" | "fail",
   "characterReasoning": "Why it passes or fails...",
   "styleConsistencyStatus": "pass" | "fail",
@@ -88,7 +91,7 @@ Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided refer
             contents.push({ text: promptContext });
 
             const model = ai().getGenerativeModel({
-                model: 'gemini-2.5-pro', // Vision capable model for analysis
+                model: 'gemini-2.0-flash', // Vision capable model for analysis
                 generationConfig: { responseMimeType: 'application/json' }
             });
 

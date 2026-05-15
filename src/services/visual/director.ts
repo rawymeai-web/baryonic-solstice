@@ -1,13 +1,13 @@
-
 import { ai, cleanJsonString, withRetry } from '../generation/modelGateway';
 import { Validator } from '../rules/validator';
 import { GUIDEBOOK } from '../rules/guidebook';
-import { StoryBlueprint, SpreadDesignPlan, WorkflowLog } from '../../types';
+import { StoryBlueprint, SpreadDesignPlan, WorkflowLog, StyleProfile, HeroProfile } from '../../types';
 
 export async function generateVisualPlan(
     script: { text: string }[],
     blueprint: StoryBlueprint,
-    visualDNA: string,
+    styleProfile: StyleProfile,
+    heroes: HeroProfile[],
     spreadCount: number = 8
 ): Promise<{ result: SpreadDesignPlan, log: WorkflowLog }> {
 
@@ -17,122 +17,129 @@ export async function generateVisualPlan(
         return await withRetry(async () => {
             const prompt = `
             ROLE: Cinematographer / Art Director.
-            TASK: Translate Story Text into Visual Scene Descriptions.
+            TASK: Translate Story Text into Structured Visual Scene Descriptions.
     
             INPUTS:
             - Story Script: ${JSON.stringify(script)}
-            - Visual DNA (The Global Style): "${visualDNA}"
             - Blueprint Settings: ${JSON.stringify(blueprint.foundation)}
             - Blueprint Planned Spreads (CRITICAL): ${JSON.stringify(blueprint.structure?.spreads || [])}
             - Rules: ${JSON.stringify(GUIDEBOOK.visual)}
+            - Hero Registry: ${JSON.stringify(heroes)}
+            - Selected Style Profile: ${JSON.stringify(styleProfile)}
     
             INSTRUCTIONS:
-            1. **DESIGN THE COVER (Spread 0):** This is the most critical art. It must be a continuous 16:9 panoramic scene. Assign the characters to one side ("Right" or "Left"), and leave the other side explicitly as uncluttered negative space for the title. **CRITICAL STORYTELLING MANDATE:** The cover MUST tell a story. Do not just have the characters standing and posing. They must be actively engaged in an exciting, story-representative action (e.g., exploring, running from danger, casting a spell).
+            1. **DESIGN THE COVER (Spread 0):** This is the most critical art. Assign the characters to one side ("left" or "right"), and leave the other side explicitly as uncluttered negative space for the title. **CRITICAL STORYTELLING MANDATE:** The cover MUST tell a story. Do not just have the characters standing and posing. They must be actively engaged in an exciting, story-representative action.
             2. **DESIGN THE SPREADS (1-${spreadCount}):** You MUST generate a spread for EVERY text segment in the script. Total spreads needed: ${spreadCount} + 1 (Cover).
-            3. **INJECT Visual DNA:** If DNA says "Space/Neon", the scene MUST be "Space/Neon".
-                - **Follow Visual DNA:** The plan MUST prioritize the rendering technique and mood defined in the "Visual DNA" input.
-                - **Cohesive Mood:** Ensure the emotional resonance matches the story beat while staying within the selected art style.
-           
-            4. **VOCABULARY BAN (CLARITY TRAPS & STYLE POISON):**
+            3. **HONOR THE STYLE PROFILE:** 
+                - The visual style is strictly defined by the Selected Style Profile above.
+                - The color_palette, mood, and environment descriptions MUST fit naturally into this style.
+                - Do not invent or substitute a different aesthetic.
+
+            4. **VOCABULARY BAN (CLARITY TRAPS):**
                - NEVER use: "clearly visible", "waiting to be found", "readable from a distance", "spotlighted".
-               - NEVER use: "cinematic", "photorealistic", "depth-of-field", "lens", "camera angle", "wide angle".
-               - INSTEAD use: "partially obscured", "hidden amongst", "revealed by light", "blending in", "illustration view", "painterly depth".
+               - INSTEAD use: "partially obscured", "hidden amongst", "revealed by light", "blending in".
 
-            5. **CHARACTER NAMING — ABSOLUTE RULE (CRITICAL):**
-               - You MUST NEVER use character names (such as "Sarah", "Farah", or any name from the script) anywhere in \`keyActions\`, \`sceneProps\`, or \`setting\`.
-               - The ONLY allowed references to characters are: \`[Hero 1]\` for the primary character and \`[Hero 2]\` for the secondary character (if present).
-               - *WRONG:* "Sarah points at the map while Farah looks on."
-               - *CORRECT:* "[Hero 1] points at the map while [Hero 2] looks on with wide eyes."
-               - This rule exists because the image AI does not know who "Sarah" is — it only knows [Hero 1] and [Hero 2] from the provided reference images.
+            5. **CHARACTER TOKEN RULE — VARIABLE HERO COUNT:**
+               - Use ONLY the hero tokens provided in the Hero Registry (e.g., ${heroes.map(h => h.token).join(', ')}).
+               - Never use real character names inside actions, setting, or props.
+               - Never use vague labels like "the child", "the kids", "the group", "they", or "both" when describing a specific action.
+               - Every visible hero must receive:
+                 1. a clear position in the frame,
+                 2. a distinct physical action,
+                 3. an expression,
+                 4. an eye-line or body-language relationship to the main story focus.
+               - If a hero is not present in a spread, explicitly mark them as "absent".
 
-            6. **DUAL CHARACTER ACTION MAPPING (CRITICAL FOR MULTI-HERO):**
-               - When writing \`keyActions\`, you MUST explicitly state WHICH character is performing WHICH action using \`[Hero 1]\` and \`[Hero 2]\`.
-               - Do not use ambiguous terms like "they", "the kids", "the children", or "both" when describing specific object interactions.
-               - Every character in the scene must have their own clearly described, distinct action.
-               - *WRONG:* "The hero points at the map while the other child looks on."
-               - *CORRECT:* "[Hero 1] holds up a glowing lantern at arm's length while [Hero 2] kneels on the ground, pressing one ear against a hollow tree trunk."
+            6. **NARRATIVE SUBJECT INCLUSION (CRITICAL):**
+               - If the script text mentions a specific creature, animal, or crucial object, you MUST explicitly write that subject into the 'scene_props' for that spread. 
 
-            7. **NARRATIVE SUBJECT INCLUSION (CRITICAL):**
-               - If the script text ('script[index]') mentions a specific creature, animal, or crucial object (e.g., "a cat", "a glowing orb"), you MUST explicitly write that subject into the 'keyActions' or 'props' for that spread. 
-               - The illustrator AI will ONLY draw what is explicitly described in the 'keyActions'. If it's in the story but you leave it out of the action description, it will be missing from the book!
+            7. **ACTION HIGHLIGHT ENFORCEMENT:**
+               - The Story Script takes absolute precedence over the Blueprint Planned Spreads. If they contradict, draw exactly what the Script describes.
 
-            8. **ACTION HIGHLIGHT ENFORCEMENT (CRITICAL):**
-               - The Story Script takes absolute precedence. You MUST make the physical focal point of your \`keyActions\` match exactly what is happening in the provided Script for that spread. 
-               - If the Blueprint's planned highlightAction contradicts the final Script, ignore the Blueprint and draw exactly what the Script describes.
-               - Do not default to passive, static poses if an action is occurring.
+            8. **SETTING AND TIME SYNC:**
+               - You MUST use the exact specific_location, environment_type, and time_of_day from the Blueprint Planned Spreads. 
 
-            9. **SETTING AND TIME SYNC (MANDATORY):**
-               - You MUST use the exact \`specificLocation\`, \`environmentType\`, and \`timeOfDay\` strictly as defined in the **Blueprint Planned Spreads**. 
-               - If the blueprint says "Night", the scene \`lighting\` and \`timeOfDay\` must be Night. If it says "Inside a Cave", it must be an enclosed cave.
-               - The \`setting\` field must be a short English description of the physical environment. Be specific and grounded: e.g. "A simple residential backyard with a green lawn, a wooden fence, and a large oak tree" — NOT just "Backyard". Derive this from Blueprint's \`specificLocation\` and \`environmentType\`.
+            9. **FRAMING RULE (composition_view):**
+               - Use a "medium-wide storybook scene" composition with enough room for background and text-safe negative space. 
+               - Faces must remain readable and unobstructed. Avoid tight close-ups, but do not push characters so far back that likeness is lost. Use "wide storybook scene" ONLY when grand scale is truly necessary.
 
-            10. **STRICT WIDE ANGLE / VANTAGE POINT MANDATE (CRITICAL LAYOUT RULE):**
-               - The \`cameraAngle\` MUST ALWAYS be a wide, spacious establishing shot. 
-               - ABSOLUTELY NO close-ups, extreme close-ups, or tight framing on faces or objects. 
-               - The illustration MUST have expansive negative space and open areas.
-               - To keep the scene dynamic, you may change the *location* or the *vantage point* (where we are looking from), but the composition must remain WIDE.
+            10. **STRICT VISUAL FOCUS ALIGNMENT:**
+               - Directly translate elements from the Blueprint's visualFocus into the hero_actions and scene_props.
 
-            11. **NO TEXT:** Description is for IMAGES only.
-            
-            12. **STRICT VISUAL FOCUS ALIGNMENT:**
-               - The **Blueprint Planned Spreads** explicitly define a \`visualFocus\` for each page. 
-               - You MUST directly translate the exact elements mentioned in the \`visualFocus\` (e.g., characters holding specific props, specific emotional reactions) into your final \`keyActions\` and \`sceneProps\`. Do not ignore or overwrite the planned visual focus.
+            11. **RIGID SCENE PROPS — MANDATORY MINIMUM DETAIL:**
+               - List every single prop AND every animal required in the scene in the scene_props array.
+               - Every prop MUST have a physical_description of at least 3 full sentences covering: (1) exact material/species, (2) specific size/scale, (3) color/texture details AND specific pose or action.
+               - Evaluate the 'text_risk' (none, low, high) of each prop. If high (like a book, sign, shirt), provide a text_safe_rendering instruction (e.g. "Abstract symbols only, no readable words").
 
-            13. **RIGID SCENE PROPS — MANDATORY MINIMUM DETAIL (CRITICAL):**
-               - You MUST list every single prop AND every animal required in the scene in a dedicated \`sceneProps\` JSON array.
-               - **MINIMUM DESCRIPTION STANDARD:** Every single prop MUST have a \`physical_description\` of at least 3 full sentences covering: (1) exact material/species, (2) specific size/scale relative to the children, (3) color/texture details AND specific pose or action.
-               - DO NOT use abstract, conceptual definitions. Every prop must be a concrete, physically observable object.
-               - **BAD PROP (too vague):** \`{ "name": "Animals", "physical_description": "The animals are looking at the kids." }\`
-               - **GOOD PROP (fully described):** \`{ "name": "Wolves", "physical_description": "Two medium-sized grey wolves with silver-tipped fur and warm amber eyes. Each wolf is roughly the size of a large dog, about half the height of the children. They sit on all fours with ears perked forward and heads tilted curiously toward [Hero 1] and [Hero 2], tails curled around their paws, expressions gentle and encouraging." }\`
-               - **BAD PROP (too vague):** \`{ "name": "Fireflies", "physical_description": "Glowing fireflies." }\`
-               - **GOOD PROP (fully described):** \`{ "name": "Fireflies", "physical_description": "Dozens of tiny fireflies no larger than a fingernail, each emitting a soft warm yellow-green glow. They drift lazily through the air at knee-to-head height around the children, creating floating dots of light scattered throughout the scene. Their glow pulses gently, like breathing." }\`
-               - The Primary Visual Anchor (${blueprint.foundation?.primaryVisualAnchor || "Hero's item"}) MUST be explicitly included in this array if it is present in the scene.
+            12. **NO REPETITION ALLOWED:**
+               - The hero_actions MUST distinctly change from spread to spread. Do not copy-paste poses.
 
-            14. **ANIMAL SPECIES CONSTRAINT (MANDATORY):**
-               - ALL animals in the story MUST be consistent with the story world and the hero's desire.
-               - The blueprint defines the story world's creatures. If the hero's desire mentions a "wolf pack", ALL outdoor animal scenes MUST feature wolves — NEVER leopards, lions, cats, or other unrelated species unless the script explicitly introduces them.
-               - Story Hero Desire: "${blueprint.foundation?.heroDesire || ''}"
-               - Story Core: "${blueprint.foundation?.storyCore || ''}"
-               - You MUST read these to identify which animals belong in this story world, then only use those animals in your \`sceneProps\`.
-               - Every animal entry in \`sceneProps\` MUST specify: species, count, coat/color description, size relative to the children, pose, and expression/demeanor.
+            13. **FACE VISIBILITY MANDATE:**
+               - Do not write actions where characters' hands, arms, or objects obscure their faces (e.g., no "covering face with hands").
 
-            15. **NO REPETITION ALLOWED (CRITICAL VISUAL PROGRESSION):**
-               - The \`keyActions\` MUST distinctly change and progress from spread to spread.
-               - DO NOT copy-paste the same \`keyActions\` or \`pose_orientation\` across multiple spreads. 
-               - Every single spread MUST showcase a distinctly unique physical action based on its respective script segment. If the hero is sitting in spread 1, they should be doing something different in spread 2.
+            14. **MILD EMOTIONS & GROUNDED ACTIONS:**
+               - Do not use extreme emotions like "terrified", "shocked", or "screaming". Use milder expressions: "worried", "confused", "pensive". Keep physical actions grounded.
 
-            OUTPUT JSON (Must contain exactly ${spreadCount + 1} items in "spreads" array: Cover [0] + Spreads 1–${spreadCount}):
+            OUTPUT JSON SCHEMA:
             {
-                "visualAnchors": {
+                "visualAnchors": { 
                     "heroTraits": "...",
                     "signatureItems": "...",
                     "recurringLocations": "...",
-                    "persistentProps": "...",
+                    "persistentprops": "...",
                     "spatialLogic": "..."
                 },
                 "spreads": [
                     { 
-                        "spreadNumber": 0,
-                        "setting": "Cover Scene",
-                        "environmentType": "Cover Illustration",
-                        "timeOfDay": "...", 
-                        "lighting": "Style-Consistent",
-                        "mainContentSide": "Right", 
-                        "keyActions": "[Hero 1] looking confident...",
-                        "mood": "Magical/Inviting",
-                        "emotion": "Wonder",
-                        "cameraAngle": "Natural View",
-                        "colorPalette": "Inherited from DNA",
-                        "sceneProps": [
-                            { "name": "Wooden compass", "physical_description": "A pocket-sized circular compass carved from dark mahogany wood with a cracked glass face. It is small enough to fit in a child's palm. The needle is tarnished bronze and points slightly off-center, giving it a worn, well-used appearance." }
+                        "spread_index": 0,
+                        "spread_type": "cover",
+                        "story_beat": "Cover Scene",
+                        "setting": {
+                            "specific_location": "...",
+                            "environment_type": "outdoor",
+                            "time_of_day": "Day",
+                            "lighting": "...",
+                            "color_palette": "...",
+                            "mood": "..."
+                        },
+                        "composition": {
+                            "aspect_ratio": "16:9",
+                            "composition_view": "medium-wide storybook scene",
+                            "text_zone_side": "left",
+                            "text_zone_percentage": 40,
+                            "action_zone_side": "right",
+                            "negative_space_description": "..."
+                        },
+                        "hero_actions": [
+                            {
+                                "hero_id": "hero_1",
+                                "token": "[[HERO_1]]",
+                                "presence": "visible",
+                                "position": "right",
+                                "action": "...",
+                                "expression": "...",
+                                "eye_line": "...",
+                                "face_visibility": "clear",
+                                "interaction_with": []
+                            }
                         ],
-                        "continuityNotes": "Title placed on Left (Empty Space)" 
-                    },
-                    {
-                        "spreadNumber": 1,
-                        "setting": "..."
+                        "scene_props": [
+                            { 
+                                "name": "Wooden compass", 
+                                "physical_description": "...",
+                                "text_risk": "none",
+                                "text_safe_rendering": ""
+                            }
+                        ],
+                        "background_details": {
+                            "required_elements": [],
+                            "forbidden_elements": [],
+                            "text_risk_elements": []
+                        },
+                        "continuity_notes": {
+                            "avoid_repetition_note": "..."
+                        }
                     }
-                    // CRITICAL: YOU MUST OUTPUT EXACTLY ${spreadCount + 1} SPREAD OBJECTS (COVER [0] + SPREADS 1 THROUGH ${spreadCount}) IN THIS ARRAY. DO NOT TRUNCATE OR DUPLICATE THEM.
                 ]
             }
             `;
@@ -157,12 +164,12 @@ export async function generateVisualPlan(
             }
 
             return {
-                result: { ...plan, characters: blueprint.characters }, // Pass through characters for PromptEngineer
+                result: { ...plan, characters: blueprint.characters },
                 log: {
                     stage: 'Visual Plan',
                     timestamp: startTime,
-                    inputs: { scriptLength: script.length, dna: visualDNA },
-                    outputs: { spreadCount: plan.spreads.length },
+                    inputs: { scriptLength: script.length, style: styleProfile.style_id },
+                    outputs: { spreadCount: plan.spreads?.length || 0 },
                     status: 'Success',
                     durationMs: Date.now() - startTime
                 }
@@ -170,7 +177,6 @@ export async function generateVisualPlan(
         });
     } catch (e: any) {
         console.error("Visual Plan Generation Failed:", e);
-        console.error("Visual Plan Error Details:", JSON.stringify(e, Object.getOwnPropertyNames(e)));
 
         return {
             result: {} as SpreadDesignPlan,

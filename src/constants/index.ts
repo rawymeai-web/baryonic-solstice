@@ -102,14 +102,14 @@ export const INITIAL_THEMES: StoryTheme[] = [
         id: 'adv-mini-nature',
         title: { ar: 'سفاري الحديقة الخلفية', en: 'Mini Nature Adventure' },
         description: { ar: 'اكتشاف عالم كامل من المخلوقات الصغيرة.', en: 'Discovering a whole world of tiny creatures.' },
-        emoji: '🐞', category: 'adventures', visualDNA: 'Macro photography style, lush greens.',
+        emoji: '🐞', category: 'adventures', visualDNA: 'Microscopic detail focus, lush greens.',
         skeleton: { storyCores: ["Appreciation of nature.", "Curiosity."], catalysts: ["A trail of ants."], limiters: ["The coming rain."], themeVisualDNA: ["Giant leaf canopies."], settingMandates: ["The Tall Grass."] }
     },
     {
         id: 'adv-daily',
         title: { ar: 'مغامرة اليوم العادي', en: 'Daily Life Adventure' },
         description: { ar: 'تحويل المهام العادية إلى بطولات خارقة.', en: 'Turning ordinary tasks into superhero feats.' },
-        emoji: '☀️', category: 'adventures', visualDNA: 'Bright daylight, comic book accents.',
+        emoji: '☀️', category: 'adventures', visualDNA: 'Bright daylight, vibrant everyday colors.',
         skeleton: { storyCores: ["Imagination.", "Finding joy in routine."], catalysts: ["A grocery trip."], limiters: ["The melting ice cream."], themeVisualDNA: ["Super-vision outlines."], settingMandates: ["The Super Supermarket."] }
     },
     {

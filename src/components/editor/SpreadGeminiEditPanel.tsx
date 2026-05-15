@@ -158,6 +158,18 @@ const SpreadGeminiEditPanel: React.FC<SpreadGeminiEditPanelProps> = ({
                         </p>
                     </div>
 
+                    {/* Quick Actions */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => {
+                                setInstruction("The image was scaled down, leaving an empty border. Expand the background and fill in the empty space seamlessly to the edges. Do not modify the characters or center subject.");
+                            }}
+                            className="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 text-[9px] font-black uppercase tracking-widest rounded-lg transition-colors border border-purple-200"
+                        >
+                            ✨ Auto: Fill Empty Background (Generative Fill)
+                        </button>
+                    </div>
+
                     {/* Error */}
                     {editError && (
                         <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-[10px] text-red-600 font-mono">

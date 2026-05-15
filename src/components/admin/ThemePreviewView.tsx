@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { Language, StoryTheme, Character } from '../../types';
-import * as adminService from '../../services/adminService';
-import { backendApi } from '../../services/backendApi';
-import { getGuidelineComponentsForTheme } from '../../services/storyGuidelines';
-import { ART_STYLE_OPTIONS } from '../../constants';
-import { Button } from '../ui/Button';
-import { Spinner } from '../ui/Spinner';
+import type { Language, StoryTheme, Character } from '@/types';
+import * as adminService from '@/services/adminService';
+import { backendApi } from '@/services/backendApi';
+import { getGuidelineComponentsForTheme } from '@/services/storyGuidelines';
+import { ART_STYLE_OPTIONS } from '@/constants';
+import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
 
 // @ts-ignore - JSZip is loaded from CDN
-const getJSZip = () => typeof window !== 'undefined' ? (window as any).JSZip : null;
+const JSZip = typeof window !== 'undefined' ? (window as any).JSZip : null;
 
 interface PreviewResult {
     styleName: string;
@@ -20,6 +20,20 @@ interface PreviewResult {
 
 type GenerationStatus = 'pending' | 'loading' | 'done' | 'error';
 type PreviewMode = 'singleTheme' | 'multiTheme';
+
+const LabGlassSection: React.FC<{ title: string; icon: string; children: React.ReactNode; color?: string }> = ({ title, icon, children, color = 'text-brand-navy' }) => (
+    <div className="glass-panel p-10 rounded-[3.5rem] border-white/60 bg-white/40 shadow-xl space-y-8 relative overflow-hidden">
+        <div className="flex items-center gap-4 border-b border-brand-navy/5 pb-6">
+            <div className={`w-12 h-12 rounded-2xl bg-white flex items-center justify-center ${color} shadow-sm border border-white/60`}>
+                <span className="material-symbols-outlined text-2xl">{icon}</span>
+            </div>
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-brand-navy">{title}</h3>
+        </div>
+        <div className="space-y-6">
+            {children}
+        </div>
+    </div>
+);
 
 export const ThemePreviewView: React.FC<{ language: Language }> = ({ language }) => {
     const [characterImage, setCharacterImage] = useState<{ file: File, base64: string } | null>(null);
@@ -84,19 +98,19 @@ export const ThemePreviewView: React.FC<{ language: Language }> = ({ language })
             }
 
             const heritageData = getGuidelineComponentsForTheme(selectedTheme.id);
-            const themeDescription = (selectedTheme.description as any)[language] || selectedTheme.description.en;
+            const themeDescription = selectedTheme.description[language];
             const themeName = selectedTheme.title.en;
 
             for (const [index, style] of ART_STYLE_OPTIONS.entries()) {
-                if (index > 0) await new Promise(resolve => setTimeout(resolve, 5000)); // Reduced delay for faster previews
+                if (index > 0) await new Promise(resolve => setTimeout(resolve, 5000));
 
                 const enrichedDescription = heritageData
                     ? `${themeDescription}. Cultural Setting: ${heritageData.goal}. Visual Notes: ${heritageData.illustrationNotes}`
                     : themeDescription;
 
-                await generateSinglePreview(mockCharacter, enrichedDescription, themeName, style.prompt, style.name, heritageData?.goal);
+                await generateSinglePreview(mockCharacter, enrichedDescription || '', themeName, style.prompt, style.name, heritageData?.goal);
             }
-        } else { // multiTheme mode
+        } else {
             const selectedThemes = themes.filter(t => selectedThemeIds.includes(t.id));
             if (selectedThemes.length === 0) {
                 setIsGenerating(false);
@@ -111,13 +125,13 @@ export const ThemePreviewView: React.FC<{ language: Language }> = ({ language })
                 const themeForThisStyle = shuffledThemes[i % shuffledThemes.length];
 
                 const heritageData = getGuidelineComponentsForTheme(themeForThisStyle.id);
-                const themeDescription = (themeForThisStyle.description as any)[language] || themeForThisStyle.description.en;
+                const themeDescription = themeForThisStyle.description[language];
                 const enrichedDescription = heritageData
                     ? `${themeDescription}. Setting: ${heritageData.goal}. Visuals: ${heritageData.illustrationNotes}`
                     : themeDescription;
 
                 const themeName = themeForThisStyle.title.en;
-                await generateSinglePreview(mockCharacter, enrichedDescription, themeName, style.prompt, style.name, heritageData?.goal);
+                await generateSinglePreview(mockCharacter, enrichedDescription || '', themeName, style.prompt, style.name, heritageData?.goal);
             }
         }
 
@@ -137,7 +151,7 @@ export const ThemePreviewView: React.FC<{ language: Language }> = ({ language })
                 character,
                 themeDescription,
                 stylePrompt,
-                age: "5" // Default age for preview
+                age: "5"
             }) as any;
             setGeneratedPreviews(prev => [...prev, {
                 styleName: styleName,
@@ -149,7 +163,6 @@ export const ThemePreviewView: React.FC<{ language: Language }> = ({ language })
             setStatuses(prev => ({ ...prev, [styleName]: 'done' }));
         } catch (error: any) {
             console.error(`Failed to generate for style ${styleName}:`, error);
-            const errorMsg = error?.message || String(error);
             setStatuses(prev => ({ ...prev, [styleName]: 'error' }));
         }
     };
@@ -164,11 +177,6 @@ export const ThemePreviewView: React.FC<{ language: Language }> = ({ language })
 
     const handleDownloadZip = async () => {
         if (generatedPreviews.length === 0) return;
-        const JSZip = getJSZip();
-        if (!JSZip) {
-            alert("JSZip library is not loaded. Please try again later.");
-            return;
-        }
         const zip = new JSZip();
 
         const themeName = previewMode === 'singleTheme'
@@ -199,126 +207,177 @@ export const ThemePreviewView: React.FC<{ language: Language }> = ({ language })
     const showDownloadButton = generatedPreviews.length > 0 && !isGenerating;
 
     return (
-        <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg shadow space-y-4">
-                <h2 className="text-2xl font-bold text-brand-navy">{t('معاين أنماط الرسم', 'Theme Style Previewer')}</h2>
-                <p className="text-sm text-gray-500">{t('قم بإنشاء صور تجريبية تجمع بين صورة الطفل وأسلوب الرسم المختار للتأكد من الجودة.', 'Generate test images combining the child photo with chosen art styles to ensure quality.')}</p>
+        <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700 pb-20">
+            <div className="text-center space-y-4">
+                <div className="inline-flex items-center gap-3 px-6 py-2 bg-brand-navy text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">
+                    <span className="material-symbols-outlined text-sm">biotech</span>
+                    R&D Terminal
+                </div>
+                <h2 className="text-5xl font-black text-brand-navy uppercase tracking-tighter">Visual Resonance Laboratory</h2>
+                <p className="text-[11px] font-black text-brand-navy/30 uppercase tracking-[0.4em]">Validate style-theme synthesis across neural engines</p>
+            </div>
 
-                {isGenerating && (
-                    <div className="bg-orange-50 border-l-4 border-brand-orange p-4 mt-4 rounded-r-lg animate-fade-in" role="alert">
-                        <p className="font-bold text-brand-navy">{t('جاري إنشاء المعاينات...', 'Generating Previews...')}</p>
-                        <p className="text-sm text-gray-700">
-                            {t('يرجى التحلي بالصبر، السحر يستغرق وقتاً. نحن نقوم بإنشاء الصور بدون أي نص.', 'Please be patient, magic takes time. We are generating images without any text.')}
-                        </p>
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('1. صورة بطل التجربة', '1. Upload Hero Image')}</label>
-                        <div
-                            className="mt-1 flex justify-center items-center text-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:bg-gray-50 transition-colors"
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-4 space-y-8">
+                    <LabGlassSection title="Specimen Input" icon="face" color="text-brand-orange">
+                        <div 
+                            className="aspect-square w-full border-4 border-dashed border-white/80 rounded-[3rem] bg-white/40 hover:bg-white/60 transition-all cursor-pointer group relative overflow-hidden flex items-center justify-center"
                             onClick={() => fileInputRef.current?.click()}
                         >
                             {characterImage ? (
-                                <img src={`data:image/jpeg;base64,${characterImage.base64}`} alt="Character Preview" className="max-h-32 rounded-lg object-contain shadow-md border-2 border-white" />
+                                <img src={`data:image/jpeg;base64,${characterImage.base64}`} alt="Character Preview" className="absolute inset-0 w-full h-full object-cover rounded-[2.5rem]" />
                             ) : (
-                                <div className="space-y-1 text-center text-gray-400">
-                                    <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                    <p className="text-xs font-bold uppercase tracking-wider">{t('ارفع صورة الاختبار', 'Upload Test Photo')}</p>
+                                <div className="text-center p-8">
+                                    <span className="material-symbols-outlined text-5xl text-brand-orange/30 mb-3">add_photo_alternate</span>
+                                    <p className="text-[10px] font-black text-brand-navy/40 uppercase tracking-widest">Inject Subject DNA</p>
                                 </div>
                             )}
+                            <div className="absolute inset-0 bg-brand-orange/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/png, image/jpeg" />
-                    </div>
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">{t('2. اختر المواضيع للمعاينة', '2. Select Themes for Preview')}</label>
-                        <div className="flex gap-4 mb-3">
-                            <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="previewMode" value="singleTheme" checked={previewMode === 'singleTheme'} onChange={() => setPreviewMode('singleTheme')} className="h-4 w-4 text-brand-orange focus:ring-brand-orange" />{t('موضوع واحد', 'Single Theme')}</label>
-                            <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" name="previewMode" value="multiTheme" checked={previewMode === 'multiTheme'} onChange={() => setPreviewMode('multiTheme')} className="h-4 w-4 text-brand-orange focus:ring-brand-orange" />{t('مواضيع متعددة', 'Multi-Theme Mix')}</label>
-                        </div>
+                    </LabGlassSection>
+                </div>
 
-                        {previewMode === 'singleTheme' ? (
-                            <select value={selectedThemeId} onChange={e => setSelectedThemeId(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-brand-orange focus:border-brand-orange">
-                                {themes.map(theme => <option key={theme.id} value={theme.id}>{theme.emoji} {(theme.title as any)[language] || theme.title.en}</option>)}
-                            </select>
-                        ) : (
-                            <div className="border rounded-lg p-3 bg-gray-50/50">
-                                <p className="text-xs text-gray-600 mb-2">{t(`اختر المواضيع لربطها مع الأنماط الفنية`, `Select themes to pair with art styles`)} <span className="font-semibold text-brand-orange">({selectedThemeIds.length}/{ART_STYLE_OPTIONS.length})</span></p>
-                                <div className="max-h-32 overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-2 pr-2 custom-scrollbar">
-                                    {themes.map(theme => (
-                                        <label key={theme.id} className={`flex items-center space-x-2 rtl:space-x-reverse p-2 rounded-md transition-all text-xs cursor-pointer border ${selectedThemeIds.includes(theme.id) ? 'bg-brand-orange/10 border-brand-orange text-brand-navy font-bold' : 'bg-white border-transparent hover:bg-white hover:border-gray-200'}`}>
-                                            <input type="checkbox" checked={selectedThemeIds.includes(theme.id)} onChange={() => handleToggleTheme(theme.id)} className="h-4 w-4 text-brand-orange border-gray-300 rounded focus:ring-brand-orange" />
-                                            <span className="truncate">{theme.emoji} {(theme.title as any)[language] || theme.title.en}</span>
-                                        </label>
+                <div className="lg:col-span-8 space-y-8">
+                    <LabGlassSection title="Configuration Matrix" icon="tune" color="text-brand-teal">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-brand-navy/40 uppercase tracking-widest ml-1">Synthesis Mode</label>
+                                <div className="flex p-2 bg-white/40 rounded-3xl border-2 border-white/80 gap-2">
+                                    {[
+                                        { id: 'singleTheme', label: 'Single Pivot', icon: 'center_focus_strong' },
+                                        { id: 'multiTheme', label: 'Theme Lattice', icon: 'hub' }
+                                    ].map(mode => (
+                                        <button
+                                            key={mode.id}
+                                            onClick={() => setPreviewMode(mode.id as PreviewMode)}
+                                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${previewMode === mode.id ? 'bg-brand-navy text-white shadow-lg' : 'text-brand-navy/40 hover:text-brand-navy'}`}
+                                        >
+                                            <span className="material-symbols-outlined text-sm">{mode.icon}</span>
+                                            {mode.label}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
-                        )}
-                    </div>
-                    <div className="md:col-start-3">
-                        <Button onClick={handleGenerate} disabled={isGenerateDisabled} className="w-full shadow-lg">
-                            {isGenerating ? t('جاري الإنشاء...', 'Generating...') : t('3. عرض المعاينات', '3. Show Previews')}
-                        </Button>
-                    </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-brand-navy/40 uppercase tracking-widest ml-1">Registry Selection</label>
+                                {previewMode === 'singleTheme' ? (
+                                    <select 
+                                        value={selectedThemeId} 
+                                        onChange={e => setSelectedThemeId(e.target.value)} 
+                                        className="w-full px-6 py-4 bg-white/60 border-2 border-white/80 rounded-2xl outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/5 transition-all text-sm font-black text-brand-navy appearance-none"
+                                    >
+                                        {themes.map(theme => <option key={theme.id} value={theme.id}>{theme.emoji} {theme.title[language]}</option>)}
+                                    </select>
+                                ) : (
+                                    <div className="px-6 py-4 bg-white/60 border-2 border-white/80 rounded-2xl max-h-32 overflow-y-auto custom-scrollbar">
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {themes.map(theme => (
+                                                <label key={theme.id} className="flex items-center gap-3 cursor-pointer group">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={selectedThemeIds.includes(theme.id)} 
+                                                        onChange={() => handleToggleTheme(theme.id)}
+                                                        className="w-4 h-4 rounded border-2 border-brand-teal/20 text-brand-teal focus:ring-brand-teal"
+                                                    />
+                                                    <span className={`text-[10px] font-black uppercase tracking-wider ${selectedThemeIds.includes(theme.id) ? 'text-brand-navy' : 'text-brand-navy/30'}`}>{theme.emoji} {theme.title[language]}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={handleGenerate} 
+                            disabled={isGenerateDisabled}
+                            className="w-full py-8 bg-brand-navy text-white rounded-[2.5rem] font-black uppercase text-sm tracking-[0.4em] shadow-2xl shadow-brand-navy/30 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-6 group mt-4"
+                        >
+                            {isGenerating ? (
+                                <><Spinner /> <span className="animate-pulse">Sequencing Neural Pathways...</span></>
+                            ) : (
+                                <>
+                                    <span className="material-symbols-outlined text-3xl group-hover:rotate-180 transition-transform duration-700">science</span>
+                                    Execute Style Synthesis
+                                </>
+                            )}
+                        </button>
+                    </LabGlassSection>
                 </div>
             </div>
 
-            {(isGenerating || generatedPreviews.length > 0) &&
-                <div className="bg-white p-6 rounded-lg shadow animate-fade-in">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold text-brand-navy">{t('معرض معاينة الأنماط (بدون نص)', 'Style Preview Gallery (No Text)')}</h3>
-                        {showDownloadButton && <Button onClick={handleDownloadZip} variant="secondary" className="!px-6 !py-2">{t('حفظ الكل ZIP', 'Save All ZIP')}</Button>}
+            {(isGenerating || generatedPreviews.length > 0) && (
+                <div className="space-y-10 animate-in slide-in-from-bottom-12 duration-1000">
+                    <div className="flex justify-between items-end border-b border-brand-navy/5 pb-6">
+                        <div className="space-y-1">
+                            <h3 className="text-3xl font-black text-brand-navy uppercase tracking-tighter">Resonance Gallery</h3>
+                            <p className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.3em]">Direct neural outputs without typographic overlays</p>
+                        </div>
+                        {showDownloadButton && (
+                            <button 
+                                onClick={handleDownloadZip} 
+                                className="px-10 py-5 rounded-3xl bg-brand-orange text-white font-black uppercase text-[10px] tracking-widest shadow-2xl hover:-translate-y-1 active:scale-95 transition-all flex items-center gap-3"
+                            >
+                                <span className="material-symbols-outlined">download_for_offline</span>
+                                Export Package
+                            </button>
+                        )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-10">
                         {ART_STYLE_OPTIONS.map(style => {
                             const status = statuses[style.name];
                             const result = generatedPreviews.find(p => p.styleName === style.name);
 
                             return (
-                                <div key={style.name} className="flex flex-col space-y-4 p-4 border rounded-2xl bg-gray-50/30 group hover:bg-white transition-colors">
-                                    <div className="aspect-square bg-gray-100 rounded-xl flex items-center justify-center border-2 transition-all relative overflow-hidden shadow-inner">
+                                <div key={style.name} className="glass-panel p-8 rounded-[3.5rem] border-white/60 bg-white/40 shadow-xl space-y-6 flex flex-col group">
+                                    <div className="aspect-square rounded-[2.5rem] overflow-hidden border-4 border-white shadow-inner relative flex items-center justify-center bg-brand-navy/[0.02]">
                                         {status === 'loading' && (
                                             <div className="flex flex-col items-center">
                                                 <Spinner />
-                                                <span className="text-[10px] mt-2 font-bold text-brand-orange animate-pulse uppercase tracking-widest">Painting...</span>
+                                                <span className="text-[9px] mt-4 font-black text-brand-orange animate-pulse uppercase tracking-[0.2em]">Neural Painting...</span>
                                             </div>
                                         )}
                                         {status === 'error' && (
-                                            <div className="text-red-500 p-4 text-center">
-                                                <svg className="w-8 h-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                <p className="text-xs font-bold">Generation Failed</p>
+                                            <div className="text-brand-orange p-6 text-center">
+                                                <span className="material-symbols-outlined text-4xl mb-2">signal_cellular_connected_no_internet_4_bar</span>
+                                                <p className="text-[9px] font-black uppercase tracking-widest">Synthesis Interrupt</p>
                                             </div>
                                         )}
                                         {result && (
-                                            <img src={`data:image/jpeg;base64,${result.imageBase64}`} alt={style.name} className="w-full h-full object-cover rounded-lg" />
+                                            <img src={`data:image/jpeg;base64,${result.imageBase64}`} alt={style.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                         )}
+                                        <div className="absolute top-6 left-6 px-4 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/20">
+                                            <p className="text-[8px] font-black text-white uppercase tracking-widest">{style.name}</p>
+                                        </div>
                                     </div>
 
                                     <div className="space-y-1">
-                                        <p className="text-base font-bold text-brand-navy truncate">{style.name}</p>
-                                        <p className="text-xs text-brand-orange font-medium truncate" title={result?.themeName.replace(/_/g, ' ')}>
-                                            {result ? result.themeName.replace(/_/g, ' ') : t('جاري التجهيز...', 'Preparing...')}
+                                        <p className="text-[10px] font-black text-brand-navy/30 uppercase tracking-widest">Active Context</p>
+                                        <p className="text-xs font-black text-brand-navy uppercase truncate" title={result?.themeName.replace(/_/g, ' ')}>
+                                            {result ? result.themeName.replace(/_/g, ' ') : 'Pending Lattice...'}
                                         </p>
                                     </div>
 
-                                    {result && (
-                                        <div className="pt-2 border-t border-gray-200">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Model Prompt</p>
-                                            <div className="bg-white p-3 rounded-lg border border-gray-100 h-32 overflow-y-auto custom-scrollbar">
-                                                <pre className="text-[10px] text-gray-600 whitespace-pre-wrap font-mono leading-tight">
-                                                    {result.prompt}
-                                                </pre>
-                                            </div>
+                                    <div className="flex-1 flex flex-col min-h-[140px]">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="material-symbols-outlined text-xs text-brand-teal">terminal</span>
+                                            <p className="text-[9px] font-black text-brand-teal uppercase tracking-widest">Neural Prompt Output</p>
                                         </div>
-                                    )}
+                                        <div className="flex-1 bg-brand-navy/95 p-4 rounded-3xl overflow-y-auto custom-scrollbar border border-white/10 shadow-2xl">
+                                            <pre className="text-[10px] text-brand-teal/80 whitespace-pre-wrap font-mono leading-relaxed">
+                                                {result?.prompt || 'Waiting for neural stream...'}
+                                            </pre>
+                                        </div>
+                                    </div>
                                 </div>
                             );
                         })}
                     </div>
                 </div>
-            }
+            )}
         </div>
     );
 };
