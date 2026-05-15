@@ -19,6 +19,9 @@ export function sanitizePrompt(text: any, namesToKeep: string[] = []): string {
 
     let sanitized = text;
 
+    // 0. Strip legacy validator error blocks that might be cached in the database
+    sanitized = sanitized.replace(/\[VALIDATOR_ERRORS:[^\]]+\]/g, '');
+
     // 1. Remove generic Base64/Binary leakage (strings > 100 chars with no spaces)
     // We look for patterns of long contiguous alphanumeric/slash/plus/equals characters.
     // We replace with empty string to keep the prompt clean for the model.
