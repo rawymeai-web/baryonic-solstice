@@ -208,19 +208,11 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
         const coverTxtOffsetX: number | undefined = coverSpread?.textOffsetX; // mm, if set
         const coverTxtOffsetY: number | undefined = coverSpread?.textOffsetY; // mm, if set
 
-        // COVER FLIP: driven by coverTextSide saved in editor (Flip ↔ button toggles this)
-        // 'right' = English front on right half → flip the AI image (AI generates Arabic-first)
-        // 'left'  = Arabic or user-manually-flipped → no flip needed
-        const coverSide = storyData.coverTextSide || (language === 'ar' ? 'left' : 'right');
-        const shouldFlipCover = (coverSide === 'right');
-        if (shouldFlipCover) {
-            try {
-                const flippedDataUrl = await flipImageHorizontal(cleanB64);
-                cleanB64 = flippedDataUrl.split(',')[1];
-            } catch (e) {
-                console.error("Failed to flip cover", e);
-            }
-        }
+        // COVER FLIP: Removed!
+        // The PDF should render the image EXACTLY as the editor does. 
+        // The editor handles the 'flip' conceptually by moving the text to the other side.
+        // It does not flip the actual image pixels. Therefore, the PDF should not flip the image.
+
 
         // --- COVER IMAGE PLACEMENT with pan + zoom from editor ---
         const imgDim = await getImageDimensions(cleanB64);
@@ -244,13 +236,15 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
 
         const isAr = language === 'ar';
         // Front half center X — where title and hero names should be centered
+        const coverSide = storyData.coverTextSide || (language === 'ar' ? 'left' : 'right');
         const frontCenterX = coverSide === 'left' ? pdfW * 0.25 : pdfW * 0.75;
 
-        // --- TITLE PLACEMENT ---
+        // --- TITLE & SUBTITLE PLACEMENT ---
         // If the editor set a manual textOffsetX/Y, respect them exactly (mm).
         // Otherwise use auto position on the front half.
         if (storyData.title && storyData.title.trim()) {
-            const titleB64 = await createTextImage({ title: storyData.title }, language);
+            const heroNames = (storyData as any).coverSubtitle || storyData.childName || '';
+            const titleB64 = await createTextImage({ title: storyData.title, subtitle: heroNames }, language);
             const tw = pdfW * 0.4;
             const titleAspect = 1000 / 200;
             const th = tw / titleAspect;
@@ -260,26 +254,6 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
             pdf.addImage(titleB64, 'PNG', tx, ty, tw, th);
         }
 
-        // --- HERO NAMES (coverSubtitle) ---
-        // Positioned below the title. Offset from editor if set, otherwise below default title.
-        const heroNames = (storyData as any).coverSubtitle || storyData.childName || '';
-        if (heroNames && heroNames.trim()) {
-            const heroBlobImg = await renderTextBlobToImage(
-                heroNames, 800, 240, 99, language, 38, storyData.childName, 'box'
-            );
-            if (heroBlobImg && heroBlobImg.dataUrl) {
-                const hw = pdfW * 0.32;
-                const hh = hw * (heroBlobImg.height / Math.max(heroBlobImg.width, 1));
-                // If editor set text offset, place hero names just below the title block
-                const hx = coverTxtOffsetX !== undefined
-                    ? coverTxtOffsetX + (pdfW * 0.4 - hw) / 2   // align under title
-                    : frontCenterX - (hw / 2);
-                const hy = coverTxtOffsetY !== undefined
-                    ? coverTxtOffsetY + (pdfH * 0.15) + 4        // below title + gap
-                    : pdfH * 0.72;
-                pdf.addImage(heroBlobImg.dataUrl, 'PNG', hx, hy, hw, hh);
-            }
-        }
 
         if (orderNumber) {
             const stripWidthMm = 3;
@@ -803,7 +777,7 @@ export function createMetadataStripElement(orderNumber: string, spreadIndex: num
     return container;
 }
 
-export async function createTextImage(titleData: { title: string }, lang: Language): Promise<string> {
+export async function createTextImage(titleData: { title: string, subtitle?: string }, lang: Language): Promise<string> {
     const html2canvas = getHtml2Canvas();
     const container = document.createElement('div');
     const isAr = lang === 'ar';
@@ -816,9 +790,12 @@ export async function createTextImage(titleData: { title: string }, lang: Langua
 
     // Use position:fixed (not absolute left:-9999px) so html2canvas can capture the element
     // even when it's rendered off the visible scroll area.
-    container.style.cssText = `position:fixed;top:-9999px;left:-9999px;font-family:${fontFamily};color:${color};background:rgba(0,0,0,0.35);border-radius:24px;font-weight:900;text-shadow:${textShadow};padding:28px 40px;text-align:center;width:1000px;line-height:1.1;font-size:90px;text-transform:uppercase;letter-spacing:${letterSpacing};transform:${transform};`;
+    container.style.cssText = `position:fixed;top:-9999px;left:-9999px;display:flex;flex-direction:column;align-items:center;font-family:${fontFamily};color:${color};background:rgba(0,0,0,0.35);border-radius:24px;font-weight:900;text-shadow:${textShadow};padding:28px 40px;text-align:center;width:1000px;text-transform:uppercase;letter-spacing:${letterSpacing};transform:${transform};`;
     container.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    container.innerHTML = titleData.title || '&nbsp;';
+    container.innerHTML = `
+        <div style="font-weight:900;line-height:1.1;font-size:90px;">${titleData.title || '&nbsp;'}</div>
+        ${titleData.subtitle ? `<div style="font-weight:700;line-height:1.2;font-size:45px;margin-top:20px;opacity:0.95;">${titleData.subtitle}</div>` : ''}
+    `;
     document.body.appendChild(container);
 
     const fontLink = document.createElement('link');
