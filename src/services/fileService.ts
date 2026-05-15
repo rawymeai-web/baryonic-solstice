@@ -408,50 +408,7 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
         }
     }
 
-    // append DNA Verification page
-    const visualDNA = storyData.styleReferenceImageBase64 || (storyData.mainCharacter?.imageBases64 && storyData.mainCharacter.imageBases64[0]);
-    const secondDNA = storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0];
-
-    if (visualDNA || secondDNA) {
-        pdf.addPage();
-        try {
-            if (visualDNA && secondDNA) {
-                const b64_1 = visualDNA.includes(',') ? visualDNA.split(',')[1] : visualDNA;
-                const b64_2 = secondDNA.includes(',') ? secondDNA.split(',')[1] : secondDNA;
-
-                const boxW = pdfW * 0.4;
-                const gap = pdfW * 0.05;
-                const startX = (pdfW - (boxW * 2 + gap)) / 2;
-
-                const imgDim1 = await getImageDimensions(b64_1);
-                const rectH1 = boxW * (imgDim1.h / imgDim1.w);
-                const rectY1 = (pdfH - rectH1) / 2;
-
-                const imgDim2 = await getImageDimensions(b64_2);
-                const rectH2 = boxW * (imgDim2.h / imgDim2.w);
-                const rectY2 = (pdfH - rectH2) / 2;
-
-                pdf.addImage(`data:image/jpeg;base64,${b64_1}`, 'JPEG', startX, rectY1, boxW, rectH1);
-                pdf.addImage(`data:image/jpeg;base64,${b64_2}`, 'JPEG', startX + boxW + gap, rectY2, boxW, rectH2);
-            } else if (visualDNA) {
-                const b64 = visualDNA.includes(',') ? visualDNA.split(',')[1] : visualDNA;
-                const imgDim = await getImageDimensions(b64);
-                const dim = getCoverDimensions(imgDim.w, imgDim.h, pdfW, pdfH);
-                pdf.addImage(`data:image/jpeg;base64,${b64}`, 'JPEG', dim.x, dim.y, dim.w, dim.h);
-            }
-
-            // Add title over it
-            const verifyTitleB64 = await createTextImage({ title: "REFERENCE DNA VERIFICATION" }, language);
-            const titleAspect = 1000 / 200;
-            const tw = pdfW * 0.6;
-            const th = tw / titleAspect;
-            const tx = (pdfW - tw) / 2;
-            const ty = pdfH * 0.1;
-            pdf.addImage(verifyTitleB64, 'PNG', tx, ty, tw, th);
-        } catch (e) {
-            console.warn("Failed to add DNA Verification page", e);
-        }
-    }
+    // QA Debugging: DNA Verification page removed from final PDF output
 
     return pdf.output('blob');
 }
@@ -639,50 +596,7 @@ export const generateStitchedPdf = async (
         }
     }
 
-    // append DNA Verification page for stitched PDF
-    const dnaReference = (storyDetails as any).styleReferenceImageBase64;
-    const secondDnaReference = (storyDetails as any).secondCharacterImageBase64;
-
-    if (dnaReference || secondDnaReference) {
-        pdf.addPage();
-        try {
-            if (dnaReference && secondDnaReference) {
-                const b64_1 = dnaReference.includes(',') ? dnaReference.split(',')[1] : dnaReference;
-                const b64_2 = secondDnaReference.includes(',') ? secondDnaReference.split(',')[1] : secondDnaReference;
-
-                const boxW = pdfW * 0.4;
-                const gap = pdfW * 0.05;
-                const startX = (pdfW - (boxW * 2 + gap)) / 2;
-
-                const imgDim1 = await getImageDimensions(b64_1);
-                const rectH1 = boxW * (imgDim1.h / imgDim1.w);
-                const rectY1 = (pdfH - rectH1) / 2;
-
-                const imgDim2 = await getImageDimensions(b64_2);
-                const rectH2 = boxW * (imgDim2.h / imgDim2.w);
-                const rectY2 = (pdfH - rectH2) / 2;
-
-                pdf.addImage(`data:image/jpeg;base64,${b64_1}`, 'JPEG', startX, rectY1, boxW, rectH1);
-                pdf.addImage(`data:image/jpeg;base64,${b64_2}`, 'JPEG', startX + boxW + gap, rectY2, boxW, rectH2);
-            } else if (dnaReference) {
-                const b64 = dnaReference.includes(',') ? dnaReference.split(',')[1] : dnaReference;
-                const imgDim = await getImageDimensions(b64);
-                const dim = getCoverDimensions(imgDim.w, imgDim.h, pdfW, pdfH);
-                pdf.addImage(`data:image/jpeg;base64,${b64}`, 'JPEG', dim.x, dim.y, dim.w, dim.h);
-            }
-
-            // Add title over it
-            const verifyTitleB64 = await createTextImage({ title: "REFERENCE DNA VERIFICATION" }, language);
-            const titleAspect = 1000 / 200;
-            const tw = pdfW * 0.6;
-            const th = tw / titleAspect;
-            const tx = (pdfW - tw) / 2;
-            const ty = pdfH * 0.1;
-            pdf.addImage(verifyTitleB64, 'PNG', tx, ty, tw, th);
-        } catch (e) {
-            console.warn("Failed to add DNA Verification page", e);
-        }
-    }
+    // QA Debugging: DNA Verification page removed from final Stitched PDF output
 
     return pdf.output('blob');
 };
