@@ -268,7 +268,7 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
                     <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Cover Map</p>
                     <div className="relative w-full aspect-[2/1] bg-gray-200 rounded-xl overflow-hidden border border-gray-300 shadow-sm">
                         <img
-                            src={coverImageUrl.startsWith('http') ? coverImageUrl : `data:image/jpeg;base64,${coverImageUrl}`}
+                            src={coverImageUrl.startsWith('http') || coverImageUrl.startsWith('data:') ? coverImageUrl : `data:image/jpeg;base64,${coverImageUrl}`}
                             className="w-full h-full object-cover opacity-80"
                             alt="Cover"
                         />

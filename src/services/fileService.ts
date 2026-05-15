@@ -2,19 +2,17 @@
 import type { StoryData, ShippingDetails, Language, ProductSize, Page } from '../types';
 import { getProductSizeById } from './adminService';
 import * as imageStore from './imageStore';
+import { jsPDF } from 'jspdf';
+import JSZip from 'jszip';
+import html2canvas from 'html2canvas';
 
-const getJsPDF = () => {
-    if (typeof window === 'undefined') return null;
-    // @ts-ignore
-    const jspdf = window.jspdf;
-    if (jspdf && jspdf.jsPDF) return jspdf.jsPDF;
-    // @ts-ignore
-    if (window.jsPDF) return window.jsPDF;
-    return null;
-};
+// jsPDF is now imported via npm — shim keeps existing call sites unchanged
+const getJsPDF = () => jsPDF;
 
-const getHtml2Canvas = () => typeof window !== 'undefined' ? (window as any).html2canvas : null;
-const getJSZip = () => typeof window !== 'undefined' ? (window as any).JSZip : null;
+// JSZip is now imported via npm — shim keeps existing call sites unchanged
+const getJSZip = () => JSZip;
+
+const getHtml2Canvas = () => html2canvas;
 
 const blobBorderRadii = [
     '47% 53% 70% 30% / 30% 43% 57% 70%',
@@ -23,7 +21,7 @@ const blobBorderRadii = [
     '58% 42% 43% 57% / 41% 54% 46% 59%',
 ];
 
-const flipImageHorizontal = async (base64: string): Promise<string> => {
+export const flipImageHorizontal = async (base64: string): Promise<string> => {
     return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
@@ -105,7 +103,7 @@ async function renderTextBlobToImage(
     if (childName) {
         const childFirstName = childName.trim().split(/\s+/)[0];
         const escapedName = childFirstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const nameRegex = new RegExp(`\\\\b(\${escapedName})\\\\b`, 'gi');
+        const nameRegex = new RegExp(`\\b(${escapedName})\\b`, 'gi');
         finalHtml = finalHtml.replace(nameRegex, `<span style="font-weight: 900; color: ${style === 'clean' && !isAr ? 'white' : 'black'}; font-size: 1.1em;">$1</span>`);
     }
 
@@ -175,11 +173,13 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
         if (!input) return "";
         if (input.startsWith('http')) {
             try {
-                const resp = await fetch(input);
+                // Use a longer timeout for asset fetching
+                const resp = await fetch(input, { signal: AbortSignal.timeout(30000) }); 
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const blob = await resp.blob();
                 return await blobToBase64(blob);
             } catch (e) {
-                console.error("Failed to fetch image for PDF:", input, e);
+                console.error("[normalizeImage] Failed to fetch:", input, e);
                 return "";
             }
         }
@@ -195,39 +195,90 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
 
     if (coverData && coverData.length > 50) {
         let cleanB64 = coverData.includes(',') ? coverData.split(',')[1] : coverData;
-        // AI generates covers in Arabic-native layout (heroes on left = front for RTL).
-        // For English/LTR books, the front cover is the RIGHT half — so we flip the cover
-        // to move the heroes to the correct side. Arabic books need no flip.
-        if (language !== 'ar') {
+
+        // --- READ ALL COVER LAYOUT FROM EDITOR (spreads[0]) ---
+        // The editor writes all layout overrides to spreads[0].
+        // We read them here so the PDF exactly mirrors what the admin set.
+        const coverSpread = (storyData.spreads && storyData.spreads.length > 0)
+            ? storyData.spreads.find((s: any) => s.spreadNumber === 0) || storyData.spreads[0]
+            : null;
+        const coverImgOffsetX: number = coverSpread?.imageOffsetX ?? 0;   // % horizontal pan
+        const coverImgOffsetY: number = coverSpread?.imageOffsetY ?? 0;   // % vertical pan
+        const coverImgScale: number  = coverSpread?.imageScale ?? 100;    // 100 = normal
+        const coverTxtOffsetX: number | undefined = coverSpread?.textOffsetX; // mm, if set
+        const coverTxtOffsetY: number | undefined = coverSpread?.textOffsetY; // mm, if set
+
+        // COVER FLIP: driven by coverTextSide saved in editor (Flip ↔ button toggles this)
+        // 'right' = English front on right half → flip the AI image (AI generates Arabic-first)
+        // 'left'  = Arabic or user-manually-flipped → no flip needed
+        const coverSide = storyData.coverTextSide || (language === 'ar' ? 'left' : 'right');
+        const shouldFlipCover = (coverSide === 'right');
+        if (shouldFlipCover) {
             try {
                 const flippedDataUrl = await flipImageHorizontal(cleanB64);
                 cleanB64 = flippedDataUrl.split(',')[1];
             } catch (e) {
-                console.error("Failed to flip English cover", e);
+                console.error("Failed to flip cover", e);
             }
         }
 
+        // --- COVER IMAGE PLACEMENT with pan + zoom from editor ---
         const imgDim = await getImageDimensions(cleanB64);
-        const dim = getCoverDimensions(imgDim.w, imgDim.h, pdfW, pdfH);
+        const baseDim = getCoverDimensions(imgDim.w, imgDim.h, pdfW, pdfH);
+
+        // Apply scale: grow the image around its center
+        const scale = coverImgScale / 100;
+        const scaledW = baseDim.w * scale;
+        const scaledH = baseDim.h * scale;
+        const baseCenterX = baseDim.x + baseDim.w / 2;
+        const baseCenterY = baseDim.y + baseDim.h / 2;
+        // Apply pan: offset is a % of the PDF dimensions
+        const panX = pdfW * (coverImgOffsetX / 100);
+        const panY = pdfH * (coverImgOffsetY / 100);
+        const finalImgX = baseCenterX - scaledW / 2 + panX;
+        const finalImgY = baseCenterY - scaledH / 2 + panY;
+
         try {
-            pdf.addImage(`data:image/jpeg;base64,${cleanB64}`, 'JPEG', dim.x, dim.y, dim.w, dim.h);
+            pdf.addImage(`data:image/jpeg;base64,${cleanB64}`, 'JPEG', finalImgX, finalImgY, scaledW, scaledH);
         } catch (e) { console.warn("PDF Cover Add Failed", e); }
 
         const isAr = language === 'ar';
+        // Front half center X — where title and hero names should be centered
+        const frontCenterX = coverSide === 'left' ? pdfW * 0.25 : pdfW * 0.75;
+
+        // --- TITLE PLACEMENT ---
+        // If the editor set a manual textOffsetX/Y, respect them exactly (mm).
+        // Otherwise use auto position on the front half.
         if (storyData.title && storyData.title.trim()) {
             const titleB64 = await createTextImage({ title: storyData.title }, language);
-
             const tw = pdfW * 0.4;
             const titleAspect = 1000 / 200;
             const th = tw / titleAspect;
-            let tx;
-            if (isAr) {
-                tx = (pdfW * 0.25) - (tw / 2);
-            } else {
-                tx = (pdfW * 0.75) - (tw / 2);
-            }
-            const ty = pdfH * 0.08;
+            // Manual offset from editor takes priority
+            const tx = coverTxtOffsetX !== undefined ? coverTxtOffsetX : frontCenterX - (tw / 2);
+            const ty = coverTxtOffsetY !== undefined ? coverTxtOffsetY : pdfH * 0.08;
             pdf.addImage(titleB64, 'PNG', tx, ty, tw, th);
+        }
+
+        // --- HERO NAMES (coverSubtitle) ---
+        // Positioned below the title. Offset from editor if set, otherwise below default title.
+        const heroNames = (storyData as any).coverSubtitle || storyData.childName || '';
+        if (heroNames && heroNames.trim()) {
+            const heroBlobImg = await renderTextBlobToImage(
+                heroNames, 800, 240, 99, language, 38, storyData.childName, 'box'
+            );
+            if (heroBlobImg && heroBlobImg.dataUrl) {
+                const hw = pdfW * 0.32;
+                const hh = hw * (heroBlobImg.height / Math.max(heroBlobImg.width, 1));
+                // If editor set text offset, place hero names just below the title block
+                const hx = coverTxtOffsetX !== undefined
+                    ? coverTxtOffsetX + (pdfW * 0.4 - hw) / 2   // align under title
+                    : frontCenterX - (hw / 2);
+                const hy = coverTxtOffsetY !== undefined
+                    ? coverTxtOffsetY + (pdfH * 0.15) + 4        // below title + gap
+                    : pdfH * 0.72;
+                pdf.addImage(heroBlobImg.dataUrl, 'PNG', hx, hy, hw, hh);
+            }
         }
 
         if (orderNumber) {
@@ -243,46 +294,50 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
             const metaImg = metaCanvas.toDataURL('image/png');
             pdf.addImage(metaImg, 'PNG', pdfW - stripWidthMm, 0, stripWidthMm, stripHeightMm);
 
-            const barcodeW = 50;
-            const barcodeH = 3;
-            const logoW = 30;
-            const logoH = 15;
-            const bottomMargin = 15;
-            const logoY = pdfH - bottomMargin - logoH;
-            const barcodeY = (logoY + (logoH / 2)) - (barcodeH / 2);
-
-            let barcodeX, logoX;
-            const sideMargin = 20;
-
-            if (isAr) {
-                barcodeX = pdfW - sideMargin - barcodeW;
-                logoX = (pdfW / 2) + sideMargin;
-            } else {
-                barcodeX = sideMargin;
-                logoX = (pdfW / 2) - sideMargin - logoW;
-            }
+            // Barcode: 30mm × 5mm compact, vertically aligned to logo center
+            const barcodeW = 30;
+            const barcodeH = 5;
+            const barcodeMargin = 5;
+            const barcodeX = isAr ? pdfW - barcodeMargin - barcodeW : barcodeMargin;
 
             const bcPxW = 600;
-            const bcPxH = 36;
+            const bcPxH = 100;
             const bcEl = createBarcodeStripElement(orderNumber, bcPxW, bcPxH);
             document.body.appendChild(bcEl);
-            const bcCanvas = await html2canvas(bcEl, { backgroundColor: null, scale: 2 });
+            const bcCanvas = await html2canvas(bcEl, { backgroundColor: '#ffffff', scale: 2, width: bcPxW, height: bcPxH });
             document.body.removeChild(bcEl);
             const bcImg = bcCanvas.toDataURL('image/png');
-            pdf.addImage(bcImg, 'PNG', barcodeX, barcodeY, barcodeW, barcodeH);
 
-            const logoPxW = 400;
-            const logoPxH = 200;
-            const logoEl = await createRawyLogoElement(logoPxW, logoPxH);
-            document.body.appendChild(logoEl);
-            const logoCanvas = await html2canvas(logoEl, { backgroundColor: null, scale: 2 });
-            document.body.removeChild(logoEl);
-            const logoImg = logoCanvas.toDataURL('image/png');
-            pdf.addImage(logoImg, 'PNG', logoX, logoY, logoW, logoH);
+            // Logo: fetch directly, preserve aspect ratio, inward from spine
+            const logoB64 = await getRawyLogoBase64();
+            if (logoB64 && logoB64.length > 100) {
+                const logoDim = await getImageDimensions(logoB64.includes(',') ? logoB64.split(',')[1] : logoB64);
+                const logoW = 22;
+                const logoH = logoDim.w > 0 ? logoW * (logoDim.h / logoDim.w) : logoW;
+                const logoX = isAr ? (pdfW / 2) + 20 : (pdfW / 2) - 20 - logoW;
+                const logoY = pdfH - 6 - logoH;
+                pdf.addImage(logoB64, 'PNG', logoX, logoY, logoW, logoH);
+                // Barcode vertically centered with logo
+                const barY = logoY + logoH / 2 - barcodeH / 2;
+                pdf.addImage(bcImg, 'PNG', barcodeX, barY, barcodeW, barcodeH);
+            } else {
+                pdf.addImage(bcImg, 'PNG', barcodeX, pdfH - barcodeMargin - barcodeH, barcodeW, barcodeH);
+            }
         }
     }
 
-    const spreads = storyData.pages;
+    // Filter out the cover spread (spreadNumber 0) to avoid rendering it twice
+    // since the cover is already added above from storyData.coverImageUrl
+    const allSpreads = (storyData.spreads && storyData.spreads.length > 0) ? storyData.spreads : (storyData.pages ?? []);
+    const spreads = allSpreads.filter((s: any) => {
+        // Skip spread 0 (cover) — it has no story text and its image is the cover
+        if (s.spreadNumber === 0) return false;
+        // Also skip if its illustrationUrl matches the cover (safety net)
+        if (s.illustrationUrl && storyData.coverImageUrl && s.illustrationUrl === storyData.coverImageUrl) return false;
+        return true;
+    });
+    console.log(`[generatePreviewPdf] Found ${spreads.length} story spreads to process (${allSpreads.length} total, cover excluded).`);
+
     for (let i = 0; i < spreads.length; i++) {
         pdf.addPage();
         const spread = spreads[i];
@@ -294,18 +349,31 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
         }
 
         if (illustration && illustration.length > 50) {
+            console.log(`[generatePreviewPdf] Adding illustration for spread ${i}...`);
             const cleanB64 = illustration.includes(',') ? illustration.split(',')[1] : illustration;
             const imgDim = await getImageDimensions(cleanB64);
             const dim = getCoverDimensions(imgDim.w, imgDim.h, pdfW, pdfH);
             try {
                 pdf.addImage(`data:image/jpeg;base64,${cleanB64}`, 'JPEG', dim.x, dim.y, dim.w, dim.h);
-            } catch (e) { console.warn("PDF Spread Add Failed", e); }
+            } catch (e) { console.warn(`[generatePreviewPdf] Spread ${i} Add Failed`, e); }
+        } else {
+            console.warn(`[generatePreviewPdf] No illustration found or fetch failed for spread ${i}. URL: ${spread.illustrationUrl}`);
         }
 
-        const blocks = spread.textBlocks || [];
-        for (let bIdx = 0; bIdx < blocks.length; bIdx++) {
-            const block = blocks[bIdx];
-            const isLeft = spread.textSide === 'left';
+        // Combine leftText + rightText for the full spread story text.
+        // Use || chain only for fallbacks (textBlocks, text field).
+        const leftPart = spread.leftText || '';
+        const rightPart = spread.rightText || '';
+        const combinedText = [leftPart, rightPart].filter(Boolean).join(' ');
+        const spreadText = combinedText
+            || (spread.textBlocks?.map((b: any) => b.text).join(' '))
+            || spread.text
+            || '';
+
+        if (spreadText.trim()) {
+            // Determine which side the text sits on (use saved textSide, else language default)
+            const textSide = spread.textSide || ((language === 'ar') ? 'right' : 'left');
+
             const ageNum = parseInt(storyData.childAge, 10) || 6;
             let fontSize = 48;
             if (ageNum >= 10) fontSize = 32;
@@ -313,10 +381,10 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
             else if (ageNum >= 4) fontSize = 48;
 
             const blobImg = await renderTextBlobToImage(
-                block.text,
+                spreadText,
                 800,
                 600,
-                bIdx,
+                i,
                 language,
                 fontSize,
                 storyData.childName,
@@ -329,17 +397,22 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
                 rectH = rectW * (blobImg.height / blobImg.width);
             }
 
-            let textOnLeft: boolean;
-            if (spread.textSide === 'left') {
-                textOnLeft = true;
-            } else if (spread.textSide === 'right') {
-                textOnLeft = false;
-            } else {
-                textOnLeft = language === 'ar'; // Legacy fallback logic if textSide is undefined
-            }
+            // --- COORDINATE RESOLUTION ---
+            // SpreadLayoutPanel saves textOffsetX/Y as absolute mm in PDF_W=400 space.
+            // The actual PDF uses the same mm unit, so we use them directly.
+            // Only fall back to side-based default when no manual offset is set.
+            let rectX: number;
+            let rectY: number;
 
-            const rectX = textOnLeft ? pdfW * 0.05 : pdfW * 0.60;
-            const rectY = (pdfH * 0.382) - (rectH / 2);
+            if (spread.textOffsetX !== undefined && spread.textOffsetY !== undefined) {
+                // Manual editor coordinates (absolute mm) — use directly
+                rectX = spread.textOffsetX;
+                rectY = spread.textOffsetY;
+            } else {
+                // Auto-position based on text side
+                rectX = (textSide === 'left') ? pdfW * 0.03 : pdfW * 0.62;
+                rectY = (pdfH / 2) - (rectH / 2);
+            }
 
             if (blobImg && blobImg.dataUrl) {
                 pdf.addImage(blobImg.dataUrl, 'PNG', rectX, rectY, rectW, rectH);
@@ -416,10 +489,13 @@ export const generateStitchedPdf = async (
     storyDetails: { title: string, childName: string, childAge: string, secondCharacterName?: string },
     pages: { text: string }[],
     language: import('../types').Language = 'en',
-    orderNumber?: string
+    orderNumber?: string,
+    skipTextOverlay: boolean = false
 ): Promise<Blob> => {
     const jsPDF = getJsPDF();
     if (!jsPDF) throw new Error("jsPDF not loaded");
+
+    console.log(`[generateStitchedPdf] Starting for order ${orderNumber || 'unknown'}. Spreads: ${spreadBlobs.length}, skipText: ${skipTextOverlay}`);
 
     const pdf = new jsPDF({
         orientation: 'l',
@@ -487,42 +563,32 @@ export const generateStitchedPdf = async (
             const metaImg = metaCanvas.toDataURL('image/png');
             pdf.addImage(metaImg, 'PNG', pdfW - stripWidthMm, 0, stripWidthMm, stripHeightMm);
 
-            const barcodeW = 50;
-            const barcodeH = 15;
-            const logoW = 30;
-            const logoH = 15;
-            const bottomMargin = 15;
-            const logoY = pdfH - bottomMargin - logoH;
-            const barcodeY = (logoY + (logoH / 2)) - (barcodeH / 2);
-
-            let barcodeX, logoX;
-            const sideMargin = 20;
-
-            if (isAr) {
-                barcodeX = pdfW - sideMargin - barcodeW;
-                logoX = (pdfW / 2) + sideMargin;
-            } else {
-                barcodeX = sideMargin;
-                logoX = (pdfW / 2) - sideMargin - logoW;
-            }
+            // Barcode: 30mm × 5mm compact
+            const barcodeW = 30;
+            const barcodeH = 5;
+            const barcodeMargin = 5;
+            const barcodeX = isAr ? pdfW - barcodeMargin - barcodeW : barcodeMargin;
+            const barcodeY = pdfH - barcodeMargin - barcodeH;
 
             const bcPxW = 600;
-            const bcPxH = 180;
+            const bcPxH = 100;
             const bcEl = createBarcodeStripElement(orderNumber, bcPxW, bcPxH);
             document.body.appendChild(bcEl);
-            const bcCanvas = await html2canvas(bcEl, { backgroundColor: null, scale: 2 });
+            const bcCanvas = await html2canvas(bcEl, { backgroundColor: '#ffffff', scale: 2, width: bcPxW, height: bcPxH });
             document.body.removeChild(bcEl);
             const bcImg = bcCanvas.toDataURL('image/png');
             pdf.addImage(bcImg, 'PNG', barcodeX, barcodeY, barcodeW, barcodeH);
 
-            const logoPxW = 400;
-            const logoPxH = 200;
-            const logoEl = await createRawyLogoElement(logoPxW, logoPxH);
-            document.body.appendChild(logoEl);
-            const logoCanvas = await html2canvas(logoEl, { backgroundColor: null, scale: 2 });
-            document.body.removeChild(logoEl);
-            const logoImg = logoCanvas.toDataURL('image/png');
-            pdf.addImage(logoImg, 'PNG', logoX, logoY, logoW, logoH);
+            // Logo: fetch directly, preserve aspect ratio
+            const logoB64Stitched = await getRawyLogoBase64();
+            if (logoB64Stitched && logoB64Stitched.length > 100) {
+                const logoDimS = await getImageDimensions(logoB64Stitched.includes(',') ? logoB64Stitched.split(',')[1] : logoB64Stitched);
+                const logoW = 25;
+                const logoH = logoDimS.w > 0 ? logoW * (logoDimS.h / logoDimS.w) : logoW;
+                const logoX = isAr ? (pdfW / 2) + 5 : (pdfW / 2) - 5 - logoW;
+                const logoY = pdfH - 8 - logoH;
+                pdf.addImage(logoB64Stitched, 'PNG', logoX, logoY, logoW, logoH);
+            }
         }
     }
 
@@ -545,7 +611,7 @@ export const generateStitchedPdf = async (
             }
         }
 
-        if (pages && pages[i] && pages[i].text) {
+        if (!skipTextOverlay && pages && pages[i] && pages[i].text) {
             const text = pages[i].text;
             const fontSize = 42;
             const blobImg = await renderTextBlobToImage(
@@ -795,7 +861,7 @@ export function createPrintableTextBlockElement(text: string, language: Language
     container.dir = language === 'ar' ? 'rtl' : 'ltr';
 
     const childFirstName = childName.split(' ')[0];
-    const nameRegex = new RegExp(`(\\\\b\<SAME>childFirstName}\\\\b!?)`, 'gi');
+    const nameRegex = new RegExp(`(\\b${childFirstName}\\b!?)`, 'gi');
     let formattedText = text.split('\n\n').map(p => `<p style="margin-bottom: 0.75rem;">${p.trim()}</p>`).join('');
     if (childFirstName) {
         formattedText = formattedText.replace(nameRegex, `<span style="font-weight: 900; text-transform: uppercase;">$1</span>`);
@@ -830,64 +896,109 @@ export function createPrintableTextBlockElement(text: string, language: Language
     return container;
 }
 
+/**
+ * Fetches the Rawy logo PNG directly and returns a base64 data URL.
+ * Uses the single combined logo (icon + "Rawy" text) with transparent background.
+ */
+export async function getRawyLogoBase64(): Promise<string> {
+    try {
+        const resp = await fetch('/rawy-logo.png', { signal: AbortSignal.timeout(10000) });
+        if (!resp.ok) throw new Error(`Logo fetch failed: ${resp.status}`);
+        const blob = await resp.blob();
+        return await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.warn('[getRawyLogoBase64] Could not fetch /rawy-logo.png, logo will be skipped.', e);
+        return '';
+    }
+}
+
+/** @deprecated — kept for backward compat, use getRawyLogoBase64 instead */
 export async function createRawyLogoElement(width: number, height: number): Promise<HTMLElement> {
     const container = document.createElement('div');
-    container.style.cssText = `width:${width}px;height:${height}px;background:transparent;display:flex;align-items:center;justify-content:center;gap:10px;`;
-
-    const logoIcon = new Image();
-    logoIcon.src = '/logo-icon.png';
-    logoIcon.style.cssText = "height: 100%; width: auto; object-fit: contain;";
-
-    await new Promise((resolve) => {
-        logoIcon.onload = resolve;
-        logoIcon.onerror = resolve;
-    });
-
-    const logoText = new Image();
-    logoText.src = '/logo-text.png';
-    logoText.style.cssText = "height: 60%; width: auto; object-fit: contain;";
-
-    await new Promise((resolve) => {
-        logoText.onload = resolve;
-        logoText.onerror = resolve;
-    });
-
-    container.appendChild(logoIcon);
-    container.appendChild(logoText);
+    container.style.cssText = `width:${width}px;height:${height}px;background:white;display:flex;align-items:center;justify-content:center;`;
+    const img = new Image();
+    img.src = '/rawy-logo.png';
+    img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;';
+    await new Promise((res) => { img.onload = res; img.onerror = res; });
+    container.appendChild(img);
     return container;
 }
 
 export function createBarcodeStripElement(orderNumber: string, width: number, height: number): HTMLElement {
     const container = document.createElement('div');
-    container.style.cssText = `width:${width}px;height:${height}px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;`;
+    // White background, column layout: bars on top, order text on bottom
+    container.style.cssText = `
+        width: ${width}px;
+        height: ${height}px;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 8px;
+        box-sizing: border-box;
+        overflow: hidden;
+    `;
+
+    // Barcode bars row (takes 65% of height)
     const barcodeRow = document.createElement('div');
-    barcodeRow.style.cssText = "display:flex; align-items:stretch; justify-content:center; gap:2px; height: 80%; width: 100%;";
-    for (let k = 0; k < 60; k++) {
+    barcodeRow.style.cssText = `
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        gap: 2px;
+        width: 100%;
+        flex: 0 0 65%;
+    `;
+    for (let k = 0; k < 55; k++) {
         const bar = document.createElement('div');
-        const isThick = Math.random() > 0.6;
-        bar.style.width = isThick ? '6px' : '2px';
-        bar.style.height = '100%';
-        bar.style.backgroundColor = 'black';
-        bar.style.marginLeft = Math.random() > 0.5 ? '2px' : '0';
+        const isThick = Math.random() > 0.65;
+        bar.style.cssText = `
+            width: ${isThick ? '5' : '2'}px;
+            height: 100%;
+            background-color: black;
+            margin-left: ${Math.random() > 0.5 ? '1' : '0'}px;
+            flex-shrink: 0;
+        `;
         barcodeRow.appendChild(bar);
     }
     container.appendChild(barcodeRow);
+
+    // Order number label (clearly shown below bars)
     const textRow = document.createElement('div');
-    textRow.style.cssText = "height: 20%; font-family: monospace; font-size: 10px; color: black; font-weight: bold; margin-top: 2px;";
-    textRow.innerText = `ORDER #: ${orderNumber}`;
+    textRow.style.cssText = `
+        flex: 0 0 35%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 14px;
+        font-weight: 700;
+        color: #000000;
+        letter-spacing: 1.5px;
+        width: 100%;
+        padding-top: 4px;
+        white-space: nowrap;
+    `;
+    textRow.innerText = orderNumber;
     container.appendChild(textRow);
+
     return container;
 }
 
 export const generatePrintPackage = async (storyData: StoryData, shipping: ShippingDetails, language: Language, orderNumber: string) => {
     try {
-        const zip = new (getJSZip() as any)();
+        const zip = new JSZip();
 
         const pdfBlob = await generatePreviewPdf(storyData, language, undefined, orderNumber);
         zip.file(`${orderNumber}_Preview.pdf`, pdfBlob);
 
         let storyText = `Title: ${storyData.title}\nAuthor: ${storyData.childName}\n\n`;
-        storyData.pages.forEach(p => {
+        (storyData.pages ?? []).forEach(p => {
             storyText += `[Page ${p.pageNumber}]\n${p.text}\n\n`;
         });
         zip.file('story_narrative.txt', storyText);
@@ -895,14 +1006,17 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
         const imagesFolder = zip.folder("raw_images");
 
         const getBase64Data = async (input: string): Promise<string> => {
+            if (!input) return "";
             if (input.startsWith('http')) {
                 try {
-                    const resp = await fetch(input);
+                    console.log(`[generatePrintPackage] Fetching image: ${input}`);
+                    const resp = await fetch(input, { signal: AbortSignal.timeout(30000) });
+                    if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
                     const blob = await resp.blob();
                     const b64 = await blobToBase64(blob);
                     return b64.split(',')[1];
                 } catch (e) {
-                    console.error("Failed to fetch image for zip:", input);
+                    console.error("[generatePrintPackage] Failed to fetch image for zip:", input, e);
                     return "";
                 }
             }
@@ -911,37 +1025,80 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
 
         if (storyData.coverImageUrl) {
             const coverB64 = await getBase64Data(storyData.coverImageUrl);
-            if (coverB64) imagesFolder.file("cover.jpg", coverB64, { base64: true });
+            if (coverB64) imagesFolder?.file("cover.jpg", coverB64, { base64: true });
         }
 
-        const pagePromises = storyData.pages.map(async (p) => {
-            if (p.illustrationUrl) {
-                const imgB64 = await getBase64Data(p.illustrationUrl);
-                if (imgB64) {
-                    imagesFolder.file(`page_${p.pageNumber}.jpg`, imgB64, { base64: true });
+        // Use spreads if available (more reliable for illustration URLs)
+        const assetSource = (storyData.spreads && storyData.spreads.length > 0) ? storyData.spreads : (storyData.pages ?? []);
+        console.log(`[generatePrintPackage] Processing ${assetSource.length} assets from ${storyData.spreads ? 'spreads' : 'pages'} array.`);
+        
+        const pagePromises = assetSource.map(async (item: any, idx: number) => {
+            if (item.illustrationUrl) {
+                try {
+                    const imgB64 = await getBase64Data(item.illustrationUrl);
+                    if (imgB64 && imgB64.length > 100) {
+                        const pageNum = item.spreadNumber ?? item.pageNumber ?? (idx + 1);
+                        imagesFolder?.file(`page_${pageNum}.jpg`, imgB64, { base64: true });
+                        console.log(`[generatePrintPackage] Successfully added page_${pageNum}.jpg to ZIP.`);
+                    } else {
+                        console.warn(`[generatePrintPackage] Skipping page ${idx + 1}: empty or invalid base64 data.`);
+                    }
+                } catch (e) {
+                    console.error(`[generatePrintPackage] Critical error processing page ${idx + 1}:`, e);
                 }
+            } else {
+                console.warn(`[generatePrintPackage] Page ${idx + 1} has no illustrationUrl.`);
             }
         });
+
         await Promise.all(pagePromises);
+        
+        // Add debugging manifest
+        zip.file("generation_manifest.json", JSON.stringify({
+            orderNumber,
+            timestamp: new Date().toISOString(),
+            assetsFound: assetSource.length,
+            storyData: {
+                ...storyData,
+                spreads: (storyData.spreads || []).map((s: any) => ({
+                    ...s,
+                    // Ensure all layout data is explicitly preserved
+                    textSide: s.textSide,
+                    textOffsetX: s.textOffsetX,
+                    textOffsetY: s.textOffsetY,
+                    imageOffsetX: s.imageOffsetX,
+                    imageOffsetY: s.imageOffsetY,
+                    imageScale: s.imageScale
+                }))
+            }
+        }, null, 2));
 
         const artifactsFolder = zip.folder("workflow_artifacts");
-        if (storyData.blueprint) artifactsFolder.file("1_blueprint.json", JSON.stringify(storyData.blueprint, null, 2));
-        if (storyData.rawScript) artifactsFolder.file("2a_raw_script.json", JSON.stringify(storyData.rawScript, null, 2));
-        if (storyData.pages && storyData.pages.length > 0) artifactsFolder.file("2b_edited_script.json", JSON.stringify(storyData.pages.map((p: any) => ({ spreadNumber: p.pageNumber, text: p.text })), null, 2));
-        if (storyData.spreadPlan) artifactsFolder.file("3_visual_plan.json", JSON.stringify(storyData.spreadPlan, null, 2));
-        if (storyData.finalPrompts) artifactsFolder.file("5_prompts.json", JSON.stringify(storyData.finalPrompts, null, 2));
-        artifactsFolder.file("full_story_data.json", JSON.stringify(storyData, null, 2));
+        if (storyData.blueprint) artifactsFolder?.file("1_blueprint.json", JSON.stringify(storyData.blueprint, null, 2));
+        if (storyData.rawScript) artifactsFolder?.file("2a_raw_script.json", JSON.stringify(storyData.rawScript, null, 2));
+        if (storyData.pages && storyData.pages.length > 0) artifactsFolder?.file("2b_edited_script.json", JSON.stringify(storyData.pages.map((p: any) => ({ spreadNumber: p.pageNumber, text: p.text })), null, 2));
+        if (storyData.spreadPlan) artifactsFolder?.file("3_visual_plan.json", JSON.stringify(storyData.spreadPlan, null, 2));
+        if (storyData.finalPrompts) artifactsFolder?.file("5_prompts.json", JSON.stringify(storyData.finalPrompts, null, 2));
+        artifactsFolder?.file("full_story_data.json", JSON.stringify(storyData, null, 2));
 
-        let detailedPrompts = `STORY GENERATION LOG\n--------------------------------\n`;
+        let detailedPrompts = `STORY GENERATION LOG — SEED PROMPTS (what you see in the UI textarea)\n--------------------------------\n`;
+        let actualGeminiPrompts = `STORY GENERATION LOG — ACTUAL GEMINI PROMPTS (what was sent to the AI)\n--------------------------------\n`;
+
         if (storyData.actualCoverPrompt) {
-            detailedPrompts += `COVER PROMPT\n${storyData.actualCoverPrompt}\n--------------------------------\n\n`;
-            artifactsFolder.file("0_cover_prompt.txt", storyData.actualCoverPrompt);
+            detailedPrompts += `COVER PROMPT (SEED)\n${storyData.actualCoverPrompt}\n--------------------------------\n\n`;
+            artifactsFolder?.file("0_cover_prompt_seed.txt", storyData.actualCoverPrompt);
+        }
+        if ((storyData as any).lastGeminiCoverPrompt) {
+            actualGeminiPrompts += `COVER PROMPT (ACTUAL SENT TO GEMINI)\n${(storyData as any).lastGeminiCoverPrompt}\n--------------------------------\n\n`;
+            artifactsFolder?.file("0_cover_prompt_actual_gemini.txt", (storyData as any).lastGeminiCoverPrompt);
         }
 
-        storyData.pages.forEach(p => {
-            detailedPrompts += `PAGE ${p.pageNumber}\nTEXT: ${p.text}\nPROMPT USED:\n${p.actualPrompt || 'N/A'}\n--------------------------------\n\n`;
+        (storyData.pages ?? []).forEach(p => {
+            detailedPrompts += `PAGE ${p.pageNumber}\nTEXT: ${p.text}\nSEED PROMPT (UI textarea):\n${p.actualPrompt || 'N/A'}\n--------------------------------\n\n`;
+            actualGeminiPrompts += `PAGE ${p.pageNumber}\nTEXT: ${p.text}\nACTUAL GEMINI PROMPT:\n${(p as any).lastGeminiPrompt || '(not yet generated — run Paint Spread first)'}\n--------------------------------\n\n`;
         });
-        artifactsFolder.file("debug_creation_prompts.txt", detailedPrompts);
+        artifactsFolder?.file("debug_seed_prompts.txt", detailedPrompts);
+        artifactsFolder?.file("debug_actual_gemini_prompts.txt", actualGeminiPrompts);
 
         const manifest = {
             orderNumber,
@@ -952,9 +1109,9 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
                 childName: storyData.childName,
                 childAge: storyData.childAge,
                 size: storyData.size,
-                pageCount: storyData.pages.length
+                pageCount: (storyData.pages ?? []).length
             },
-            pages: storyData.pages.map(p => ({
+            pages: (storyData.pages ?? []).map(p => ({
                 pageNumber: p.pageNumber,
                 text: p.text
             }))
@@ -972,7 +1129,7 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
 export const downloadCoverImage = async (storyData: StoryData, language: Language) => {
     try {
         const link = document.createElement('a');
-        link.href = storyData.coverImageUrl;
+        link.href = storyData.coverImageUrl || '';
         link.download = `Rawy_Cover_\${storyData.childName}.jpg`;
         document.body.appendChild(link);
         link.click();

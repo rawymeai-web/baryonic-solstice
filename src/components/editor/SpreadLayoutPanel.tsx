@@ -15,8 +15,10 @@ interface SpreadLayoutPanelProps {
     onTextOffsetXChange: (v: number) => void;
     onTextOffsetYChange: (v: number) => void;
     onImageOffsetXChange: (v: number) => void;
-    onImageOffsetYChange: (v: number) => void;
-    onImageScaleChange: (v: number) => void;
+    onImageOffsetYChange: (val: number) => void;
+    onImageScaleChange: (val: number) => void;
+    onGenerativeFill?: () => void;
+    isGeneratingFill?: boolean;
 }
 
 // Mirrors the PDF coordinate math in fileService.ts exactly
@@ -81,12 +83,27 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
     onImageOffsetXChange,
     onImageOffsetYChange,
     onImageScaleChange,
+    onGenerativeFill,
+    isGeneratingFill,
 }) => {
+    const isCover = spreadIndex === 0;
+
     // Compute default text box position (mirrors fileService logic)
     const textOnLeft = textSide === 'left';
-    const defaultX = textOnLeft ? PDF_W * 0.05 : PDF_W * 0.55;
-    const TEXT_H_EST = TEXT_W * 0.6; // rough estimate
-    const defaultY = (PDF_H / 2) - (TEXT_H_EST / 2);
+    
+    // Default X: For cover, title is centered on the front or back cover half.
+    // For interior, it's pushed to the margins.
+    const defaultX = isCover 
+        ? (textOnLeft ? (PDF_W * 0.25) - (TEXT_W / 2) : (PDF_W * 0.75) - (TEXT_W / 2))
+        : (textOnLeft ? PDF_W * 0.05 : PDF_W * 0.55);
+
+    // Default Height: Cover title is ~ 1000x200 aspect ratio. Interior is estimated as 60% of width.
+    const TEXT_H_EST = isCover ? TEXT_W / (1000 / 200) : TEXT_W * 0.6;
+
+    // Default Y: Cover title is placed near the top. Interior is centered vertically.
+    const defaultY = isCover 
+        ? PDF_H * 0.08 
+        : (PDF_H / 2) - (TEXT_H_EST / 2);
 
     const activeX = textOffsetX !== undefined ? textOffsetX : defaultX;
     const activeY = textOffsetY !== undefined ? textOffsetY : defaultY;
@@ -103,7 +120,7 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
         if (!illustrationUrl) return '';
         return illustrationUrl.startsWith('http') || illustrationUrl.startsWith('data:')
             ? illustrationUrl
-            : `data:image/jpeg;base64,${illustrationUrl}`;
+            : (illustrationUrl.startsWith('data:') ? illustrationUrl : `data:image/jpeg;base64,${illustrationUrl}`);
     }, [illustrationUrl]);
 
     return (
@@ -209,6 +226,17 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
                         className="w-full text-[9px] font-black uppercase text-gray-400 hover:text-red-500 transition-colors py-1 mt-2 block"
                     >
                         ↺ Reset to defaults
+                    </button>
+                )}
+
+                {/* Generative Fill Button */}
+                {imageScale < 100 && onGenerativeFill && (
+                    <button
+                        onClick={onGenerativeFill}
+                        disabled={isGeneratingFill}
+                        className={`w-full py-2 mt-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-md ${isGeneratingFill ? 'bg-indigo-300 cursor-not-allowed animate-pulse' : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 hover:scale-[1.02]'}`}
+                    >
+                        {isGeneratingFill ? '✨ Filling Empty Space...' : '✨ Generative Fill (Outpaint)'}
                     </button>
                 )}
             </div>

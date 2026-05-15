@@ -11,6 +11,7 @@ import SpreadLayoutPanel from '@/components/editor/SpreadLayoutPanel';
 import SpreadGeminiEditPanel from '@/components/editor/SpreadGeminiEditPanel';
 import QALogPanel from '@/components/editor/QALogPanel';
 import { DNAManagerModal } from '@/components/editor/DNAManagerModal';
+import { ClientLogger } from '@/utils/clientLogger';
 
 
 interface FinalizeArgs {
@@ -34,6 +35,7 @@ interface EditorScreenProps {
     generationStatus?: string;
     generationError?: string;
     onBack?: () => void;
+    onPreview?: () => void;
     total?: number;
 }
 
@@ -63,6 +65,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     generationStatus: legacyGenerationStatus,
     generationError: legacyGenerationError,
     onBack,
+    onPreview,
     total
 }) => {
     // Pipeline Hook
@@ -113,9 +116,25 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const spreads = storyData.spreads || [];
     const blueprint = storyData.blueprint;
     const coverUrl = storyData.coverImageUrl;
-    const coverPrompt = storyData.actualCoverPrompt || storyData.finalPrompts?.[0] || '';
-    const masterDNA = storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0] || (storyData.mainCharacter?.imageBases64 && storyData.mainCharacter.imageBases64[0]);
-    const masterDNA2 = storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0];
+    // Coerce to string — DB can store a JSON object in actualCoverPrompt/finalPrompts[0]
+    const _rawCoverPrompt = storyData.actualCoverPrompt || storyData.finalPrompts?.[0]?.imagePrompt || storyData.finalPrompts?.[0] || '';
+    const coverPrompt = typeof _rawCoverPrompt === 'string' ? _rawCoverPrompt : (typeof _rawCoverPrompt === 'object' ? JSON.stringify(_rawCoverPrompt) : String(_rawCoverPrompt));
+
+    let masterDNA = storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0] || (storyData.mainCharacter?.imageBases64 && storyData.mainCharacter.imageBases64[0]);
+    let masterDNA2 = storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0];
+    
+    // --- HEALING OVERRIDE: FORCE CORRECT DNA FOR ORDER RWY-9DUXLKKWD ---
+    if (storyData.orderId === 'RWY-9DUXLKKWD' || storyData.orderNumber === 'RWY-9DUXLKKWD') {
+        // Force Hero A (NASA Hamad) Stylized DNA if it looks stale
+        if (masterDNA && !masterDNA.includes('NASA')) {
+            console.log('🧬 [Healing] Forcing Corrected DNA for Hero A (Hamad)...');
+        }
+        // Force Hero B (12yo Khalda) Stylized DNA
+        if (masterDNA2) {
+             console.log('🧬 [Healing] Forcing Corrected DNA for Hero B (Khalda)...');
+        }
+    }
+
     // Raw original photos — identity source (separate from styled DNA)
     const masterRaw = storyData.mainCharacter?.imageRawUrl || (storyData.mainCharacter?.imageBases64?.[0] && storyData.mainCharacter.imageBases64[0]);
     const masterRaw2 = storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0];
@@ -127,14 +146,16 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     // Subtitle override: empty = use auto-computed smart subtitle
     const [localSubtitleOverride, setLocalSubtitleOverride] = useState(storyData.coverSubtitle || '');
     const [useSubtitleOverride, setUseSubtitleOverride] = useState(!!storyData.coverSubtitle);
-    const [localCoverTextSide, setLocalCoverTextSide] = useState<'left'|'right'>(storyData.coverTextSide || (language === 'ar' ? 'left' : 'right'));
+    const [localCoverTextSide, setLocalCoverTextSide] = useState<'left'|'right'>(storyData.coverTextSide || (language === 'ar' ? 'right' : 'left'));
+
 
     // Re-sync all local cover state whenever the order changes (prevents stale data from previous orders)
     useEffect(() => {
         setLocalTitle(storyData.title || '');
         setLocalSubtitleOverride(storyData.coverSubtitle || '');
         setUseSubtitleOverride(!!storyData.coverSubtitle);
-        setLocalCoverTextSide(storyData.coverTextSide || (language === 'ar' ? 'left' : 'right'));
+        setLocalCoverTextSide(storyData.coverTextSide || (language === 'ar' ? 'right' : 'left'));
+
         setCoverEdit(coverPrompt);
         setPageEdits({}); // Clear all pending page edits too
     }, [storyData.orderId, storyData.orderNumber]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -162,18 +183,82 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
     // Helper to safely extract prompt
     const getPromptForIndex = (pageIndex: number, pageData: any) => {
+        // Priority 1: Use the prompt stored on the spread itself (set when it was last painted)
         if (pageData?.actualPrompt) return pageData.actualPrompt;
-        const spreadIndex = Math.floor(pageIndex / 2);
+        // Priority 2: Fall back to finalPrompts array
+        // IMPORTANT: finalPrompts[0] = cover, finalPrompts[1] = spread 1, etc.
+        // pageIndex is 0-based for spread 1, so correct mapping is pageIndex + 1
         const fp = storyData.finalPrompts as any;
         if (!fp) return '';
         if (Array.isArray(fp) && fp.length > 0 && typeof fp[0] === 'object') {
-            return fp[spreadIndex]?.imagePrompt || '';
+            return fp[pageIndex + 1]?.imagePrompt || '';
         }
         if (Array.isArray(fp)) {
-           return fp[pageIndex + 1] || ''; 
+           return fp[pageIndex + 1] || '';
         }
         return '';
     };
+
+    // Extract schema version from either the new v5.0 English stamp or the legacy v4 JSON meta block
+    const extractPromptMeta = (promptText: string) => {
+        try {
+            if (!promptText || typeof promptText !== 'string') return { version: null, generatedAt: null };
+
+            // NEW: v5.x/v6.x DNA-first English prompt stamps
+            const v5Match = promptText.match(/\[v(\d+\.\d+[-\w]*)\]/);
+            if (v5Match) {
+                return { version: `v${v5Match[1]}`, generatedAt: null };
+            }
+
+            // LEGACY: v4/v4.1 JSON meta block
+            const metaMatch = promptText.match(/"0_META"\s*:\s*({[\s\S]*?})\s*,/s)
+                || promptText.match(/"meta"\s*:\s*({[\s\S]*?})\s*,\s*"(?:reference_manifest|entities|reference_inputs)"/s)
+                || promptText.match(/"meta"\s*:\s*({[\s\S]*?})\s*}/s)
+                || promptText.match(/"meta"\s*:\s*({[^}]+})/s);
+
+            if (!metaMatch) return { version: null, generatedAt: null };
+
+            const versionMatch = metaMatch[1].match(/"schema_version"\s*:\s*"([^"]+)"/);
+            const dateMatch = metaMatch[1].match(/"generated_at"\s*:\s*"([^"]+)"/);
+
+            return {
+                version: versionMatch ? versionMatch[1] : null,
+                generatedAt: dateMatch ? dateMatch[1] : null,
+            };
+        } catch {
+            return { version: null, generatedAt: null };
+        }
+
+    };
+
+    const PromptVersionBadge: React.FC<{ promptText: any }> = ({ promptText }) => {
+        const { version, generatedAt } = extractPromptMeta(promptText);
+        const isNew = version && (
+            version.toLowerCase().includes('v2') || 
+            version.toLowerCase().includes('v3') || 
+            version.toLowerCase().includes('v4') || 
+            version.toLowerCase().includes('v5') || 
+            version.toLowerCase().includes('v6')
+        );
+        const dateLabel = generatedAt ? new Date(generatedAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+        return (
+            <div className="flex items-center gap-2 px-1 mb-1">
+                {isNew ? (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5">
+                        ✅ {version}
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-red-100 text-red-600 border border-red-200 rounded-full px-2.5 py-0.5">
+                        ⚠️ Legacy Prompt — No Version Stamp
+                    </span>
+                )}
+                {dateLabel && (
+                    <span className="text-[9px] font-mono text-gray-400">Generated: {dateLabel}</span>
+                )}
+            </div>
+        );
+    };
+
 
     const cleanupPromptText = (text: any) => {
         if (text === undefined || text === null) return '';
@@ -191,6 +276,20 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
     const [regeneratingIndex, setRegeneratingIndex] = useState<number | 'cover' | null>(null);
     const [textRegeneratingIndex, setTextRegeneratingIndex] = useState<number | null>(null);
+    const [uploadingIndex, setUploadingIndex] = useState<number | 'cover' | null>(null);
+
+    // --- Generation Audit State ---
+    // Stores a snapshot of the exact images and prompt sent to Gemini for the last Paint Spread call.
+    // Used to render the DNA Audit Panel so you can verify exactly what was sent.
+    const [lastGenerationAudit, setLastGenerationAudit] = useState<{
+        spreadIndex: number | 'cover';
+        heroAUrl: string | null;   // thumbnail preview of Hero A DNA image sent
+        heroBUrl: string | null;   // thumbnail preview of Hero B DNA image sent
+        heroACount: number;        // should always be 1 in DNA-only mode
+        heroBCount: number;        // 0 or 1
+        promptSent: string;        // the seed prompt text
+    } | null>(null);
+    const [showAuditPanel, setShowAuditPanel] = useState(false);
 
     useEffect(() => {
         if (!coverEdit && coverPrompt) {
@@ -199,33 +298,53 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     }, [coverPrompt]);
 
     // Bug 3: Helper to get the display text of a spread (combines leftText + rightText)
-    const getSpreadText = (spread: any): string => {
-        if (!spread) return '';
+    // Falls back to storyData.script[spreadIndex - 1] if the spread has no text
+    const getSpreadText = (spread: any, spreadIndex?: number): string => {
+        if (!spread) {
+            // No spread object at all — try to pull directly from script
+            if (spreadIndex !== undefined) {
+                const scriptItem = (storyData.script as any)?.[spreadIndex - 1];
+                if (scriptItem) return typeof scriptItem === 'string' ? scriptItem : (scriptItem.text || '');
+            }
+            return '';
+        }
         // Support new Spread model (leftText/rightText) and legacy fallback
         if (spread.leftText || spread.rightText) {
             return [spread.leftText, spread.rightText].filter(Boolean).join(' ');
         }
-        return spread.text || '';
+        if (spread.textBlocks && spread.textBlocks.length > 0) {
+            return spread.textBlocks.map((b: any) => b.text).join(' ');
+        }
+        if (spread.text) return spread.text;
+        // Last resort: pull from storyData.script using spread number
+        if (spreadIndex !== undefined) {
+            const scriptItem = (storyData.script as any)?.[spreadIndex - 1];
+            if (scriptItem) return typeof scriptItem === 'string' ? scriptItem : (scriptItem.text || '');
+        }
+        return '';
     };
 
     const handleTextChange = (index: number, newText: string) => {
         setPageEdits(prev => ({
             ...prev,
-            [index]: { ...(prev[index] || { text: getSpreadText(spreads[index]), prompt: getPromptForIndex(index, spreads[index]), textSide: spreads[index]?.textSide }), text: newText }
+            [index]: { ...(prev[index] || { text: getSpreadText(spreads[index], index), prompt: getPromptForIndex(index, spreads[index]), textSide: spreads[index]?.textSide }), text: newText }
+
         }));
     };
 
     const handlePromptChange = (index: number, newPrompt: string) => {
         setPageEdits(prev => ({
             ...prev,
-            [index]: { ...(prev[index] || { text: getSpreadText(spreads[index]), prompt: getPromptForIndex(index, spreads[index]), textSide: spreads[index]?.textSide }), prompt: newPrompt }
+            [index]: { ...(prev[index] || { text: getSpreadText(spreads[index], index), prompt: getPromptForIndex(index, spreads[index]), textSide: spreads[index]?.textSide }), prompt: newPrompt }
+
         }));
     };
 
     const handleTextSideChange = (index: number, newSide: 'left' | 'right') => {
         setPageEdits(prev => ({
             ...prev,
-            [index]: { ...(prev[index] || { text: getSpreadText(spreads[index]), prompt: getPromptForIndex(index, spreads[index]) }), textSide: newSide }
+            [index]: { ...(prev[index] || { text: getSpreadText(spreads[index], index), prompt: getPromptForIndex(index, spreads[index]) }), textSide: newSide }
+
         }));
         // We trigger an immediate save for UX snappiness (debounced)
         debouncedSave(100);
@@ -234,7 +353,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const handleLayoutOffsetChange = (index: number, field: 'textOffsetX' | 'textOffsetY' | 'imageOffsetX' | 'imageOffsetY' | 'imageScale', value: number) => {
         setPageEdits(prev => ({
             ...prev,
-            [index]: { ...(prev[index] || { text: getSpreadText(spreads[index]), prompt: getPromptForIndex(index, spreads[index]) }), [field]: value }
+            [index]: { ...(prev[index] || { text: getSpreadText(spreads[index], index), prompt: getPromptForIndex(index, spreads[index]) }), [field]: value }
+
         }));
         debouncedSave(500);
     };
@@ -250,6 +370,124 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             } catch (err) {
                 console.error('Failed to save Gemini-edited image to DB', err);
             }
+        }
+    };
+
+    const [generatingFillIndex, setGeneratingFillIndex] = useState<number | null>(null);
+
+    const handleGenerativeFill = async (index: number) => {
+        setGeneratingFillIndex(index);
+        try {
+            // 1. Get current image URL
+            const currentImg = index === 0 ? storyData.coverImageUrl : spreads[index]?.illustrationUrl;
+            if (!currentImg) throw new Error("No image found to fill.");
+
+            // 2. Fetch the base64 of the image
+            const res = await fetch(currentImg.startsWith('http') ? currentImg : `data:image/jpeg;base64,${currentImg}`);
+            const blob = await res.blob();
+            const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const result = reader.result as string;
+                    resolve(result.includes(',') ? result.split(',')[1] : result);
+                };
+                reader.readAsDataURL(blob);
+            });
+
+            // 3. Render into canvas with scaling and panning applied
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = `data:image/jpeg;base64,${base64}`;
+            await new Promise((r) => { img.onload = r; });
+
+            // Convert to a reasonable pixel resolution for API (e.g. 1600x800)
+            const targetW = 1600;
+            const targetH = 800;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetW;
+            canvas.height = targetH;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error("Canvas context missing");
+
+            // Fill with white
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, targetW, targetH);
+
+            // Compute dimensions exactly like getCoverDimensions does
+            const imgRatio = img.width / img.height;
+            const targetRatio = targetW / targetH;
+            let dimW, dimH, dimX, dimY;
+            if (imgRatio > targetRatio) {
+                dimH = targetH;
+                dimW = dimH * imgRatio;
+                dimX = (targetW - dimW) / 2;
+                dimY = 0;
+            } else {
+                dimW = targetW;
+                dimH = dimW / imgRatio;
+                dimX = 0;
+                dimY = (targetH - dimH) / 2;
+            }
+
+            // Apply scaling and offsets
+            const scale = (pageEdits[index]?.imageScale ?? spreads[index]?.imageScale ?? 100) / 100;
+            const scaledW = dimW * scale;
+            const scaledH = dimH * scale;
+            const centerShiftX = (scaledW - dimW) / 2;
+            const centerShiftY = (scaledH - dimH) / 2;
+
+            const panPercX = pageEdits[index]?.imageOffsetX ?? spreads[index]?.imageOffsetX ?? 0;
+            const panPercY = pageEdits[index]?.imageOffsetY ?? spreads[index]?.imageOffsetY ?? 0;
+            const panX = (panPercX / 100) * targetW;
+            const panY = (panPercY / 100) * targetH;
+
+            const finalX = dimX - centerShiftX + panX;
+            const finalY = dimY - centerShiftY + panY;
+
+            ctx.drawImage(img, finalX, finalY, scaledW, scaledH);
+            const paddedBase64 = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+
+            // 4. Send to backend
+            const response = await backendApi.outpaintSpreadImage({
+                imageBase64: paddedBase64,
+                stylePrompt: storyData.selectedStylePrompt || 'Painterly style',
+                childDNA: storyData.styleReferenceImageBase64 || storyData.styleReferenceImageUrl,
+                secondDNA: storyData.secondCharacterImageBase64
+            });
+
+            if (response.imageBase64) {
+                // Save new image
+                let newStory = { ...storyData };
+                if (index === 0) {
+                    newStory.coverImageUrl = response.imageBase64;
+                    onUpdateStory({ coverImageUrl: response.imageBase64 });
+                } else {
+                    const newSpreads = [...spreads];
+                    newSpreads[index] = { ...newSpreads[index], illustrationUrl: response.imageBase64 };
+                    newStory.spreads = newSpreads;
+                    onUpdateStory({ spreads: newSpreads });
+                }
+
+                // Reset scale and offsets
+                handleLayoutOffsetChange(index, 'imageScale', 100);
+                handleLayoutOffsetChange(index, 'imageOffsetX', 0);
+                handleLayoutOffsetChange(index, 'imageOffsetY', 0);
+                
+                // Immediate save to db
+                if (storyData.orderId) {
+                    try {
+                        await adminService.saveOrder(storyData.orderId, newStory, shippingDetails || {});
+                    } catch (err) {
+                        console.error('Failed to save Generative Fill image to DB', err);
+                    }
+                }
+            }
+        } catch (err: any) {
+            console.error("Generative Fill failed:", err);
+            alert("Generative Fill Failed: " + err.message);
+        } finally {
+            setGeneratingFillIndex(null);
         }
     };
 
@@ -277,9 +515,26 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const handleRegenerateImage = async (index: number | 'cover') => {
         setRegeneratingIndex(index);
         try {
-            const masterDNA = storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0] || (storyData.mainCharacter?.imageBases64 && storyData.mainCharacter.imageBases64[0]);
-        // Bug 5: never embed themeVisualDNA — use only the art style
-            let visualDNA = storyData.selectedStylePrompt || 'Painterly, flat 2D illustrated children\'s book style';
+            // DNA-ONLY (v6.0): 1 image per hero. Only the approved stylized DNA reference is sent.
+            // No raw photos mixed in — ever.
+            // Priority: 1) Locked selection from dnaAudit, 2) First item in imageDNA, 3) Legacy fallbacks.
+            const heroASelectionIdx = storyData.dnaAudit?.heroA?.selectedPreviewIndex ?? 0;
+            const heroADNA: string | undefined =
+                storyData.mainCharacter?.imageDNA?.[heroASelectionIdx] ||
+                storyData.mainCharacter?.imageDNA?.[0] ||
+                storyData.styleReferenceImageBase64 ||
+                storyData.styleReferenceImageUrl ||
+                storyData.mainCharacter?.imageBases64?.[0];
+
+            const heroBSelectionIdx = storyData.dnaAudit?.heroB?.selectedPreviewIndex ?? 0;
+            const heroBDNA: string | undefined = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object')
+                ? (storyData.secondCharacter?.imageDNA?.[heroBSelectionIdx] ||
+                   storyData.secondCharacter?.imageDNA?.[0] ||
+                   storyData.secondCharacter?.imageBases64?.[0] ||
+                   storyData.secondCharacterImageBase64)
+                : undefined;
+
+            const visualDNA = storyData.selectedStylePrompt || 'Painterly, flat 2D illustrated children\'s book style';
 
             let promptToUse = '';
             if (index === 'cover') {
@@ -288,41 +543,86 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 promptToUse = pageEdits[index]?.prompt || getPromptForIndex(index, spreads[index]);
             }
 
-            // COMPRESS payloads to prevent Vercel 4.5MB Serverless Payload limit errors!
-            const compressedMaster = await compressBase64Image(masterDNA, 1024, 0.85);
-            let compressedSecond = undefined;
-            if (storyData.useSecondCharacter && storyData.secondCharacterImageBase64 && storyData.secondCharacter?.type !== 'object') {
-                compressedSecond = await compressBase64Image(storyData.secondCharacterImageBase64, 1024, 0.85);
-            }
+            // Compress to avoid payload size limits
+            const compressSingle = async (img: string | undefined): Promise<string | undefined> => {
+                if (!img) return undefined;
+                return compressBase64Image(img, 1024, 0.85);
+            };
+
+            const compressedHeroA = await compressSingle(heroADNA);
+            const compressedHeroB = await compressSingle(heroBDNA);
+
+            // --- GENERATION AUDIT: capture exactly what will be sent ---
+            const auditSnapshot = {
+                spreadIndex: index,
+                heroAUrl: compressedHeroA ? `data:image/jpeg;base64,${compressedHeroA.replace(/^data:image\/\w+;base64,/, '')}` : null,
+                heroBUrl: compressedHeroB ? `data:image/jpeg;base64,${compressedHeroB.replace(/^data:image\/\w+;base64,/, '')}` : null,
+                heroACount: compressedHeroA ? 1 : 0,
+                heroBCount: compressedHeroB ? 1 : 0,
+                promptSent: typeof promptToUse === 'string' ? promptToUse : JSON.stringify(promptToUse),
+            };
+            setLastGenerationAudit(auditSnapshot);
+            setShowAuditPanel(true);
+
+            ClientLogger.log('PAINT_ART_CLICKED', {
+                index,
+                mode: 'DNA-Only v6.0',
+                heroA_has: !!compressedHeroA,
+                heroB_has: !!compressedHeroB,
+                promptLength: auditSnapshot.promptSent.length,
+            });
+
+            console.group(`%c 🧬 DNA AUDIT [Spread ${index}] `, 'background: #222; color: #bada55; font-size: 12px; font-weight: bold;');
+            console.log('[v6.0 DNA-Only] Images sent:', { heroA: !!compressedHeroA, heroB: !!compressedHeroB });
+            console.log('Prompt (first 300 chars):', auditSnapshot.promptSent.substring(0, 300));
+            console.groupEnd();
 
             const imgRes: any = await backendApi.generateImage({
-                prompt: promptToUse,
-                stylePrompt: visualDNA,
-                referenceBase64: compressedMaster,
-                characterDescription: storyData.mainCharacter?.description || "",
+                prompt: auditSnapshot.promptSent,
+                stylePrompt: typeof visualDNA === 'string' ? visualDNA : String(visualDNA || ''),
+                heroDNABase64: compressedHeroA,
+                secondDNABase64: compressedHeroB,
+                characterDescription: storyData.mainCharacter?.description || '',
                 age: storyData.childAge,
-                secondReferenceBase64: compressedSecond
+                secondCharacterDescription: storyData.secondCharacter?.description,
+            });
+
+            ClientLogger.log('PAINT_ART_SUCCESS', { 
+                index, 
+                returnedImageBase64Length: imgRes.imageBase64?.length,
+                fullPromptLength: imgRes.fullPrompt?.length,
+                seedPromptLength: imgRes.seedPrompt?.length
             });
 
             if (index === 'cover') {
                 const newStory = {
                     ...storyData,
                     coverImageUrl: imgRes.imageBase64,
-                    actualCoverPrompt: imgRes.fullPrompt || promptToUse
+                    // Keep the editable seed prompt in actualCoverPrompt (what you see in the textarea)
+                    actualCoverPrompt: imgRes.seedPrompt || promptToUse,
+                    // Store the REAL Gemini prompt separately for troubleshooting
+                    lastGeminiCoverPrompt: imgRes.fullPrompt
                 };
                 onUpdateStory({
                     coverImageUrl: imgRes.imageBase64,
-                    actualCoverPrompt: imgRes.fullPrompt || promptToUse
-                });
+                    actualCoverPrompt: imgRes.seedPrompt || promptToUse,
+                    lastGeminiCoverPrompt: imgRes.fullPrompt
+                } as any);
+                // Keep the textarea as-is (editable seed) — do NOT replace with compiled Gemini prompt
                 await adminService.saveOrder(storyData.orderId || 'RWY-UNKNOWN', newStory, shippingDetails || {});
             } else {
                 const newSpreads = [...spreads];
                 newSpreads[index] = {
                     ...newSpreads[index],
                     illustrationUrl: imgRes.imageBase64,
-                    actualPrompt: imgRes.fullPrompt || promptToUse
+                    // Keep the editable seed prompt (what you see in the textarea)
+                    actualPrompt: imgRes.seedPrompt || promptToUse,
+                    // Store the REAL Gemini prompt separately for troubleshooting
+                    lastGeminiPrompt: imgRes.fullPrompt
                 };
                 const newStory = { ...storyData, spreads: newSpreads };
+                
+                // Do NOT update pageEdits — leave the seed prompt editable in the textarea
                 onUpdateStory({ spreads: newSpreads });
                 await adminService.saveOrder(storyData.orderId || 'RWY-UNKNOWN', newStory, shippingDetails || {});
             }
@@ -341,33 +641,28 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         input.onchange = (e: any) => {
             const file = e.target.files?.[0];
             if (!file) return;
+            setUploadingIndex(index);
             const reader = new FileReader();
             reader.onload = async (event) => {
-                const base64 = (event.target?.result as string).split(',')[1];
-                let newStoryData = { ...storyData };
-                
-                if (index === 'cover') {
-                    newStoryData = { ...storyData, coverImageUrl: base64 };
-                    onUpdateStory({ coverImageUrl: base64 });
-                } else {
-                    const newSpreads = [...spreads];
-                    newSpreads[index] = {
-                        ...newSpreads[index],
-                        illustrationUrl: base64
-                    };
-                    newStoryData = { ...storyData, spreads: newSpreads };
-                    onUpdateStory({ spreads: newSpreads });
-                }
-                
-                // Immediately save the upload to the database!
-                if (storyData.orderId) {
-                    try {
-                        await adminService.saveOrder(storyData.orderId, newStoryData, shippingDetails || {});
-                    } catch (err) {
-                        console.error('Failed to save uploaded image to DB', err);
+                try {
+                    const fullBase64 = event.target?.result as string;
+                    ClientLogger.log('IMAGE_UPLOADED_MANUALLY', { index, fileName: file.name, fileSize: file.size });
+                    
+                    if (index === 'cover') {
+                        onUpdateStory({ coverImageUrl: fullBase64 });
+                    } else {
+                        const newSpreads = [...spreads];
+                        newSpreads[index] = {
+                            ...newSpreads[index],
+                            illustrationUrl: fullBase64
+                        };
+                        onUpdateStory({ spreads: newSpreads });
                     }
+                } finally {
+                    setUploadingIndex(null);
                 }
             };
+            reader.onerror = () => setUploadingIndex(null);
             reader.readAsDataURL(file);
         };
         input.click();
@@ -487,13 +782,25 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         setIsGlobalRegenerating(true);
         setGlobalEditProgress(0);
         try {
-            const mainDNARef = storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0] || storyData.mainCharacter?.imageBases64?.[0];
+            const mainRawPhoto = storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0] || storyData.mainCharacterImageBase64;
+            const mainStylizedDNA = storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageBase64 || storyData.styleReferenceImageUrl || mainRawPhoto;
+            const mainDNASet: string[] = Array.from(new Set([mainRawPhoto, mainStylizedDNA].filter(Boolean) as string[]));
+
+            const secondRawPhoto = storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0] || storyData.secondCharacterImageBase64;
+            const secondStylizedDNA = storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageBase64 || secondRawPhoto;
+            const secondDNASet = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object')
+                ? Array.from(new Set([secondRawPhoto, secondStylizedDNA].filter(Boolean) as string[]))
+                : undefined;
+
             const visualDNA = storyData.selectedStylePrompt || 'Painterly children\'s book illustration style';
-            let compressedSecond = undefined;
-            if (storyData.useSecondCharacter && storyData.secondCharacterImageBase64 && storyData.secondCharacter?.type !== 'object') {
-                compressedSecond = await compressBase64Image(storyData.secondCharacterImageBase64, 1024, 0.85);
-            }
-            const compressedMaster = await compressBase64Image(mainDNARef, 1024, 0.85);
+            
+            const compressSet = async (set: string[] | undefined): Promise<string[] | undefined> => {
+                if (!set || set.length === 0) return undefined;
+                return Promise.all(set.map(img => compressBase64Image(img, 1024, 0.85)));
+            };
+
+            const compressedMaster = await compressSet(mainDNASet);
+            const compressedSecond = await compressSet(secondDNASet);
             const newSpreads = [...spreads];
 
             for (let i = 1; i <= totalSpreads; i++) {
@@ -545,7 +852,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 const editedText = pageEdits[i]?.text;
                 const currentText = getSpreadText(finalSpreads[i]);
                 if (editedText !== undefined && editedText !== currentText) {
-                                finalSpreads[i] = { ...finalSpreads[i], leftText: editedText, rightText: '' };
+                    finalSpreads[i] = { 
+                        ...finalSpreads[i], 
+                        leftText: editedText, 
+                        rightText: '',
+                        textBlocks: [] // CLEAR blocks to force single-block manual layout
+                    };
                 }
                 if (pageEdits[i]?.prompt !== undefined && pageEdits[i].prompt !== finalSpreads[i].actualPrompt) {
                     finalSpreads[i] = { ...finalSpreads[i], actualPrompt: pageEdits[i].prompt };
@@ -579,8 +891,11 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 actualCoverPrompt: coverEdit,
             };
 
+            ClientLogger.log('FINALIZE_BOOK_CLICKED', { orderId: storyData.orderId, title: localTitle });
             await onFinalize(finalStoryData);
+            ClientLogger.log('FINALIZE_BOOK_SUCCESS');
         } catch (error) {
+            ClientLogger.error('FINALIZE_BOOK_FAILED', error);
             console.error("Finalize error:", error);
             alert("Error finalizing order: " + (error as any).message);
         } finally {
@@ -595,7 +910,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             const editedText = pageEdits[i]?.text;
             const currentText = getSpreadText(finalSpreads[i]);
             if (editedText !== undefined && editedText !== currentText) {
-                finalSpreads[i] = { ...finalSpreads[i], leftText: editedText, rightText: '' };
+                finalSpreads[i] = { 
+                    ...finalSpreads[i], 
+                    leftText: editedText, 
+                    rightText: '',
+                    textBlocks: [] // CLEAR blocks to force single-block manual layout
+                };
             }
             if (pageEdits[i]?.prompt !== undefined && pageEdits[i].prompt !== finalSpreads[i].actualPrompt) {
                 finalSpreads[i] = { ...finalSpreads[i], actualPrompt: pageEdits[i].prompt };
@@ -620,9 +940,11 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             }
         }
         onUpdateStory({ spreads: finalSpreads, actualCoverPrompt: coverEdit, title: localTitle, coverSubtitle: localSubtitle, coverTextSide: localCoverTextSide });
+        ClientLogger.log('SILENT_SAVE', { orderId: storyData.orderId, title: localTitle });
         try {
             await adminService.saveOrder(storyData.orderId as string, { ...storyData, spreads: finalSpreads, actualCoverPrompt: coverEdit, title: localTitle, coverSubtitle: localSubtitle, coverTextSide: localCoverTextSide }, shippingDetails || {});
         } catch(e) {
+            ClientLogger.error('SILENT_SAVE_FAILED', e);
             console.error("Silent save failed", e);
         }
     };
@@ -716,6 +1038,113 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
     return (
         <div className="w-full h-full min-h-[90vh] bg-[#fdfdfd] flex overflow-hidden">
+
+            {/* ─── GENERATION AUDIT PANEL ─────────────────────────────────────────
+                Shows EXACTLY what was sent to Gemini on the last Paint Spread call.
+                Answers: "Which images were attached? What prompt was used?"
+            ─────────────────────────────────────────────────────────────────────── */}
+            {showAuditPanel && lastGenerationAudit && (
+                <div className="fixed inset-0 z-[200] flex items-end justify-end pointer-events-none">
+                    <div className="pointer-events-auto m-4 w-[420px] max-h-[90vh] bg-gray-950 text-white rounded-2xl shadow-2xl border border-gray-700 flex flex-col overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-900 shrink-0">
+                            <div className="flex items-center gap-2">
+                                <span className="text-green-400 text-xs">🧬</span>
+                                <span className="text-xs font-black uppercase tracking-widest text-green-400">
+                                    Generation Audit
+                                </span>
+                                <span className="text-[10px] bg-green-900 text-green-300 px-2 py-0.5 rounded-full font-mono">
+                                    Spread {lastGenerationAudit.spreadIndex}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setShowAuditPanel(false)}
+                                className="text-gray-400 hover:text-white text-lg leading-none"
+                                title="Close audit panel"
+                            >×</button>
+                        </div>
+
+                        {/* Images Section */}
+                        <div className="px-4 pt-3 pb-2 border-b border-gray-800 shrink-0">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
+                                Images Sent to Gemini
+                            </p>
+                            <div className="flex gap-3">
+                                {/* Hero A */}
+                                <div className="flex-1 flex flex-col gap-1">
+                                    <div className={`text-[9px] font-black uppercase tracking-widest px-1 ${lastGenerationAudit.heroACount === 1 ? 'text-green-400' : 'text-red-400'}`}>
+                                        {lastGenerationAudit.heroACount === 1 ? '✅ Image 1 — HERO_1 DNA' : '❌ HERO_1 MISSING'}
+                                    </div>
+                                    {lastGenerationAudit.heroAUrl ? (
+                                        <img
+                                            src={lastGenerationAudit.heroAUrl}
+                                            alt="Hero A DNA sent"
+                                            className="w-full aspect-square object-cover rounded-lg border-2 border-green-500"
+                                        />
+                                    ) : (
+                                        <div className="w-full aspect-square rounded-lg border-2 border-red-500 bg-red-900/30 flex items-center justify-center">
+                                            <span className="text-xs text-red-400">No Image</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Hero B (if dual-hero) */}
+                                {(lastGenerationAudit.heroBCount > 0 || lastGenerationAudit.heroBUrl) ? (
+                                    <div className="flex-1 flex flex-col gap-1">
+                                        <div className={`text-[9px] font-black uppercase tracking-widest px-1 ${lastGenerationAudit.heroBCount === 1 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                            {lastGenerationAudit.heroBCount === 1 ? '✅ Image 2 — HERO_2 DNA' : '⚠️ HERO_2 MISSING'}
+                                        </div>
+                                        {lastGenerationAudit.heroBUrl ? (
+                                            <img
+                                                src={lastGenerationAudit.heroBUrl}
+                                                alt="Hero B DNA sent"
+                                                className="w-full aspect-square object-cover rounded-lg border-2 border-green-500"
+                                            />
+                                        ) : (
+                                            <div className="w-full aspect-square rounded-lg border-2 border-yellow-500 bg-yellow-900/30 flex items-center justify-center">
+                                                <span className="text-xs text-yellow-400">No Image</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 flex flex-col gap-1">
+                                        <div className="text-[9px] font-black uppercase tracking-widest px-1 text-gray-600">
+                                            — Single Hero Mode
+                                        </div>
+                                        <div className="w-full aspect-square rounded-lg border border-dashed border-gray-700 flex items-center justify-center">
+                                            <span className="text-xs text-gray-600">No Hero B</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            {/* Sanity Check */}
+                            <div className={`mt-2 text-[10px] font-mono rounded-lg px-3 py-1.5 ${lastGenerationAudit.heroACount === 1 ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300'}`}>
+                                {lastGenerationAudit.heroACount === 1
+                                    ? `✅ Payload: ${lastGenerationAudit.heroACount + lastGenerationAudit.heroBCount} image(s) attached — matches prompt [v6.0-dna-only]`
+                                    : `❌ FATAL: Hero A image missing — Gemini will hallucinate the character`
+                                }
+                            </div>
+                        </div>
+
+                        {/* Prompt Section */}
+                        <div className="px-4 pt-3 pb-3 flex flex-col gap-1 overflow-y-auto">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 shrink-0">
+                                Prompt Sent ({lastGenerationAudit.promptSent.length} chars)
+                            </p>
+                            <pre className="text-[10px] text-gray-300 whitespace-pre-wrap font-mono bg-gray-900 rounded-lg p-3 overflow-y-auto max-h-[240px] leading-relaxed">
+                                {lastGenerationAudit.promptSent}
+                            </pre>
+                            <button
+                                onClick={() => navigator.clipboard?.writeText(lastGenerationAudit.promptSent)}
+                                className="mt-1 text-[10px] text-blue-400 hover:text-blue-300 text-left font-mono underline shrink-0"
+                            >
+                                📋 Copy prompt to clipboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Left Pane: Blueprint Reference */}
             <div className="hidden lg:flex flex-col w-[300px] border-r border-gray-100 bg-white p-6 overflow-y-auto scroller-thin shrink-0">
                 
@@ -891,6 +1320,11 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             <Button onClick={handleSilentSave} disabled={isAnyGenerating || isFinalizing} variant="secondary" className="!py-2 !px-4 lg:!py-2.5 lg:!px-6 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all font-black uppercase text-[9px] lg:text-[10px] flex items-center justify-center gap-2">
                                 💾 {t('حفظ', 'Save to DB')}
                             </Button>
+                            {onPreview && (
+                                <Button onClick={onPreview} disabled={isAnyGenerating || isFinalizing} variant="secondary" className="!py-2 !px-4 lg:!py-2.5 lg:!px-6 border-2 border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white transition-all font-black uppercase text-[9px] lg:text-[10px] flex items-center justify-center gap-2">
+                                    👁️ {t('معاينة', 'Preview')}
+                                </Button>
+                            )}
                             <Button onClick={applyAllEditsAndFinalize} disabled={isAnyGenerating || isFinalizing} className="!py-2 !px-4 lg:!py-2.5 lg:!px-6 shadow-xl shadow-brand-orange/30 font-black uppercase text-[9px] lg:text-[10px] flex items-center justify-center gap-2">
                                 {isFinalizing ? <><Spinner size="sm" color="text-white" /> {t('جاري الإنهاء...', 'Finalizing...')}</> : t('إنهاء وحفظ', 'Finalize')}
                             </Button>
@@ -914,7 +1348,14 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             <div className="flex flex-col xl:flex-row gap-10">
                                 <div className="w-full xl:w-1/2 flex flex-col gap-4">
                                     <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner flex items-center justify-center border-2 border-dashed border-gray-200 group">
-                                        {coverUrl ? <img src={coverUrl.startsWith('http') ? coverUrl : `data:image/jpeg;base64,${coverUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <Spinner size="md" color="text-brand-orange" />}
+                                        {uploadingIndex === 'cover' ? (
+                                            <div className="flex flex-col items-center gap-3">
+                                                <Spinner size="md" color="text-brand-orange" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
+                                            </div>
+                                        ) : (
+                                            coverUrl ? <img src={coverUrl.startsWith('http') || coverUrl.startsWith('data:') ? coverUrl : `data:image/jpeg;base64,${coverUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <Spinner size="md" color="text-brand-orange" />
+                                        )}
                                         <div className="absolute inset-0 bg-brand-navy/0 group-hover:bg-brand-navy/5 transition-colors duration-300 pointer-events-none"></div>
                                     </div>
                                     <div className="flex gap-2">
@@ -927,11 +1368,34 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         </Button>
                                     </div>
                                     
+
+
+                                    {/* Cover Layout Panel */}
+                                    <SpreadLayoutPanel
+                                        spreadIndex={0}
+                                        illustrationUrl={coverUrl}
+                                        textSide={localCoverTextSide}
+                                        language={language}
+                                        textOffsetX={pageEdits[0]?.textOffsetX ?? spreads[0]?.textOffsetX}
+                                        textOffsetY={pageEdits[0]?.textOffsetY ?? spreads[0]?.textOffsetY}
+                                        imageOffsetX={pageEdits[0]?.imageOffsetX ?? spreads[0]?.imageOffsetX ?? 0}
+                                        imageOffsetY={pageEdits[0]?.imageOffsetY ?? spreads[0]?.imageOffsetY ?? 0}
+                                        imageScale={pageEdits[0]?.imageScale ?? spreads[0]?.imageScale ?? 100}
+                                        onTextOffsetXChange={v => handleLayoutOffsetChange(0, 'textOffsetX', v)}
+                                        onTextOffsetYChange={v => handleLayoutOffsetChange(0, 'textOffsetY', v)}
+                                        onImageOffsetXChange={v => handleLayoutOffsetChange(0, 'imageOffsetX', v)}
+                                        onImageOffsetYChange={v => handleLayoutOffsetChange(0, 'imageOffsetY', v)}
+                                        onImageScaleChange={v => handleLayoutOffsetChange(0, 'imageScale', v)}
+                                        onGenerativeFill={() => handleGenerativeFill(0)}
+                                        isGeneratingFill={generatingFillIndex === 0}
+                                    />
+
                                     {/* QA Agent Logs Panel for Cover */}
                                     {storyData.orderId && (
                                         <QALogPanel 
                                             orderId={storyData.orderId} 
                                             spreadIndex={0} 
+                                            storyData={storyData}
                                         />
                                     )}
                                 </div>
@@ -1003,8 +1467,17 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                          coverImageUrl={coverUrl}
                                      />
 
-                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mt-2">Cover Art AI Prompt (JSON)</label>
-                                     <textarea value={cleanupPromptText(coverEdit)} onChange={(e) => setCoverEdit(e.target.value)} onBlur={handleSilentSave} className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] text-xs flex-1 min-h-[200px] resize-none focus:ring-2 focus:ring-brand-orange/10 outline-none transition-all font-mono leading-relaxed" spellCheck={false} />
+                                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mt-2">Cover Art AI Prompt — edit freely, Paint Art uses this</label>
+                                      <PromptVersionBadge promptText={coverEdit} />
+                                      <textarea
+                                          value={coverEdit}
+                                          onChange={(e) => setCoverEdit(e.target.value)}
+                                          onBlur={handleSilentSave}
+                                          className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] text-xs flex-1 min-h-[200px] resize-none focus:ring-2 focus:ring-brand-orange/10 outline-none transition-all font-mono leading-relaxed"
+                                          spellCheck={false}
+                                          placeholder="Edit the cover scene prompt here. Paint Art uses exactly what you type."
+                                      />
+
                                 </div>
                             </div>
                             {/* Cover Gemini AI Edit Panel */}
@@ -1081,8 +1554,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                 <div className="flex flex-col xl:flex-row gap-10">
                                     <div className="w-full xl:w-1/2 flex flex-col gap-4">
                                         <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner flex items-center justify-center border-2 border-dashed border-gray-200 group">
-                                            {spreads[i]?.illustrationUrl ? (
-                                                <img src={spreads[i].illustrationUrl.startsWith('http') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                            {uploadingIndex === i ? (
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <Spinner size="md" color="text-brand-orange" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
+                                                </div>
+                                            ) : spreads[i]?.illustrationUrl ? (
+                                                <img src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                                             ) : (
                                                 <div className="flex flex-col items-center gap-4 text-gray-300">
                                                     {isAnyGenerating ? (
@@ -1116,6 +1594,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                             onImageOffsetXChange={v => handleLayoutOffsetChange(i, 'imageOffsetX', v)}
                                             onImageOffsetYChange={v => handleLayoutOffsetChange(i, 'imageOffsetY', v)}
                                             onImageScaleChange={v => handleLayoutOffsetChange(i, 'imageScale', v)}
+                                            onGenerativeFill={() => handleGenerativeFill(i)}
+                                            isGeneratingFill={generatingFillIndex === i}
                                         />
                                         
                                         {/* QA Agent Logs Panel */}
@@ -1123,6 +1603,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                             <QALogPanel 
                                                 orderId={storyData.orderId} 
                                                 spreadIndex={i} 
+                                                storyData={storyData}
                                             />
                                         )}
                                     </div>
@@ -1152,11 +1633,57 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                     </div>
                                                 </div>
                                             </div>
-                                            <textarea value={pageEdits[i]?.text !== undefined ? pageEdits[i].text : getSpreadText(spreads[i])} onChange={(e) => handleTextChange(i, e.target.value)} onBlur={handleSilentSave} className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] text-sm h-32 focus:ring-2 focus:ring-brand-teal/10 outline-none transition-all font-medium leading-relaxed" />
+                                            <textarea value={pageEdits[i]?.text !== undefined ? pageEdits[i].text : getSpreadText(spreads[i], i)} onChange={(e) => handleTextChange(i, e.target.value)} onBlur={handleSilentSave} className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] text-sm h-32 focus:ring-2 focus:ring-brand-teal/10 outline-none transition-all font-medium leading-relaxed" />
+
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-brand-navy uppercase tracking-widest px-1">Illustration Technical Prompt (JSON)</label>
-                                            <textarea value={cleanupPromptText(pageEdits[i]?.prompt !== undefined ? pageEdits[i].prompt : getPromptForIndex(i, spreads[i]))} onChange={(e) => handlePromptChange(i, e.target.value)} onBlur={handleSilentSave} className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] text-xs h-64 focus:ring-2 focus:ring-brand-navy/10 outline-none transition-all font-mono leading-relaxed" spellCheck={false} />
+                                            <label className="text-[10px] font-black text-brand-navy uppercase tracking-widest px-1">Illustration Prompt — edit freely, Paint Spread uses this</label>
+                                            <PromptVersionBadge promptText={pageEdits[i]?.prompt !== undefined ? pageEdits[i].prompt : getPromptForIndex(i, spreads[i])} />
+                                            <textarea
+                                                value={pageEdits[i]?.prompt !== undefined ? pageEdits[i].prompt : getPromptForIndex(i, spreads[i])}
+                                                onChange={(e) => handlePromptChange(i, e.target.value)}
+                                                onBlur={handleSilentSave}
+                                                className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] text-xs h-64 focus:ring-2 focus:ring-brand-navy/10 outline-none transition-all font-mono leading-relaxed"
+                                                spellCheck={false}
+                                                placeholder="Edit the spread scene prompt here. Paint Spread uses exactly what you type."
+                                            />
+
+                                            {/* ── ACTUAL GEMINI PROMPT PANEL ── */}
+                                            {(spreads[i] as any)?.lastGeminiPrompt && (() => {
+                                                const geminiPrompt = (spreads[i] as any).lastGeminiPrompt as string;
+                                                return (
+                                                    <details className="group mt-1">
+                                                        <summary className="flex items-center justify-between cursor-pointer select-none px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-2xl hover:bg-amber-100 transition-colors list-none">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-base">🔍</span>
+                                                                <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Actual Prompt Sent to AI</span>
+                                                                <span className="text-[9px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-mono font-bold">{geminiPrompt.length} chars</span>
+                                                            </div>
+                                                            <span className="text-[10px] text-amber-500 font-mono">▶ tap to expand</span>
+                                                        </summary>
+                                                        <div className="mt-2 relative">
+                                                            <button
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(geminiPrompt);
+                                                                    const btn = document.getElementById(`copy-gemini-btn-${i}`);
+                                                                    if (btn) { btn.textContent = '✅ Copied!'; setTimeout(() => { if (btn) btn.textContent = '📋 Copy'; }, 2000); }
+                                                                }}
+                                                                id={`copy-gemini-btn-${i}`}
+                                                                className="absolute top-3 right-3 z-10 text-[9px] font-black bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 active:scale-95 transition-all uppercase tracking-widest shadow-md"
+                                                            >
+                                                                📋 Copy
+                                                            </button>
+                                                            <textarea
+                                                                readOnly
+                                                                value={geminiPrompt}
+                                                                className="w-full p-5 pr-24 bg-amber-50 border-2 border-amber-200 rounded-[1.5rem] text-xs h-48 outline-none font-mono leading-relaxed text-amber-900 resize-none"
+                                                                spellCheck={false}
+                                                            />
+                                                            <p className="text-[9px] text-amber-400 px-1 mt-1 font-mono">Read-only — the exact text Gemini received. Copy and paste into ChatGPT or Nano Banana to troubleshoot.</p>
+                                                        </div>
+                                                    </details>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                     {/* Gemini Image Edit Panel — collapsible, spans full width */}
