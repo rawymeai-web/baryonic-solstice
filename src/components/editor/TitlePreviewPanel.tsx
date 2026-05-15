@@ -78,8 +78,8 @@ async function renderTitleToDataUrl(title: string, subtitle: string, lang: Langu
     `;
     container.dir = lang === 'ar' ? 'rtl' : 'ltr';
     container.innerHTML = `
-        <div style="font-weight:900;line-height:1.1;font-size:90px;">${title || '&nbsp;'}</div>
-        ${subtitle ? `<div style="font-weight:700;line-height:1.2;font-size:45px;margin-top:20px;opacity:0.95;">${subtitle}</div>` : ''}
+        <div style="font-weight:900;line-height:1.1;font-size:90px;width:100%;text-align:center;display:flex;justify-content:center;">${title || '&nbsp;'}</div>
+        ${subtitle ? `<div style="font-weight:700;line-height:1.2;font-size:45px;margin-top:20px;opacity:0.95;width:100%;text-align:center;display:flex;justify-content:center;">${subtitle}</div>` : ''}
     `;
 
     clipper.appendChild(container);

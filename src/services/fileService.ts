@@ -245,8 +245,10 @@ export async function generatePreviewPdf(storyData: StoryData, language: Languag
         if (storyData.title && storyData.title.trim()) {
             const heroNames = (storyData as any).coverSubtitle || storyData.childName || '';
             const titleB64 = await createTextImage({ title: storyData.title, subtitle: heroNames }, language);
+            const cleanTitleB64 = titleB64.includes(',') ? titleB64.split(',')[1] : titleB64;
+            const titleDim = await getImageDimensions(cleanTitleB64);
             const tw = pdfW * 0.4;
-            const titleAspect = 1000 / 200;
+            const titleAspect = titleDim.w > 0 ? (titleDim.w / titleDim.h) : (1000 / 200);
             const th = tw / titleAspect;
             // Manual offset from editor takes priority
             const tx = coverTxtOffsetX !== undefined ? coverTxtOffsetX : frontCenterX - (tw / 2);
@@ -707,8 +709,8 @@ export async function createTextImage(titleData: { title: string, subtitle?: str
     container.style.cssText = `position:fixed;top:-9999px;left:-9999px;display:flex;flex-direction:column;align-items:center;font-family:${fontFamily};color:${color};background:rgba(0,0,0,0.35);border-radius:24px;font-weight:900;text-shadow:${textShadow};padding:28px 40px;text-align:center;width:1000px;text-transform:uppercase;letter-spacing:${letterSpacing};transform:${transform};`;
     container.dir = lang === 'ar' ? 'rtl' : 'ltr';
     container.innerHTML = `
-        <div style="font-weight:900;line-height:1.1;font-size:90px;">${titleData.title || '&nbsp;'}</div>
-        ${titleData.subtitle ? `<div style="font-weight:700;line-height:1.2;font-size:45px;margin-top:20px;opacity:0.95;">${titleData.subtitle}</div>` : ''}
+        <div style="font-weight:900;line-height:1.1;font-size:90px;width:100%;text-align:center;display:flex;justify-content:center;">${titleData.title || '&nbsp;'}</div>
+        ${titleData.subtitle ? `<div style="font-weight:700;line-height:1.2;font-size:45px;margin-top:20px;opacity:0.95;width:100%;text-align:center;display:flex;justify-content:center;">${titleData.subtitle}</div>` : ''}
     `;
     document.body.appendChild(container);
 
