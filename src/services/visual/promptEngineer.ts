@@ -57,7 +57,8 @@ function validateAssembledPrompt(prompt: string): PromptValidationResult {
 
     // 2. HARD FAIL: forbidden words
     FORBIDDEN_WORDS.forEach(word => {
-        if (lower.includes(word.toLowerCase())) {
+        const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        if (regex.test(lower)) {
             errors.push(`FORBIDDEN_WORD: "${word}" found.`);
         }
     });
@@ -80,7 +81,7 @@ function sanitizeText(text: string): string {
         'photobook', 'photo book', "children's book", 'kids book',
         'double-page spread', 'double page spread', 'printed spread',
         'crease', 'fold', 'book cover', 'story cover',
-        'real photo', 'identity anchor', 'raw photo',
+        'real photo', 'identity anchor', 'raw photo', 'photograph',
         'fuse', 'fusion',
     ];
     safeForbidden.forEach(word => {
@@ -390,8 +391,9 @@ function assembleEnglishPrompt(
     const validation = validateAssembledPrompt(prompt);
 
     if (!validation.passed) {
-        const errorBlock = `\n\n[VALIDATOR_ERRORS: ${validation.errors.join(' | ')}]`;
-        return { prompt: prompt + errorBlock, validation };
+        // DO NOT append errors to the prompt. Doing so feeds the exact forbidden words
+        // back into the LLM as a strong recency bias instruction.
+        return { prompt, validation };
     }
 
     return { prompt, validation };
