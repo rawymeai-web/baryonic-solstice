@@ -57,19 +57,31 @@ export function cropImageToSize(dataUrl: string, targetWidth: number, targetHeig
  * Default max dimension is 1024px.
  */
 export function compressBase64Image(base64Str: string, maxDimension: number = 1024, quality: number = 0.8): Promise<string> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         if (!base64Str) return resolve("");
 
-        // If it's a URL (http/https), skip compression
+        let imageSrc = base64Str;
+
+        // If it's a URL (http/https), fetch and convert to base64 first
         if (base64Str.startsWith('http')) {
-            return resolve(base64Str);
+            try {
+                const resp = await fetch(base64Str);
+                const blob = await resp.blob();
+                imageSrc = await new Promise<string>((res, rej) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => res(reader.result as string);
+                    reader.onerror = rej;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                console.warn('Failed to fetch image URL for compression', e);
+                return resolve(base64Str);
+            }
         }
 
-        let imageSrc = base64Str;
-        
         // If it's raw base64 (doesn't start with data:), we prepend a generic MIME type so Canvas can read it
-        if (!base64Str.startsWith('data:')) {
-            imageSrc = `data:image/jpeg;base64,${base64Str}`;
+        if (!imageSrc.startsWith('data:')) {
+            imageSrc = `data:image/jpeg;base64,${imageSrc}`;
         }
 
         const img = new Image();
