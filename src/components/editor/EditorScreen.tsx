@@ -517,21 +517,21 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         try {
             // DNA-ONLY (v6.0): 1 image per hero. Only the approved stylized DNA reference is sent.
             // No raw photos mixed in — ever.
-            // Priority: 1) Locked selection from dnaAudit, 2) First item in imageDNA, 3) Legacy fallbacks.
+            // Priority: 1) Customer locked style (styleReferenceImageBase64), 2) Locked selection from dnaAudit, 3) Legacy fallbacks.
             const heroASelectionIdx = storyData.dnaAudit?.heroA?.selectedPreviewIndex ?? 0;
             const heroADNA: string | undefined =
-                storyData.mainCharacter?.imageDNA?.[heroASelectionIdx] ||
-                storyData.mainCharacter?.imageDNA?.[0] ||
                 storyData.styleReferenceImageBase64 ||
                 storyData.styleReferenceImageUrl ||
+                storyData.mainCharacter?.imageDNA?.[heroASelectionIdx] ||
+                storyData.mainCharacter?.imageDNA?.[0] ||
                 storyData.mainCharacter?.imageBases64?.[0];
 
             const heroBSelectionIdx = storyData.dnaAudit?.heroB?.selectedPreviewIndex ?? 0;
             const heroBDNA: string | undefined = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object')
-                ? (storyData.secondCharacter?.imageDNA?.[heroBSelectionIdx] ||
+                ? (storyData.secondCharacterImageBase64 ||
+                   storyData.secondCharacter?.imageDNA?.[heroBSelectionIdx] ||
                    storyData.secondCharacter?.imageDNA?.[0] ||
-                   storyData.secondCharacter?.imageBases64?.[0] ||
-                   storyData.secondCharacterImageBase64)
+                   storyData.secondCharacter?.imageBases64?.[0])
                 : undefined;
 
             const visualDNA = storyData.selectedStylePrompt || 'Painterly, flat 2D illustrated children\'s book style';
