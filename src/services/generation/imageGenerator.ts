@@ -573,6 +573,11 @@ export async function generateMethod4Image(
 
         finalPromptText = finalPromptText + ageAndDescBlock;
 
+        if (cleanStylePrompt) {
+            finalPromptText += `\n\n**ART STYLE REQUIREMENT:**
+- **STYLE:** Render this illustration in the following style: ${cleanStylePrompt}. Make sure the colors, lighting, rendering technique, brushwork, and background style align perfectly with this description.`;
+        }
+ 
         contents.push({
             text: finalPromptText
         });
