@@ -28,7 +28,7 @@ export async function generateVisualPlan(
             - Selected Style Profile: ${JSON.stringify(styleProfile)}
     
             INSTRUCTIONS:
-            1. **DESIGN THE COVER (Spread 0):** This is the most critical art. Assign the characters to one side ("left" or "right"), and leave the other side explicitly as uncluttered negative space for the title. **CRITICAL STORYTELLING MANDATE:** The cover MUST tell a story. Do not just have the characters standing and posing. They must be actively engaged in an exciting, story-representative action.
+            1. **DESIGN THE COVER (Spread 0):** This is the most critical art. Assign the characters to one side ("left" or "right"), and leave the other side explicitly as uncluttered negative space for the title. **CRITICAL STORYTELLING MANDATE:** The cover MUST tell a story. Do not just have the characters standing and posing. They must be actively engaged in an exciting, story-representative action. Ensure the cover uses a "medium shot" (characters in foreground, prominent, and close to the camera) so that [[HERO_1]]'s face and recognizable likeness are clearly visible and not too far from the camera.
             2. **DESIGN THE SPREADS (1-${spreadCount}):** You MUST generate a spread for EVERY text segment in the script. Total spreads needed: ${spreadCount} + 1 (Cover).
             3. **HONOR THE STYLE PROFILE:** 
                 - The visual style is strictly defined by the Selected Style Profile above.
@@ -104,7 +104,7 @@ export async function generateVisualPlan(
                         },
                         "composition": {
                             "aspect_ratio": "16:9",
-                            "composition_view": "medium-wide storybook scene",
+                            "composition_view": "medium shot (characters in foreground, prominent, and close to the camera)",
                             "text_zone_side": "left",
                             "text_zone_percentage": 40,
                             "action_zone_side": "right",
@@ -145,7 +145,7 @@ export async function generateVisualPlan(
             `;
 
             const model = ai().getGenerativeModel({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-2.5-flash',
                 generationConfig: { responseMimeType: "application/json" }
             });
 

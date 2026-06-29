@@ -4,6 +4,24 @@ import * as adminService from '@/services/adminService';
 import { compressBase64Image } from '@/utils/imageUtils';
 import type { StoryData, Language, Spread } from '@/types';
 
+const urlToBase64 = async (url: string): Promise<string> => {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const blob = await resp.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+                resolve(reader.result);
+            } else {
+                reject(new Error('Failed to convert blob to DataURL'));
+            }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+    });
+};
+
 export const useLegacyPipeline = (
     orderNumber: string,
     initialStoryData: StoryData,
@@ -17,6 +35,27 @@ export const useLegacyPipeline = (
     const [error, setError] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
+
+    const logMsg = useCallback((msg: string) => {
+        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    }, []);
+    
+    const abortRef = useRef(false);
+
+    const stopPipeline = useCallback(() => {
+        abortRef.current = true;
+        setIsProcessing(false);
+        setStatus('Stopped');
+        logMsg('🛑 Pipeline execution stopped by user.');
+    }, [logMsg]);
+
+    const checkAborted = () => {
+        if (abortRef.current) {
+            const err = new Error('Pipeline stopped by user');
+            err.name = 'AbortError';
+            throw err;
+        }
+    };
     
     // Use a ref for storyData to ensure we always have the latest even inside the loop
     const storyDataRef = useRef<StoryData>(initialStoryData);
@@ -25,10 +64,6 @@ export const useLegacyPipeline = (
     // during the pipeline execution (e.g. user edits Spread 4 while Spread 1 is painting)
     const storyDataPropRef = useRef(initialStoryData);
     storyDataPropRef.current = initialStoryData;
-
-    const logMsg = useCallback((msg: string) => {
-        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
-    }, []);
 
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -52,6 +87,7 @@ export const useLegacyPipeline = (
     const ensureSafeString = (str: any, defaultStr: string) => (typeof str === 'string' && str.trim()) ? str : defaultStr;
 
     const runPipeline = async (resume: boolean = false) => {
+        abortRef.current = false;
         setIsProcessing(true);
         setError(null);
         setProgress(5);
@@ -59,9 +95,26 @@ export const useLegacyPipeline = (
         logMsg(`Legacy Process started for Protocol: ${orderNumber} (Resume: ${resume})`);
 
         try {
-            let storyData = { ...storyDataRef.current };
+            let storyData = { ...storyDataRef.current, orderId: orderNumber };
             const lang = storyData.language || language || 'en';
             const t = (ar: string, en: string) => lang === 'ar' ? ar : en;
+
+            const childName = (storyData.childName || '').toLowerCase();
+            let hasMismatch = false;
+            if (storyData.spreadPlan && childName) {
+                const planStr = JSON.stringify(storyData.spreadPlan).toLowerCase();
+                const hasStaleNames = planStr.includes('hamad') || planStr.includes('khalda');
+                const hasCurrentName = planStr.includes(childName);
+                if (hasStaleNames && !hasCurrentName) {
+                    hasMismatch = true;
+                    logMsg(`⚠️ Stale characters detected in cached visual plan (found Hamad/Khalda, missing '${storyData.childName}').`);
+                }
+            }
+
+            if (resume && hasMismatch) {
+                logMsg(`⚠️ Mismatch detected. Overriding resume flag to execute a clean restart sequence...`);
+                resume = false;
+            }
 
             if (!resume) {
                 // [PRE-FLIGHT] Auto-Wipe generated artifacts to start fresh...
@@ -92,6 +145,7 @@ export const useLegacyPipeline = (
                 storyData.rawScript = undefined;       // Bug 5: clear stale raw script
                 storyData.spreadPlan = undefined;
                 storyData.spreads = [];
+                storyData.pages = [];
                 storyData.finalPrompts = [];
                 storyData.prompts = [];
                 storyData.actualCoverPrompt = undefined;
@@ -104,32 +158,130 @@ export const useLegacyPipeline = (
                 storyDataPropRef.current = storyData;
                 onUpdateStory({ 
                     blueprint: undefined, script: [], rawScript: undefined, spreadPlan: undefined, 
-                    spreads: [], finalPrompts: [], prompts: [], actualCoverPrompt: undefined,
+                    spreads: [], pages: [], finalPrompts: [], prompts: [], actualCoverPrompt: undefined,
                     themeVisualDNA: undefined, technicalStyleGuide: undefined
                 } as any);
-                await adminService.saveOrder(storyData.orderId || orderNumber || 'RWY-UNKNOWN', storyData, initialShippingDetails || {}, total);
+                await adminService.saveOrder(orderNumber, storyData, initialShippingDetails || {}, total);
             } else {
                 logMsg(`Resuming pipeline. Skipping pre-flight wipe and jumping to first missing artifact...`);
+                
+                // Synchronize pages array with existing spreads
+                let pages = [...(storyData.pages || [])];
+                const spreads = storyData.spreads || [];
+                let modified = false;
+                spreads.forEach((spread, spreadNum) => {
+                    if (spreadNum > 0 && spread.illustrationUrl) {
+                        const pageIndex = (spreadNum - 1) * 2;
+                        if (!pages[pageIndex]) {
+                            pages[pageIndex] = { pageNumber: pageIndex + 1, text: spread.leftText || '', textSide: spread.textSide || 'right', illustrationUrl: '' };
+                            modified = true;
+                        }
+                        if (!pages[pageIndex + 1]) {
+                            pages[pageIndex + 1] = { pageNumber: pageIndex + 2, text: spread.rightText || '', textSide: spread.textSide || 'right', illustrationUrl: '' };
+                            modified = true;
+                        }
+                        if (pages[pageIndex].illustrationUrl !== spread.illustrationUrl) {
+                            pages[pageIndex].illustrationUrl = spread.illustrationUrl;
+                            modified = true;
+                        }
+                        if (pages[pageIndex + 1].illustrationUrl !== spread.illustrationUrl) {
+                            pages[pageIndex + 1].illustrationUrl = spread.illustrationUrl;
+                            modified = true;
+                        }
+                        if (pages[pageIndex].actualPrompt !== spread.actualPrompt) {
+                            pages[pageIndex].actualPrompt = spread.actualPrompt;
+                            pages[pageIndex + 1].actualPrompt = spread.actualPrompt;
+                            pages[pageIndex].generationModel = spread.generationModel;
+                            pages[pageIndex + 1].generationModel = spread.generationModel;
+                            pages[pageIndex].qcStatus = spread.qcStatus;
+                            pages[pageIndex + 1].qcStatus = spread.qcStatus;
+                            pages[pageIndex].textSide = spread.textSide;
+                            pages[pageIndex + 1].textSide = spread.textSide;
+                            modified = true;
+                        }
+                    }
+                });
+                if (modified) {
+                    logMsg(`Sync: Synchronized pages array with existing spreads.`);
+                    storyData = { ...storyData, pages };
+                    storyDataRef.current = storyData;
+                    onUpdateStory(storyData);
+                    await adminService.saveOrder(orderNumber, storyData, initialShippingDetails, total);
+                }
             }
 
+            checkAborted();
             // Step 1: DNA & Character
             logMsg(`Starting Phase 1: Visual DNA & Character Profiling`);
             setStatus(t('معالجة الهوية البصرية...', 'Processing Visual DNA...'));
             const mainChar = storyData.mainCharacter || {};
-            if (!mainChar.imageDNA || mainChar.imageDNA.length === 0) {
-                logMsg(`Character DNA not found. Calling Vision AI API... (This may take 15-30 seconds)`);
+            
+            let isLegacyDescription = true;
+            if (mainChar.description && typeof mainChar.description === 'string') {
+                try {
+                    const parsed = JSON.parse(mainChar.description);
+                    if (parsed.identity && 
+                        parsed.identity.eye_color && 
+                        parsed.identity.skin && 
+                        parsed.identity.skin.tone) {
+                        isLegacyDescription = false;
+                    }
+                } catch (e) {
+                    // Not valid JSON
+                }
+            }
+
+            if (!mainChar.imageDNA || mainChar.imageDNA.length === 0 || isLegacyDescription) {
+                if (isLegacyDescription && mainChar.imageDNA && mainChar.imageDNA.length > 0) {
+                    logMsg(`⚠️ Stored character description is legacy (missing skin.tone or eye_color). Forcing regeneration of Visual DNA...`);
+                } else {
+                    logMsg(`Character DNA not found. Calling Vision AI API... (This may take 15-30 seconds)`);
+                }
                 
                 // COMPRESSION: Force all incoming user-uploaded DNA to < 100KB per image to bypass Vercel/Next.js body limits
-                const originalMainBases = (mainChar.imageBases64 && mainChar.imageBases64.length > 0) 
+                let originalMainBases = (mainChar.imageBases64 && mainChar.imageBases64.length > 0) 
                     ? mainChar.imageBases64 
                     : [storyData.mainCharacterImageBase64].filter(Boolean);
+
+                if (originalMainBases.length === 0) {
+                    const fallbackUrl = storyData.styleReferenceImageUrl || 
+                                        mainChar.imageRawUrl || 
+                                        storyData.heroImageUrl || 
+                                        storyData.firstCharacterImageUrl;
+                    if (fallbackUrl) {
+                        logMsg(`Downloading character photo from public URL to build Visual DNA...`);
+                        try {
+                            const b64 = await urlToBase64(fallbackUrl);
+                            originalMainBases = [b64];
+                        } catch (e: any) {
+                            logMsg(`⚠️ Failed to download character photo from URL: ${e.message}`);
+                        }
+                    }
+                }
+
                 const compressedMainBases = await Promise.all(originalMainBases.map((b: any) => compressBase64Image(b, 800, 0.7)));
 
                 let compressedSecondBases: string[] = [];
                 if (storyData.secondCharacter) {
-                     const originalSecondBases = (storyData.secondCharacter.imageBases64 && storyData.secondCharacter.imageBases64.length > 0)
+                     let originalSecondBases = (storyData.secondCharacter.imageBases64 && storyData.secondCharacter.imageBases64.length > 0)
                         ? storyData.secondCharacter.imageBases64
                         : [storyData.secondCharacterImageBase64].filter(Boolean);
+
+                     if (originalSecondBases.length === 0) {
+                         const fallbackUrl = storyData.secondCharacterImageUrl || 
+                                             storyData.secondCharacter?.imageRawUrl || 
+                                             storyData.secondCharacterImageBase64;
+                         if (fallbackUrl && fallbackUrl.startsWith('http')) {
+                            logMsg(`Downloading second character photo from public URL to build Visual DNA...`);
+                            try {
+                                const b64 = await urlToBase64(fallbackUrl);
+                                originalSecondBases = [b64];
+                            } catch (e: any) {
+                                logMsg(`⚠️ Failed to download second character photo from URL: ${e.message}`);
+                            }
+                         }
+                     }
+
                      compressedSecondBases = await Promise.all(originalSecondBases.map((b: any) => compressBase64Image(b, 800, 0.7)));
                 }
 
@@ -143,7 +295,7 @@ export const useLegacyPipeline = (
                         imageBases64: compressedSecondBases
                     } : undefined,
                     theme: ensureSafeString(storyData.theme, "Neutral Setting"),
-                    style: ensureSafeString(storyData.selectedStylePrompt, "Painterly illustration"),
+                    style: ensureSafeString(storyData.selectedStyleNames?.[0] || storyData.selectedStylePrompt, "Painterly illustration"),
                     age: ensureSafeString(storyData.childAge, "5"),
                     occasion: storyData.occasion,
                     customGoal: storyData.customGoal
@@ -158,11 +310,17 @@ export const useLegacyPipeline = (
                     imageDNA: [dnaRes.artifiedHeroBase64]
                 };
 
-                if (storyData.secondCharacter) {
+                if (storyData.useSecondCharacter && storyData.secondCharacter) {
                     storyData.secondCharacter = {
                         ...storyData.secondCharacter,
                         description: dnaRes.secondPhysicalDescription,
-                        imageDNA: [dnaRes.secondArtifiedHeroBase64 || dnaRes.artifiedHeroBase64]
+                        imageDNA: dnaRes.secondArtifiedHeroBase64 ? [dnaRes.secondArtifiedHeroBase64] : undefined
+                    };
+                } else if (storyData.secondCharacter) {
+                    storyData.secondCharacter = {
+                        ...storyData.secondCharacter,
+                        description: "",
+                        imageDNA: []
                     };
                 }
                 const rawStyle = storyData.selectedStylePrompt || "A magical, painterly children's book illustration";
@@ -176,6 +334,7 @@ export const useLegacyPipeline = (
             }
             setProgress(15);
 
+            checkAborted();
             // Step 2A: Story Blueprint (Architect AI)
             setStatus(t('تصميم المخطط...', 'Architecting the Story...'));
             if (!storyData.blueprint) {
@@ -200,6 +359,7 @@ export const useLegacyPipeline = (
             }
             setProgress(25);
 
+            checkAborted();
             // Step 2B: Story Script (Writer AI) & Phase 3: Senior Writer Pass
             setStatus(t('كتابة القصة ومراجعتها...', 'Drafting & Polishing Script (Writer AI)...'));
             const isScriptEmpty = !storyData.script || (Array.isArray(storyData.script) && storyData.script.every((s:any) => !s.text || s.text.length < 5));
@@ -220,6 +380,7 @@ export const useLegacyPipeline = (
             }
             setProgress(30);
 
+            checkAborted();
             // Step 3: Visual Plan
             setStatus(t('تخطيط المشاهد...', 'Planning Visual Layouts...'));
             if (!storyData.spreadPlan) {
@@ -228,6 +389,7 @@ export const useLegacyPipeline = (
                     script: storyData.script, 
                     blueprint: storyData.blueprint, 
                     selected_style_id: storyData.selected_style_id || "premium_3d_adventure",
+                    visualDNA: storyData.selectedStyleNames?.[0] || storyData.technicalStyleGuide || (storyData.selectedStylePrompt?.includes('**TASK:**') ? undefined : storyData.selectedStylePrompt) || storyData.themeVisualDNA || "Painterly illustration",
                     heroes: storyData.heroes || [],
                     hasSecondHero: !!storyData.useSecondCharacter,
                     secondCharacter: storyData.secondCharacter ? { ...storyData.secondCharacter, imageBases64: [], imageDNA: [] } : undefined,
@@ -254,6 +416,7 @@ export const useLegacyPipeline = (
                 coverSubtitle: safeProps.coverSubtitle || storyData.coverSubtitle,
                 customIllustrationNotes: safeProps.customIllustrationNotes || storyData.customIllustrationNotes
             };
+            checkAborted();
             // Step 4: Engineering Prompts & Phase 5: Illustrator AI Pass
             logMsg(`Starting Phase 4: AI Prompt Engineering`);
             setStatus(t('هندسة وتدقيق الأوامر...', 'Engineering & Auditing Prompts...'));
@@ -264,7 +427,7 @@ export const useLegacyPipeline = (
                 try {
                     const str = typeof p === 'string' ? p : JSON.stringify(p || '');
                     // Force upgrade if it's older than v6.0-dna-only
-                    return str.includes('v3.2') || str.includes('v4.0.1') || str.includes('v6.0');
+                    return str.includes('v3.2') || str.includes('v4.0.1') || str.includes('v6.');
                 } catch { return false; }
             };
 
@@ -308,6 +471,7 @@ export const useLegacyPipeline = (
                     plan: storyData.spreadPlan, 
                     blueprint: storyData.blueprint,  
                     selected_style_id: storyData.selected_style_id || "premium_3d_adventure",
+                    visualDNA: storyData.selectedStyleNames?.[0] || storyData.technicalStyleGuide || (storyData.selectedStylePrompt?.includes('**TASK:**') ? undefined : storyData.selectedStylePrompt) || storyData.themeVisualDNA || "Painterly illustration",
                     heroes: [
                         { 
                             role: 'primary', 
@@ -386,24 +550,25 @@ export const useLegacyPipeline = (
             // Bug 1: Clamp inner prompts to exactly spreadCount — AI sometimes returns N+1
             const innerPrompts = rawInnerPrompts.slice(0, spreadCount);
             const finalScript = storyData.script || [];
-            
+
             // Bug 2: If cover prompt is missing, synthesize one from the blueprint
             let resolvedCoverPrompt = coverPrompt;
             if (!resolvedCoverPrompt && storyData.blueprint?.foundation) {
                 const bp = storyData.blueprint.foundation;
-                resolvedCoverPrompt = `Book cover illustration: ${bp.title || storyData.title}. Hero: ${bp.heroDesire || ''}. Setting: ${(storyData.blueprint.structure?.spreads?.[0]?.specificLocation) || 'magical world'}. Wide panoramic establishing shot.`;
+                resolvedCoverPrompt = `Book cover illustration: ${bp.title || storyData.title}. Hero: ${bp.heroDesire || ''}. Setting: ${(storyData.blueprint.structure?.spreads?.[0]?.specificLocation) || 'magical world'}. Medium shot focusing on [[HERO_1]] in the foreground with a warm, friendly smile, looking at the camera.`;
                 logMsg(`⚠️ No cover prompt returned by AI — synthesized fallback from blueprint.`);
             }
 
-            // Build the Spreads array — one object per spread, no i*2 duplication
+            // Build the Spreads and Pages arrays — keep both in sync
             let spreads: import('../types').Spread[] = storyData.spreads || [];
+            let pages: import('../types').Page[] = storyData.pages || [];
 
             // Ensure cover slot exists (spreadNumber: 0)
             if (!spreads[0]) {
                 spreads[0] = { spreadNumber: 0, illustrationUrl: '', leftText: '', rightText: '', actualPrompt: '' };
             }
 
-            // Ensure inner spread slots exist (spreadNumber: 1..N)
+            // Ensure inner spread slots exist (spreadNumber: 1..N) and matching pages are populated
             for (let i = 0; i < innerPrompts.length; i++) {
                 const spreadNum = i + 1;
                 const rawPrompt = innerPrompts[i];
@@ -412,44 +577,52 @@ export const useLegacyPipeline = (
                 const txt = typeof scriptItem === 'string' ? scriptItem : (scriptItem?.text || '');
 
                 // textSide = where the TEXT block goes = opposite of where the image hero/content is.
-                // mainContentSide = where the hero/image is. So text goes on the OTHER side.
-                // Priority: 1) mainContentSide from spreadPlan, 2) parse the prompt for "X side must be empty"
-                const mainContentSide = storyData.spreadPlan?.spreads?.[spreadNum]?.mainContentSide || '';
+                const planSpread = storyData.spreadPlan?.spreads?.[spreadNum];
+                const planTextSide = planSpread?.composition?.text_zone_side || (planSpread as any)?.textSide || '';
+                const promptTextSide = (typeof rawPrompt === 'object' && rawPrompt !== null) ? (rawPrompt.textSide || '') : '';
+                const promptMainContentSide = (typeof rawPrompt === 'object' && rawPrompt !== null) ? (rawPrompt.mainContentSide || '') : '';
+                const planActionSide = planSpread?.composition?.action_zone_side || planSpread?.mainContentSide || '';
+
                 let textSide: 'left' | 'right';
-                if (mainContentSide.toLowerCase().includes('left')) {
-                    // Hero on LEFT → Text on RIGHT
+                if (planTextSide.toLowerCase() === 'left' || planTextSide.toLowerCase() === 'right') {
+                    textSide = planTextSide.toLowerCase() as 'left' | 'right';
+                } else if (promptTextSide.toLowerCase() === 'left' || promptTextSide.toLowerCase() === 'right') {
+                    textSide = promptTextSide.toLowerCase() as 'left' | 'right';
+                } else if (planActionSide.toLowerCase() === 'left') {
                     textSide = 'right';
-                } else if (mainContentSide.toLowerCase().includes('right')) {
-                    // Hero on RIGHT → Text on LEFT
+                } else if (planActionSide.toLowerCase() === 'right') {
+                    textSide = 'left';
+                } else if (promptMainContentSide.toLowerCase() === 'left') {
+                    textSide = 'right';
+                } else if (promptMainContentSide.toLowerCase() === 'right') {
                     textSide = 'left';
                 } else {
-                    // No mainContentSide from plan - parse the image prompt for the "empty side" instruction.
-                    // The prompt engineer writes: "The right side must be empty" (leave right for text overlay)
-                    const rightEmptyMatch = /(?:the\s+)?right\s+(?:side|half)[^.]*empty/i.test(imagePrompt);
-                    const leftEmptyMatch = /(?:the\s+)?left\s+(?:side|half)[^.]*empty/i.test(imagePrompt);
+                    // Fallback to parsing prompt text
+                    const rightEmptyMatch = /(?:the\s+)?right\s+(?:side|half)[^.]*(?:empty|negative space)/i.test(imagePrompt);
+                    const leftEmptyMatch = /(?:the\s+)?left\s+(?:side|half)[^.]*(?:empty|negative space)/i.test(imagePrompt);
                     if (rightEmptyMatch) {
-                        // Right is empty → text goes RIGHT
                         textSide = 'right';
                     } else if (leftEmptyMatch) {
-                        // Left is empty → text goes LEFT
                         textSide = 'left';
                     } else {
-                        // Ultimate fallback: text goes right (right side kept empty by convention)
+                        // Ultimate fallback: text goes right
                         textSide = 'right';
                     }
                 }
 
+                // Split text roughly in half: first half is left, second half is right
+                const mid = Math.ceil(txt.length / 2);
+                const lastSpace = txt.lastIndexOf(' ', mid);
+                const splitAt = lastSpace > 0 ? lastSpace : mid;
+                const leftText = txt ? txt.substring(0, splitAt).trim() : '';
+                const rightText = txt ? txt.substring(splitAt).trim() : '';
+
                 if (!spreads[spreadNum]) {
-                    // Split text roughly in half: first half is left, second half is right
-                    const mid = Math.ceil(txt.length / 2);
-                    const lastSpace = txt.lastIndexOf(' ', mid);
-                    const splitAt = lastSpace > 0 ? lastSpace : mid;
                     spreads[spreadNum] = {
                         spreadNumber: spreadNum,
                         illustrationUrl: '',
-                        // Only set text if we actually have script content for this spread
-                        leftText: txt ? txt.substring(0, splitAt).trim() : '',
-                        rightText: txt ? txt.substring(splitAt).trim() : '',
+                        leftText,
+                        rightText,
                         actualPrompt: imagePrompt,
                         textSide
                     };
@@ -459,16 +632,41 @@ export const useLegacyPipeline = (
                     spreads[spreadNum].textSide = textSide;
                     // Backfill text from script if the spread currently has none
                     if (txt && !spreads[spreadNum].leftText && !spreads[spreadNum].rightText && !(spreads[spreadNum] as any).text) {
-                        const mid = Math.ceil(txt.length / 2);
-                        const lastSpace = txt.lastIndexOf(' ', mid);
-                        const splitAt = lastSpace > 0 ? lastSpace : mid;
-                        spreads[spreadNum].leftText = txt.substring(0, splitAt).trim();
-                        spreads[spreadNum].rightText = txt.substring(splitAt).trim();
+                        spreads[spreadNum].leftText = leftText;
+                        spreads[spreadNum].rightText = rightText;
                     }
+                }
+
+                // Sync to pages
+                const pageIndex = i * 2;
+                if (!pages[pageIndex]) {
+                    pages[pageIndex] = {
+                        pageNumber: pageIndex + 1,
+                        text: spreads[spreadNum].leftText || '',
+                        textSide: spreads[spreadNum].textSide || 'right',
+                        illustrationUrl: '',
+                        actualPrompt: imagePrompt
+                    };
+                } else {
+                    pages[pageIndex].actualPrompt = imagePrompt;
+                    if (spreads[spreadNum].leftText) pages[pageIndex].text = spreads[spreadNum].leftText;
+                }
+
+                if (!pages[pageIndex + 1]) {
+                    pages[pageIndex + 1] = {
+                        pageNumber: pageIndex + 2,
+                        text: spreads[spreadNum].rightText || '',
+                        textSide: spreads[spreadNum].textSide || 'right',
+                        illustrationUrl: '',
+                        actualPrompt: imagePrompt
+                    };
+                } else {
+                    pages[pageIndex + 1].actualPrompt = imagePrompt;
+                    if (spreads[spreadNum].rightText) pages[pageIndex + 1].text = spreads[spreadNum].rightText;
                 }
             }
 
-            storyData = { ...storyData, spreads, spreadCount };
+            storyData = { ...storyData, spreads, pages, spreadCount };
             storyDataRef.current = storyData;
             onUpdateStory(storyData);
             await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
@@ -478,9 +676,9 @@ export const useLegacyPipeline = (
             // Passing ONLY stylizedDNA caused: (1) identity drift, (2) background contamination from the DNA portrait scene.
             const mainRawPhoto = storyData.mainCharacter?.imageBases64?.[0] || storyData.mainCharacterImageBase64;
             const mainStylizedDNA = 
+                storyData.mainCharacter?.imageDNA?.[0] || 
                 storyData.styleReferenceImageUrl || 
                 storyData.styleReferenceImageBase64 || 
-                storyData.mainCharacter?.imageDNA?.[0] || 
                 storyData.mainCharacter?.imageBases64?.[1];
             
             // DNA-ONLY v6.0: We only send the stylized DNA image to the illustrator.
@@ -490,11 +688,11 @@ export const useLegacyPipeline = (
 
             const secondRawPhoto = storyData.secondCharacter?.imageBases64?.[0] || storyData.secondCharacterImageBase64;
             const secondStylizedDNA = 
-                storyData.secondCharacterImageUrl ||
-                storyData.secondCharacterImageBase64 ||
                 storyData.secondCharacter?.imageDNA?.[0] || 
+                storyData.secondCharacterImageUrl ||
+                storyData.secondCharacterImageBase64 || 
                 storyData.secondCharacter?.imageBases64?.[1];
-            const secondDNAResolved = secondStylizedDNA || secondRawPhoto || '';
+            const secondDNAResolved = storyData.useSecondCharacter ? (secondStylizedDNA || secondRawPhoto || '') : '';
 
             const visualStylePrompt = storyData.selectedStylePrompt || 'Painterly, flat 2D illustrated children\'s book style';
 
@@ -504,15 +702,77 @@ export const useLegacyPipeline = (
                 logMsg(`- HERO_2: ${secondStylizedDNA ? 'DNA-Matched ✓' : 'Raw Fallback ⚠️'}`);
             }
 
-            const uploadSpreadImage = async (spreadNum: number, base64: string, promptUsed: string) => {
-                // Store directly as base64 for now; Supabase upload can be added here
-                spreads[spreadNum] = { ...spreads[spreadNum], illustrationUrl: base64, actualPrompt: promptUsed };
-                storyData = { ...storyData, spreads: [...spreads] };
+            const uploadSpreadImage = async (
+                spreadNum: number, 
+                base64: string, 
+                promptUsed: string, 
+                modelUsed?: string,
+                qcStatus?: string,
+                recommendedTextSide?: 'left' | 'right'
+            ) => {
+                logMsg(`Uploading Spread ${spreadNum} image to storage bucket...`);
+                let url = base64;
+                let uploadSuccess = false;
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    try {
+                        const uploadRes = await backendApi.uploadImage({ orderNumber, spreadNum, imageBase64: base64 });
+                        if (uploadRes.publicUrl) {
+                            url = uploadRes.publicUrl;
+                            logMsg(`✓ Spread ${spreadNum} image uploaded successfully to Storage.`);
+                            uploadSuccess = true;
+                            break;
+                        }
+                    } catch (e: any) {
+                        logMsg(`⚠️ Spread ${spreadNum} image storage upload attempt ${attempt}/3 failed: ${e.message}`);
+                        if (attempt < 3) {
+                            await sleep(3000);
+                        } else {
+                            throw new Error(`Spread ${spreadNum} image upload failed after 3 attempts: ${e.message}`);
+                        }
+                    }
+                }
+
+                spreads[spreadNum] = { 
+                    ...spreads[spreadNum], 
+                    illustrationUrl: url, 
+                    actualPrompt: promptUsed,
+                    generationModel: modelUsed,
+                    qcStatus: qcStatus || spreads[spreadNum].qcStatus,
+                    textSide: recommendedTextSide || spreads[spreadNum].textSide
+                };
+
+                // Sync to pages (only for inner spreads, spreadNum > 0)
+                if (spreadNum > 0) {
+                    let pages = storyData.pages || [];
+                    const pageIndex = (spreadNum - 1) * 2;
+                    if (!pages[pageIndex]) {
+                        pages[pageIndex] = { pageNumber: pageIndex + 1, text: spreads[spreadNum].leftText || '', textSide: spreads[spreadNum].textSide || 'right', illustrationUrl: '' };
+                    }
+                    if (!pages[pageIndex + 1]) {
+                        pages[pageIndex + 1] = { pageNumber: pageIndex + 2, text: spreads[spreadNum].rightText || '', textSide: spreads[spreadNum].textSide || 'right', illustrationUrl: '' };
+                    }
+                    pages[pageIndex].illustrationUrl = url;
+                    pages[pageIndex + 1].illustrationUrl = url;
+                    pages[pageIndex].actualPrompt = promptUsed;
+                    pages[pageIndex + 1].actualPrompt = promptUsed;
+                    pages[pageIndex].generationModel = modelUsed;
+                    pages[pageIndex + 1].generationModel = modelUsed;
+                    pages[pageIndex].qcStatus = qcStatus || pages[pageIndex].qcStatus;
+                    pages[pageIndex + 1].qcStatus = qcStatus || pages[pageIndex + 1].qcStatus;
+                    pages[pageIndex].textSide = recommendedTextSide || pages[pageIndex].textSide;
+                    pages[pageIndex + 1].textSide = recommendedTextSide || pages[pageIndex + 1].textSide;
+
+                    storyData = { ...storyData, spreads: [...spreads], pages: [...pages] };
+                } else {
+                    storyData = { ...storyData, spreads: [...spreads] };
+                }
+                
                 storyDataRef.current = storyData;
                 onUpdateStory(storyData);
                 await adminService.saveOrder(orderNumber, storyData, initialShippingDetails, total);
             };
 
+            checkAborted();
             // --- Generate Cover (Spread 0) ---
             const coverUrl = storyData.coverImageUrl;
             const coverAlreadyDone = coverUrl && coverUrl.length > 55 && !coverUrl.endsWith('...');
@@ -531,9 +791,67 @@ export const useLegacyPipeline = (
                 if (coverRes.imageBase64 || coverRes.data?.imageBase64) {
                     const b64 = coverRes.imageBase64 || coverRes.data?.imageBase64;
                     logMsg(`✓ Cover perfectly generated.`);
+
+                    let qcStatus = 'pending';
+                    try {
+                        logMsg(`[QA] Running QA evaluation for Cover...`);
+                        const qaResult = await backendApi.evaluateImageQA({
+                            generatedImageBase64: b64,
+                            heroRawBase64: mainRawPhoto,
+                            heroDNABase64: mainDNAResolved,
+                            pageType: "Cover",
+                            currentTextSide: "right",
+                            targetPrompt: coverImagePrompt,
+                            secondRawBase64: storyData.useSecondCharacter ? secondRawPhoto : undefined,
+                            secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
+                            orderId: orderNumber,
+                            spreadIndex: 0
+                        }) as any;
+                        qcStatus = qaResult.overallDecision === 'pass' ? 'passed' : 'flagged';
+                        logMsg(`[QA RESULT] Cover: ${qcStatus.toUpperCase()}`);
+                    } catch (qaErr: any) {
+                        logMsg(`⚠️ QA evaluation failed for Cover: ${qaErr.message}`);
+                    }
+
+                    logMsg(`Uploading Cover image to storage bucket...`);
+                    let url = b64;
+                    let uploadSuccess = false;
+                    for (let attempt = 1; attempt <= 3; attempt++) {
+                        try {
+                            const uploadRes = await backendApi.uploadImage({ orderNumber, spreadNum: 0, imageBase64: b64 });
+                            if (uploadRes.publicUrl) {
+                                url = uploadRes.publicUrl;
+                                logMsg(`✓ Cover image uploaded successfully to Storage.`);
+                                uploadSuccess = true;
+                                break;
+                            }
+                        } catch (e: any) {
+                            logMsg(`⚠️ Cover image storage upload attempt ${attempt}/3 failed: ${e.message}`);
+                            if (attempt < 3) {
+                                await sleep(3000);
+                            } else {
+                                throw new Error(`Cover image upload failed after 3 attempts: ${e.message}`);
+                            }
+                        }
+                    }
+
                     const savedPrompt = coverRes.fullPrompt || coverImagePrompt;
-                    spreads[0] = { ...spreads[0], illustrationUrl: b64, actualPrompt: savedPrompt };
-                    storyData = { ...storyData, coverImageUrl: b64, actualCoverPrompt: coverImagePrompt, spreads: [...spreads] };
+                    const modelUsed = coverRes.modelUsed || coverRes.data?.modelUsed;
+                    spreads[0] = { 
+                        ...spreads[0], 
+                        illustrationUrl: url, 
+                        actualPrompt: savedPrompt,
+                        generationModel: modelUsed,
+                        qcStatus
+                    };
+                    storyData = { 
+                        ...storyData, 
+                        coverImageUrl: url, 
+                        actualCoverPrompt: coverImagePrompt, 
+                        spreads: [...spreads],
+                        coverGenerationModel: modelUsed,
+                        coverQcStatus: qcStatus
+                    };
                     storyDataRef.current = storyData;
                     onUpdateStory(storyData);
                     await adminService.saveOrder(orderNumber, storyData, initialShippingDetails, total);
@@ -545,6 +863,7 @@ export const useLegacyPipeline = (
 
             // --- Generate Inner Spreads (1..N) ---
             for (let i = 0; i < innerPrompts.length; i++) {
+                checkAborted();
                 const spreadNum = i + 1;
                 setStatus(t(`رسم المشهد ${spreadNum}/${innerPrompts.length}...`, `Painting Spread ${spreadNum}/${innerPrompts.length}...`));
 
@@ -565,6 +884,7 @@ export const useLegacyPipeline = (
 
                     logMsg(`Wait... cooling down tokens for ${delayBetweenScenes/1000}s...`);
                     await sleep(delayBetweenScenes);
+                    checkAborted();
 
                     const imgRes = await retryStep(`Painting Spread ${spreadNum}`, () => backendApi.generateImage({
                         prompt: imagePrompt, stylePrompt: visualStylePrompt,
@@ -577,7 +897,36 @@ export const useLegacyPipeline = (
                         const b64 = imgRes.imageBase64 || imgRes.data?.imageBase64;
                         logMsg(`✓ Spread ${spreadNum} perfectly generated.`);
                         const savedPrompt = imgRes.fullPrompt || imagePrompt;
-                        await uploadSpreadImage(spreadNum, b64, savedPrompt);
+                        const modelUsed = imgRes.modelUsed || imgRes.data?.modelUsed;
+
+                        let qcStatus = 'pending';
+                        let recommendedTextSide = spreads[spreadNum].textSide;
+                        
+                        try {
+                            logMsg(`[QA] Running QA evaluation for Spread ${spreadNum}...`);
+                            const qaResult = await backendApi.evaluateImageQA({
+                                generatedImageBase64: b64,
+                                heroRawBase64: mainRawPhoto,
+                                heroDNABase64: mainDNAResolved,
+                                pageType: "Spread",
+                                currentTextSide: spreads[spreadNum].textSide || "right",
+                                targetPrompt: imagePrompt,
+                                secondRawBase64: storyData.useSecondCharacter ? secondRawPhoto : undefined,
+                                secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
+                                orderId: orderNumber,
+                                spreadIndex: spreadNum
+                            }) as any;
+                            
+                            qcStatus = qaResult.overallDecision === 'pass' ? 'passed' : 'flagged';
+                            if (qaResult.recommendedTextSide) {
+                                recommendedTextSide = qaResult.recommendedTextSide.toLowerCase() as 'left' | 'right';
+                            }
+                            logMsg(`[QA RESULT] Spread ${spreadNum}: ${qcStatus.toUpperCase()} (Text Side recommendation: ${recommendedTextSide})`);
+                        } catch (qaErr: any) {
+                            logMsg(`⚠️ QA evaluation failed for Spread ${spreadNum}: ${qaErr.message}`);
+                        }
+
+                        await uploadSpreadImage(spreadNum, b64, savedPrompt, modelUsed, qcStatus, recommendedTextSide);
                     }
                 } else {
                     logMsg(`Spread ${spreadNum} already exists. Skipping.`);
@@ -604,9 +953,14 @@ export const useLegacyPipeline = (
             setStatus(t('اكتمل بنجاح!', 'Complete!'));
 
         } catch (e: any) {
-            console.error("Pipeline Error:", e);
-            logMsg(`[FATAL ERROR] ${e.message}`);
-            setError(e.message);
+            if (e.name === 'AbortError') {
+                logMsg(`🛑 Pipeline stopped by user.`);
+                setStatus('Stopped');
+            } else {
+                console.error("Pipeline Error:", e);
+                logMsg(`[FATAL ERROR] ` + e.message);
+                setError(e.message);
+            }
         } finally {
             setIsProcessing(false);
         }
@@ -614,6 +968,7 @@ export const useLegacyPipeline = (
 
     return {
         runPipeline,
+        stopPipeline,
         isProcessing,
         progress,
         status,

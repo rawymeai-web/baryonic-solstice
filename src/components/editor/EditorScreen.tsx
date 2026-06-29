@@ -71,6 +71,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     // Pipeline Hook
     const {
         runPipeline,
+        stopPipeline,
         isProcessing,
         progress: pipelineProgress,
         status: pipelineStatus,
@@ -120,8 +121,67 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const _rawCoverPrompt = storyData.actualCoverPrompt || storyData.finalPrompts?.[0]?.imagePrompt || storyData.finalPrompts?.[0] || '';
     const coverPrompt = typeof _rawCoverPrompt === 'string' ? _rawCoverPrompt : (typeof _rawCoverPrompt === 'object' ? JSON.stringify(_rawCoverPrompt) : String(_rawCoverPrompt));
 
-    let masterDNA = storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0] || (storyData.mainCharacter?.imageBases64 && storyData.mainCharacter.imageBases64[0]);
-    let masterDNA2 = storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0];
+    // DNA State Variables
+    // IMPORTANT: Do NOT pre-seed from storyData blob. DNA must come EXCLUSIVELY from the order_dna table.
+    // Pre-seeding from imageDNA[] risks using DNA from a different order that leaked into the storyData JSONB.
+    // We start as undefined and only set once loadModernDNA() resolves.
+    const [masterDNA, setMasterDNA] = useState<string | undefined>(undefined);
+    const [masterDNA2, setMasterDNA2] = useState<string | undefined>(undefined);
+    const [masterRaw, setMasterRaw] = useState<string | undefined>(undefined);
+    const [masterRaw2, setMasterRaw2] = useState<string | undefined>(undefined);
+    // Tracks whether DNA came from the trusted order_dna table, storyData blob fallback, or is still loading
+    const [dnaSource, setDnaSource] = useState<'order_dna' | 'storydata_fallback' | 'loading'>('loading');
+
+    // Fetch modern DNA links from new order_dna table
+    useEffect(() => {
+        const loadModernDNA = async () => {
+            if (!storyData.orderId && !storyData.orderNumber) {
+                // No order ID at all — fall back to storyData blob as last resort
+                setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageBases64?.[0]);
+                setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
+                setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
+                setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
+                setDnaSource('storydata_fallback');
+                return;
+            }
+            try {
+                const orderId = storyData.orderId || storyData.orderNumber!;
+                const dnaRecords = await adminService.fetchOrderDNA(orderId);
+                if (dnaRecords && dnaRecords.length > 0) {
+                    const hAStyle = dnaRecords.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Stylized DNA');
+                    const hAOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Original Photo');
+                    const hBStyle = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA');
+                    const hBOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Original Photo');
+                    
+                    if (hAStyle) setMasterDNA(hAStyle.image_url);
+                    if (hAOrig) setMasterRaw(hAOrig.image_url);
+                    if (hBStyle) setMasterDNA2(hBStyle.image_url);
+                    if (hBOrig) setMasterRaw2(hBOrig.image_url);
+                    setDnaSource('order_dna');
+                    console.log(`✅ [DNA] Loaded ${dnaRecords.length} records from order_dna for ${orderId}`);
+                } else {
+                    // ⚠️ CRITICAL: No order_dna rows found — must fall back to storyData blob.
+                    // This risks sending DNA images that belonged to a different order.
+                    // The correct fix is to upload DNA for this order via the DNA Manager.
+                    console.warn(`⚠️ [DNA] No order_dna records found for order ${orderId}. Falling back to storyData blob DNA — THIS MAY CAUSE WRONG HERO IMAGES!`);
+                    setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageBases64?.[0]);
+                    setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
+                    setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
+                    setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
+                    setDnaSource('storydata_fallback');
+                }
+            } catch (err) {
+                console.warn('Could not load order_dna records', err);
+                // Fall back to storyData blob on error
+                setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageBases64?.[0]);
+                setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
+                setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
+                setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
+                setDnaSource('storydata_fallback');
+            }
+        };
+        loadModernDNA();
+    }, [storyData.orderId, storyData.orderNumber]);
     
     // --- HEALING OVERRIDE: FORCE CORRECT DNA FOR ORDER RWY-9DUXLKKWD ---
     if (storyData.orderId === 'RWY-9DUXLKKWD' || storyData.orderNumber === 'RWY-9DUXLKKWD') {
@@ -135,10 +195,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         }
     }
 
-    // Raw original photos — identity source (separate from styled DNA)
-    const masterRaw = storyData.mainCharacter?.imageRawUrl || (storyData.mainCharacter?.imageBases64?.[0] && storyData.mainCharacter.imageBases64[0]);
-    const masterRaw2 = storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0];
-
     // Local state to handle edits before saving them back to storyData
     const [pageEdits, setPageEdits] = useState<{ [index: number]: { text: string; prompt: string; textSide?: 'left'|'right'; textOffsetX?: number; textOffsetY?: number; imageOffsetX?: number; imageOffsetY?: number; imageScale?: number } }>({});
     const [coverEdit, setCoverEdit] = useState(coverPrompt);
@@ -146,7 +202,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     // Subtitle override: empty = use auto-computed smart subtitle
     const [localSubtitleOverride, setLocalSubtitleOverride] = useState(storyData.coverSubtitle || '');
     const [useSubtitleOverride, setUseSubtitleOverride] = useState(!!storyData.coverSubtitle);
-    const [localCoverTextSide, setLocalCoverTextSide] = useState<'left'|'right'>(storyData.coverTextSide || (language === 'ar' ? 'right' : 'left'));
+    const [localCoverTextSide, setLocalCoverTextSide] = useState<'left'|'right'>(storyData.coverTextSide || (language === 'ar' ? 'left' : 'right'));
 
 
     // Re-sync all local cover state whenever the order changes (prevents stale data from previous orders)
@@ -154,7 +210,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         setLocalTitle(storyData.title || '');
         setLocalSubtitleOverride(storyData.coverSubtitle || '');
         setUseSubtitleOverride(!!storyData.coverSubtitle);
-        setLocalCoverTextSide(storyData.coverTextSide || (language === 'ar' ? 'right' : 'left'));
+        setLocalCoverTextSide(storyData.coverTextSide || (language === 'ar' ? 'left' : 'right'));
 
         setCoverEdit(coverPrompt);
         setPageEdits({}); // Clear all pending page edits too
@@ -184,19 +240,36 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     // Helper to safely extract prompt
     const getPromptForIndex = (pageIndex: number, pageData: any) => {
         // Priority 1: Use the prompt stored on the spread itself (set when it was last painted)
-        if (pageData?.actualPrompt) return pageData.actualPrompt;
+        // HEAL: If actualPrompt contains DNA template markers (e.g. "**TASK:**" or "TECHNICAL MANDATES"),
+        // it means a previous generation polluted it. Skip it so we fall back to the clean blueprint!
+        if (pageData?.actualPrompt && !pageData.actualPrompt.includes('**TASK:**') && !pageData.actualPrompt.includes('TECHNICAL MANDATES')) {
+            return pageData.actualPrompt;
+        }
         // Priority 2: Fall back to finalPrompts array
         // IMPORTANT: finalPrompts[0] = cover, finalPrompts[1] = spread 1, etc.
-        // pageIndex is 0-based for spread 1, so correct mapping is pageIndex + 1
+        // pageIndex is 1-based for inner spreads (i = 1 for spread 1, i = 2 for spread 2).
+        // Therefore, the direct index `pageIndex` points to the correct spread prompt.
         const fp = storyData.finalPrompts as any;
         if (!fp) return '';
         if (Array.isArray(fp) && fp.length > 0 && typeof fp[0] === 'object') {
-            return fp[pageIndex + 1]?.imagePrompt || '';
+            return fp[pageIndex]?.imagePrompt || fp[pageIndex]?.prompt || '';
         }
         if (Array.isArray(fp)) {
-           return fp[pageIndex + 1] || '';
+           return fp[pageIndex] || '';
         }
         return '';
+    };
+
+    const getCleanStylePrompt = (stylePrompt: string | undefined): string => {
+        if (!stylePrompt) return "Painterly children's book illustration style";
+        if (stylePrompt.includes('**TASK:**')) {
+            const match = stylePrompt.match(/Perfect\s+application\s+of\s+the\s+'([^']+)'\s+aesthetic/i);
+            if (match && match[1]) {
+                return match[1];
+            }
+            return "Painterly children's book illustration style";
+        }
+        return stylePrompt;
     };
 
     // Extract schema version from either the new v5.0 English stamp or the legacy v4 JSON meta block
@@ -288,6 +361,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         heroACount: number;        // should always be 1 in DNA-only mode
         heroBCount: number;        // 0 or 1
         promptSent: string;        // the seed prompt text
+        dnaSource: 'order_dna' | 'storydata_fallback' | 'loading'; // where did the DNA come from?
     } | null>(null);
     const [showAuditPanel, setShowAuditPanel] = useState(false);
 
@@ -410,7 +484,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             const ctx = canvas.getContext('2d');
             if (!ctx) throw new Error("Canvas context missing");
 
-            // Fill with white
+            // Fill with solid white so the model can visually see the border regions
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, targetW, targetH);
 
@@ -446,17 +520,78 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             const finalY = dimY - centerShiftY + panY;
 
             ctx.drawImage(img, finalX, finalY, scaledW, scaledH);
-            const paddedBase64 = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+            
+            // AI Aspect Ratio Padding: The AI will crop non-standard aspect ratios (like 2:1).
+            // To prevent this, we pad the canvas to 16:9 (for spreads) or 9:16 (for covers) before sending it.
+            const isSpread = index > 0;
+            const padW = isSpread ? 1600 : 800;
+            const padH = isSpread ? 900 : 1422;
+            const padOffsetX = (padW - targetW) / 2;
+            const padOffsetY = (padH - targetH) / 2;
+
+            const padCanvas = document.createElement('canvas');
+            padCanvas.width = padW;
+            padCanvas.height = padH;
+            const padCtx = padCanvas.getContext('2d');
+            if (padCtx) {
+                padCtx.fillStyle = '#FFFFFF';
+                padCtx.fillRect(0, 0, padW, padH);
+                // Draw the original image exactly where it belongs within the padded 16:9 area
+                padCtx.drawImage(img, finalX + padOffsetX, finalY + padOffsetY, scaledW, scaledH);
+            }
+
+            // Export as JPEG
+            const paddedBase64 = padCanvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+
+            // Debug: log exactly what white borders are being sent to the model
+            const borderLeft = Math.max(0, finalX + padOffsetX);
+            const borderTop = Math.max(0, finalY + padOffsetY);
+            const borderRight = Math.max(0, padW - (finalX + padOffsetX + scaledW));
+            const borderBottom = Math.max(0, padH - (finalY + padOffsetY + scaledH));
+            console.log(`[Outpaint] Padded 16:9 AI Input — L:${borderLeft.toFixed(0)}px R:${borderRight.toFixed(0)}px T:${borderTop.toFixed(0)}px B:${borderBottom.toFixed(0)}px`);
+            
+            // DIAGNOSTIC DOWNLOAD: Force the browser to download the exact image being sent to the AI
+            try {
+                const a = document.createElement('a');
+                a.href = 'data:image/jpeg;base64,' + paddedBase64;
+                a.download = `DEBUG_SENT_TO_AI_SPREAD_${index}.jpg`;
+                a.click();
+            } catch (e) {
+                console.error("Failed to download debug image", e);
+            }
 
             // 4. Send to backend
             const response = await backendApi.outpaintSpreadImage({
                 imageBase64: paddedBase64,
-                stylePrompt: storyData.selectedStylePrompt || 'Painterly style',
-                childDNA: storyData.styleReferenceImageBase64 || storyData.styleReferenceImageUrl,
-                secondDNA: storyData.secondCharacterImageBase64
+                stylePrompt: getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly style',
+                childDNA: masterDNA || storyData.styleReferenceImageBase64 || storyData.styleReferenceImageUrl,
+                secondDNA: masterDNA2 || storyData.secondCharacterImageBase64
             });
 
             if (response.imageBase64) {
+                // COMPOSITING: Place the original artwork exactly on top of the AI's new extended background.
+                // This preserves 100% of the original characters while utilizing the AI's filled borders.
+                try {
+                    const aiImg = new Image();
+                    aiImg.crossOrigin = 'anonymous';
+                    aiImg.src = `data:image/jpeg;base64,${response.imageBase64}`;
+                    await new Promise((r) => { aiImg.onload = r; });
+                    
+                    ctx.clearRect(0, 0, targetW, targetH);
+                    
+                    // Draw AI image stretched back to padW/padH to exactly reverse the spatial mapping,
+                    // and offset it negatively so the targetW/targetH center perfectly aligns.
+                    ctx.drawImage(aiImg, -padOffsetX, -padOffsetY, padW, padH);
+                    
+                    // Draw original unedited image on top at its exact coordinates
+                    ctx.drawImage(img, finalX, finalY, scaledW, scaledH);
+                    
+                    response.imageBase64 = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+                    console.log("[Outpaint] Successfully composited original artwork over AI background.");
+                } catch (compositeErr) {
+                    console.error("[Outpaint] Compositing failed, falling back to pure AI image", compositeErr);
+                }
+
                 // Save new image
                 let newStory = { ...storyData };
                 if (index === 0) {
@@ -517,24 +652,15 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         try {
             // DNA-ONLY (v6.0): 1 image per hero. Only the approved stylized DNA reference is sent.
             // No raw photos mixed in — ever.
-            // Priority: 1) Customer locked style (styleReferenceImageBase64), 2) Locked selection from dnaAudit, 3) Legacy fallbacks.
-            const heroASelectionIdx = storyData.dnaAudit?.heroA?.selectedPreviewIndex ?? 0;
-            const heroADNA: string | undefined =
-                storyData.styleReferenceImageBase64 ||
-                storyData.styleReferenceImageUrl ||
-                storyData.mainCharacter?.imageDNA?.[heroASelectionIdx] ||
-                storyData.mainCharacter?.imageDNA?.[0] ||
-                storyData.mainCharacter?.imageBases64?.[0];
+            // Priority: 1) Locked selection from dnaAudit, 2) First generated DNA, 3) Raw photo fallback
+            // Priority: 1) First generated DNA, 2) Raw photo fallback
+            const heroADNA: string | undefined = masterDNA;
 
-            const heroBSelectionIdx = storyData.dnaAudit?.heroB?.selectedPreviewIndex ?? 0;
             const heroBDNA: string | undefined = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object')
-                ? (storyData.secondCharacterImageBase64 ||
-                   storyData.secondCharacter?.imageDNA?.[heroBSelectionIdx] ||
-                   storyData.secondCharacter?.imageDNA?.[0] ||
-                   storyData.secondCharacter?.imageBases64?.[0])
+                ? masterDNA2
                 : undefined;
 
-            const visualDNA = storyData.selectedStylePrompt || 'Painterly, flat 2D illustrated children\'s book style';
+            const visualDNA = getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly, flat 2D illustrated children\'s book style';
 
             let promptToUse = '';
             if (index === 'cover') {
@@ -552,6 +678,11 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             const compressedHeroA = await compressSingle(heroADNA);
             const compressedHeroB = await compressSingle(heroBDNA);
 
+            let safePromptToUse = typeof promptToUse === 'string' ? promptToUse : JSON.stringify(promptToUse);
+            // HEAL: Rewrite legacy image index bindings that expect raw photos (which we no longer send)
+            safePromptToUse = safePromptToUse.replace(/Image 2 defines the character for \[\[HERO_1\]\]/g, "Image 1 defines the character for [[HERO_1]]");
+            safePromptToUse = safePromptToUse.replace(/Image 4 defines the character for \[\[HERO_2\]\]/g, "Image 2 defines the character for [[HERO_2]]");
+
             // --- GENERATION AUDIT: capture exactly what will be sent ---
             const auditSnapshot = {
                 spreadIndex: index,
@@ -559,7 +690,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 heroBUrl: compressedHeroB ? `data:image/jpeg;base64,${compressedHeroB.replace(/^data:image\/\w+;base64,/, '')}` : null,
                 heroACount: compressedHeroA ? 1 : 0,
                 heroBCount: compressedHeroB ? 1 : 0,
-                promptSent: typeof promptToUse === 'string' ? promptToUse : JSON.stringify(promptToUse),
+                promptSent: safePromptToUse,
+                dnaSource,
             };
             setLastGenerationAudit(auditSnapshot);
             setShowAuditPanel(true);
@@ -598,15 +730,21 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 const newStory = {
                     ...storyData,
                     coverImageUrl: imgRes.imageBase64,
+                    coverOriginalUrl: undefined,
+                    coverQcStatus: undefined,
                     // Keep the editable seed prompt in actualCoverPrompt (what you see in the textarea)
                     actualCoverPrompt: imgRes.seedPrompt || promptToUse,
                     // Store the REAL Gemini prompt separately for troubleshooting
-                    lastGeminiCoverPrompt: imgRes.fullPrompt
+                    lastGeminiCoverPrompt: imgRes.fullPrompt,
+                    coverGenerationModel: imgRes.modelUsed
                 };
                 onUpdateStory({
                     coverImageUrl: imgRes.imageBase64,
+                    coverOriginalUrl: undefined,
+                    coverQcStatus: undefined,
                     actualCoverPrompt: imgRes.seedPrompt || promptToUse,
-                    lastGeminiCoverPrompt: imgRes.fullPrompt
+                    lastGeminiCoverPrompt: imgRes.fullPrompt,
+                    coverGenerationModel: imgRes.modelUsed
                 } as any);
                 // Keep the textarea as-is (editable seed) — do NOT replace with compiled Gemini prompt
                 await adminService.saveOrder(storyData.orderId || 'RWY-UNKNOWN', newStory, shippingDetails || {});
@@ -615,10 +753,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 newSpreads[index] = {
                     ...newSpreads[index],
                     illustrationUrl: imgRes.imageBase64,
+                    qcOriginalUrl: undefined,
+                    qcStatus: undefined,
                     // Keep the editable seed prompt (what you see in the textarea)
                     actualPrompt: imgRes.seedPrompt || promptToUse,
                     // Store the REAL Gemini prompt separately for troubleshooting
-                    lastGeminiPrompt: imgRes.fullPrompt
+                    lastGeminiPrompt: imgRes.fullPrompt,
+                    generationModel: imgRes.modelUsed
                 };
                 const newStory = { ...storyData, spreads: newSpreads };
                 
@@ -792,7 +933,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 ? Array.from(new Set([secondRawPhoto, secondStylizedDNA].filter(Boolean) as string[]))
                 : undefined;
 
-            const visualDNA = storyData.selectedStylePrompt || 'Painterly children\'s book illustration style';
+            const visualDNA = getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly children\'s book illustration style';
             
             const compressSet = async (set: string[] | undefined): Promise<string[] | undefined> => {
                 if (!set || set.length === 0) return undefined;
@@ -817,7 +958,11 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         secondReferenceBase64: compressedSecond
                     });
                     if (imgRes.imageBase64) {
-                        newSpreads[i] = { ...newSpreads[i], illustrationUrl: imgRes.imageBase64 };
+                        newSpreads[i] = { 
+                            ...newSpreads[i], 
+                            illustrationUrl: imgRes.imageBase64,
+                            generationModel: imgRes.modelUsed
+                        };
                         onUpdateStory({ spreads: [...newSpreads] });
                     }
                 } catch (e) {
@@ -857,7 +1002,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         leftText: editedText, 
                         rightText: '',
                         textBlocks: [] // CLEAR blocks to force single-block manual layout
-                    };
+                    } as any;
                 }
                 if (pageEdits[i]?.prompt !== undefined && pageEdits[i].prompt !== finalSpreads[i].actualPrompt) {
                     finalSpreads[i] = { ...finalSpreads[i], actualPrompt: pageEdits[i].prompt };
@@ -904,7 +1049,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     };
 
     const handleSilentSave = async () => {
-        if (!storyData.orderId) return;
         const finalSpreads = [...spreads];
         for (let i = 0; i < finalSpreads.length; i++) {
             const editedText = pageEdits[i]?.text;
@@ -915,7 +1059,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     leftText: editedText, 
                     rightText: '',
                     textBlocks: [] // CLEAR blocks to force single-block manual layout
-                };
+                } as any;
             }
             if (pageEdits[i]?.prompt !== undefined && pageEdits[i].prompt !== finalSpreads[i].actualPrompt) {
                 finalSpreads[i] = { ...finalSpreads[i], actualPrompt: pageEdits[i].prompt };
@@ -940,12 +1084,16 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             }
         }
         onUpdateStory({ spreads: finalSpreads, actualCoverPrompt: coverEdit, title: localTitle, coverSubtitle: localSubtitle, coverTextSide: localCoverTextSide });
-        ClientLogger.log('SILENT_SAVE', { orderId: storyData.orderId, title: localTitle });
-        try {
-            await adminService.saveOrder(storyData.orderId as string, { ...storyData, spreads: finalSpreads, actualCoverPrompt: coverEdit, title: localTitle, coverSubtitle: localSubtitle, coverTextSide: localCoverTextSide }, shippingDetails || {});
-        } catch(e) {
-            ClientLogger.error('SILENT_SAVE_FAILED', e);
-            console.error("Silent save failed", e);
+        
+        const orderId = storyData.orderId || storyData.orderNumber;
+        if (orderId) {
+            ClientLogger.log('SILENT_SAVE', { orderId, title: localTitle });
+            try {
+                await adminService.saveOrder(orderId as string, { ...storyData, spreads: finalSpreads, actualCoverPrompt: coverEdit, title: localTitle, coverSubtitle: localSubtitle, coverTextSide: localCoverTextSide }, shippingDetails || {});
+            } catch(e) {
+                ClientLogger.error('SILENT_SAVE_FAILED', e);
+                console.error("Silent save failed", e);
+            }
         }
     };
 
@@ -1054,7 +1202,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                     Generation Audit
                                 </span>
                                 <span className="text-[10px] bg-green-900 text-green-300 px-2 py-0.5 rounded-full font-mono">
-                                    Spread {lastGenerationAudit.spreadIndex}
+                                    {lastGenerationAudit.spreadIndex === 'cover' ? 'Spread cover' : `Spread ${lastGenerationAudit.spreadIndex}`}
                                 </span>
                             </div>
                             <button
@@ -1063,6 +1211,25 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                 title="Close audit panel"
                             >×</button>
                         </div>
+
+                        {/* DNA Source Warning Banner */}
+                        {lastGenerationAudit.dnaSource === 'storydata_fallback' && (
+                            <div className="mx-4 mt-3 p-3 bg-orange-950 border-2 border-orange-500 rounded-xl shrink-0">
+                                <div className="flex items-start gap-2">
+                                    <span className="text-orange-400 text-base shrink-0">⚠️</span>
+                                    <div>
+                                        <p className="text-[11px] font-black text-orange-300 uppercase tracking-wider mb-1">DNA Source: StoryData Blob (Untrusted)</p>
+                                        <p className="text-[10px] text-orange-400 leading-relaxed">No <code className="bg-orange-900 px-1 rounded">order_dna</code> rows found for this order. Images below came from the storyData JSONB — which may contain DNA from a DIFFERENT order. This is the likely cause of wrong hero clothes/looks.</p>
+                                        <p className="text-[10px] text-orange-300 mt-1 font-bold">👉 Fix: Open DNA Manager → Upload correct hero DNA images → Retry Paint Art.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {lastGenerationAudit.dnaSource === 'order_dna' && (
+                            <div className="mx-4 mt-3 px-3 py-1.5 bg-green-950 border border-green-700 rounded-xl shrink-0">
+                                <p className="text-[10px] font-bold text-green-400">✅ DNA Source: <code className="bg-green-900 px-1 rounded">order_dna</code> table — Trusted & Verified</p>
+                            </div>
+                        )}
 
                         {/* Images Section */}
                         <div className="px-4 pt-3 pb-2 border-b border-gray-800 shrink-0">
@@ -1215,7 +1382,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         )}
 
                         {/* Hero B — Raw Photo + DNA side by side */}
-                        {(masterRaw2 || masterDNA2) && (
+                        {storyData.useSecondCharacter && (masterRaw2 || masterDNA2) && (
                             <div>
                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Hero B</p>
                                 <div className="flex gap-2 w-full">
@@ -1339,6 +1506,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             <h3 className="text-xl font-black mb-6 text-brand-navy uppercase tracking-tighter flex items-center gap-3">
                                 <div className="w-8 h-8 bg-brand-navy text-white rounded-lg flex items-center justify-center text-xs">C</div>
                                 {t('الغلاف', 'Cover Design')}
+                                {storyData.coverGenerationModel && (
+                                    <div className="ml-3 px-3 py-1 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200/50 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                        <span className="text-[10px] text-indigo-600 font-extrabold uppercase tracking-wider font-mono">
+                                            🤖 {storyData.coverGenerationModel.includes('pro') ? 'Gemini 3 Pro (Nano Banana Pro)' : 'Gemini 3 Flash (Nano Banana 2)'}
+                                        </span>
+                                    </div>
+                                )}
                                 {storyData.coverQcStatus === 'flagged' && (
                                     <span className="ml-auto text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full font-bold border border-red-200">
                                         ⚠️ QA Flagged for Intervention
@@ -1347,17 +1521,41 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             </h3>
                             <div className="flex flex-col xl:flex-row gap-10">
                                 <div className="w-full xl:w-1/2 flex flex-col gap-4">
-                                    <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner flex items-center justify-center border-2 border-dashed border-gray-200 group">
-                                        {uploadingIndex === 'cover' ? (
-                                            <div className="flex flex-col items-center gap-3">
-                                                <Spinner size="md" color="text-brand-orange" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
+                                    {storyData.coverOriginalUrl ? (
+                                        <div className="grid grid-cols-2 gap-4 w-full">
+                                            <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner border border-red-300 group">
+                                                <img src={storyData.coverOriginalUrl.startsWith('http') || storyData.coverOriginalUrl.startsWith('data:') ? storyData.coverOriginalUrl : `data:image/jpeg;base64,${storyData.coverOriginalUrl}`} className="w-full h-full object-cover" />
+                                                <div className="absolute top-3 left-3 bg-red-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow">
+                                                    Flagged (Attempt 1)
+                                                </div>
                                             </div>
-                                        ) : (
-                                            coverUrl ? <img src={coverUrl.startsWith('http') || coverUrl.startsWith('data:') ? coverUrl : `data:image/jpeg;base64,${coverUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <Spinner size="md" color="text-brand-orange" />
-                                        )}
-                                        <div className="absolute inset-0 bg-brand-navy/0 group-hover:bg-brand-navy/5 transition-colors duration-300 pointer-events-none"></div>
-                                    </div>
+                                            <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner border border-emerald-300 group">
+                                                {uploadingIndex === 'cover' ? (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                                                        <Spinner size="md" color="text-brand-orange" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
+                                                    </div>
+                                                ) : (
+                                                    coverUrl ? <img src={coverUrl.startsWith('http') || coverUrl.startsWith('data:') ? coverUrl : `data:image/jpeg;base64,${coverUrl}`} className="w-full h-full object-cover" /> : <Spinner size="md" color="text-brand-orange" />
+                                                )}
+                                                <div className="absolute top-3 left-3 bg-emerald-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow animate-pulse">
+                                                    Regenerated (Attempt 2)
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner flex items-center justify-center border-2 border-dashed border-gray-200 group">
+                                            {uploadingIndex === 'cover' ? (
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <Spinner size="md" color="text-brand-orange" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
+                                                </div>
+                                            ) : (
+                                                coverUrl ? <img src={coverUrl.startsWith('http') || coverUrl.startsWith('data:') ? coverUrl : `data:image/jpeg;base64,${coverUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <Spinner size="md" color="text-brand-orange" />
+                                            )}
+                                            <div className="absolute inset-0 bg-brand-navy/0 group-hover:bg-brand-navy/5 transition-colors duration-300 pointer-events-none"></div>
+                                        </div>
+                                    )}
                                     <div className="flex gap-2">
                                         <Button variant="secondary" onClick={() => handleUploadImage('cover')} className="flex-[2] text-xs py-3 font-black uppercase tracking-widest px-2">{t('رفع صورة', 'Upload Art')}</Button>
                                         <Button variant="outline" onClick={handleFlipCover} disabled={regeneratingIndex === 'cover' || !coverUrl} className="flex-1 text-xs py-3 font-black uppercase tracking-widest px-1 text-gray-500 border-gray-200">
@@ -1485,7 +1683,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                 <SpreadGeminiEditPanel
                                     spreadIndex={0}
                                     illustrationUrl={coverUrl}
-                                    stylePrompt={storyData.selectedStylePrompt || 'Painterly children\'s book illustration style'}
+                                    stylePrompt={getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly children\'s book illustration style'}
                                     childDNA={masterDNA}
                                     secondDNA={masterDNA2}
                                     onImageEdited={newB64 => {
@@ -1545,6 +1743,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                 <h3 className="text-xl font-black mb-6 text-brand-navy uppercase tracking-tighter flex items-center gap-3">
                                     <div className="w-8 h-8 bg-brand-orange/10 text-brand-orange rounded-lg flex items-center justify-center text-xs">{i}</div>
                                     {t('صفحة', 'Spread')} {i}
+                                    {spreads[i]?.generationModel && (
+                                        <div className="ml-3 px-3 py-1 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200/50 rounded-xl flex items-center gap-1.5 shadow-sm">
+                                            <span className="text-[10px] text-teal-600 font-extrabold uppercase tracking-wider font-mono">
+                                                🤖 {spreads[i].generationModel.includes('pro') ? 'Gemini 3 Pro (Nano Banana Pro)' : 'Gemini 3 Flash (Nano Banana 2)'}
+                                            </span>
+                                        </div>
+                                    )}
                                     {spreads[i]?.qcStatus === 'flagged' && (
                                         <span className="ml-auto text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full font-bold border border-red-200">
                                             ⚠️ QA Flagged for Intervention
@@ -1553,25 +1758,59 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                 </h3>
                                 <div className="flex flex-col xl:flex-row gap-10">
                                     <div className="w-full xl:w-1/2 flex flex-col gap-4">
-                                        <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner flex items-center justify-center border-2 border-dashed border-gray-200 group">
-                                            {uploadingIndex === i ? (
-                                                <div className="flex flex-col items-center gap-3">
-                                                    <Spinner size="md" color="text-brand-orange" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
+                                        {spreads[i]?.qcOriginalUrl ? (
+                                            <div className="grid grid-cols-2 gap-4 w-full">
+                                                <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner border border-red-300 group">
+                                                    <img src={spreads[i].qcOriginalUrl.startsWith('http') || spreads[i].qcOriginalUrl.startsWith('data:') ? spreads[i].qcOriginalUrl : `data:image/jpeg;base64,${spreads[i].qcOriginalUrl}`} className="w-full h-full object-cover" />
+                                                    <div className="absolute top-3 left-3 bg-red-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow">
+                                                        Flagged (Attempt 1)
+                                                    </div>
                                                 </div>
-                                            ) : spreads[i]?.illustrationUrl ? (
-                                                <img src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                                            ) : (
-                                                <div className="flex flex-col items-center gap-4 text-gray-300">
-                                                    {isAnyGenerating ? (
-                                                        <div className="flex flex-col items-center gap-3">
+                                                <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner border border-emerald-300 group">
+                                                    {uploadingIndex === i ? (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                                                             <Spinner size="md" color="text-brand-orange" />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Painting...</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
                                                         </div>
-                                                    ) : <span className="text-sm font-medium">{t('جاري التجهيز...', 'Ready to Paint')}</span>}
+                                                    ) : spreads[i]?.illustrationUrl ? (
+                                                        <img src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-4 text-gray-300">
+                                                            {isAnyGenerating ? (
+                                                                <div className="flex flex-col items-center gap-3">
+                                                                    <Spinner size="md" color="text-brand-orange" />
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Painting...</span>
+                                                                </div>
+                                                            ) : <span className="text-sm font-medium">{t('جاري التجهيز...', 'Ready to Paint')}</span>}
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute top-3 left-3 bg-emerald-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow animate-pulse">
+                                                        Regenerated (Attempt 2)
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner flex items-center justify-center border-2 border-dashed border-gray-200 group">
+                                                {uploadingIndex === i ? (
+                                                    <div className="flex flex-col items-center gap-3">
+                                                        <Spinner size="md" color="text-brand-orange" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
+                                                    </div>
+                                                ) : spreads[i]?.illustrationUrl ? (
+                                                    <img src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                                ) : (
+                                                    <div className="flex flex-col items-center gap-4 text-gray-300">
+                                                        {isAnyGenerating ? (
+                                                            <div className="flex flex-col items-center gap-3">
+                                                                <Spinner size="md" color="text-brand-orange" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Painting...</span>
+                                                            </div>
+                                                        ) : <span className="text-sm font-medium">{t('جاري التجهيز...', 'Ready to Paint')}</span>}
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-brand-navy/0 group-hover:bg-brand-navy/5 transition-colors duration-300 pointer-events-none"></div>
+                                            </div>
+                                        )}
                                         <div className="flex gap-3">
                                             <Button variant="secondary" onClick={() => handleUploadImage(i)} className="flex-1 text-xs py-3 font-black uppercase tracking-widest">{t('رفع', 'Manual Upload')}</Button>
                                             <Button onClick={() => handleRegenerateImage(i)} disabled={regeneratingIndex === i} className="flex-1 text-xs py-3 font-black uppercase tracking-widest shadow-lg shadow-brand-orange/20">
@@ -1691,7 +1930,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         <SpreadGeminiEditPanel
                                             spreadIndex={i}
                                             illustrationUrl={spreads[i]?.illustrationUrl}
-                                            stylePrompt={storyData.selectedStylePrompt || 'Painterly children\'s book illustration style'}
+                                            stylePrompt={getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly children\'s book illustration style'}
                                             childDNA={masterDNA}
                                             secondDNA={masterDNA2}
                                             onImageEdited={newB64 => handleGeminiImageEdit(i, newB64)}
@@ -1751,6 +1990,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden shadow-inner">
                                 <div className="h-full bg-gradient-to-r from-brand-orange to-orange-400 transition-all duration-700 ease-out shadow-[0_0_10px_rgba(240,90,40,0.5)]" style={{ width: `${currentProgress}%` }}></div>
                             </div>
+                            <button
+                                onClick={stopPipeline}
+                                className="w-full mt-2 py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-black text-xs font-mono uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-red-900/20"
+                            >
+                                Stop Rendering
+                            </button>
                         </div>
                     )}
                 </div>

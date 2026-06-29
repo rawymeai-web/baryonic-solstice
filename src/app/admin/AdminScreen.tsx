@@ -8,7 +8,6 @@ import * as promptService from '../../services/promptService';
 import * as fileService from '../../services/fileService';
 import * as imageStore from '../../services/imageStore';
 import * as storageCleanup from '../../services/storageCleanupService';
-import { supabase } from '../../utils/supabaseClient';
 import type { Language, AdminOrder, AdminCustomer, OrderStatus, ProductSize, StoryTheme, AppSettings } from '../../types';
 import { OrderPreviewModal } from '../../components/admin/OrderPreviewModal';
 import { ProductEditorModal } from '../../components/admin/ProductEditorModal';
@@ -467,30 +466,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
         setLoadingOrderId(order.orderNumber);
         setLoadingAction('reset');
         try {
-            // 1. Clear Jobs from DB
-            const { error: jobErr } = await supabase.from('order_jobs').delete().eq('order_id', order.orderNumber);
-            if (jobErr) throw jobErr;
-
-            // 2. Reset Story Data (Scrub visuals, keep meta)
-            const cleanStoryData = { ...(order.storyData as any) };
-            delete cleanStoryData.pages;
-            delete cleanStoryData.spreads;
-            delete cleanStoryData.qa_logs;
-            delete cleanStoryData.generation_snapshot;
-            delete cleanStoryData.coverImageUrl;
-            delete cleanStoryData.finalPrompts;
-            delete cleanStoryData.spreadPlan;
-            // Optionally clear blueprint if it's "poisoned" by the bug
-            // delete cleanStoryData.blueprint;
-
-            const { error: orderErr } = await supabase.from('orders').update({
-                status: 'paid',
-                story_data: cleanStoryData,
-                error_message: null
-            }).eq('order_number', order.orderNumber);
-
-            if (orderErr) throw orderErr;
-
+            await adminService.hardResetOrder(order.orderNumber);
             alert(`Order ${order.orderNumber} successfully sanitized and reset.`);
             refreshOrders();
         } catch (err: any) {
@@ -611,14 +587,14 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
             {editorOrder && editorOrder.storyData && (
                 <div className="fixed inset-0 z-50 bg-white overflow-auto">
                     <EditorScreen
-                        storyData={editorOrder.storyData as any}
+                        storyData={{ ...editorOrder.storyData, orderId: editorOrder.orderNumber } as any}
                         language={editorOrder.storyData.language || language}
                         isGenerating={false}
                         generationProgress={isLegacyMode ? 0 : 100}
                         isLegacy={isLegacyMode}
                         isResume={isResumeMode}
                         onUpdateStory={async (updates) => {
-                            const merged = { ...editorOrder.storyData, ...updates } as any;
+                            const merged = { ...editorOrder.storyData, ...updates, orderId: editorOrder.orderNumber } as any;
                             // Optimistic update for immediate visual feedback
                             setEditorOrder({ ...editorOrder, storyData: merged });
                             try {
@@ -629,7 +605,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                         }}
                         onFinalize={async (args) => { 
                             try {
-                                const merged = { ...editorOrder.storyData, ...args } as any;
+                                const merged = { ...editorOrder.storyData, ...args, orderId: editorOrder.orderNumber } as any;
                                 await adminService.saveOrder(editorOrder.orderNumber, merged, editorOrder.shippingDetails, editorOrder.total);
                                 
                                 // Automatically trigger download on finalize
@@ -652,7 +628,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                 refreshOrders();
                             }
                         }}
-                        onPreview={(data) => setPreviewOrder({ ...editorOrder, storyData: data })}
+                        onPreview={() => setPreviewOrder(editorOrder)}
                         onBack={() => { setEditorOrder(null); setIsLegacyMode(false); setIsResumeMode(false); }}
                         shippingDetails={editorOrder.shippingDetails}
                         total={editorOrder.total}
@@ -1190,7 +1166,7 @@ const SettingsView: React.FC = () => {
                                 className="w-full p-5 bg-white/60 border border-white/80 rounded-2xl outline-none focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange transition-all font-black text-brand-navy"
                             >
                                 <option value="gemini-2.5-flash-image">Gemini 2.5 Image (Recommended)</option>
-                                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Text/Vision)</option>
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Text/Vision)</option>
                                 <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                             </select>
                         </div>

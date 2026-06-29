@@ -169,6 +169,7 @@ export interface CoverDebugImages {
 export interface StoryData {
   orderNumber?: string;
   coverQcStatus?: string;
+  coverOriginalUrl?: string;
   prompts?: any[];
   mainCharacterImageBase64?: string;
   secondCharacterImageUrl?: string;
@@ -191,6 +192,7 @@ export interface StoryData {
   coverImageUrl?: string;
   actualCoverPrompt?: string;
   coverTextSide?: 'left' | 'right';
+  coverGenerationModel?: string;
   spreadCount?: number;   // Resolved from settings.defaultSpreadCount; defaults to 8
   spreads: Spread[];      // Cover (index 0) + N inner spreads
   pages?: Page[];         // @deprecated — kept for legacy order migration only
@@ -405,11 +407,14 @@ export interface Page {
   debugContext?: any;
   sceneBlueprint?: any;
   pageSummary?: string;
+  qcStatus?: string;
+  generationModel?: string;
 }
 
 /** One visual unit = one широко illustration + its two halves of story text */
 export interface Spread {
   qcStatus?: string;
+  qcOriginalUrl?: string;
   spreadNumber: number;       // 0 = cover, 1–N = inner spreads
   illustrationUrl: string;    // Supabase Storage public URL (or temp base64 during generation)
   leftText: string;           // Story text displayed on the left half
@@ -417,6 +422,7 @@ export interface Spread {
   actualPrompt?: string;      // The exact image prompt used (user-editable seed)
   lastGeminiPrompt?: string;  // The final prompt actually sent to Gemini (audit trail)
   textSide?: 'left' | 'right'; // Which side the subject occupies (drives layout)
+  generationModel?: string;   // The AI model used to generate this image
   // Layout overrides (set in EditorScreen, applied in fileService PDF rendering)
   textOffsetX?: number;       // PDF mm — left edge of text box (overrides auto calculation)
   textOffsetY?: number;       // PDF mm — top edge of text box (overrides auto calculation)

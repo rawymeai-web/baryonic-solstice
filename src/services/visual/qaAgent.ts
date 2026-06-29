@@ -7,7 +7,7 @@ export async function runImageQACheck(
     dnaImages: { base64: string, label: string }[]
 ) {
     const model = ai().getGenerativeModel({
-        model: 'gemini-1.5-pro-latest',
+        model: 'gemini-2.5-pro',
         generationConfig: {
             temperature: 0.2,
             responseMimeType: "application/json",
@@ -35,7 +35,7 @@ Here is the Blueprint (JSON) for this spread:
 ${blueprintJson}
 
 Evaluate the generated spread based on the following criteria:
-1. Character Consistency: Does the character in the spread closely match the facial features and identity of the Reference DNA Images? (Pay special attention to skin tone, hair, and facial structure).
+1. Character Consistency: Does the character in the spread look like the EXACT same person as in the Reference DNA Images? (Pay special attention to face shape, eye shape, nose shape, and bone structure). A generic cartoonish simplification that loses the unique facial likeness of the reference is a FAIL. The character must be highly consistent and recognizable, even when displaying different emotions or placed in darker/shaded environmental lighting.
 2. Style Fidelity: Does the overall art style match the intended look?
 3. Text Clearance: Based on the blueprint, is the designated text zone completely free of visual clutter, limbs, and characters? Which side is recommended for text?
 

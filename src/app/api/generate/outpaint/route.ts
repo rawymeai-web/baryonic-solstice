@@ -2,17 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sanitizePrompt } from '../../../../services/generation/imageGenerator';
 import { ai as getAi } from '../../../../services/generation/modelGateway';
 
+export const maxDuration = 300;
+
 /**
  * POST /api/generate/outpaint
  *
- * Accepts a padded/scaled spread illustration with empty (white) borders.
- * Passes it to Gemini with a strict "generative fill / outpaint" mandate:
- *   — Keep all original characters, poses, and central scene intact.
- *   — Generate and fill the empty/white space seamlessly to match the existing environment.
+ * Accepts a padded/scaled spread illustration with empty (white) borders and
+ * uses gemini-2.5-flash-image (the IMAGE EDITING model) to seamlessly fill the
+ * empty areas by extending the existing scene.
+ *
+ * Uses the EXACT same pattern as /api/generate/edit-image which works correctly:
+ *   - Image(s) as raw inlineData first (no text label before them)
+ *   - Text prompt last
+ *   - gemini-2.5-flash-image model
  *
  * Body:
- *   imageBase64     — padded image as base64 (no data: prefix needed)
- *   stylePrompt     — art style string for style consistency
+ *   imageBase64  — padded image as base64 (no data: prefix needed)
+ *   stylePrompt  — art style string
+ *   childDNA?    — optional Hero A DNA reference
+ *   secondDNA?   — optional Hero B DNA reference
  */
 
 async function toRawBase64(input: string): Promise<string | null> {
@@ -26,7 +34,7 @@ async function toRawBase64(input: string): Promise<string | null> {
         }
         return input.includes(',') ? input.split(',')[1] : input;
     } catch (err) {
-        console.error("Error converting image to base64:", err);
+        console.error('[Outpaint] Error converting image to base64:', err);
         return null;
     }
 }
@@ -34,30 +42,25 @@ async function toRawBase64(input: string): Promise<string | null> {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const {
-            imageBase64,
-            stylePrompt,
-            childDNA,
-            secondDNA
-        } = body;
+        const { imageBase64, stylePrompt, childDNA, secondDNA } = body;
 
         if (!imageBase64) {
-            return NextResponse.json(
-                { error: 'imageBase64 is required' },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: 'imageBase64 is required' }, { status: 400 });
         }
 
-        const safeStyle = sanitizePrompt(stylePrompt || 'Painterly children\'s book illustration style');
+        const safeStyle = sanitizePrompt(stylePrompt || "Painterly children's book illustration style");
 
-        // Build multi-modal contents array
+        // ── Build contents array — IMAGE FIRST, TEXT LAST (edit-image pattern) ──
         const contents: any[] = [];
 
-        // Normalize all inputs to RAW BASE64
+        // Slot 1: The padded spread that needs empty space filled
         const rawSpread = await toRawBase64(imageBase64);
-        if (!rawSpread) return NextResponse.json({ error: 'Failed to process spread image' }, { status: 400 });
+        if (!rawSpread) {
+            return NextResponse.json({ error: 'Failed to process spread image' }, { status: 400 });
+        }
         contents.push({ inlineData: { mimeType: 'image/jpeg', data: rawSpread } });
 
+        // Optional character references (helps model keep faces consistent in filled areas)
         const rawChild = await toRawBase64(childDNA);
         if (rawChild) {
             contents.push({ inlineData: { mimeType: 'image/jpeg', data: rawChild } });
@@ -68,51 +71,60 @@ export async function POST(req: NextRequest) {
             contents.push({ inlineData: { mimeType: 'image/jpeg', data: rawSecond } });
         }
 
-        const editPrompt = `You are a professional children's book illustrator performing a GENERATIVE FILL (OUTPAINT) on an existing scene.
+        // ── Outpaint prompt ────────────────
+        const editPrompt = `You are a professional children's book illustrator. Your task is to perform a GENERATIVE ZOOM OUT (outpainting) on the provided scene.
 
-**THE ORIGINAL PADDED ILLUSTRATION:** See Attached Image 1 (inlineData[0]). This image contains a central artwork surrounded by blank/empty space (white borders) because it was zoomed out or panned.
-${childDNA ? `\n**CHARACTER REFERENCE A:** See Attached Image ${secondDNA ? '2' : '2'} — match this character's face, hair, and clothing exactly if they appear in the new generated areas.` : ''}${secondDNA ? `\n**CHARACTER REFERENCE B:** See final attached image — match this character identically.` : ''}
+**THE SCENE (IMAGE 1):** See Attached Image 1. This image contains central artwork surrounded by a SOLID WHITE BORDER. This is because the camera has zoomed out, leaving the edges of the 16:9 canvas blank.
 
-**EDIT INSTRUCTION:**
-Seamlessly fill in the blank/white borders by extending the existing landscape, background, and environment. Ensure the transition between the original central art and the new extended borders is completely invisible and seamless. 
+**YOUR TASK — EXTEND THE SCENE:**
+You must recreate this exact scene, but ZOOMED OUT to fill the entire 16:9 canvas. 
+You must replace the solid white borders by naturally extending the landscape, environment, sky, ground, or background outward.
 
 **STRICT RULES:**
-- PRESERVE: Do NOT alter the central original artwork. Keep all existing characters, objects, and layout exactly as they are in the non-white areas.
-- EXTEND: Only imagine and generate the missing parts of the environment to fill the entire 16:9 panoramic canvas.
-- PRESERVE STYLE: Match the existing art style perfectly — "${safeStyle}".
-- NO TEXT: Zero letters, words, or typography anywhere in the output image.
-- QUALITY: Ultra-high resolution, 4K quality, masterpiece children's illustration.`;
+- DO NOT CROP: Do not just return the central image. You must generate a wider field of view that fills the white borders with new background content.
+- PRESERVE THE CENTER: Keep the characters, objects, and central composition exactly as they appear in the original artwork.
+- EXTEND THE EDGES: Paint over the white borders. If there is sky at the top, paint more sky. If there is grass at the bottom, paint more grass.
+- SEAMLESS: The final output must be a single, complete illustration with NO white borders remaining.
+- STYLE MATCH: Match the existing art style exactly — "${safeStyle}".
+- NO TEXT: Zero letters, words, or typography.`;
 
         contents.push({ text: editPrompt });
 
+        console.log(`[Outpaint] Calling gemini-3-pro-image-preview with ${contents.length} parts`);
+
+        // ── Use gemini-3-pro-image-preview ────────────────
         const model = getAi().getGenerativeModel({
-            model: 'gemini-2.5-flash-image',
+            model: 'gemini-3-pro-image-preview',
         });
 
-        const result = await model.generateContent({
-            contents: [{ role: 'user', parts: contents }],
-            generationConfig: {
-                temperature: 0.1, // Low temp for more consistency with original
-                topK: 32,
-                topP: 0.9,
+        const response = await model.generateContent(contents);
+
+        // Extract edited image from response
+        let imageBase64Result: string | null = null;
+        const parts = response.response.candidates?.[0]?.content?.parts || [];
+
+        for (const part of parts) {
+            if (part.inlineData?.mimeType?.startsWith('image/')) {
+                imageBase64Result = part.inlineData.data;
+                break;
             }
-        });
-
-        const generatedImages = result.response.candidates?.[0]?.content?.parts
-            ?.filter(p => p.inlineData)
-            ?.map(p => p.inlineData?.data);
-
-        if (!generatedImages || generatedImages.length === 0) {
-            throw new Error("No image generated by the outpainting model.");
         }
 
-        return NextResponse.json({
-            success: true,
-            imageBase64: generatedImages[0]
-        });
+        if (!imageBase64Result) {
+            console.error('[Outpaint] No image in response. Parts:', JSON.stringify(
+                parts.map((p: any) => ({ hasInlineData: !!p.inlineData, text: p.text?.slice?.(0, 200) }))
+            ));
+            return NextResponse.json(
+                { error: 'Gemini did not return a filled image. The model may have refused or returned text only. Try again.' },
+                { status: 500 }
+            );
+        }
+
+        console.log(`[Outpaint] ✅ Success — filled image returned (${imageBase64Result.length} chars)`);
+        return NextResponse.json({ success: true, imageBase64: imageBase64Result });
 
     } catch (error: any) {
-        console.error('Outpaint Error:', error);
+        console.error('[Outpaint] Fatal error:', error);
         return NextResponse.json(
             { error: error.message || 'Failed to outpaint image' },
             { status: 500 }

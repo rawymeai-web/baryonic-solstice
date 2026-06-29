@@ -4,7 +4,7 @@ import { generateStoryDraft as agentDraft } from './story/narrativeAgent';
 import { generateVisualPlan } from './visual/director';
 import { generatePrompts } from './visual/promptEngineer';
 import { runQualityAssurance } from './visual/qualityAssurance';
-import { generateThemeStylePreview, describeSubject, generateTechnicalStyleGuide, generateImagenImage, generateMethod4Image } from './generation/imageGenerator';
+import { generateThemeStylePreview, describeSubject, generateTechnicalStyleGuide, generateMethod4Image } from './generation/imageGenerator';
 import type { StoryBlueprint, Language, StoryTheme, WorkflowLog } from '../types';
 
 export {
@@ -14,7 +14,6 @@ export {
     generateThemeStylePreview,
     describeSubject,
     generateTechnicalStyleGuide,
-    generateImagenImage,
     generateMethod4Image
 };
 

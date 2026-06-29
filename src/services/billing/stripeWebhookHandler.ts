@@ -116,13 +116,38 @@ export class StripeWebhookHandler {
             // Dummy structure since we need to extract from last order.
             const { data: lastOrder } = await supabase.from('orders').select('story_data, shipping_snapshot, generation_snapshot').eq('subscription_id', sub.id).order('created_at', { ascending: false }).limit(1).single();
 
+            // Extract ONLY customization profile inputs and reference assets
+            // Discard cached outputs (blueprint, script, spreadPlan, spreads, prompts, pages, coverImageUrl, etc.)
+            let cleanStoryData = {};
+            if (lastOrder?.story_data) {
+                const {
+                    childName, childAge, childGender, parentName, parentEmail,
+                    theme, themeId, occasion, storyMode, readingDirection,
+                    mainCharacter, secondCharacter, useSecondCharacter,
+                    selectedStylePrompt, selectedStyleNames, technicalStyleGuide,
+                    styleSeed, styleReferenceImageBase64, styleReferenceImageUrl,
+                    secondCharacterImageBase64, secondCharacterImageUrl,
+                    dnaAudit, isPhysicalPrint, isPrintUpsell, shippingRegion
+                } = lastOrder.story_data;
+
+                cleanStoryData = {
+                    childName, childAge, childGender, parentName, parentEmail,
+                    theme, themeId, occasion, storyMode, readingDirection,
+                    mainCharacter, secondCharacter, useSecondCharacter,
+                    selectedStylePrompt, selectedStyleNames, technicalStyleGuide,
+                    styleSeed, styleReferenceImageBase64, styleReferenceImageUrl,
+                    secondCharacterImageBase64, secondCharacterImageUrl,
+                    dnaAudit, isPhysicalPrint, isPrintUpsell, shippingRegion
+                };
+            }
+
             const { data: newOrder, error: insertErr } = await supabase.from('orders').insert({
                 user_id: sub.user_id,
                 order_number: newOrderNumber,
                 status: 'pending_payment', // Will update immediately below
                 subscription_id: sub.id,
                 billing_cycle_date: cycleDate,
-                story_data: lastOrder?.story_data || {},
+                story_data: cleanStoryData,
                 shipping_snapshot: lastOrder?.shipping_snapshot,
                 generation_snapshot: lastOrder?.generation_snapshot
             }).select('order_number').single();

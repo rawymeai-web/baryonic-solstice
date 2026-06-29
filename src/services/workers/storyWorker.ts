@@ -46,14 +46,12 @@ export class StoryWorker {
       const childAge = snapshot.age || storyData.childAge;
       const childName = storyData.childName;
       const childGender = storyData.childGender;
-      const secondCharacter = storyData.secondCharacter;
+      const secondCharacter = storyData.useSecondCharacter ? storyData.secondCharacter : undefined;
       const language = storyData.language || "en";
 
-      // CRITICAL FIX: Build the correct art-style DNA priority chain.
-      // The frontend locks the customer's chosen style in `technicalStyleGuide` during StyleSelectionScreen.
-      // `storyData.visualDNA` was the old/wrong field — it is never set by the frontend pipeline.
-      // Priority: 1) technicalStyleGuide (locked preview DNA), 2) selectedStylePrompt, 3) themeVisualDNA, 4) safe fallback.
+      // Priority: 1) selectedStyleNames?.[0], 2) technicalStyleGuide (locked preview DNA), 3) selectedStylePrompt, 4) themeVisualDNA, 5) safe fallback.
       const visualDNA: string =
+        storyData.selectedStyleNames?.[0] ||
         storyData.technicalStyleGuide ||
         storyData.selectedStylePrompt ||
         storyData.themeVisualDNA ||
@@ -103,16 +101,57 @@ export class StoryWorker {
       // --------------------------------------------------------
       console.log(`[StoryWorker] Resolving Style and Heroes...`);
       const { getStyleProfile } = require("@/services/visual/styles/styleRegistry");
-      const styleId = storyData.selected_style_id || "premium_3d_adventure";
-      const styleProfile = getStyleProfile(styleId);
+      const styleId = storyData.selected_style_id;
+      let styleProfile = getStyleProfile(styleId);
+
+      // CRITICAL FIX: If we don't have a strict selected_style_id from the registry OR it's the 3D default,
+      // we must construct a dynamic style profile using the exact visualDNA string.
+      // This prevents 3D-specific or 2D-specific rules from polluting custom styles (like Watercolor).
+      const isDefault3D = !styleId || styleId === 'premium_3d_adventure';
+      if (isDefault3D && visualDNA) {
+          styleProfile = {
+              style_id: "custom_dynamic",
+              style_name: "Custom Dynamic Style",
+              style_family: "custom",
+              positive_style_lock: visualDNA,
+              character_rendering_rules: "Characters must look like stylized versions of the real children matching the requested art style exactly, not realistic portraits.",
+              environment_rendering_rules: "The environment must belong to the requested art style world.",
+              lighting_rules: "",
+              color_rules: "",
+              texture_rules: "",
+              forbidden_styles: [
+                  "photorealistic",
+                  "real photographic depth of field"
+              ],
+              identity_translation_rule: "Use real photos only for identity cues. Preserve resemblance, but translate all features into the selected stylized style."
+          };
+      }
+      let hAStyleUrl, hAOrigUrl, hBStyleUrl, hBOrigUrl;
+      try {
+        const { data: dnaRecords } = await supabase
+          .from('order_dna')
+          .select('*')
+          .eq('order_id', orderId)
+          .order('created_at', { ascending: false });
+
+        if (dnaRecords && dnaRecords.length > 0) {
+          hAStyleUrl = dnaRecords.find(r => r.hero_label === 'Hero A' && r.image_type === 'Stylized DNA')?.image_url;
+          hAOrigUrl = dnaRecords.find(r => r.hero_label === 'Hero A' && r.image_type === 'Original Photo')?.image_url;
+          hBStyleUrl = dnaRecords.find(r => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA')?.image_url;
+          hBOrigUrl = dnaRecords.find(r => r.hero_label === 'Hero B' && r.image_type === 'Original Photo')?.image_url;
+        }
+      } catch (err) {
+        console.warn("[StoryWorker] Failed to query order_dna table:", err);
+      }
 
       const heroes: any[] = [];
       
-      const heroRaw = storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0] || storyData.mainCharacterImageBase64 || storyData.heroImageBase64 || storyData.firstCharacterImageBase64 || storyData.heroImageUrl || storyData.firstCharacterImageUrl;
+      const heroRaw = hAOrigUrl || storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0] || storyData.mainCharacterImageBase64 || storyData.heroImageBase64 || storyData.firstCharacterImageBase64 || storyData.heroImageUrl || storyData.firstCharacterImageUrl;
       const heroDNA =
+        hAStyleUrl ||
+        storyData.mainCharacter?.imageDNA?.[0] ||
         storyData.styleReferenceImageUrl ||
         storyData.styleReferenceImageBase64 ||
-        storyData.mainCharacter?.imageDNA?.[0] ||
         heroRaw;
       
       if (heroRaw || heroDNA) {
@@ -120,8 +159,8 @@ export class StoryWorker {
               hero_id: "hero_1",
               token: "[[HERO_1]]",
               role: "primary",
-              identity_anchor_image_index: 1, // Mapped locally
-              stylized_dna_image_index: heroDNA ? 2 : undefined,
+              identity_anchor_image_index: undefined, // DNA-only pipeline does not send raw photos
+              stylized_dna_image_index: heroDNA ? 1 : undefined,
               real_photo_role: "identity anchor only",
               stylized_reference_role: "character design reference only",
               likeness_rules: {
@@ -133,12 +172,13 @@ export class StoryWorker {
           });
       }
 
-      const secondaryRaw = storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0] || storyData.secondCharacterImageBase64 || storyData.secondCharacterImageUrl;
-      const secondaryDNA =
+      const secondaryRaw = storyData.useSecondCharacter ? (hBOrigUrl || storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0] || storyData.secondCharacterImageBase64 || storyData.secondCharacterImageUrl) : undefined;
+      const secondaryDNA = storyData.useSecondCharacter ? (
+        hBStyleUrl ||
         storyData.secondCharacter?.imageDNA?.[0] ||
         storyData.secondCharacterImageBase64 ||
-        storyData.secondCharacterImageUrl ||
-        secondaryRaw;
+        secondaryRaw
+      ) : undefined;
       const isSecondaryObject = storyData.secondCharacter?.type === "object";
       
       if (!isSecondaryObject && (secondaryRaw || secondaryDNA)) {
@@ -146,8 +186,8 @@ export class StoryWorker {
               hero_id: "hero_2",
               token: "[[HERO_2]]",
               role: "secondary",
-              identity_anchor_image_index: 3,
-              stylized_dna_image_index: secondaryDNA ? 4 : undefined,
+              identity_anchor_image_index: undefined,
+              stylized_dna_image_index: secondaryDNA ? 2 : undefined,
               real_photo_role: "identity anchor only",
               stylized_reference_role: "character design reference only",
               likeness_rules: {
@@ -170,14 +210,7 @@ export class StoryWorker {
       const promptRes = await WorkerUtils.withTimeout(
         generatePrompts(plan, blueprint, styleProfile, heroes)
       );
-
-      // Replaced Quality Assurance pass with the Illustrator Agent
-      console.log(`[StoryWorker] Running QA on Prompts...`);
-      const { runIllustratorPass } = require("@/services/visual/illustratorAgent");
-      const qaRes = await WorkerUtils.withTimeout(
-        runIllustratorPass(promptRes.result, blueprint, styleProfile, heroes)
-      ) as any;
-      const prompts = qaRes.result;
+      const prompts = promptRes.result;
 
 
       // --------------------------------------------------------
@@ -186,8 +219,10 @@ export class StoryWorker {
       console.log(`[StoryWorker] Saving Artifacts to Database...`);
 
       // Reconstruct the deep merged story data object
+      const legacyPrompts = order.story_data?.prompts || order.story_data?.finalPrompts || [];
       const updatedStoryData = {
         ...order.story_data,
+        legacy_prompts_archive: legacyPrompts.length > 0 ? legacyPrompts : order.story_data?.legacy_prompts_archive || [],
         blueprint: blueprint,
         rawScript: narRes.result,
         script: script,
@@ -196,10 +231,11 @@ export class StoryWorker {
           text: p.text,
         })),
         finalPrompts: script.map(() => ""), // initialize empty prompts to match length
+        actualCoverPrompt: prompts[0]?.imagePrompt || "", // Flush legacy cover prompt
         visualPlan: plan,
         prompts: prompts,
         // Add tracking metadata
-        prompt_version: "v4-agentic-worker-1",
+        prompt_version: "v4-agentic-worker-1-simplified",
       };
 
       // Save to DB

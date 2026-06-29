@@ -74,6 +74,7 @@ function validateAssembledPrompt(prompt: string): PromptValidationResult {
 }
 
 function sanitizeText(text: string): string {
+    if (!text || typeof text !== 'string') return '';
     let clean = text;
     // Only strip exact forbidden phrases — use \b boundaries to avoid destroying partial words
     // e.g. 'photograph' should NOT strip from 'photographic'
@@ -220,18 +221,35 @@ function buildStyleInstruction(style: StyleProfile): string {
 // ---------------------------------------------------------------------------
 // SECTION C — SCENE INSTRUCTION
 // ---------------------------------------------------------------------------
-function buildSceneInstruction(spread: SpreadPlan): string {
+function buildSceneInstruction(spread: any): string {
     const s = spread.setting;
-    const parts: string[] = [];
+    if (typeof s === 'string') {
+        let sentence = `Scene setting: ${s}.`;
+        const env = spread.environmentType || spread.environment_type;
+        const time = spread.timeOfDay || spread.time_of_day;
+        const mood = spread.mood;
+        const lighting = spread.lighting;
+        const palette = spread.colorPalette || spread.color_palette;
 
-    if (s.specific_location) parts.push(`The scene takes place in ${s.specific_location}`);
-    if (s.environment_type) parts.push(`(${s.environment_type})`);
-    if (s.time_of_day) parts.push(`during the ${s.time_of_day}`);
-    if (s.mood) parts.push(`with a ${s.mood} mood`);
+        const extra: string[] = [];
+        if (env) extra.push(`Environment: ${env}`);
+        if (time) extra.push(`Time: ${time}`);
+        if (mood) extra.push(`Mood: ${mood}`);
+        if (extra.length > 0) sentence += ` (${extra.join(', ')}).`;
+        if (lighting) sentence += ` Lighting: ${lighting}.`;
+        if (palette) sentence += ` Color palette: ${palette}.`;
+        return sentence;
+    }
+
+    const parts: string[] = [];
+    if (s?.specific_location) parts.push(`The scene takes place in ${s.specific_location}`);
+    if (s?.environment_type) parts.push(`(${s.environment_type})`);
+    if (s?.time_of_day) parts.push(`during the ${s.time_of_day}`);
+    if (s?.mood) parts.push(`with a ${s.mood} mood`);
 
     let sentence = parts.join(' ') + '.';
-    if (s.lighting) sentence += ` Lighting: ${s.lighting}.`;
-    if (s.color_palette) sentence += ` Color palette: ${s.color_palette}.`;
+    if (s?.lighting) sentence += ` Lighting: ${s.lighting}.`;
+    if (s?.color_palette) sentence += ` Color palette: ${s.color_palette}.`;
 
     return sentence.replace(/\.\./g, '.');
 }
@@ -239,16 +257,30 @@ function buildSceneInstruction(spread: SpreadPlan): string {
 // ---------------------------------------------------------------------------
 // SECTION D — ACTION INSTRUCTION
 // ---------------------------------------------------------------------------
-function buildActionInstruction(spread: SpreadPlan, heroes: HeroProfile[]): string {
+function buildActionInstruction(spread: any, heroes: HeroProfile[]): string {
+    const comp = spread.composition || {};
+    const actionSide = (comp.action_zone_side || spread.mainContentSide || 'right').toLowerCase();
+
+    if (typeof spread.keyActions === 'string') {
+        let actionStr = spread.keyActions;
+        heroes.forEach((h, idx) => {
+            const regex = new RegExp(`\\[Hero\\s*${idx + 1}\\]`, 'gi');
+            actionStr = actionStr.replace(regex, h.token);
+        });
+        const containmentGuard =
+            `All characters and actions must remain contained on the ${actionSide} side. ` +
+            `Do not let any action or limb cross into the opposite side.`;
+        return actionStr + '\n' + containmentGuard;
+    }
+
     const actions = spread.hero_actions;
     if (!actions || actions.length === 0) return '';
 
     const heroTokens = heroes.map(h => h.token || '[[HERO_?]]');
-
     const normalizeTokenCase = (text: string): string =>
         text.replace(/\[\[hero_(\d+)\]\]/gi, (_, n) => `[[HERO_${n}]]`);
 
-    const lines = actions.map(a => {
+    const lines = actions.map((a: any) => {
         const cleanAction = sanitizeUnnamedCharacters(normalizeTokenCase(sanitizeText(a.action)), heroTokens);
         const token = normalizeTokenCase(a.token);
 
@@ -266,7 +298,6 @@ function buildActionInstruction(spread: SpreadPlan, heroes: HeroProfile[]): stri
         return line.trim().replace(/\.+$/, '') + '.';
     });
 
-    const actionSide = spread.composition.action_zone_side || 'right';
     const containmentGuard =
         `All characters and actions must remain contained on the ${actionSide} side. ` +
         `Do not let any action or limb cross into the opposite side.`;
@@ -297,10 +328,16 @@ function buildPropsInstruction(props: SceneProp[]): string {
 // ---------------------------------------------------------------------------
 // SECTION F — COMPOSITION INSTRUCTION
 // ---------------------------------------------------------------------------
-function buildCompositionInstruction(spread: SpreadPlan): string {
-    const actionSide = spread.composition.action_zone_side || 'right';
-    const textSide = spread.composition.text_zone_side || 'left';
-    const pct = Number(spread.composition.text_zone_percentage) || 40;
+function buildCompositionInstruction(spread: any): string {
+    const comp = spread.composition || {};
+    const actionSide = (comp.action_zone_side || spread.mainContentSide || 'right').toLowerCase();
+    
+    let textSide = (comp.text_zone_side || spread.textSide || '').toLowerCase();
+    if (textSide !== 'left' && textSide !== 'right') {
+        textSide = actionSide === 'left' ? 'right' : 'left';
+    }
+
+    const pct = Number(comp.text_zone_percentage || spread.text_zone_percentage) || 40;
     const pctMax = pct + 5;
 
     return (
@@ -367,34 +404,118 @@ function buildConstraints(heroes: HeroProfile[]): string {
 // MAIN ASSEMBLER
 // ---------------------------------------------------------------------------
 function assembleEnglishPrompt(
-    spread: SpreadPlan,
+    spread: any,
     styleProfile: StyleProfile,
-    heroes: HeroProfile[]
+    heroes: HeroProfile[],
+    isCover: boolean = false
 ): { prompt: string; validation: PromptValidationResult } {
 
-    const schemaStamp = `[v6.0-dna-only]`;
+    const schemaStamp = `[v7-dna-first]`;
+
+    // 1. Build Legend mapping reference images to Hero tokens
+    const legendParts = [`CHARACTER REFERENCES:`];
+    heroes.forEach((h, idx) => {
+        const dnaIdx = (h as any).stylized_dna_image_index;
+        if (dnaIdx > 0) {
+            legendParts.push(`- Image ${dnaIdx} is the approved character reference for [[HERO_${idx + 1}]]. Replicate their face shape, facial features, hairstyle, and clothing directly from Image ${dnaIdx}.`);
+        }
+    });
+    const legend = legendParts.length > 1 ? legendParts.join('\n') : '';
+
+    // 2. Scene setup and environment
+    const s = spread.setting;
+    let settingText = '';
+    if (typeof s === 'string') {
+        const env = spread.environmentType || spread.environment_type;
+        const time = spread.timeOfDay || spread.time_of_day;
+        const mood = spread.mood;
+        const lighting = spread.lighting;
+        
+        const details = [];
+        if (env) details.push(`Environment: ${env}`);
+        if (time) details.push(`Time of Day: ${time}`);
+        if (mood) details.push(`Mood: ${mood}`);
+        if (lighting) details.push(`Lighting: ${lighting}`);
+        
+        settingText = `Scene: Set in ${s}${details.length > 0 ? ` (${details.join(', ')})` : ''}.`;
+    } else if (s && typeof s === 'object') {
+        const details = [];
+        if (s.specific_location) details.push(`Location: ${s.specific_location}`);
+        if (s.environment_type) details.push(`Environment: ${s.environment_type}`);
+        if (s.time_of_day) details.push(`Time of Day: ${s.time_of_day}`);
+        if (s.mood) details.push(`Mood: ${s.mood}`);
+        if (s.lighting) details.push(`Lighting: ${s.lighting}`);
+        
+        settingText = details.length > 0 
+            ? `Scene: ${details.join(', ')}.`
+            : `Scene: A wide 16:9 children's book illustration scene.`;
+    } else {
+        settingText = `Scene: A wide 16:9 children's book illustration scene.`;
+    }
+
+    // 3. Actions & Expressions
+    let actionsText = '';
+    if (typeof spread.keyActions === 'string') {
+        let actionStr = spread.keyActions;
+        heroes.forEach((h, idx) => {
+            const regex = new RegExp(`\\[Hero\\s*${idx + 1}\\]`, 'gi');
+            actionStr = actionStr.replace(regex, h.token);
+        });
+        actionsText = `Action: ${actionStr}`;
+    } else {
+        const actionLines = (spread.hero_actions || [])
+            .filter((a: any) => a.presence !== 'absent' && a.action)
+            .map((a: any) => {
+                const token = a.token.replace(/\[\[hero_(\d+)\]\]/gi, (_: string, n: string) => `[[HERO_${n}]]`);
+            let actionStr = `Show ${token} ${sanitizeText(a.action)}`;
+            if (a.expression) actionStr += `, with a ${sanitizeText(a.expression)} expression`;
+            if (a.eye_line) actionStr += `, ${sanitizeText(a.eye_line)}`;
+            return actionStr.trim().replace(/\.+$/, '') + '.';
+        });
+        actionsText = actionLines.length > 0 
+            ? `Action: ${actionLines.join(' ')}` 
+            : '';
+    }
+
+    // 4. Style Lock (Simply inherit from references - NO complex rules)
+    const styleText = `Art Style: Inherit the visual style, coloring, and rendering technique directly from the character reference images. Ensure a consistent, high-quality, professional illustrated storybook look.`;
+
+    // 5. Props (Simplified - v7 list names only, no descriptions)
+    const propsText = spread.scene_props && spread.scene_props.length > 0 
+        ? `Props to include: ${spread.scene_props.map((p: any) => p.name).join(', ')}.`
+        : '';
+
+    // 6. Composition & Text zones
+    const comp = spread.composition || {};
+    const actionSide = (comp.action_zone_side || spread.mainContentSide || 'right').toLowerCase();
+    let textSide = (comp.text_zone_side || spread.textSide || '').toLowerCase();
+    if (textSide !== 'left' && textSide !== 'right') {
+        textSide = actionSide === 'left' ? 'right' : 'left';
+    }
+    const view = comp.composition_view || spread.compositionView || '';
+    const viewText = view ? ` Framing: Use a ${view} composition.` : '';
+    let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. Keep the opposite ${textSide} side as clean, empty background space (negative space) for text placement.${viewText}`;
+
+    if (isCover) {
+        compositionText = `Composition: Use a wide-angle shot, showing the character zoomed out to leave space at the top. Place the character low in the frame (strictly in the lower 60% of the image), keeping the top 40% of the frame as clean background space (negative space) for the book title. The character's face, head, or hair must not come near the top 20% of the image.`;
+    }
+
+    // 7. Hard Constraints (No text/letters, horizontal 16:9)
+    const constraintsText = `Constraints: Strictly no text, letters, numbers, signs, logos, or watermarks. Must be a wide 16:9 horizontal image. Do not copy the pose or background from the reference images.`;
 
     const sections = [
         schemaStamp,
-        buildSceneInstruction(spread),
-        buildActionInstruction(spread, heroes),
-        buildHeroReferenceParagraph(heroes),
-        buildStyleInstruction(styleProfile),
-        buildPropsInstruction(spread.scene_props),
-        buildCompositionInstruction(spread),
-        buildBackgroundInstruction(spread),
-        buildPreservationInstruction(heroes),
-        buildConstraints(heroes),
+        legend,
+        settingText,
+        actionsText,
+        styleText,
+        propsText,
+        compositionText,
+        constraintsText
     ].filter(s => s && s.trim().length > 0);
 
     const prompt = sections.join('\n\n');
     const validation = validateAssembledPrompt(prompt);
-
-    if (!validation.passed) {
-        // DO NOT append errors to the prompt. Doing so feeds the exact forbidden words
-        // back into the LLM as a strong recency bias instruction.
-        return { prompt, validation };
-    }
 
     return { prompt, validation };
 }
@@ -420,22 +541,30 @@ export async function generatePrompts(
             throw new Error('Invalid plan structure.');
         }
 
-        const prompts = plan.spreads.map(spread => {
-            const bpSpread = blueprint?.structure?.spreads?.find(s => s.spreadNumber === spread.spread_index);
-            const isCover = spread.spread_index === 0;
+        const prompts = plan.spreads.map((spread: any) => {
+            const spreadIndex = typeof spread.spread_index === 'number' ? spread.spread_index : (typeof spread.spreadNumber === 'number' ? spread.spreadNumber : 0);
+            const bpSpread = blueprint?.structure?.spreads?.find(s => s.spreadNumber === spreadIndex);
+            const isCover = spreadIndex === 0;
 
-            const { prompt, validation } = assembleEnglishPrompt(spread, styleProfile, heroes);
+            const { prompt, validation } = assembleEnglishPrompt(spread, styleProfile, heroes, isCover);
 
             if (!validation.passed) {
-                allValidationErrors.push(`Spread ${spread.spread_index}: ${validation.errors.join('; ')}`);
+                allValidationErrors.push(`Spread ${spreadIndex}: ${validation.errors.join('; ')}`);
+            }
+
+            const comp = spread.composition || {};
+            const actionSide = comp.action_zone_side || spread.mainContentSide || 'right';
+            let txtSide = comp.text_zone_side || spread.textSide || '';
+            if (txtSide.toLowerCase() !== 'left' && txtSide.toLowerCase() !== 'right') {
+                txtSide = actionSide.toLowerCase() === 'left' ? 'right' : 'left';
             }
 
             return {
-                spreadNumber: spread.spread_index,
+                spreadNumber: spreadIndex,
                 imagePrompt: prompt,
                 storyText: isCover ? '' : (bpSpread?.narrative || ''),
-                mainContentSide: spread.composition.action_zone_side,
-                textSide: spread.composition.text_zone_side,
+                mainContentSide: actionSide,
+                textSide: txtSide,
             };
         });
 
@@ -447,7 +576,7 @@ export async function generatePrompts(
                 inputs: { planSize: plan.spreads.length, heroCount: heroes.length },
                 outputs: {
                     promptCount: prompts.length,
-                    method: 'DNA-Only Assembler v6.0',
+                    method: 'DNA-Only Assembler v7.0',
                     validationErrors: allValidationErrors.length > 0 ? allValidationErrors : 'none',
                 },
                 status: allValidationErrors.length > 0 ? 'Warning' : 'Success',

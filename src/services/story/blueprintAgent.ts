@@ -254,11 +254,26 @@ export async function generateBlueprint(
                 "structure": {
                     "arcSummary": "3 sentence plot summary covering the full arc from desire to lesson",
                     "spread1AnchorImage": "DESCRIBE the exact physical scene of Spread 1 in one sentence (location + hero + mood) — this will be mirrored in Spread 8",
+                    "cover": {
+                        "spreadNumber": 0,
+                        "purpose": "Cover Scene — Establish the theme and excitement of the adventure",
+                        "storyText": "The actual title of the book and an engaging subtitle.",
+                        "transitionHook": "None",
+                        "visualFocus": "The main hero in a dynamic pose related to the story's core action.",
+                        "highlightAction": "A dynamic, exciting action representing the adventure.",
+                        "cameraAngle": "Wide Establishing Shot",
+                        "emotionalBeat": "Excited",
+                        "specificLocation": "The most iconic location of the story",
+                        "environmentType": "Indoor OR Outdoor",
+                        "timeOfDay": "Morning / Midday / Afternoon / Dusk / Night",
+                        "newCharacters": ["Only NEW characters appearing FOR THE FIRST TIME."]
+                    },
                     "spreads": [
                         { 
                             "spreadNumber": 1, 
                             "purpose": "Normal World — Establish hero's name, core trait, and desire",
                             "narrative": "REQUIRED: State hero's name explicitly. Describe the setting. Show hero's dominant emotion or trait through an action, NOT through a label. End on their desire/want.",
+                            "storyText": "REQUIRED: Write the FINAL, actual children's book text to be printed on this page (2-3 sentences). Must be engaging, rhythmic, and age-appropriate.",
                             "transitionHook": "A specific event or sound that disrupts the normal world and forces the reader to turn the page (NO time-skips, NO summaries)",
                             "visualFocus": "The primary visual element that fills the foreground (e.g. 'the closed gate to the garden')",
                             "highlightAction": "The single most important physical action happening (a verb phrase, e.g. 'Hero pressing nose against the window')",
@@ -280,7 +295,7 @@ export async function generateBlueprint(
             `;
 
             const model = ai().getGenerativeModel({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-2.5-flash',
                 generationConfig: { 
                     responseMimeType: "application/json",
                     temperature: 1.0, 

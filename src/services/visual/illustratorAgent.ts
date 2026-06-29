@@ -53,23 +53,28 @@ export async function runIllustratorPass(
                   "spreadNumber": 1, 
                   "patches": [
                     {
-                      "path": "props_instruction",
+                      "path": "string_replace",
                       "issue": "Compass prop has no no-readable-text instruction.",
-                      "replacement": "Tarnished brass compass. The dial has no readable numbers, letters, or markings.",
+                      "replacement": "Compass prop has no no-readable-text instruction. No readable text.",
                       "severity": "high"
                     }
                   ]
                 }
             ]
+            
+            CRITICAL INSTRUCTION FOR STRING REPLACEMENT:
+            - Because the prompts are plain text, you MUST provide the EXACT existing sentence or phrase you want to modify in the \`issue\` field.
+            - You MUST provide the FULL modified sentence in the \`replacement\` field.
+            - Do NOT provide the entire prompt. Only the specific sentence being fixed.
             `;
 
 
             const model = ai().getGenerativeModel({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-2.5-flash',
                 generationConfig: { responseMimeType: "application/json" }
             });
 
-            const response = await model.generateContent(promptInstruction);
+            const response = await model.generateContent(promptInstruction, { timeout: 15000 });
             const qaResults = JSON.parse(cleanJsonString(response.response.text()));
 
             if (!Array.isArray(qaResults)) {
@@ -112,20 +117,16 @@ export async function runIllustratorPass(
                                 appliedPatchCount++;
                             }
                         } else {
-                            // 2. Not JSON or path is top-level 'imagePrompt' / 'full_text'
-                            // If the AI provides a replacement for a non-JSON prompt, we treat it as a full-string replacement
-                            // or a targeted string replacement if we had a more complex regex logic.
-                            // For v6.0 strings, if the AI says the path is "imagePrompt", we replace the whole thing.
-                            if (patch.path === 'imagePrompt' || patch.path === 'full_prompt' || patch.path === 'prompt') {
-                                currentPromptText = patch.replacement;
+                            // 2. Not JSON. We ONLY do targeted string replacement.
+                            // The AI provides the exact substring it wants to replace in 'issue'
+                            // and the new substring in 'replacement'.
+                            // We completely disable full-string overwrites to prevent the AI from 
+                            // accidentally deleting the entire prompt and replacing it with a fragment.
+                            if (patch.issue && currentPromptText.includes(patch.issue)) {
+                                currentPromptText = currentPromptText.replace(patch.issue, patch.replacement);
                                 appliedPatchCount++;
                             } else {
-                                // Fallback: If it's a string prompt but AI tried to use a deep path, 
-                                // we try to do a simple string replacement of 'issue' text with 'replacement' text.
-                                if (patch.issue && currentPromptText.includes(patch.issue)) {
-                                    currentPromptText = currentPromptText.replace(patch.issue, patch.replacement);
-                                    appliedPatchCount++;
-                                }
+                                console.warn("QA Patch issue string not found in prompt. Skipping patch.", patch.issue);
                             }
                         }
 
@@ -148,7 +149,7 @@ export async function runIllustratorPass(
                     durationMs: Date.now() - startTime
                 }
             };
-        });
+        }, 1, 2000);
     } catch (e: any) {
         console.error("Illustrator Agent Failed, falling back to original prompts:", e);
         return {

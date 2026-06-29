@@ -50,7 +50,7 @@ const TextOverlay: React.FC<{ text: string, spread: Spread, storyData: StoryData
 const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleChange: (v: string) => void }> = ({ storyData, language, onTitleChange }) => {
     const isAr = language === 'ar';
     const coverSpread = storyData.spreads?.[0];
-    const textSide = storyData.coverTextSide || (isAr ? 'right' : 'left');
+    const textSide = storyData.coverTextSide || (isAr ? 'left' : 'right');
 
     const offsetX = coverSpread?.textOffsetX ?? 0;
     const offsetY = coverSpread?.textOffsetY ?? 0;

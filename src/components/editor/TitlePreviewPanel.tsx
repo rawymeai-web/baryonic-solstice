@@ -9,6 +9,8 @@ interface TitlePreviewPanelProps {
     language: Language;
     coverTextSide: 'left' | 'right';
     coverImageUrl?: string;
+    textOffsetX?: number;
+    textOffsetY?: number;
 }
 
 /**
@@ -90,7 +92,7 @@ async function renderTitleToDataUrl(title: string, subtitle: string, lang: Langu
 
     const dataUrl = await toPng(container, {
         pixelRatio: 2,
-        backgroundColor: undefined,
+        backgroundColor: 'transparent',
         // Force include fonts
         fontEmbedCSS: undefined,
     });
@@ -104,7 +106,9 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
     subtitle,
     language,
     coverTextSide,
-    coverImageUrl
+    coverImageUrl,
+    textOffsetX,
+    textOffsetY
 }) => {
     const [titleDataUrl, setTitleDataUrl] = useState<string>('');
     const [isRendering, setIsRendering] = useState(false);
@@ -118,12 +122,16 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
     const tw = PDF_W * 0.4;
     const titleAspect = 1000 / 200;
     const th = tw / titleAspect;
-    const ty = PDF_H * 0.08;
+    
     const isAr = language === 'ar';
     const side = coverTextSide || (isAr ? 'left' : 'right');
-    const tx = side === 'left'
+    const defaultTx = side === 'left'
         ? (PDF_W * 0.25) - (tw / 2)
         : (PDF_W * 0.75) - (tw / 2);
+    const defaultTy = PDF_H * 0.08;
+
+    const tx = textOffsetX !== undefined ? textOffsetX : defaultTx;
+    const ty = textOffsetY !== undefined ? textOffsetY : defaultTy;
 
     const rerender = useCallback(async () => {
         if (!title.trim()) {
@@ -268,7 +276,7 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
                     <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Cover Map</p>
                     <div className="relative w-full aspect-[2/1] bg-gray-200 rounded-xl overflow-hidden border border-gray-300 shadow-sm">
                         <img
-                            src={coverImageUrl.startsWith('http') || coverImageUrl.startsWith('data:') ? coverImageUrl : `data:image/jpeg;base64,${coverImageUrl}`}
+                            src={coverImageUrl.startsWith('http') ? coverImageUrl : `data:image/jpeg;base64,${coverImageUrl}`}
                             className="w-full h-full object-cover opacity-80"
                             alt="Cover"
                         />

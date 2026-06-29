@@ -65,7 +65,8 @@ export async function POST(req: Request) {
         return NextResponse.json({
             imageBase64: result.imageBase64,
             fullPrompt: result.fullPrompt,   // Actual prompt sent to Gemini
-            seedPrompt: result.seedPrompt    // Original raw seed (v4.0 JSON)
+            seedPrompt: result.seedPrompt,   // Original raw seed (v4.0 JSON)
+            modelUsed: result.modelUsed
         });
 
     } catch (error: any) {

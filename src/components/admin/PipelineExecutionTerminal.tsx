@@ -3,6 +3,7 @@ import { backendApi } from "../../services/backendApi";
 import * as adminService from "../../services/adminService";
 import type { AdminOrder, Language, Page } from "../../types";
 import { Spinner } from "../ui/Spinner";
+import { useLegacyPipeline } from "../../hooks/useLegacyPipeline";
 
 interface PipelineExecutionTerminalProps {
   order: AdminOrder;
@@ -14,37 +15,80 @@ interface PipelineExecutionTerminalProps {
 export const PipelineExecutionTerminal: React.FC<
   PipelineExecutionTerminalProps
 > = ({ order, onClose, onSuccess, language }) => {
-  const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState("Standby");
-  const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [logs, setLogs] = useState<string[]>([]);
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const [fullOrder, setFullOrder] = useState<AdminOrder | null>(null);
+  const [forceCleanRun, setForceCleanRun] = useState(false);
   const [isRunningQA, setIsRunningQA] = useState(false);
   const [qaComplete, setQaComplete] = useState(false);
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
+  const [terminalError, setTerminalError] = useState<string | null>(null);
+  const logsEndRef = useRef<HTMLDivElement>(null);
 
   const t = (ar: string, en: string) => (language === "ar" ? ar : en);
 
   const logMsg = (msg: string) => {
-    setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    setTerminalLogs((prev) => [
+      ...prev,
+      `[${new Date().toLocaleTimeString()}] ${msg}`,
+    ]);
   };
 
-  const [fullOrder, setFullOrder] = useState<AdminOrder | null>(null);
+  const {
+    runPipeline,
+    stopPipeline,
+    isProcessing,
+    progress,
+    status,
+    logs,
+    error,
+  } = useLegacyPipeline(
+    order.orderNumber,
+    fullOrder?.storyData || order.storyData || {},
+    order.shippingDetails || {},
+    language,
+    (updates) => {
+      setFullOrder(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          storyData: {
+            ...prev.storyData,
+            ...updates
+          }
+        };
+      });
+    },
+    order.total
+  );
+
+  const combinedLogs = [...terminalLogs, ...logs];
+  const combinedError = terminalError || error;
 
   useEffect(() => {
-    logMsg(`Protocol Sequence Initiated: ${order.orderNumber}`);
+    setTerminalLogs([`[${new Date().toLocaleTimeString()}] Protocol Sequence Initiated: ${order.orderNumber}`]);
     adminService
       .getOrderById(order.orderNumber)
       .then((full) => {
         if (full) {
-          logMsg(`Registry sync complete. Data localized.`);
+          setTerminalLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] Registry sync complete. Data localized.`]);
           setFullOrder(full);
+          
+          // Auto-detect character name mismatch
+          const sd = full.storyData as any;
+          if (sd && sd.spreadPlan && sd.childName) {
+            const planStr = JSON.stringify(sd.spreadPlan).toLowerCase();
+            const childName = sd.childName.toLowerCase();
+            const hasStaleNames = planStr.includes('hamad') || planStr.includes('khalda');
+            const hasCurrentName = planStr.includes(childName);
+            if (hasStaleNames && !hasCurrentName) {
+              setForceCleanRun(true);
+            }
+          }
         } else {
-          setError("Protocol Error: Registry synchronization failed.");
+          setTerminalError("Protocol Error: Registry synchronization failed.");
         }
       })
       .catch((err) => {
-        setError(`Network Interrupt: ${err.message}`);
+        setTerminalError(`Network Interrupt: ${err.message}`);
       });
   }, [order.orderNumber]);
 
@@ -52,356 +96,17 @@ export const PipelineExecutionTerminal: React.FC<
     if (logsEndRef.current) {
       logsEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [logs]);
+  }, [combinedLogs]);
 
-  const ensureSafeString = (str: any, defaultStr: string) =>
-    typeof str === "string" && str.trim() ? str : defaultStr;
+  useEffect(() => {
+    if (progress === 100) {
+      const timer = setTimeout(onSuccess, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [progress, onSuccess]);
 
   const startProcessing = async () => {
-    setIsProcessing(true);
-    setError(null);
-    setProgress(5);
-    try {
-      const activeOrder = fullOrder || order;
-      if (!activeOrder) throw new Error("CRITICAL: DATA STREAM DISCONNECTED");
-
-      let storyData = activeOrder.storyData as any;
-      if (!storyData || Object.keys(storyData).length === 0) {
-        // FIX: Set 'Auto' as default hero name
-        storyData = { language: language, childName: "Auto" };
-      }
-      const lang = storyData.language || language || "en";
-
-      // Step 1: DNA & Character
-      logMsg(`Phase 1: Biometric DNA Extraction...`);
-      setStatus(t("معالجة الهوية البصرية...", "Extracting Visual DNA..."));
-      const mainChar = storyData.mainCharacter || {};
-      if (!mainChar.imageDNA || mainChar.imageDNA.length === 0) {
-        logMsg(`DNA deficiency detected. Calling Neural Vision Engine...`);
-        const dnaPayload = {
-          mainCharacter: mainChar,
-          theme: ensureSafeString(storyData.theme, "Neutral Setting"),
-          style: storyData.selectedStyleNames?.[0] ||
-        storyData.technicalStyleGuide ||
-        (storyData.selectedStylePrompt?.includes('**TASK:**') ? undefined : storyData.selectedStylePrompt) ||
-        storyData.themeVisualDNA ||
-        "high quality painterly children's book illustration",
-          age: ensureSafeString(storyData.childAge, "5"),
-        };
-
-        const dnaRes = (await backendApi.generateDna(dnaPayload)) as any;
-        if (dnaRes.error) throw new Error(dnaRes.error);
-
-        storyData.mainCharacter = {
-          ...mainChar,
-          description: dnaRes.physicalDescription,
-          imageDNA: [dnaRes.artifiedHeroBase64],
-        };
-        await adminService.saveOrder(
-          order.orderNumber,
-          storyData,
-          order.shippingDetails,
-          activeOrder.total,
-        );
-        logMsg(`✓ DNA successfully synthesized.`);
-      }
-      setProgress(15);
-
-      // Step 2: Story Blueprint
-      logMsg(`Phase 2: Narrative Blueprinting...`);
-      setStatus(t("كتابة القصة...", "Writing the Story..."));
-      if (!storyData.blueprint) {
-        logMsg(`Narrative void detected. Engaging Script Architect...`);
-        const storyRes = (await backendApi.generateStory({
-          storyData,
-          language: lang,
-        })) as any;
-        if (storyRes.error) throw new Error(storyRes.error);
-
-        storyData = {
-          ...storyData,
-          blueprint: storyRes.blueprint,
-          script: storyRes.script || storyRes.rawScript,
-          // FIX: Prioritize AI-generated title
-          title: storyRes.blueprint?.foundation?.title || storyData.title,
-        };
-        await adminService.saveOrder(
-          order.orderNumber,
-          storyData,
-          order.shippingDetails,
-          activeOrder.total,
-        );
-        logMsg(`✓ Story arc stabilized.`);
-      }
-      setProgress(30);
-
-      // Step 3: Visual Plan
-      logMsg(`Phase 3: Scene Kinematics...`);
-      setStatus(t("تخطيط المشاهد...", "Planning Visual Layouts..."));
-      if (!storyData.spreadPlan) {
-        logMsg(`Mapping spatial coordinates for 8 spreads...`);
-        const planRes = (await backendApi.generateVisualPlan({
-          script: storyData.script,
-          blueprint: storyData.blueprint,
-          visualDNA: storyData.selectedStylePrompt || "Painterly illustration",
-        })) as any;
-        if (planRes.error) throw new Error(planRes.error);
-
-        storyData = { ...storyData, spreadPlan: planRes.plan };
-        await adminService.saveOrder(
-          order.orderNumber,
-          storyData,
-          order.shippingDetails,
-          activeOrder.total,
-        );
-        logMsg(`✓ Scene layout logic verified.`);
-      }
-      setProgress(45);
-
-      // Step 4: Engineering Prompts
-      logMsg(`Phase 4: Neural Prompt Synthesis...`);
-      setStatus(t("هندسة الأوامر الذكية...", "Engineering AI Prompts..."));
-
-      // Version gate: only skip if prompts exist AND contain a v2/v3/v4 schema stamp
-      const hasCurrentStamp = (p: any): boolean => {
-        try {
-          const str =
-            typeof p === "string" ? p : p?.imagePrompt || p?.prompt || "";
-          return /schema_version["']?\s*:\s*["']v[234]/i.test(str);
-        } catch {
-          return false;
-        }
-      };
-      const promptsExist =
-        Array.isArray(storyData.finalPrompts) &&
-        storyData.finalPrompts.length > 0;
-      const promptsAreCurrentVersion =
-        promptsExist && storyData.finalPrompts.some(hasCurrentStamp);
-
-      const heroRaw =
-        storyData.mainCharacter?.imageRawUrl ||
-        storyData.mainCharacter?.imageBases64?.[0] ||
-        storyData.mainCharacterImageBase64 ||
-        storyData.heroImageBase64 ||
-        storyData.firstCharacterImageBase64 ||
-        storyData.heroImageUrl ||
-        storyData.firstCharacterImageUrl;
-      const heroDNA =
-        storyData.styleReferenceImageBase64 ||
-        storyData.styleReferenceImageUrl ||
-        storyData.mainCharacter?.imageDNA?.[0] ||
-        heroRaw;
-      const heroImagesArray = Array.from(
-        new Set([heroRaw, heroDNA].filter(Boolean) as string[]),
-      );
-
-      const secondaryRaw =
-        storyData.secondCharacter?.imageRawUrl ||
-        storyData.secondCharacter?.imageBases64?.[0] ||
-        storyData.secondCharacterImageBase64 ||
-        storyData.secondCharacterImageUrl;
-      const secondaryDNA =
-        storyData.secondCharacter?.imageDNA?.[0] ||
-        storyData.secondCharacterImageBase64 ||
-        storyData.secondCharacterImageUrl ||
-        secondaryRaw;
-      const isSecondaryObject = storyData.secondCharacter?.type === "object";
-      const secondaryImagesArray = isSecondaryObject
-        ? []
-        : Array.from(
-            new Set([secondaryRaw, secondaryDNA].filter(Boolean) as string[]),
-          );
-
-      if (!promptsAreCurrentVersion) {
-        if (promptsExist)
-          logMsg(
-            `⚠️ Legacy prompts detected (no current stamp) — regenerating to latest version...`,
-          );
-        else logMsg(`Converting narrative intent to technical parameters...`);
-        const promptsRes = (await backendApi.generatePrompts({
-          plan: storyData.spreadPlan,
-          blueprint: storyData.blueprint,
-          visualDNA: storyData.selectedStyleNames?.[0] || storyData.technicalStyleGuide || (storyData.selectedStylePrompt?.includes('**TASK:**') ? undefined : storyData.selectedStylePrompt) || storyData.themeVisualDNA || "Painterly illustration",
-          childAge: storyData.childAge,
-          childDescription: storyData.mainCharacter?.description || "A child",
-          childName: storyData.childName,
-          secondCharacter: storyData.secondCharacter,
-          language: lang,
-          heroASetSize: heroImagesArray.length,
-          heroBSetSize: secondaryImagesArray.length,
-        })) as any;
-        if (promptsRes.error) throw new Error(promptsRes.error);
-
-        storyData = { ...storyData, finalPrompts: promptsRes.prompts };
-        await adminService.saveOrder(
-          order.orderNumber,
-          storyData,
-          order.shippingDetails,
-          activeOrder.total,
-        );
-        logMsg(`✓ Prompts engineered successfully.`);
-      } else {
-        logMsg(`Prompts already current (v2 stamp verified ✓), skipping.`);
-      }
-      setProgress(55);
-
-      // Step 5: Image Generation
-      logMsg(`Phase 5: Neural Painting Pipeline...`);
-      const prompts = storyData.finalPrompts || [];
-      let pages: Page[] = storyData.pages || [];
-
-      logMsg(`DNA-A resolved: ${heroImagesArray.length} image(s)`);
-      if (storyData.useSecondCharacter) {
-        logMsg(`DNA-B resolved: ${secondaryImagesArray.length} image(s)`);
-      }
-
-      for (let i = 0; i < prompts.length; i++) {
-        setStatus(
-          t(
-            `رسم المشهد ${i + 1}/${prompts.length}...`,
-            `Painting Scene ${i + 1}/${prompts.length}...`,
-          ),
-        );
-        const pageIndex = i * 2;
-        const existingUrl = pages[pageIndex]?.illustrationUrl;
-        const isCorrupted =
-          existingUrl &&
-          (existingUrl.endsWith("...") || existingUrl.length < 55);
-
-        if (!existingUrl || isCorrupted) {
-          logMsg(`--> Sequencing Scene ${i + 1}/${prompts.length}...`);
-          const rawPrompt = prompts[i];
-          const imagePrompt =
-            typeof rawPrompt === "string"
-              ? rawPrompt
-              : rawPrompt?.imagePrompt || rawPrompt?.prompt;
-
-            const stylePrompt =
-              storyData.selectedStyleNames?.[0] ||
-              storyData.technicalStyleGuide ||
-              (storyData.selectedStylePrompt?.includes('**TASK:**') ? undefined : storyData.selectedStylePrompt) ||
-              storyData.themeVisualDNA ||
-              "high quality painterly children's book illustration";
-
-            const imgRes = (await backendApi.generateImage({
-              prompt: imagePrompt,
-              stylePrompt: stylePrompt,
-              referenceBase64: heroImagesArray,
-              characterDescription: storyData.mainCharacter?.description,
-            age: storyData.childAge || "5",
-            secondReferenceBase64: secondaryImagesArray,
-          })) as any;
-
-          const b64 = imgRes.imageBase64 || imgRes.data?.imageBase64;
-          if (!b64) throw new Error(`Scene ${i + 1} Render Failure`);
-
-          if (!pages[pageIndex])
-            pages[pageIndex] = {
-              pageNumber: pageIndex + 1,
-              text: "",
-              textSide: "left",
-              illustrationUrl: "",
-            };
-          if (!pages[pageIndex + 1])
-            pages[pageIndex + 1] = {
-              pageNumber: pageIndex + 2,
-              text: "",
-              textSide: "right",
-              illustrationUrl: "",
-            };
-
-          pages[pageIndex].illustrationUrl = b64;
-          pages[pageIndex + 1].illustrationUrl = b64;
-          storyData = { ...storyData, pages };
-          await adminService.saveOrder(
-            order.orderNumber,
-            storyData,
-            order.shippingDetails,
-            activeOrder.total,
-          );
-          logMsg(`✓ Scene ${i + 1} rendered and archived.`);
-
-          // Run QA synchronously (Await to ensure state consistency)
-          try {
-            const qaResult = (await backendApi.evaluateImageQA({
-              generatedImageBase64: b64,
-              heroRawBase64: heroRaw,
-              heroDNABase64: heroDNA,
-              pageType: i === 0 ? "Cover" : "Spread",
-              currentTextSide: pages[pageIndex]?.textSide || "left",
-              targetPrompt: imagePrompt,
-              secondRawBase64: storyData.useSecondCharacter
-                ? secondaryRaw
-                : undefined,
-              secondDNABase64: storyData.useSecondCharacter
-                ? secondaryDNA
-                : undefined,
-            })) as any;
-
-            if (qaResult.overallDecision === "pass") {
-              logMsg(
-                `[QA OK - Scene ${i + 1}] Identity: Pass | Text Clearance: Pass`,
-              );
-            } else {
-              logMsg(
-                `[QA WARN - Scene ${i + 1}] ${qaResult.characterReasoning || "Identity Issue"} | ${qaResult.textReasoning || "Layout Issue"}`,
-              );
-            }
-
-            // Update local storyData with QA results
-            if (storyData.pages && storyData.pages[pageIndex]) {
-              storyData.pages[pageIndex].qcStatus =
-                qaResult.overallDecision === "pass" ? "passed" : "flagged";
-              storyData.pages[pageIndex].textSide = (
-                qaResult.recommendedTextSide || "right"
-              ).toLowerCase();
-              storyData.pages[pageIndex + 1].qcStatus =
-                qaResult.overallDecision === "pass" ? "passed" : "flagged";
-              storyData.pages[pageIndex + 1].textSide = (
-                qaResult.recommendedTextSide || "right"
-              ).toLowerCase();
-            }
-            // Mirror to spreads if they exist
-            if (storyData.spreads && storyData.spreads[i]) {
-              storyData.spreads[i].qcStatus =
-                qaResult.overallDecision === "pass" ? "passed" : "flagged";
-              storyData.spreads[i].textSide = (
-                qaResult.recommendedTextSide || "right"
-              ).toLowerCase();
-            }
-
-            await adminService.saveOrder(
-              order.orderNumber,
-              storyData,
-              order.shippingDetails,
-              activeOrder.total,
-            );
-          } catch (err: any) {
-            logMsg(
-              `[QA ERROR - Scene ${i + 1}] Could not complete QA scan: ${err.message}`,
-            );
-          }
-        } else {
-          logMsg(
-            `Scene ${i + 1} image already exists (Source: ${existingUrl?.substring(0, 30)}...). Skipping.`,
-          );
-        }
-        setProgress(55 + 45 * ((i + 1) / prompts.length));
-      }
-
-      logMsg(`Protocol Complete. Closing stream...`);
-      await adminService.updateOrderStatus(
-        order.orderNumber,
-        "Processing" as any,
-      );
-      setStatus(t("اكتمل بنجاح!", "Transmission Secure"));
-      setTimeout(onSuccess, 2000);
-    } catch (e: any) {
-      logMsg(`[FATAL] Pipeline Interrupt: ${e.message}`);
-      setError(e.message);
-    } finally {
-      setIsProcessing(false);
-    }
+    runPipeline(!forceCleanRun);
   };
 
   return (
@@ -439,7 +144,7 @@ export const PipelineExecutionTerminal: React.FC<
         </header>
 
         <div className="p-10 overflow-y-auto flex-1 bg-white/10 space-y-8 flex flex-col min-h-[400px]">
-          {error && (
+          {combinedError && (
             <div className="p-6 bg-brand-orange/5 border-2 border-brand-orange/20 rounded-[2rem] animate-in shake duration-500">
               <div className="flex items-center gap-4 text-brand-orange mb-2">
                 <span className="material-symbols-outlined">error</span>
@@ -448,7 +153,7 @@ export const PipelineExecutionTerminal: React.FC<
                 </p>
               </div>
               <p className="text-[11px] font-bold text-brand-orange/80 leading-relaxed ml-10">
-                {error}
+                {combinedError}
               </p>
             </div>
           )}
@@ -485,7 +190,7 @@ export const PipelineExecutionTerminal: React.FC<
               </p>
             </div>
             <div className="flex-1 bg-brand-navy/95 p-6 rounded-[2.5rem] overflow-y-auto custom-scrollbar border border-white/10 shadow-2xl font-mono text-[11px]">
-              {logs.map((log, i) => (
+              {combinedLogs.map((log, i) => (
                 <div
                   key={i}
                   className={`mb-2 leading-relaxed ${log.includes("✓") ? "text-brand-teal font-bold" : log.includes("Phase") ? "text-white font-black border-l-2 border-brand-orange pl-3 my-4" : "text-white/60"}`}
@@ -503,18 +208,36 @@ export const PipelineExecutionTerminal: React.FC<
           </div>
         </div>
 
-        <footer className="p-10 bg-white/40 border-t border-brand-navy/5 flex justify-center shrink-0">
+        <footer className="p-10 bg-white/40 border-t border-brand-navy/5 flex flex-col gap-6 shrink-0">
           {!isProcessing && progress < 100 ? (
-            <button
-              onClick={startProcessing}
-              disabled={!fullOrder}
-              className="w-full py-8 bg-brand-navy text-white rounded-[2.5rem] font-black uppercase text-sm tracking-[0.4em] shadow-2xl shadow-brand-navy/30 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-6 group disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-3xl group-hover:rotate-180 transition-transform duration-700">
-                settings_suggest
-              </span>
-              {fullOrder ? "Execute Protocol" : "Syncing Registry..."}
-            </button>
+            <div className="w-full flex flex-col gap-6">
+              <div className="flex items-center justify-between p-4 bg-brand-navy/5 border border-brand-navy/10 rounded-[2rem] shadow-inner">
+                <div className="space-y-0.5 text-left">
+                  <span className="text-xs font-black text-brand-navy uppercase tracking-wider">Start Sequence Fresh</span>
+                  <p className="text-[9px] text-brand-navy/40 font-bold leading-normal">Ignore cached narrative and regenerate plan & prompts from scratch</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={forceCleanRun}
+                    onChange={(e) => setForceCleanRun(e.target.checked)}
+                  />
+                  <div className="w-11 h-6 bg-brand-navy/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-orange"></div>
+                </label>
+              </div>
+
+              <button
+                onClick={startProcessing}
+                disabled={!fullOrder}
+                className="w-full py-8 bg-brand-navy text-white rounded-[2.5rem] font-black uppercase text-sm tracking-[0.4em] shadow-2xl shadow-brand-navy/30 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-6 group disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-3xl group-hover:rotate-180 transition-transform duration-700">
+                  settings_suggest
+                </span>
+                {fullOrder ? "Execute Protocol" : "Syncing Registry..."}
+              </button>
+            </div>
           ) : progress === 100 ? (
             <button
               onClick={onSuccess}

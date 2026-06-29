@@ -120,7 +120,7 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
         if (!illustrationUrl) return '';
         return illustrationUrl.startsWith('http') || illustrationUrl.startsWith('data:')
             ? illustrationUrl
-            : (illustrationUrl.startsWith('data:') ? illustrationUrl : `data:image/jpeg;base64,${illustrationUrl}`);
+            : `data:image/jpeg;base64,${illustrationUrl}`;
     }, [illustrationUrl]);
 
     return (

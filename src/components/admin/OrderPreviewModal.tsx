@@ -1,75 +1,76 @@
 
 import React, { useState } from 'react';
 import type { AdminOrder, Language, StoryBlueprint } from '@/types';
+import { Button } from '@/components/ui/Button';
 
-const DetailSection: React.FC<{ title: string; children: React.ReactNode; className?: string; icon?: string }> = ({ title, children, className = '', icon = 'info' }) => (
-  <div className={`glass-panel p-8 rounded-[2rem] border-white/60 bg-white/40 shadow-xl ${className}`}>
-    <div className="flex items-center gap-3 mb-6 border-b border-brand-navy/5 pb-4">
-      <span className="material-symbols-outlined text-brand-navy/30">{icon}</span>
-      <h4 className="text-[10px] font-black text-brand-navy uppercase tracking-[0.2em]">{title}</h4>
-    </div>
-    <div className="space-y-4 text-sm text-brand-navy/80">{children}</div>
+interface OrderPreviewModalProps {
+  order: AdminOrder;
+  onClose: () => void;
+  language: Language;
+}
+
+const DetailSection: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className = '' }) => (
+  <div className={`bg-gray-50 p-4 rounded-lg border ${className}`}>
+    <h4 className="text-md font-bold text-brand-coral border-b pb-2 mb-2">{title}</h4>
+    <div className="space-y-1 text-sm text-brand-navy">{children}</div>
   </div>
 );
 
 const DetailItem: React.FC<{ label: string; value?: string | number | null }> = ({ label, value }) => (
-  <div className="flex flex-col gap-1">
-    <span className="text-[9px] font-black text-brand-navy/30 uppercase tracking-widest">{label}</span>
-    <span className="font-bold text-brand-navy">{value || '---'}</span>
-  </div>
+  <p>
+    <span className="font-semibold text-gray-600">{label}:</span> {value || 'N/A'}
+  </p>
 );
 
 const BlueprintView: React.FC<{ blueprint: StoryBlueprint; t: (ar: string, en: string) => string }> = ({ blueprint, t }) => (
-  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-    <div className="grid sm:grid-cols-2 gap-8">
-      <DetailSection title={t('الأساسيات', 'Blueprint Foundation')} icon="architecture">
-        <div className="grid grid-cols-1 gap-4">
-            <DetailItem label="Theme Core" value={blueprint.foundation.storyCore} />
-            <DetailItem label="Moral Narrative" value={blueprint.foundation.moral} />
-            <DetailItem label="Hero Objective" value={blueprint.foundation.heroDesire} />
-            <DetailItem label="Primary Conflict" value={blueprint.foundation.mainChallenge} />
-            <DetailItem label="Visual Anchor" value={blueprint.foundation.primaryVisualAnchor} />
-        </div>
+  <div className="space-y-6 animate-fade-in">
+    <div className="grid sm:grid-cols-2 gap-4">
+      <DetailSection title={t('الأساسيات', 'Blueprint Foundation')}>
+        <DetailItem label="Theme" value={blueprint.foundation.storyCore} />
+        <DetailItem label="Moral" value={blueprint.foundation.moral} />
+        <DetailItem label="Hero Desire" value={blueprint.foundation.heroDesire} />
+        <DetailItem label="Main Challenge" value={blueprint.foundation.mainChallenge} />
+        <DetailItem label="Visual Anchor" value={blueprint.foundation.primaryVisualAnchor} />
       </DetailSection>
 
-      <DetailSection title={t('الشخصيات', 'Character Matrix')} icon="group">
-        <div className="space-y-6">
-          <div className="p-4 rounded-2xl bg-brand-navy/5 border border-brand-navy/5">
-            <p className="text-[9px] font-black text-brand-navy/40 uppercase tracking-widest mb-2">Hero Intelligence</p>
-            <p className="text-xs font-bold text-brand-navy/70 leading-relaxed">{blueprint.characters.heroProfile}</p>
+      <DetailSection title={t('الشخصيات', 'Characters')}>
+        <div className="space-y-3">
+          <div className="p-2 bg-blue-50 rounded border border-blue-100">
+            <p className="font-bold text-brand-navy text-xs uppercase tracking-wider mb-1">Hero Profile</p>
+            <p className="text-xs text-gray-700 leading-relaxed">{blueprint.characters.heroProfile}</p>
           </div>
           {blueprint.characters.supportingRoles.map((role, idx) => (
-            <div key={idx} className="p-4 rounded-2xl bg-white/40 border border-white/60 shadow-sm flex justify-between items-center">
-              <div>
-                <span className="text-[9px] font-black text-brand-navy/30 uppercase tracking-widest block">Role: {role.role}</span>
-                <span className="font-black text-brand-navy text-xs uppercase tracking-tighter">{role.name}</span>
+            <div key={idx} className="p-2 bg-white rounded border border-gray-200">
+              <div className="flex justify-between items-center mb-1">
+                <span className="font-bold text-gray-700 text-xs">{role.role}</span>
+                <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">{role.name}</span>
               </div>
-              <div className="text-[8px] font-black text-brand-teal uppercase bg-brand-teal/5 px-2 py-1 rounded-lg">ID: {role.visualKey}</div>
+              <p className="text-[10px] text-gray-500">Visual: {role.visualKey}</p>
             </div>
           ))}
         </div>
       </DetailSection>
     </div>
 
-    <DetailSection title={t('هيكل القصة', 'Strategic Narrative Arc')} icon="timeline" className="col-span-full">
-      <div className="mb-8 p-6 bg-brand-orange/5 text-brand-orange rounded-3xl text-xs font-black uppercase tracking-widest border border-brand-orange/10 leading-loose">
+    <DetailSection title={t('هيكل القصة', 'Story Structure - Narrative Arc')}>
+      <div className="mb-4 p-3 bg-yellow-50 text-yellow-800 rounded text-xs italic border border-yellow-100">
         {blueprint.structure.arcSummary}
       </div>
-      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-4 scroller-thin">
+      <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
         {blueprint.structure.spreads.map(spread => (
-          <div key={spread.spreadNumber} className="flex gap-6 p-6 rounded-[2rem] bg-white/40 border border-white/60 hover:bg-white transition-all group">
-            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-brand-navy text-white font-black rounded-2xl shadow-xl group-hover:scale-110 transition-transform">
-              {String(spread.spreadNumber).padStart(2, '0')}
+          <div key={spread.spreadNumber} className="flex gap-3 text-xs border-b border-gray-100 pb-2 last:border-0">
+            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-brand-orange text-white font-bold rounded-full">
+              {spread.spreadNumber}
             </div>
-            <div className="flex-1 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="font-black text-brand-navy uppercase tracking-widest text-[10px]">{spread.emotionalBeat}</span>
-                <span className="text-[9px] font-black text-brand-navy/20 uppercase tracking-widest">{spread.specificLocation}</span>
+            <div className="flex-1">
+              <div className="flex justify-between mb-1">
+                <span className="font-bold text-gray-800">{spread.emotionalBeat}</span>
+                <span className="text-[10px] text-gray-400">{spread.specificLocation}</span>
               </div>
-              <p className="text-xs font-medium text-brand-navy/70 leading-relaxed">{spread.narrative}</p>
-              <div className="flex gap-3">
-                <span className="text-[8px] font-black text-brand-teal uppercase bg-brand-teal/5 px-3 py-1 rounded-full">Mood: {spread.emotionalBeat}</span>
-                <span className="text-[8px] font-black text-brand-orange uppercase bg-brand-orange/5 px-3 py-1 rounded-full">Luminance: {spread.timeOfDay}</span>
+              <p className="text-gray-600 mb-1">{spread.narrative}</p>
+              <div className="flex gap-2 text-[10px]">
+                <span className="bg-gray-100 px-1 rounded text-gray-500">Mood: {spread.emotionalBeat}</span>
+                <span className="bg-gray-100 px-1 rounded text-gray-500">Light: {spread.timeOfDay}</span>
               </div>
             </div>
           </div>
@@ -79,237 +80,91 @@ const BlueprintView: React.FC<{ blueprint: StoryBlueprint; t: (ar: string, en: s
   </div>
 );
 
-interface OrderPreviewModalProps {
-  order: AdminOrder;
-  onClose: () => void;
-  language: Language;
-}
-
 export const OrderPreviewModal: React.FC<OrderPreviewModalProps> = ({ order, onClose, language }) => {
   const [activeTab, setActiveTab] = useState<'details' | 'blueprint'>('details');
-  const [showDNA, setShowDNA] = useState(false);
   if (!order) return null;
   const t = (ar: string, en: string) => language === 'ar' ? ar : en;
   const currency = t('د.ك', 'KWD');
-
-  const downloadImage = (base64OrUrl: string | undefined, filename: string) => {
-    if (!base64OrUrl) return;
-    const link = document.createElement('a');
-    // Handle both raw base64 and data URIs/URLs
-    if (base64OrUrl.startsWith('data:') || base64OrUrl.startsWith('http')) {
-      link.href = base64OrUrl;
-    } else {
-      link.href = `data:image/jpeg;base64,${base64OrUrl}`;
-    }
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   const hasBlueprint = !!order.storyData.blueprint;
 
   return (
     <div
-      className="fixed inset-0 bg-brand-navy/60 backdrop-blur-2xl z-[100] flex justify-center items-center p-6 animate-in fade-in duration-500"
+      className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4"
       aria-modal="true"
       role="dialog"
       onClick={onClose}
     >
       <div
-        className="glass-panel w-full max-w-5xl rounded-[4rem] border-white/60 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in slide-in-from-bottom-8 duration-700"
+        className="bg-white rounded-2xl shadow-2xl p-0 w-full max-w-4xl animate-fade-in-up max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <header className="p-10 border-b border-brand-navy/5 bg-white/40 flex justify-between items-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-orange via-brand-navy to-brand-teal"></div>
+        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-               <span className="material-symbols-outlined text-brand-navy/20">query_stats</span>
-               <h3 className="text-3xl font-black text-brand-navy uppercase tracking-tighter">{t('تفاصيل الطلب', 'Intelligence Report')}</h3>
-            </div>
-            <p className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.3em]">Protocol: {order.orderNumber} • Operative: {order.customerName}</p>
+            <h3 className="text-2xl font-bold text-brand-navy">{t('تفاصيل الطلب', 'Order Inspection')}</h3>
+            <p className="text-sm text-gray-500">#{order.orderNumber} • {order.customerName}</p>
           </div>
-          <button 
-             onClick={onClose} 
-             className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white/60 border border-white/80 text-brand-navy/30 hover:text-brand-orange hover:rotate-90 transition-all shadow-sm"
-          >
-             <span className="material-symbols-outlined text-3xl">close</span>
-          </button>
-        </header>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+        </div>
 
         {/* Tabs */}
-        <nav className="flex px-10 py-6 border-b border-brand-navy/5 bg-white/20">
-          <div className="flex p-2 rounded-2xl bg-white/40 border border-white/60 shadow-inner">
-            <button
-              onClick={() => setActiveTab('details')}
-              className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'details' ? 'bg-brand-navy text-white shadow-xl scale-[1.02]' : 'text-brand-navy/40 hover:text-brand-navy'}`}
-            >
-              {t('التفاصيل العامة', 'Core Logistics')}
-            </button>
-            <button
-              onClick={() => setActiveTab('blueprint')}
-              disabled={!hasBlueprint}
-              className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'blueprint' ? 'bg-brand-navy text-white shadow-xl scale-[1.02]' : 'text-brand-navy/40 hover:text-brand-navy'} ${!hasBlueprint && 'opacity-30 cursor-not-allowed'}`}
-            >
-              {t('المخطط القصصي', 'Narrative DNA')} {hasBlueprint && '✨'}
-            </button>
-          </div>
-        </nav>
+        <div className="flex px-6 border-b">
+          <button
+            onClick={() => setActiveTab('details')}
+            className={`py-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'details' ? 'border-brand-orange text-brand-orange' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+          >
+            {t('التفاصيل العامة', 'General Details')}
+          </button>
+          <button
+            onClick={() => setActiveTab('blueprint')}
+            disabled={!hasBlueprint}
+            className={`py-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'blueprint' ? 'border-brand-navy text-brand-navy' : 'border-transparent text-gray-400'} ${!hasBlueprint && 'opacity-50 cursor-not-allowed'}`}
+          >
+            {t('المخطط القصصي', 'Story Blueprint')} {hasBlueprint ? '✨' : '(N/A)'}
+          </button>
+        </div>
 
         {/* Content */}
-        <div className="p-10 overflow-y-auto flex-1 bg-white/10 scroller-thin">
+        <div className="p-6 overflow-y-auto flex-1 bg-[#fcfcfc]">
           {activeTab === 'details' ? (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="grid sm:grid-cols-2 gap-8">
-                <DetailSection title={t('ملخص الطلب', 'Logistics Summary')} icon="receipt_long">
-                  <div className="grid grid-cols-2 gap-6">
-                    <DetailItem label={t('رقم الطلب', 'Order Sequence')} value={order.orderNumber} />
-                    <DetailItem label={t('تاريخ الطلب', 'Timestamp')} value={new Date(order.orderDate).toLocaleString()} />
-                    <DetailItem label={t('الحالة', 'System State')} value={order.status} />
-                    <DetailItem label={t('المجموع', 'Revenue Output')} value={`${order.total.toFixed(3)} ${currency}`} />
-                  </div>
+            <div className="space-y-4 animate-fade-in">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <DetailSection title={t('ملخص الطلب', 'Order Summary')}>
+                  <DetailItem label={t('رقم الطلب', 'Order #')} value={order.orderNumber} />
+                  <DetailItem label={t('تاريخ الطلب', 'Date')} value={new Date(order.orderDate).toLocaleString()} />
+                  <DetailItem label={t('الحالة', 'Status')} value={order.status} />
+                  <DetailItem label={t('المجموع', 'Total')} value={`${order.total.toFixed(3)} ${currency}`} />
                 </DetailSection>
 
-                <DetailSection title={t('بيانات الشحن', 'Shipping Manifest')} icon="local_shipping">
-                  <div className="grid grid-cols-2 gap-6">
-                    <DetailItem label={t('الاسم', 'Recipient')} value={order.shippingDetails.name} />
-                    <DetailItem label={t('البريد الإلكتروني', 'Comm-Link')} value={order.shippingDetails.email} />
-                    <DetailItem label={t('الهاتف', 'Relay Number')} value={order.shippingDetails.phone} />
-                    <DetailItem label={t('العنوان', 'Geo-Coordinate')} value={`${order.shippingDetails.address}, ${order.shippingDetails.city}`} />
-                  </div>
+                <DetailSection title={t('بيانات الشحن', 'Shipping Details')}>
+                  <DetailItem label={t('الاسم', 'Name')} value={order.shippingDetails.name} />
+                  <DetailItem label={t('البريد الإلكتروني', 'Email')} value={order.shippingDetails.email} />
+                  <DetailItem label={t('الهاتف', 'Phone')} value={order.shippingDetails.phone} />
+                  <DetailItem label={t('العنوان', 'Address')} value={`${order.shippingDetails.address}, ${order.shippingDetails.city}`} />
                 </DetailSection>
               </div>
 
-              <DetailSection title={t('بيانات الحمض النووي (DNA)', 'Customer Locked DNA')} icon="fingerprint" className="border-brand-orange/20 bg-brand-orange/[0.02]">
-                <div className="flex flex-col gap-6">
-                  <div className="flex justify-between items-center bg-white/60 p-4 rounded-2xl border border-white/80">
-                    <div>
-                      <p className="text-[10px] font-black text-brand-navy/40 uppercase tracking-widest mb-1">Identity Assets</p>
-                      <p className="text-xs font-bold text-brand-navy">Character Likeness & Style Anchors</p>
-                    </div>
-                    <button 
-                      onClick={() => setShowDNA(!showDNA)}
-                      className="px-6 py-2 rounded-xl bg-brand-navy text-white text-[9px] font-black uppercase tracking-widest hover:bg-brand-orange transition-colors"
-                    >
-                      {showDNA ? t('إغلاق المدير', 'Hide DNA Manager') : t('إدارة DNA', 'Manage DNA')}
-                    </button>
-                  </div>
-
-                  {showDNA && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                      {/* Hero A */}
-                      <div className="space-y-4 p-6 rounded-3xl bg-brand-navy/5 border border-brand-navy/10 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-3 opacity-10">
-                           <span className="material-symbols-outlined text-4xl">person</span>
-                        </div>
-                        <h5 className="text-[10px] font-black text-brand-navy uppercase tracking-widest pb-3 border-b border-brand-navy/5">Primary Hero: {order.storyData.childName}</h5>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <p className="text-[8px] font-black text-brand-navy/30 uppercase tracking-widest">Raw Identity</p>
-                            <div className="aspect-square rounded-2xl bg-white/40 border border-white/60 overflow-hidden flex items-center justify-center">
-                              {order.storyData.mainCharacterImageBase64 ? (
-                                <img src={order.storyData.mainCharacterImageBase64.startsWith('data:') ? order.storyData.mainCharacterImageBase64 : `data:image/jpeg;base64,${order.storyData.mainCharacterImageBase64}`} className="w-full h-full object-cover" />
-                              ) : <span className="material-symbols-outlined text-brand-navy/10 text-4xl">no_photography</span>}
-                            </div>
-                            <button 
-                              disabled={!order.storyData.mainCharacterImageBase64}
-                              onClick={() => downloadImage(order.storyData.mainCharacterImageBase64, 'heroA_raw.jpg')}
-                              className="w-full py-2 rounded-lg bg-white border border-brand-navy/5 text-[8px] font-black text-brand-navy uppercase tracking-widest hover:bg-brand-navy hover:text-white transition-all disabled:opacity-30"
-                            >
-                              Download Raw
-                            </button>
-                          </div>
-                          <div className="space-y-2">
-                            <p className="text-[8px] font-black text-brand-orange/60 uppercase tracking-widest">Style Anchor (DNA)</p>
-                            <div className="aspect-square rounded-2xl bg-brand-orange/5 border border-brand-orange/20 overflow-hidden flex items-center justify-center">
-                              {order.storyData.styleReferenceImageBase64 ? (
-                                <img src={order.storyData.styleReferenceImageBase64.startsWith('data:') ? order.storyData.styleReferenceImageBase64 : `data:image/jpeg;base64,${order.storyData.styleReferenceImageBase64}`} className="w-full h-full object-cover" />
-                              ) : <span className="material-symbols-outlined text-brand-orange/10 text-4xl">brush</span>}
-                            </div>
-                            <button 
-                              disabled={!order.storyData.styleReferenceImageBase64}
-                              onClick={() => downloadImage(order.storyData.styleReferenceImageBase64, 'heroA_dna.jpg')}
-                              className="w-full py-2 rounded-lg bg-brand-orange/10 border border-brand-orange/20 text-[8px] font-black text-brand-orange uppercase tracking-widest hover:bg-brand-orange hover:text-white transition-all disabled:opacity-30"
-                            >
-                              Download DNA
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Hero B */}
-                      {order.storyData.useSecondCharacter && (
-                        <div className="space-y-4 p-6 rounded-3xl bg-brand-teal/5 border border-brand-teal/10 relative overflow-hidden">
-                          <div className="absolute top-0 right-0 p-3 opacity-10">
-                            <span className="material-symbols-outlined text-4xl">group</span>
-                          </div>
-                          <h5 className="text-[10px] font-black text-brand-teal uppercase tracking-widest pb-3 border-b border-brand-teal/5">Support Hero: {order.storyData.secondCharacter?.name}</h5>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <p className="text-[8px] font-black text-brand-navy/30 uppercase tracking-widest">Raw Identity</p>
-                              <div className="aspect-square rounded-2xl bg-white/40 border border-white/60 overflow-hidden flex items-center justify-center">
-                                {order.storyData.secondCharacterImageBase64 ? (
-                                  <img src={order.storyData.secondCharacterImageBase64.startsWith('data:') ? order.storyData.secondCharacterImageBase64 : `data:image/jpeg;base64,${order.storyData.secondCharacterImageBase64}`} className="w-full h-full object-cover" />
-                                ) : <span className="material-symbols-outlined text-brand-navy/10 text-4xl">no_photography</span>}
-                              </div>
-                              <button 
-                                disabled={!order.storyData.secondCharacterImageBase64}
-                                onClick={() => downloadImage(order.storyData.secondCharacterImageBase64, 'heroB_raw.jpg')}
-                                className="w-full py-2 rounded-lg bg-white border border-brand-navy/5 text-[8px] font-black text-brand-navy uppercase tracking-widest hover:bg-brand-navy hover:text-white transition-all disabled:opacity-30"
-                              >
-                                Download Raw
-                              </button>
-                            </div>
-                            <div className="space-y-2">
-                              <p className="text-[8px] font-black text-brand-teal/60 uppercase tracking-widest">Style Anchor (DNA)</p>
-                              <div className="aspect-square rounded-2xl bg-brand-teal/5 border border-brand-teal/20 overflow-hidden flex items-center justify-center">
-                                {order.storyData.secondCharacter?.imageDNA?.[0] ? (
-                                  <img src={order.storyData.secondCharacter.imageDNA[0].startsWith('data:') ? order.storyData.secondCharacter.imageDNA[0] : `data:image/jpeg;base64,${order.storyData.secondCharacter.imageDNA[0]}`} className="w-full h-full object-cover" />
-                                ) : <span className="material-symbols-outlined text-brand-teal/10 text-4xl">brush</span>}
-                              </div>
-                              <button 
-                                disabled={!order.storyData.secondCharacter?.imageDNA?.[0]}
-                                onClick={() => downloadImage(order.storyData.secondCharacter?.imageDNA?.[0], 'heroB_dna.jpg')}
-                                className="w-full py-2 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-[8px] font-black text-brand-teal uppercase tracking-widest hover:bg-brand-teal hover:text-white transition-all disabled:opacity-30"
-                              >
-                                Download DNA
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </DetailSection>
-
-              <DetailSection title={t('تفاصيل القصة', 'Project Specifications')} icon="menu_book">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
-                  <DetailItem label={t('عنوان القصة', 'Book Title')} value={order.storyData.title} />
-                  <DetailItem label={t('اسم الطفل', "Hero Identity")} value={order.storyData.childName} />
-                  <DetailItem label={t('عمر الطفل', "Age Group")} value={order.storyData.childAge} />
-                  <DetailItem label={t('حجم الكتاب', 'Dimensionality')} value={order.storyData.size} />
-                  <DetailItem label={t('الشخصية الرئيسية', 'Primary Asset')} value={order.storyData.mainCharacter?.name || '---'} />
+              <DetailSection title={t('تفاصيل القصة', 'Story Details')}>
+                <div className="grid grid-cols-2 gap-4">
+                  <DetailItem label={t('عنوان القصة', 'Title')} value={order.storyData.title} />
+                  <DetailItem label={t('اسم الطفل', "Child's Name")} value={order.storyData.childName} />
+                  <DetailItem label={t('عمر الطفل', "Child's Age")} value={order.storyData.childAge} />
+                  <DetailItem label={t('حجم الكتاب', 'Book Size')} value={order.storyData.size} />
+                  <DetailItem label={t('الشخصية الرئيسية', 'Main Character')} value={order.storyData.mainCharacter?.name || 'N/A'} />
                   {order.storyData.useSecondCharacter && (
-                    <DetailItem label={t('الشخصية الثانوية', 'Support Asset')} value={order.storyData.secondCharacter?.name} />
+                    <DetailItem label={t('الشخصية الثانوية', 'Second Character')} value={order.storyData.secondCharacter?.name} />
                   )}
                 </div>
               </DetailSection>
 
-              <DetailSection title={t('تفاصيل المشاهد والرسوم', 'Sequence Visualization Data')} icon="image" className="col-span-full">
-                <div className="space-y-4 max-h-[350px] overflow-y-auto pr-4 scroller-thin">
+              <DetailSection title={t('تفاصيل المشاهد والرسوم', 'Spread & Illustration Details')} className="col-span-full">
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
                   {(order.storyData.spreads || []).filter((s: any) => s.spreadNumber > 0).map((s: any) => (
-                    <div key={s.spreadNumber} className="p-6 rounded-2xl bg-white/40 border border-white/60 hover:bg-white transition-all group">
-                      <div className="flex items-center gap-4 mb-3">
-                         <span className="w-8 h-8 flex items-center justify-center bg-brand-navy/5 rounded-lg text-[10px] font-black text-brand-navy">#{String(s.spreadNumber).padStart(2, '0')}</span>
-                         <p className="text-xs font-black text-brand-navy uppercase tracking-widest">{t('المشهد', 'Sequence Segment')} {s.spreadNumber}</p>
-                      </div>
-                      <p className="text-xs font-medium text-brand-navy/60 italic leading-relaxed mb-4">"{s.leftText} {s.rightText}"</p>
-                      <div className="p-4 rounded-xl bg-brand-navy/[0.03] border border-brand-navy/5 group-hover:bg-brand-navy/5 transition-colors">
-                         <span className="text-[8px] font-black text-brand-navy/20 uppercase tracking-widest block mb-1">AI Render Prompt</span>
-                         <p className="text-[10px] font-black text-brand-navy/40 uppercase tracking-wider leading-relaxed truncate">{s.actualPrompt}</p>
-                      </div>
+                    <div key={s.spreadNumber} className="text-xs border-b pb-2 last:border-b-0">
+                      <p className="font-bold text-gray-700">Spread {s.spreadNumber}:</p>
+                      <p className="text-gray-600 italic">"{s.leftText} {s.rightText}"</p>
+                      <p className="mt-1 text-[10px] text-gray-400">Prompt: {s.actualPrompt?.substring(0, 50)}...</p>
                     </div>
                   ))}
                 </div>
@@ -320,14 +175,11 @@ export const OrderPreviewModal: React.FC<OrderPreviewModalProps> = ({ order, onC
           )}
         </div>
 
-        <footer className="p-10 bg-white/40 border-t border-brand-navy/5 flex justify-end">
-          <button 
-             onClick={onClose}
-             className="px-10 py-4 rounded-2xl bg-brand-navy text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-brand-navy/20 hover:scale-105 active:scale-95 transition-all"
-          >
-             {t('إغلاق', 'Secure Terminal')}
-          </button>
-        </footer>
+        <div className="p-4 bg-gray-50 border-t flex justify-end">
+          <Button onClick={onClose} variant="secondary">
+            {t('إغلاق', 'Close')}
+          </Button>
+        </div>
       </div>
     </div>
   );

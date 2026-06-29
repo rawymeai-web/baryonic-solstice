@@ -104,6 +104,27 @@ export const backendApi = {
         body: JSON.stringify(payload)
     }),
 
+    uploadImage: (payload: { orderNumber: string; spreadNum: number; imageBase64: string }) => fetchBackend<{ success: boolean; publicUrl: string }>('/admin/upload-image', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    }),
+
+    evaluateImageQA: (payload: {
+        generatedImageBase64: string;
+        heroRawBase64?: string;
+        heroDNABase64?: string;
+        pageType: 'Cover' | 'Spread';
+        currentTextSide: string;
+        targetPrompt: string;
+        secondRawBase64?: string;
+        secondDNABase64?: string;
+        orderId?: string;
+        spreadIndex?: number;
+    }) => fetchBackend<any>('/generate/qa', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    }),
+
     editSpreadImage: (payload: { imageBase64: string; editInstruction: string; stylePrompt: string; childDNA?: string; secondDNA?: string }) =>
         fetchBackend<{ imageBase64: string }>('/generate/edit-image', {
             method: 'POST',
@@ -115,11 +136,6 @@ export const backendApi = {
             method: 'POST',
             body: JSON.stringify(payload)
         }),
-
-    evaluateImageQA: (payload: { generatedImageBase64: string; heroRawBase64?: string; heroDNABase64?: string; pageType?: string; currentTextSide?: string; targetPrompt: string; secondRawBase64?: string; secondDNABase64?: string }) => fetchBackend<any>('/generate/qa', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-    }),
 
 
     generatePreview: (payload: { character: any, secondCharacter?: any, themeDescription: string, themeId?: string, stylePrompt: string, age: string }) => fetchBackend<{ imageBase64: string, prompt: string, secondImageBase64?: string, secondPrompt?: string }>('/generate/preview', {
@@ -147,6 +163,11 @@ export const backendApi = {
         method: 'PUT',
         body: JSON.stringify(payload)
     }),
+
+    // Customer Tools
+    getCustomerDashboard: (userId: string) => fetchBackend<{ orders: any[], subscription: any }>(`/orders/customer/${userId}`),
+    
+    getOrderDetails: (orderId: string) => fetchBackend<any>(`/orders/${orderId}`),
 
     // Admin Tools
     triggerCron: () => fetchBackend<{ executedTasks: number; failedTasks: number }>('/cron', {

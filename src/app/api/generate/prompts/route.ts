@@ -48,8 +48,11 @@ function buildHeroProfiles(frontendHeroes: any[]) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const selectedStyleId = body.selected_style_id || 'premium_3d_adventure';
+        const selectedStyleId = body.selected_style_id;
         let frontendHeroes = body.heroes;
+
+        // Extract custom visualDNA from various possible payload fields
+        const visualDNA = body.visualDNA || body.technicalStyleGuide || body.selectedStylePrompt || body.themeVisualDNA;
 
         // Legacy order fallback: reconstruct hero list if empty
         if (!frontendHeroes || frontendHeroes.length === 0) {
@@ -72,7 +75,35 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Missing required inputs for prompt engineering" }, { status: 400 });
         }
 
-        const styleProfile = getStyleProfile(selectedStyleId);
+        let styleProfile = getStyleProfile(selectedStyleId);
+
+        // CRITICAL FIX: If no hardcoded style ID is provided OR it's the default 3D style, 
+        // map to soft_2d_storybook or custom dynamic profile using the visualDNA to prevent 3D defaults from polluting custom styles
+        const isDefault3D = !selectedStyleId || selectedStyleId === 'premium_3d_adventure';
+        if (isDefault3D && visualDNA) {
+            const isWatercolor = /watercolor|painterly|storybook|pencil|gouache|2d/i.test(visualDNA);
+            if (isWatercolor) {
+                styleProfile = getStyleProfile("soft_2d_storybook");
+            } else {
+                styleProfile = {
+                    style_id: "custom_dynamic",
+                    style_name: "Custom Dynamic Style",
+                    style_family: "custom",
+                    positive_style_lock: visualDNA,
+                    character_rendering_rules: "Characters must look like stylized versions of the real children matching the requested art style exactly, not realistic portraits.",
+                    environment_rendering_rules: "The environment must belong to the requested art style world.",
+                    lighting_rules: "",
+                    color_rules: "",
+                    texture_rules: "",
+                    forbidden_styles: [
+                        "photorealistic",
+                        "real photographic depth of field"
+                    ],
+                    identity_translation_rule: "Use real photos only for identity cues. Preserve resemblance, but translate all features into the selected stylized style."
+                } as any;
+            }
+        }
+
         const heroes = buildHeroProfiles(frontendHeroes);
 
         // 1. Generate Raw Prompts using the new JSON Architecture Schema Compiler

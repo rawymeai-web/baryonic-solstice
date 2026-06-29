@@ -10,6 +10,8 @@ export interface QualityCheckResult {
     textReasoning: string;
     recommendedTextSide: 'Right' | 'Left';
     overallDecision: 'pass' | 'fail' | 'flagged';
+    narrativeAdherenceStatus?: 'pass' | 'fail';
+    narrativeAdherenceReasoning?: string;
 }
 
 export class QualityAgent {
@@ -23,6 +25,7 @@ export class QualityAgent {
         pageType: 'Cover' | 'Spread',
         currentTextSide: 'Right' | 'Left' | string,
         targetPrompt: string,
+        storyText: string = "",
         secondRawBase64?: string,
         secondDNABase64?: string
     ): Promise<QualityCheckResult> {
@@ -42,7 +45,7 @@ export class QualityAgent {
 
             let promptContext = `
 **TASK:** You are an elite Art Director and Quality Assurance Agent for a personalized children's book.
-Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided reference photos to ensure strict quality standards.
+Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided reference photos and story narrative to ensure strict quality standards.
 
 **REFERENCE INPUTS:**
 - **Image 1:** The newly generated image that needs to be evaluated.
@@ -62,6 +65,7 @@ Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided refer
             promptContext += `
 **PAGE TYPE:** ${pageType}
 **CURRENT TEXT BOX SIDE:** ${currentTextSide || 'Right'}
+**STORY NARRATIVE:** ${storyText || 'N/A'}
 
 **EVALUATION CRITERIA:**
 1. **Character Consistency:** Does the character(s) in Image 1 perfectly match the bone structure, facial geometry, and identity of the RAW PHOTO(s)? (Ignore style, focus on identity).
@@ -70,6 +74,7 @@ Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided refer
    - Is there enough empty "negative space" on the ${currentTextSide || 'Right'} side for text?
    - Will the text box cover the character's face or the main action? 
    - If the current side is bad, would the other side be better?
+4. **Narrative Adherence:** Does the generated image (Image 1) accurately depict the story action, settings, and main characters described in the STORY NARRATIVE?
 
 **MANDATE:** Output your evaluation strictly as a JSON object following this exact schema:
 {
@@ -81,17 +86,19 @@ Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided refer
   "textClearanceStatus": "pass" | "fail",
   "textReasoning": "Explain if the text box will cover important elements...",
   "recommendedTextSide": "Right" | "Left",
+  "narrativeAdherenceStatus": "pass" | "fail",
+  "narrativeAdherenceReasoning": "Detailed reason why it passes or fails the narrative check.",
   "overallDecision": "pass" | "fail"
 }
 
-- For \`overallDecision\`, if any of the three statuses are "fail", the overall decision MUST be "fail".
+- For \`overallDecision\`, if any of the four statuses are "fail", the overall decision MUST be "fail".
 - Output ONLY valid JSON. No markdown formatting.
 `;
 
             contents.push({ text: promptContext });
 
             const model = ai().getGenerativeModel({
-                model: 'gemini-2.0-flash', // Vision capable model for analysis
+                model: 'gemini-2.5-flash', // Vision capable model for analysis
                 generationConfig: { responseMimeType: 'application/json' }
             });
 

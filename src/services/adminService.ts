@@ -1,11 +1,7 @@
-
 import { supabase } from '../utils/supabaseClient';
-import type { AdminOrder, AdminCustomer, OrderStatus, StoryData, ShippingDetails, ProductSize, StoryTheme, AppSettings } from '@/types';
-import { INITIAL_THEMES, ART_STYLE_OPTIONS } from '@/constants';
-import * as imageStore from './imageStore';
+import type { AdminOrder, OrderStatus, StoryData, ShippingDetails, ProductSize, StoryTheme, AppSettings } from '@/types';
 
 // --- DB Interfaces ---
-// These match the Supabase table columns
 interface DBOrder {
   order_number: string;
   customer_id: string;
@@ -13,13 +9,14 @@ interface DBOrder {
   total: number;
   status: string;
   created_at: string;
-  story_data: any; // JSONB
-  shipping_details: any; // JSONB
+  story_data: any;
+  shipping_details: any;
   production_cost: number;
   ai_cost: number;
   shipping_cost: number;
   package_url?: string;
 }
+
 interface DBTheme {
   id: string;
   title: any;
@@ -29,6 +26,7 @@ interface DBTheme {
   visual_dna: string;
   skeleton: any;
 }
+
 interface DBProduct {
   id: string;
   name: string;
@@ -36,20 +34,9 @@ interface DBProduct {
   preview_image_url: string;
   dimensions: any;
 }
-interface DBSettings {
-  id: number;
-  default_method: string;
-  default_spread_count: number;
-  enable_debug_view: boolean;
-  generation_delay: number;
-  unit_production_cost: number;
-  unit_ai_cost: number;
-  unit_shipping_cost: number;
-  target_model: string;
-}
 
-// --- Converters ---
-const mapDBOrderList = (o: DBOrder): AdminOrder => ({
+// --- Mappers ---
+const mapDBOrder = (o: DBOrder): AdminOrder => ({
   orderNumber: o.order_number,
   customerName: o.customer_name,
   orderDate: o.created_at,
@@ -58,40 +45,52 @@ const mapDBOrderList = (o: DBOrder): AdminOrder => ({
   productionCost: o.production_cost || 0,
   aiCost: o.ai_cost || 0,
   shippingCost: o.shipping_cost || 0,
-  storyData: o.story_data || {} as any, // Might be empty in list view
-  shippingDetails: o.shipping_details || {} as any, // Might be empty in list view
+  storyData: o.story_data || {},
+  shippingDetails: o.shipping_details || {},
   packageUrl: o.package_url
 });
 
-const mapDBOrderFull = (o: DBOrder): AdminOrder => ({
-  orderNumber: o.order_number,
-  customerName: o.customer_name,
-  orderDate: o.created_at,
-  status: o.status as OrderStatus,
-  total: o.total,
-  productionCost: o.production_cost || 0,
-  aiCost: o.ai_cost || 0,
-  shippingCost: o.shipping_cost || 0,
-  storyData: o.story_data,
-  shippingDetails: o.shipping_details,
-  packageUrl: o.package_url
-});
+const mapDBProduct = (p: DBProduct): ProductSize => {
+  const defaults = {
+    coverContent: {
+      barcode: { fromRightCm: 2, fromTopCm: 2, widthCm: 4, heightCm: 2.5 },
+      format: { fromTopCm: 2, widthCm: 10, heightCm: 2 },
+      title: { fromTopCm: 2, widthCm: 10, heightCm: 3 }
+    }
+  };
+  return {
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    previewImageUrl: p.preview_image_url,
+    isAvailable: true,
+    ...p.dimensions,
+    coverContent: {
+      ...defaults.coverContent,
+      ...(p.dimensions?.coverContent || {}),
+      title: {
+        ...defaults.coverContent.title,
+        ...(p.dimensions?.coverContent?.title || {})
+      }
+    }
+  };
+};
 
-export async function updateOrderPackageUrl(orderNumber: string, packageUrl: string): Promise<void> {
-  const { error } = await supabase
-    .from('orders')
-    .update({ package_url: packageUrl })
-    .eq('order_number', orderNumber);
-  if (error) throw error;
-}
+const mapDBTheme = (t: DBTheme): StoryTheme => ({
+  id: t.id,
+  title: t.title,
+  description: t.description,
+  emoji: t.emoji,
+  category: t.category as any,
+  visualDNA: t.visual_dna,
+  skeleton: t.skeleton
+});
 
 // --- Services ---
 
-// 1. Settings
 export async function getSettings(): Promise<AppSettings> {
   const { data, error } = await supabase.from('settings').select('*').single();
   if (error || !data) {
-    console.warn('Could not fetch settings, returning defaults', error);
     return {
       defaultMethod: 'method4',
       defaultSpreadCount: 8,
@@ -100,7 +99,7 @@ export async function getSettings(): Promise<AppSettings> {
       unitProductionCost: 13.250,
       unitAiCost: 0.600,
       unitShippingCost: 1.500,
-      targetModel: 'gemini-1.5-flash'
+      targetModel: 'gemini-2.5-flash'
     };
   }
   return {
@@ -115,541 +114,214 @@ export async function getSettings(): Promise<AppSettings> {
   };
 }
 
-export async function saveSettings(s: AppSettings): Promise<void> {
-  const { error } = await supabase.from('settings').upsert({
-    id: 1, // Single row
-    default_method: s.defaultMethod,
-    default_spread_count: s.defaultSpreadCount,
-    enable_debug_view: s.enableDebugView,
-    generation_delay: s.generationDelay,
-    unit_production_cost: s.unitProductionCost,
-    unit_ai_cost: s.unitAiCost,
-    unit_shipping_cost: s.unitShippingCost,
-    target_model: s.targetModel
-  });
-  if (error) throw error;
+export async function getThemes(): Promise<StoryTheme[]> {
+  const { data, error } = await supabase.from('themes').select('*');
+  if (error || !data) return [];
+  return data.map(mapDBTheme);
 }
-
-// --- Connection Check (lightweight HTTP ping — no SQL needed) ---
-export async function checkConnection(): Promise<{ connected: boolean; reason?: string }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    return { connected: false, reason: 'Missing API Keys (.env)' };
-  }
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 4000); // 4s hard abort
-
-  try {
-    // Ping the REST root — returns 200 immediately without any SQL or RLS check
-    const res = await fetch(`${supabaseUrl}/rest/v1/`, {
-      method: 'HEAD',
-      headers: { 'apikey': supabaseKey },
-      signal: controller.signal
-    });
-    clearTimeout(timer);
-    // 200 or 400 both mean the server responded — we're reachable
-    return { connected: res.status < 500 };
-  } catch (e: any) {
-    clearTimeout(timer);
-    if (e.name === 'AbortError') {
-      return { connected: false, reason: 'Network timeout — is Supabase paused?' };
-    }
-    return { connected: false, reason: e?.message || 'Unreachable' };
-  }
-}
-
-
-// --- Local Storage Fallback Helpers ---
-const LOCAL_ORDERS_KEY = 'rawy_local_orders';
-
-function getLocalOrders(): AdminOrder[] {
-  try {
-    const raw = (typeof window !== 'undefined' ? window.localStorage : null as any).getItem(LOCAL_ORDERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) { return []; }
-}
-
-function saveLocalOrder(order: AdminOrder) {
-  let current = getLocalOrders();
-  const index = current.findIndex(o => o.orderNumber === order.orderNumber);
-  
-  if (index !== -1) {
-    current[index] = order;
-  } else {
-    current = [order, ...current];
-  }
-
-  try {
-    (typeof window !== 'undefined' ? window.localStorage : null as any).setItem(LOCAL_ORDERS_KEY, JSON.stringify(current));
-  } catch (e: any) {
-    if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
-      console.warn("Local storage full, purging old orders...");
-      // Remove the last 5 oldest orders
-      const trimmed = current.slice(0, Math.max(1, current.length - 5));
-      try {
-        (typeof window !== 'undefined' ? window.localStorage : null as any).setItem(LOCAL_ORDERS_KEY, JSON.stringify(trimmed));
-      } catch (e2) {
-        console.error("Local storage still full after purge.");
-      }
-    }
-  }
-}
-
-function updateLocalOrderStatus(orderNumber: string, status: OrderStatus) {
-  const current = getLocalOrders();
-  const index = current.findIndex(o => o.orderNumber === orderNumber);
-  if (index !== -1) {
-    current[index].status = status;
-    try {
-      (typeof window !== 'undefined' ? window.localStorage : null as any).setItem(LOCAL_ORDERS_KEY, JSON.stringify(current));
-    } catch (e: any) {
-      if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
-        console.warn("Local storage full on status update, purging old orders...");
-        const trimmed = current.slice(0, Math.max(1, current.length - 5));
-        try {
-          (typeof window !== 'undefined' ? window.localStorage : null as any).setItem(LOCAL_ORDERS_KEY, JSON.stringify(trimmed));
-        } catch (e2) {}
-      }
-    }
-  }
-}
-
-// 2. Orders
-export async function getOrders(): Promise<{ orders: AdminOrder[]; dbConnected: boolean; dbError?: string }> {
-  // 1. Fetch Remote - OMIT story_data to prevent statement timeouts on older massive DB entries
-  let remoteOrders: AdminOrder[] = [];
-  let dbConnected = false;
-  let dbError: string | undefined;
-
-  try {
-    const timeoutPromise = new Promise<{ data: any, error: any }>((_, reject) =>
-      setTimeout(() => reject(new Error('Supabase request timed out after 5s. Is the project paused?')), 5000)
-    );
-
-    const queryPromise = supabase
-      .from('orders')
-      .select('order_number, customer_id, customer_name, total, status, created_at, production_cost, ai_cost, shipping_cost')
-      .order('created_at', { ascending: false });
-
-    // Race the query against the timeout
-    const { data, error } = (await Promise.race([queryPromise, timeoutPromise])) as any;
-
-    if (!error && data) {
-      remoteOrders = data.map(mapDBOrderList);
-      dbConnected = true;
-    } else {
-      dbError = error?.message || 'Supabase fetch failed';
-      console.warn('Supabase fetch failed, using local orders only.', error);
-    }
-  } catch (err: any) {
-    dbError = err.message || 'Supabase connection timed out';
-    console.warn('Supabase fetch failed or timed out, using local orders only.', err);
-  }
-
-  // 2. Fetch Local
-  const localOrders = getLocalOrders();
-
-  // 3. Merge (Prefer Remote if duplicate)
-  const remoteIds = new Set(remoteOrders.map(o => o.orderNumber));
-  const uniqueLocal = localOrders.filter(o => !remoteIds.has(o.orderNumber));
-
-  const orders = [...remoteOrders, ...uniqueLocal].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
-  return { orders, dbConnected, dbError };
-}
-
-export async function getOrderById(orderNumber: string): Promise<AdminOrder | null> {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('order_number', orderNumber)
-    .single();
-
-  if (!error && data) {
-    return mapDBOrderFull(data);
-  }
-
-  // Fallback to local storage if not found in DB
-  const localItems = getLocalOrders();
-  const localMatch = localItems.find(o => o.orderNumber === orderNumber);
-  if (localMatch) return localMatch;
-
-  return null;
-}
-
-export async function getOrderStatus(orderNumber: string): Promise<{ status: OrderStatus; error_message?: string } | null> {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('status, error_message')
-    .eq('order_number', orderNumber)
-    .single();
-
-  if (error || !data) return null;
-  return data as any;
-}
-
-export async function saveOrder(orderNumber: string, storyData: StoryData, shippingDetails: ShippingDetails, total?: number): Promise<void> {
-  const settings = await getSettings();
-  const product = await getProductSizeById(storyData.size);
-  
-  const standardBase = product ? product.price : 17.000;
-  const premiumAddon = storyData.useSecondCharacter ? 5.000 : 0;
-
-  let calculatedTotal = total;
-  if (calculatedTotal === undefined) {
-    if (storyData.planType === 'monthly') {
-      calculatedTotal = 16.000;
-    } else if (storyData.planType === 'yearly') {
-      calculatedTotal = 12.500; // Note: For single order record, we might store the cycle price
-    } else {
-      calculatedTotal = 18.000 + premiumAddon + 1.500;
-    }
-  }
-
-  const totalPrice = calculatedTotal;
-
-  // OPTIMIZATION: Create a "Light" version of storyData for Fallback/Storage immediately
-  // We MUST remove the massive Base64 strings to prevent "Invalid String Length" crashes in JSON.stringify
-  const heavyStoryData = storyData;
-  const lightSpreads = (heavyStoryData.spreads || []).map(p => ({
-    ...p,
-    illustrationUrl: p.illustrationUrl?.substring(0, 50) + '...' // Truncate for safety in logs/fallback
-  }));
-
-  const lightStoryData = {
-    ...heavyStoryData,
-    coverImageUrl: heavyStoryData.coverImageUrl?.substring(0, 50) + '...',
-    spreads: lightSpreads,
-    // Remove character base64s and DNA for local storage fallback to save quota
-    mainCharacter: { ...heavyStoryData.mainCharacter, imageBases64: [], images: [], imageDNA: [] },
-    secondCharacter: heavyStoryData.secondCharacter ? { ...heavyStoryData.secondCharacter, imageBases64: [], images: [], imageDNA: [] } : undefined
-  };
-
-  const fallbackOrder: AdminOrder = {
-    orderNumber,
-    customerName: shippingDetails.name,
-    orderDate: new Date().toISOString(),
-    status: 'paid_confirmed',
-    total: totalPrice,
-    productionCost: settings.unitProductionCost,
-    aiCost: settings.unitAiCost,
-    shippingCost: settings.unitShippingCost,
-    storyData: lightStoryData, // STORE SAFE VERSION
-    shippingDetails: shippingDetails
-  };
-
-  try {
-    // 1. Upload Images to Bucket
-    const imageFiles: any = {
-      cover: heavyStoryData.coverImageUrl && heavyStoryData.coverImageUrl.length > 500 && !heavyStoryData.coverImageUrl.startsWith('http')
-        ? new File([await (await fetch(`data:image/jpeg;base64,${heavyStoryData.coverImageUrl}`)).blob()], 'cover.jpeg', { type: 'image/jpeg' }) 
-        : undefined,
-      spreads: await Promise.all((heavyStoryData.spreads || []).map(async (p, i) => {
-        if (!p.illustrationUrl || p.illustrationUrl.length < 500 || p.illustrationUrl.startsWith('http')) return undefined;
-        return new File([await (await fetch(`data:image/jpeg;base64,${p.illustrationUrl}`)).blob()], `page_${i + 1}.jpeg`, { type: 'image/jpeg' });
-      }))
-    };
-
-    const imageUrls = await imageStore.saveImagesForOrder(orderNumber, imageFiles);
-
-    // 2. Prepare Final Data with URLs (No Base64)
-    const finalStoryData = {
-      ...lightStoryData,
-      // Fallback chain: new upload URL → existing http URL → heavy (base64 fallback)
-      coverImageUrl: imageUrls.cover || (heavyStoryData.coverImageUrl?.startsWith('http') ? heavyStoryData.coverImageUrl : heavyStoryData.coverImageUrl),
-      spreads: (heavyStoryData.spreads || []).map((spread, i) => {
-        const uploadedUrl = imageUrls.spreads[i];
-        const existingHttpUrl = spread.illustrationUrl?.startsWith('http') ? spread.illustrationUrl : undefined;
-        return {
-          ...spread,
-          illustrationUrl: uploadedUrl || existingHttpUrl || spread.illustrationUrl || ''
-        };
-      }),
-      // REQUIRED FOR LEGACY PIPELINE: Do NOT strip the original user portraits (Selfies) from the Cloud Database.
-      mainCharacter: { 
-        ...lightStoryData.mainCharacter, 
-        imageBases64: heavyStoryData.mainCharacter?.imageBases64 || [],
-        imageDNA: heavyStoryData.mainCharacter?.imageDNA || []
-      },
-      secondCharacter: heavyStoryData.secondCharacter ? { 
-        ...lightStoryData.secondCharacter, 
-        imageBases64: heavyStoryData.secondCharacter.imageBases64 || [],
-        imageDNA: heavyStoryData.secondCharacter.imageDNA || []
-      } : undefined
-    };
-
-    // 3. Upsert Customer
-    const customerId = shippingDetails.email.toLowerCase();
-    await supabase.from('customers').upsert({
-      id: customerId,
-      email: shippingDetails.email,
-      name: shippingDetails.name,
-      phone: shippingDetails.phone,
-      last_order_date: new Date().toISOString(),
-    }, { onConflict: 'id' });
-
-    // 4. Upsert Order — fetch existing status first so we don't reset it on every save
-    const { data: existingOrder } = await supabase
-      .from('orders')
-      .select('status')
-      .eq('order_number', orderNumber)
-      .single();
-    const preservedStatus = existingOrder?.status || 'New Order';
-
-    const { error: orderError } = await supabase.from('orders').upsert({
-      order_number: orderNumber,
-      customer_id: customerId,
-      customer_name: shippingDetails.name,
-      total: totalPrice,
-      status: preservedStatus, // Preserve existing status — never regress to 'New Order'
-      story_data: {
-        ...finalStoryData,
-        // CRITICAL: Preserve blueprint and finalPrompts — without these the editor shows 'Architecting story...' on refresh
-        blueprint: heavyStoryData.blueprint || finalStoryData.blueprint,
-        finalPrompts: heavyStoryData.finalPrompts || finalStoryData.finalPrompts,
-        // CRITICAL: Re-merge character detail fields that might have been stripped in lightStoryData but are present in heavyStoryData
-        mainCharacter: {
-            ...finalStoryData.mainCharacter,
-            imageDNA: heavyStoryData.mainCharacter?.imageDNA || [],
-            imageBases64: heavyStoryData.mainCharacter?.imageBases64 || [],
-            images: heavyStoryData.mainCharacter?.images || []
-        },
-        secondCharacter: heavyStoryData.secondCharacter ? {
-            ...finalStoryData.secondCharacter,
-            imageDNA: heavyStoryData.secondCharacter?.imageDNA || [],
-            imageBases64: heavyStoryData.secondCharacter?.imageBases64 || [],
-            images: heavyStoryData.secondCharacter?.images || []
-        } : undefined
-      },
-      shipping_details: shippingDetails,
-      production_cost: settings.unitProductionCost,
-      ai_cost: settings.unitAiCost,
-      shipping_cost: settings.unitShippingCost
-    }, { onConflict: 'order_number' });
-
-    if (orderError) throw orderError;
-
-  } catch (error: any) {
-    console.warn("Supabase Save Failed. Falling back to Local Storage.", error);
-    if (error?.message) console.error("Supabase Error Message:", error.message);
-
-    // Fallback is SAFE now because it uses lightStoryData
-    saveLocalOrder(fallbackOrder);
-  }
-}
-
-// NEW: Sync Local Orders to Supabase (for recovery)
-export async function syncLocalOrders(): Promise<number> {
-  const localOrders = getLocalOrders();
-  let syncedCount = 0;
-
-  for (const order of localOrders) {
-    // Check if exists in Supabase
-    const { data } = await supabase.from('orders').select('order_number').eq('order_number', order.orderNumber).single();
-
-    if (!data) {
-      // It's missing! Push it.
-      // We need to reconstruct the DB payload (reverse of mapDBOrder + basic assumptions)
-      // Note: We might be missing the full resolution images if they were reduced for local storage
-
-      const settings = await getSettings(); // get costs for historical accuracy or use current
-
-      const { error } = await supabase.from('orders').insert({
-        order_number: order.orderNumber,
-        customer_id: order.shippingDetails.email.toLowerCase(), // Assumption
-        customer_name: order.customerName,
-        total: order.total,
-        status: order.status,
-        created_at: order.orderDate, // Keep original date
-        story_data: order.storyData,
-        shipping_details: order.shippingDetails,
-        production_cost: order.productionCost || settings.unitProductionCost,
-        ai_cost: order.aiCost || settings.unitAiCost,
-        shipping_cost: order.shippingCost || settings.unitShippingCost,
-        package_url: order.packageUrl
-      });
-
-      if (!error) syncedCount++;
-      else console.error(`Failed to sync order ${order.orderNumber}`, error);
-    }
-  }
-
-  return syncedCount;
-}
-
-export async function updateOrderStatus(orderNumber: string, status: OrderStatus): Promise<void> {
-  const { error } = await supabase.from('orders').update({ status }).eq('order_number', orderNumber);
-  if (error) {
-    console.warn("Supabase update failed, trying local.");
-    updateLocalOrderStatus(orderNumber, status);
-  }
-}
-
-export async function dispatchJob(orderId: string, jobType: 'story' | 'illustration' | 'compilation' | 'print_handoff'): Promise<void> {
-  // Simple insertion from admin client
-  const { error } = await supabase.from('order_jobs').insert({
-    order_id: orderId,
-    job_type: jobType,
-    status: 'queued',
-    attempts: 0
-  });
-  if (error) {
-    console.error(`Failed to dispatch job ${jobType} for ${orderId}`, error);
-    throw new Error(`Queue dispatch failed: ${error.message}`);
-  }
-}
-
-// 3. Products
-const mapDBProduct = (p: DBProduct): ProductSize => {
-  const defaults = {
-    coverContent: {
-      barcode: { fromRightCm: 2, fromTopCm: 2, widthCm: 4, heightCm: 2.5 },
-      format: { fromTopCm: 2, widthCm: 10, heightCm: 2 },
-      title: { fromTopCm: 2, widthCm: 10, heightCm: 3 } // Default for safety
-    }
-  };
-  return {
-    id: p.id,
-    name: p.name,
-    price: p.price,
-    previewImageUrl: p.preview_image_url,
-    isAvailable: true,
-    ...p.dimensions, // spread cover, page, margins
-    // Deep merge / Safety fill
-    coverContent: {
-      ...defaults.coverContent,
-      ...(p.dimensions?.coverContent || {}),
-      title: {
-        ...defaults.coverContent.title,
-        ...(p.dimensions?.coverContent?.title || {})
-      }
-    }
-  };
-};
 
 export async function getProductSizes(): Promise<ProductSize[]> {
   const { data, error } = await supabase.from('products').select('*');
-  if (error) return [];
+  if (error || !data) return [];
   return data.map(mapDBProduct);
 }
+
 export async function getProductSizeById(id: string): Promise<ProductSize | undefined> {
   const { data } = await supabase.from('products').select('*').eq('id', id).single();
   if (!data) return undefined;
   return mapDBProduct(data);
 }
-export async function saveProductSize(p: ProductSize): Promise<void> {
-  // Extract dimensions
-  const { id, name, price, previewImageUrl, isAvailable, ...dimensions } = p;
-  const { error } = await supabase.from('products').upsert({
-    id,
-    name,
-    price,
-    preview_image_url: previewImageUrl,
-    dimensions
-  });
-  if (error) throw error;
-}
 
-// 4. Themes
-const mapDBTheme = (t: DBTheme): StoryTheme => ({
-  id: t.id,
-  title: t.title,
-  description: t.description,
-  emoji: t.emoji,
-  category: t.category as any,
-  visualDNA: t.visual_dna,
-  skeleton: t.skeleton
-});
-
-export async function getThemes(): Promise<StoryTheme[]> {
-  const { data, error } = await supabase.from('themes').select('*');
-  if (error || !data || data.length === 0) return INITIAL_THEMES;
-  return data.map(mapDBTheme);
-}
-
-export async function saveTheme(t: StoryTheme): Promise<void> {
-  const { error } = await supabase.from('themes').upsert({
-    id: t.id,
-    title: t.title,
-    description: t.description,
-    emoji: t.emoji,
-    category: t.category,
-    visual_dna: t.visualDNA,
-    skeleton: t.skeleton
-  });
-  if (error) throw error;
-}
-
-// 5. Bible (Keep Local for now as per plan, or basic store)
-// 5. Bible (Supabase Backed)
-const BIBLE_ID = 1;
-export interface SeriesBible {
-  masterGuardrails: string;
-  storyFlowLogic: string;
-  compositionMandates: string;
-}
-const defaultBible: SeriesBible = {
-  masterGuardrails: `STRICT MASTER PRODUCTION RULES (MANDATORY):... (same as before) ...`,
-  storyFlowLogic: `THE 9-POINT NARRATIVE ARC (REQUIRED):...`,
-  compositionMandates: `VISUAL COMPOSITION MANDATES:...`
-};
-
-export async function getSeriesBible(): Promise<SeriesBible> {
-  const { data, error } = await supabase.from('guidebook').select('content').eq('id', BIBLE_ID).single();
-
-  if (error || !data) {
-    console.warn("Generating fresh guidebook row...");
-    // Attempt init if missing
-    await supabase.from('guidebook').insert({ id: BIBLE_ID, content: defaultBible });
-    return defaultBible;
+export async function getOrders(): Promise<{ orders: AdminOrder[]; dbConnected: boolean; dbError?: string }> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/admin/orders');
+      if (!res.ok) {
+        const errData = await res.json();
+        return { orders: [], dbConnected: false, dbError: errData.error || 'Server error' };
+      }
+      const data = await res.json();
+      return { 
+        orders: (data.orders || []).map(mapDBOrder), 
+        dbConnected: true 
+      };
+    } catch (e: any) {
+      return { orders: [], dbConnected: false, dbError: e.message };
+    }
   }
-  return data.content;
+
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) return { orders: [], dbConnected: false, dbError: error.message };
+    return { orders: (data || []).map(mapDBOrder), dbConnected: true };
+  } catch (e: any) {
+    return { orders: [], dbConnected: false, dbError: e.message };
+  }
 }
 
-export async function saveSeriesBible(bible: SeriesBible): Promise<void> {
-  const { error } = await supabase.from('guidebook').upsert({
-    id: BIBLE_ID,
-    content: bible,
-    updated_at: new Date().toISOString()
-  });
-  if (error) throw error;
-}
+export async function getOrderById(orderNumber: string): Promise<AdminOrder | null> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch(`/api/admin/orders/${orderNumber}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.order ? mapDBOrder(data.order) : null;
+    } catch (e) {
+      return null;
+    }
+  }
 
-// 6. Prompts (Keep Local or move to Settings?)
-// For now, let's assume they are handled by promptService which might use localStorage.
-// If prompted, we can move them too.
-
-export async function getCustomers(): Promise<AdminCustomer[]> {
-  const { data, error } = await supabase.from('customers').select('*');
-  if (error) return [];
-  return data.map(c => ({
-    id: c.id,
-    name: c.name,
-    email: c.email,
-    phone: c.phone,
-    firstOrderDate: c.first_order_date || '',
-    lastOrderDate: c.last_order_date || '',
-    orderCount: c.order_count || 0
-  }));
-}
-
-export async function getSubscriptions() {
   const { data, error } = await supabase
-    .from('subscriptions')
-    .select(`
-        *,
-        hero:heroes(*),
-        customer:customers!user_id(*)
-    `)
-    .order('next_billing_date', { ascending: true });
+    .from('orders')
+    .select('*')
+    .eq('order_number', orderNumber)
+    .single();
+  if (error || !data) return null;
+  return mapDBOrder(data);
+}
 
-  if (error) {
-    console.error("Failed to fetch subscriptions:", error);
-    return [];
+export async function updateOrderPackageUrl(orderNumber: string, packageUrl: string): Promise<void> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch(`/api/admin/orders/${orderNumber}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ package_url: packageUrl })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to update package URL');
+    }
+    return;
   }
-  return data;
+
+  const { error } = await supabase
+    .from('orders')
+    .update({ package_url: packageUrl })
+    .eq('order_number', orderNumber);
+  if (error) throw error;
+}
+
+export async function updateOrderStatus(orderNumber: string, status: OrderStatus): Promise<void> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch(`/api/admin/orders/${orderNumber}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to update order status');
+    }
+    return;
+  }
+
+  const { error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('order_number', orderNumber);
+  if (error) throw error;
+}
+
+export async function saveOrder(orderNumber: string, storyData: StoryData, shippingDetails: ShippingDetails, total?: number): Promise<void> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch(`/api/admin/orders/${orderNumber}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storyData, shippingDetails, total })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to save order');
+    }
+    return;
+  }
+
+  const settings = await getSettings();
+  const totalPrice = total || 18.000;
+
+  // Helper to securely upload Base64 images to Bucket and insert to DB
+  const uploadAndLogDNA = async (base64Array: string[] | undefined, heroLabel: string, imageType: string) => {
+    if (!base64Array || !base64Array[0]) return;
+    try {
+      const base64Str = base64Array[0].includes('base64,') ? base64Array[0].split('base64,')[1] : base64Array[0];
+      const binaryString = atob(base64Str);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'image/jpeg' });
+      
+      const filename = `${orderNumber}/${heroLabel.replace(' ', '_')}_${imageType.replace(' ', '_')}_${Date.now()}.jpg`;
+      
+      const { data, error } = await supabase.storage.from('dna-images').upload(filename, blob, {
+        contentType: 'image/jpeg',
+        upsert: true
+      });
+      
+      if (!error) {
+        const { data: publicData } = supabase.storage.from('dna-images').getPublicUrl(filename);
+        await supabase.from('order_dna').insert({
+          order_id: orderNumber,
+          hero_label: heroLabel,
+          image_type: imageType,
+          image_url: publicData.publicUrl
+        });
+      }
+    } catch (err) {
+      console.error(`Failed to upload ${imageType} for ${heroLabel}:`, err);
+    }
+  };
+
+  // Upload to new architecture
+  await uploadAndLogDNA(storyData.mainCharacter?.imageBases64, 'Hero A', 'Original Photo');
+  await uploadAndLogDNA(storyData.mainCharacter?.imageDNA, 'Hero A', 'Stylized DNA');
+  await uploadAndLogDNA(storyData.secondCharacter?.imageBases64, 'Hero B', 'Original Photo');
+  await uploadAndLogDNA(storyData.secondCharacter?.imageDNA, 'Hero B', 'Stylized DNA');
+
+  // Stripping ALL massive base64s since they are now in bucket
+  const cleanStoryData = JSON.parse(JSON.stringify(storyData));
+  if (cleanStoryData.mainCharacter) {
+    cleanStoryData.mainCharacter.imageBases64 = [];
+    cleanStoryData.mainCharacter.imageDNA = [];
+  }
+  if (cleanStoryData.secondCharacter) {
+    cleanStoryData.secondCharacter.imageBases64 = [];
+    cleanStoryData.secondCharacter.imageDNA = [];
+  }
+
+  const email = shippingDetails?.email || `guest-${orderNumber}@rawy.com`;
+  const customerId = email.toLowerCase();
+  const customerName = shippingDetails?.name || 'Guest User';
+  const customerPhone = shippingDetails?.phone || '';
+  
+  // Upsert Customer
+  await supabase.from('customers').upsert({
+    id: customerId,
+    email: email,
+    name: customerName,
+    phone: customerPhone,
+    last_order_date: new Date().toISOString(),
+  });
+
+  // Upsert Order
+  const { error } = await supabase.from('orders').upsert({
+    order_number: orderNumber,
+    customer_id: customerId,
+    customer_name: customerName,
+    total: totalPrice,
+    status: 'paid_confirmed',
+    story_data: cleanStoryData,
+    shipping_details: shippingDetails || {},
+    production_cost: settings.unitProductionCost,
+    ai_cost: settings.unitAiCost,
+    shipping_cost: settings.unitShippingCost
+  });
+
+  if (error) throw error;
 }
 
 export async function getQualityLogs(orderId: string, spreadNumber: number) {
@@ -660,31 +332,226 @@ export async function getQualityLogs(orderId: string, spreadNumber: number) {
     .eq('spread_number', spreadNumber)
     .order('iteration_number', { ascending: true });
 
-  if (error) {
-    console.error(`Failed to fetch QA logs for order ${orderId} spread ${spreadNumber}:`, error);
-    return [];
-  }
+  if (error) return [];
   return data;
 }
 
-export async function runQACheck(payload: {
-  orderId: string;
-  spreadIndex: number;
-  imageUrl: string;
-  blueprintJson: string;
-  dnaImages: { base64: string; label: string }[];
-  iterationNumber: number;
-}) {
-  const response = await fetch('/api/generate/qa', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
+// --- DNA Records ---
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to run QA check');
+export async function fetchOrderDNA(orderId: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('order_dna')
+    .select('*')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('[adminService] fetchOrderDNA error:', error);
+    return [];
+  }
+  return data || [];
+}
+
+// --- Customer Records ---
+
+export async function getCustomers(): Promise<any[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/admin/customers');
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.customers || [];
+    } catch (e) {
+      return [];
+    }
   }
 
-  return response.json();
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .order('last_order_date', { ascending: false });
+  if (error) {
+    console.error('[adminService] getCustomers error:', error);
+    return [];
+  }
+  return data || [];
+}
+
+// --- Order Status Polling ---
+
+export async function getOrderStatus(orderNumber: string): Promise<{ status: string; error_message?: string } | null> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('status, error_message')
+    .eq('order_number', orderNumber)
+    .single();
+  if (error || !data) return null;
+  return data as { status: string; error_message?: string };
+}
+
+// --- Series Bible (Brand Narrative Guidelines) ---
+
+export interface SeriesBible {
+  brandVoice?: string;
+  characterGuidelines?: string;
+  narrativeRules?: string;
+  styleRules?: string;
+  forbiddenContent?: string;
+  [key: string]: any;
+}
+
+export async function getSeriesBible(): Promise<SeriesBible | null> {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('series_bible')
+    .single();
+  if (error || !data) {
+    // Return a default empty series bible
+    return {
+      brandVoice: '',
+      characterGuidelines: '',
+      narrativeRules: '',
+      styleRules: '',
+      forbiddenContent: ''
+    };
+  }
+  return (data.series_bible as SeriesBible) || {
+    brandVoice: '',
+    characterGuidelines: '',
+    narrativeRules: '',
+    styleRules: '',
+    forbiddenContent: ''
+  };
+}
+
+export async function saveSeriesBible(bible: SeriesBible): Promise<void> {
+  const { error } = await supabase
+    .from('settings')
+    .update({ series_bible: bible })
+    .neq('id', '');  // Update the single settings row
+  if (error) throw error;
+}
+
+export async function getSubscriptions(): Promise<any[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/admin/subscriptions');
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.subscriptions || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*, customers(*)')
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('[adminService] getSubscriptions error:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function hardResetOrder(orderNumber: string): Promise<void> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch(`/api/admin/orders/${orderNumber}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to reset order');
+    }
+    return;
+  }
+
+  const { error: jobErr } = await supabase.from('order_jobs').delete().eq('order_id', orderNumber);
+  if (jobErr) throw jobErr;
+
+  const { data: order } = await supabase.from('orders').select('story_data').eq('order_number', orderNumber).single();
+  if (order) {
+    const cleanStoryData = { ...(order.story_data as any) };
+    delete cleanStoryData.pages;
+    delete cleanStoryData.spreads;
+    delete cleanStoryData.qa_logs;
+    delete cleanStoryData.generation_snapshot;
+    delete cleanStoryData.coverImageUrl;
+    delete cleanStoryData.finalPrompts;
+    delete cleanStoryData.spreadPlan;
+
+    const { error: orderErr } = await supabase.from('orders').update({
+      status: 'paid',
+      story_data: cleanStoryData
+    }).eq('order_number', orderNumber);
+    if (orderErr) throw orderErr;
+  }
+}
+
+// --- Product Size CRUD ---
+
+export async function saveProductSize(productSize: Partial<ProductSize>): Promise<void> {
+  const payload = {
+    id: productSize.id,
+    name: productSize.name,
+    price: productSize.price,
+    preview_image_url: productSize.previewImageUrl,
+    dimensions: {
+      page: (productSize as any).page,
+      cover: (productSize as any).cover,
+      coverContent: productSize.coverContent,
+    }
+  };
+  const { error } = await supabase
+    .from('products')
+    .upsert(payload, { onConflict: 'id' });
+  if (error) throw error;
+}
+
+// --- Settings CRUD ---
+
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  const payload = {
+    default_method: settings.defaultMethod,
+    default_spread_count: settings.defaultSpreadCount,
+    enable_debug_view: settings.enableDebugView,
+    generation_delay: settings.generationDelay,
+    unit_production_cost: settings.unitProductionCost,
+    unit_ai_cost: settings.unitAiCost,
+    unit_shipping_cost: settings.unitShippingCost,
+    target_model: settings.targetModel,
+  };
+  const { error } = await supabase
+    .from('settings')
+    .update(payload)
+    .neq('id', '');  // Update the single settings row
+  if (error) throw error;
+}
+
+// --- Theme CRUD ---
+
+export async function saveTheme(theme: Partial<StoryTheme>): Promise<void> {
+  const payload = {
+    id: theme.id,
+    title: theme.title,
+    description: theme.description,
+    emoji: theme.emoji,
+    category: theme.category,
+    visual_dna: theme.visualDNA,
+    skeleton: (theme as any).skeleton,
+  };
+  const { error } = await supabase
+    .from('themes')
+    .upsert(payload, { onConflict: 'id' });
+  if (error) throw error;
+}
+
+// --- Local → Cloud Sync Utility ---
+
+export async function syncLocalOrders(): Promise<number> {
+  // This function was historically used to sync orders from localStorage to the DB.
+  // In the current architecture all orders are written directly to Supabase,
+  // so this is a no-op that returns 0.
+  console.log('[adminService] syncLocalOrders: no local orders to sync (all orders live in Supabase).');
+  return 0;
 }

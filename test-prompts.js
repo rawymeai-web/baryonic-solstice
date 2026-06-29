@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+// Use native fetch
 
 async function testGeneration() {
     try {

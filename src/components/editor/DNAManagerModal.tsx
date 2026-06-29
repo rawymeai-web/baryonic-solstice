@@ -47,7 +47,7 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                 mainCharacter: storyData.mainCharacter,
                 secondCharacter: storyData.secondCharacter,
                 theme: storyData.theme,
-                style: storyData.selectedStylePrompt || "high quality illustration",
+                style: storyData.selectedStyleNames?.[0] || storyData.selectedStylePrompt || "high quality illustration",
                 age: storyData.childAge
             });
 
@@ -107,7 +107,7 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                                 )}
                                 {mainRaw && (
                                     <div className="flex gap-2 mt-3">
-                                        <Button variant="secondary" onClick={() => handleDownload(mainRaw, `${storyData.childName.replace(/\s+/g, '_')}_Identity_Anchor.jpg`)} className="flex-1 py-1.5 text-xs">Download {storyData.childName}</Button>
+                                        <Button variant="secondary" onClick={() => handleDownload(mainRaw, `Hero_A_Identity_Anchor.jpg`)} className="flex-1 py-1.5 text-xs">Download Image 1</Button>
                                     </div>
                                 )}
                             </div>
@@ -120,7 +120,7 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                                 )}
                                 <div className="flex gap-2 mt-3">
                                     <Button variant="secondary" onClick={() => handleUpload('main')} className="flex-1 py-1.5 text-xs">Upload Custom</Button>
-                                    {mainDNA && <Button variant="secondary" onClick={() => handleDownload(mainDNA, `${storyData.childName.replace(/\s+/g, '_')}_Style_DNA.jpg`)} className="flex-1 py-1.5 text-xs border-amber-500/30 text-amber-400">Download Style</Button>}
+                                    {mainDNA && <Button variant="secondary" onClick={() => handleDownload(mainDNA, `Hero_A_Style_DNA.jpg`)} className="flex-1 py-1.5 text-xs border-amber-500/30 text-amber-400">Download Image 2</Button>}
                                 </div>
                             </div>
                         </div>
@@ -140,7 +140,7 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                                     )}
                                     {secondRaw && (
                                         <div className="flex gap-2 mt-3">
-                                            <Button variant="secondary" onClick={() => handleDownload(secondRaw, `${storyData.secondCharacter?.name?.replace(/\s+/g, '_') || 'Secondary'}_Identity_Anchor.jpg`)} className="flex-1 py-1.5 text-xs">Download {storyData.secondCharacter?.name}</Button>
+                                            <Button variant="secondary" onClick={() => handleDownload(secondRaw, `Hero_B_Identity_Anchor.jpg`)} className="flex-1 py-1.5 text-xs">Download Image 3</Button>
                                         </div>
                                     )}
                                 </div>
@@ -153,7 +153,7 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                                     )}
                                     <div className="flex gap-2 mt-3">
                                         <Button variant="secondary" onClick={() => handleUpload('second')} className="flex-1 py-1.5 text-xs">Upload Custom</Button>
-                                        {secondDNA && <Button variant="secondary" onClick={() => handleDownload(secondDNA, `${storyData.secondCharacter?.name?.replace(/\s+/g, '_') || 'Secondary'}_Style_DNA.jpg`)} className="flex-1 py-1.5 text-xs border-amber-500/30 text-amber-400">Download Style</Button>}
+                                        {secondDNA && <Button variant="secondary" onClick={() => handleDownload(secondDNA, `Hero_B_Style_DNA.jpg`)} className="flex-1 py-1.5 text-xs border-amber-500/30 text-amber-400">Download Image 4</Button>}
                                     </div>
                                 </div>
                             </div>

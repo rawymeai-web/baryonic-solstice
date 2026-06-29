@@ -12,7 +12,7 @@ import { StoryBlueprint } from '../../types';
  * and corrects any discrepancies in-place (emotion, environment, time, token leakage).
  * 
  * This agent does NOT regenerate from scratch — it only performs targeted corrections.
- * A gemini-2.0-flash call costs < 2 seconds, making it low-overhead.
+ * A gemini-2.5-flash call costs < 2 seconds, making it low-overhead.
  */
 export async function auditPromptJson(
     blueprintSpread: StoryBlueprint['structure']['spreads'][0],
@@ -27,7 +27,7 @@ export async function auditPromptJson(
 
     return withRetry(async () => {
         const model = ai().getGenerativeModel({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-2.5-flash',
             generationConfig: { responseMimeType: 'application/json' }
         });
 
