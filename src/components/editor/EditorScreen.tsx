@@ -153,10 +153,29 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     const hBStyle = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA');
                     const hBOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Original Photo');
                     
-                    if (hAStyle) setMasterDNA(hAStyle.image_url);
-                    if (hAOrig) setMasterRaw(hAOrig.image_url);
-                    if (hBStyle) setMasterDNA2(hBStyle.image_url);
-                    if (hBOrig) setMasterRaw2(hBOrig.image_url);
+                    if (hAStyle) {
+                        setMasterDNA(hAStyle.image_url);
+                    } else {
+                        setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageBases64?.[0]);
+                    }
+
+                    if (hAOrig) {
+                        setMasterRaw(hAOrig.image_url);
+                    } else {
+                        setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
+                    }
+
+                    if (hBStyle) {
+                        setMasterDNA2(hBStyle.image_url);
+                    } else {
+                        setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
+                    }
+
+                    if (hBOrig) {
+                        setMasterRaw2(hBOrig.image_url);
+                    } else {
+                        setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
+                    }
                     setDnaSource('order_dna');
                     console.log(`✅ [DNA] Loaded ${dnaRecords.length} records from order_dna for ${orderId}`);
                 } else {

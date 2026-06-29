@@ -112,8 +112,7 @@ export const useLegacyPipeline = (
             }
 
             if (resume && hasMismatch) {
-                logMsg(`⚠️ Mismatch detected. Overriding resume flag to execute a clean restart sequence...`);
-                resume = false;
+                logMsg(`⚠️ Mismatch detected (cached plan contains Hamad/Khalda, missing '${storyData.childName}'), but continuing with resume = true as requested.`);
             }
 
             if (!resume) {
