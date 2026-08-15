@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/utils/supabaseClient';
 import { uploadBase64Image } from '@/services/imageStore';
 import { MasterScheduler } from '@/services/workers/scheduler';
+import { EmailService } from '@/services/notifications/emailService';
 
 export const maxDuration = 300;
 // Explicitly increase body size limit for App Router Vercel functions
@@ -122,7 +123,7 @@ export async function PUT(req: Request) {
         // 1. Fetch Existing Data (to prevent overwrite)
         const { data: existing, error: fetchError } = await supabase
             .from('orders')
-            .select('story_data')
+            .select('story_data, total')
             .eq('order_number', orderId)
             .single();
 
@@ -169,6 +170,12 @@ export async function PUT(req: Request) {
                 updates.status = 'queued'; // Fast-track to Queued for backend cron
                 // NOTE: shipping_details snapshot is handled by line below (updates.shipping_details),
                 // no separate shipping_snapshot column needed.
+
+                // Trigger email notifications: customer (order received) and admin (new order alert)
+                const orderTotal = (existing as any)?.total || 0;
+                EmailService.sendNotification(orderId, 'order_received', { total: orderTotal }).catch(e => console.error("Customer checkout email failed:", e));
+                EmailService.sendNotification(orderId, 'admin_new_order', { total: orderTotal }).catch(e => console.error("Admin checkout email failed:", e));
+
                 // TRIGGER SCHEDULER asynchronously since local environment lacks cron
                 MasterScheduler.executeTick().catch(e => console.error("Async Scheduler failed:", e));
             }
