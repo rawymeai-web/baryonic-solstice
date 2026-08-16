@@ -161,7 +161,7 @@ export class EmailService {
                             </table>
                             
                             <div style="text-align: center; margin-top: 30px;">
-                                <a href="https://mail.rawy.ai/admin/orders/${order.order_number}" style="background-color: #006B5D; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View in Admin Panel</a>
+                                <a href="https://rawytime.com/admin/orders/${order.order_number}" style="background-color: #006B5D; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View in Admin Panel</a>
                             </div>
                         </div>
                     `;
@@ -285,10 +285,10 @@ export class EmailService {
 
             // Execute Resend dispatch if Key is configured
             if (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.startsWith('re_stub')) {
-                // In local dev, use onboarding@resend.dev since mail.rawy.ai is not verified yet
+                // In local dev, use onboarding@resend.dev since rawytime.com is not verified yet
                 const fromAddress = process.env.NODE_ENV === 'development'
                     ? 'onboarding@resend.dev'
-                    : (process.env.RESEND_FROM_EMAIL || 'Rawy <noreply@mail.rawy.ai>');
+                    : (process.env.RESEND_FROM_EMAIL || 'Rawy <noreply@mail.rawytime.com>');
 
                 const { data, error: sendError } = await resend.emails.send({
                     from: fromAddress,
