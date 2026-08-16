@@ -96,3 +96,8 @@
     @apply bg-brand-navy/10 rounded-full;
   }
 }
+
+/* Reset letter-spacing in RTL/Arabic contexts to prevent cursive letters from disconnecting */
+[dir="rtl"] *, [lang="ar"] * {
+  letter-spacing: normal !important;
+}
