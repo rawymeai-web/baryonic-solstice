@@ -53,7 +53,12 @@
 
 @layer utilities {
   .glass-panel {
-    @apply bg-white/60 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+    @apply bg-white/50 backdrop-blur-3xl border border-white/30 shadow-[0_10px_30px_rgba(0,26,64,0.04),0_1px_3px_rgba(0,26,64,0.02)] transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)];
+    border-top: 1.5px solid rgba(255, 255, 255, 0.7); /* catch light */
+  }
+
+  .glass-panel:hover {
+    @apply shadow-[0_15px_35px_rgba(0,26,64,0.06),0_2px_5px_rgba(0,26,64,0.03)];
   }
 
   .blob-bg {
@@ -95,9 +100,51 @@
   .scroller-thin::-webkit-scrollbar-thumb {
     @apply bg-brand-navy/10 rounded-full;
   }
+
+  .apple-display-heading {
+    letter-spacing: -0.035em !important;
+    line-height: 1.15 !important;
+    font-weight: 800;
+  }
+
+  .apple-body-text {
+    letter-spacing: 0em !important;
+    line-height: 1.5 !important;
+  }
 }
 
 /* Reset letter-spacing in RTL/Arabic contexts to prevent cursive letters from disconnecting */
 [dir="rtl"] *, [lang="ar"] * {
   letter-spacing: normal !important;
+}
+
+/* Accessibility Overrides */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel, header {
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1.5px solid var(--brand-navy) !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  .glass-panel {
+    border: 2px solid var(--brand-navy) !important;
+  }
 }
