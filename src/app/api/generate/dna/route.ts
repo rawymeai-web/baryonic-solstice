@@ -2,12 +2,25 @@ export const maxDuration = 300;
 
 import { NextResponse } from 'next/server';
 import { generateThemeStylePreview, describeSubject, describeObjectProp, generateObjectStylePreview } from '@/services/generation/imageGenerator';
-
 import { ART_STYLE_OPTIONS } from '@/constants';
+import { checkRateLimit, logRequest } from '@/utils/rateLimiter';
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
+        
+        // 1. IP and Email Rate Limiter Check
+        const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
+        const clientEmail = body.email || null;
+        const rateCheck = await checkRateLimit(ip, clientEmail, 8, 1);
+        if (!rateCheck.allowed) {
+            return NextResponse.json({ 
+                error: "Rate limit exceeded. Maximum 8 requests per hour allowed. Please try again later.",
+                remaining: 0,
+                resetTime: rateCheck.resetTime.toISOString()
+            }, { status: 429 });
+        }
+
         const { mainCharacter, secondCharacter, theme, style: styleId, age, occasion, customGoal } = body;
         let stylePrompt = '';
         if (styleId && typeof styleId === 'string') {
@@ -121,6 +134,8 @@ export async function POST(req: Request) {
         const heroBDNA = (heroB_Front && heroB_34 && heroB_Body) 
             ? [heroB_Front.imageBase64, heroB_34.imageBase64, heroB_Body.imageBase64]
             : (hasSecond && secondCharacter.type === 'object' ? [secondCharacter.imageBases64[0]] : []);
+
+        await logRequest(ip, clientEmail);
 
         return NextResponse.json({
             artifiedHeroBase64: heroA_Front.imageBase64, // Keep for legacy
