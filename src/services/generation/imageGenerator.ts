@@ -291,21 +291,24 @@ export async function generateThemeStylePreview(
 
         // Determine age instructions for child likeness based on developmental stages
         const ageNum = parseInt(age, 10);
+        const genderWord = mainCharacter.gender === 'boy' ? 'boy' : mainCharacter.gender === 'girl' ? 'girl' : 'child';
         let ageInstructions = "";
         if (!isNaN(ageNum)) {
             if (ageNum >= 1 && ageNum <= 3) {
                 // Toddler/Baby Stage (e.g., age 1)
-                ageInstructions = `\n\n**AGE PORTRAYAL:**\nThe character must be depicted as a ${age}-year-old toddler. Ensure the face has soft, chubby baby-like cheeks, a tiny rounded nose, large innocent baby eyes, and a very young toddler's face structure. Avoid rendering older child or adult facial structures.`;
+                const toddlerWord = mainCharacter.gender === 'boy' ? 'baby boy' : mainCharacter.gender === 'girl' ? 'baby girl' : 'toddler';
+                ageInstructions = `\n\n**AGE & GENDER PORTRAYAL:**\nThe character must be depicted as a ${age}-year-old ${toddlerWord}. Ensure the face has soft, chubby baby-like cheeks, a tiny rounded nose, large innocent baby eyes, and a very young toddler's face structure. Avoid rendering older child or adult facial structures.`;
             } else if (ageNum >= 4 && ageNum <= 8) {
                 // Young Kid Stage (e.g., ages 5, 7)
-                ageInstructions = `\n\n**AGE PORTRAYAL:**\nThe character must be depicted as a ${age}-year-old child. Ensure the face has soft, rounded childish facial features, large expressive curious eyes, and a friendly, youthful child's face structure. Avoid rendering mature, sharp, or chiseled adult facial structures.`;
+                ageInstructions = `\n\n**AGE & GENDER PORTRAYAL:**\nThe character must be depicted as a ${age}-year-old ${genderWord}. Ensure the face has soft, rounded childish facial features, large expressive curious eyes, and a friendly, youthful child's face structure. Avoid rendering mature, sharp, or chiseled adult facial structures.`;
             } else if (ageNum >= 9 && ageNum <= 12) {
                 // Pre-teen Stage (e.g., age 10)
-                ageInstructions = `\n\n**AGE PORTRAYAL:**
-The character must be depicted as a ${age}-year-old child. Ensure they have soft, rounded childish facial features, a soft jawline, and youthful proportions. Strictly avoid any teenager, adolescent, or mature facial structures. Absolutely no makeup, mature expressions, or defined adult cheekbones/jawline. They must look like a young pre-pubescent child/schoolchild, not a teenager or young adult.`;
+                ageInstructions = `\n\n**AGE & GENDER PORTRAYAL:**
+The character must be depicted as a ${age}-year-old ${genderWord}. Ensure they have soft, rounded childish facial features, a soft jawline, and youthful proportions. Strictly avoid any teenager, adolescent, or mature facial structures. Absolutely no makeup, mature expressions, or defined adult cheekbones/jawline. They must look like a young pre-pubescent child/schoolchild, not a teenager or young adult.`;
             } else {
                 // Teenager/Adult Stage (ages 13+)
-                ageInstructions = `\n\n**AGE PORTRAYAL:**\nThe character must be depicted as a ${age}-year-old. Ensure facial features represent a ${age}-year-old accurately.`;
+                const matureWord = mainCharacter.gender === 'boy' ? 'male' : mainCharacter.gender === 'girl' ? 'female' : 'person';
+                ageInstructions = `\n\n**AGE & GENDER PORTRAYAL:**\nThe character must be depicted as a ${age}-year-old ${matureWord}. Ensure facial features represent a ${age}-year-old accurately.`;
             }
         }
         const descText = getFlattenedDescription(mainCharacter.description);
