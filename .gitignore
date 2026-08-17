@@ -50,3 +50,23 @@ test_*.js
 *.local.mjs
 *.sql
 
+# local scratch and secret leaks
+/scratch/
+/patch_*.js
+/patch_prompts.js
+/*.mjs
+/*.zip
+/*.jpg
+/*.png
+/stitch_backend_temp/
+/system_debug_log.jsonl
+/story_data_structure.json
+/target_order_debug.json
+/qc_fails_report.txt
+/scratch_check.js
+/testImagen4.js
+/testNanoBanana.js
+/testProBanana.js
+/sync-from-frontend.ps1
+
+
