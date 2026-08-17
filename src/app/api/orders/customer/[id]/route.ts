@@ -5,10 +5,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     if (!id) {
       return NextResponse.json({ error: 'Missing customer ID' }, { status: 400 });
     }
