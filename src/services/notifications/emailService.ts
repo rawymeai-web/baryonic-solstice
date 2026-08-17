@@ -288,7 +288,7 @@ export class EmailService {
                 // In local dev, use onboarding@resend.dev since rawytime.com is not verified yet
                 const fromAddress = process.env.NODE_ENV === 'development'
                     ? 'onboarding@resend.dev'
-                    : (process.env.RESEND_FROM_EMAIL || 'Rawy <noreply@mail.rawytime.com>');
+                    : (process.env.RESEND_FROM_EMAIL || 'Rawy <noreply@rawytime.com>');
 
                 const { data, error: sendError } = await resend.emails.send({
                     from: fromAddress,
