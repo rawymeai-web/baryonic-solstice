@@ -714,7 +714,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                 </tr>
                             )}
                             {displayOrders.map(order => (
-                                <tr key={order.orderNumber} className="group/row hover:bg-white/40 transition-colors">
+                                <tr key={order.orderNumber} className="group/row hover:bg-brand-navy/[0.03] transition-colors align-middle">
                                     <td className="px-10 py-8">
                                         <div className="flex items-center gap-4">
                                            <div className="w-10 h-10 rounded-xl bg-brand-navy/5 flex items-center justify-center text-brand-navy group-hover/row:bg-brand-navy group-hover/row:text-white transition-all">
@@ -818,8 +818,10 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                                 onClick={() => handleRunPipeline(order, true)}
                                                 disabled={loadingOrderId === order.orderNumber}
                                             >
-                                                <span className="material-symbols-outlined text-sm animate-pulse">play_circle</span>
-                                                Resume Engine
+                                                <span className="material-symbols-outlined text-sm animate-pulse">
+                                                    {order.status === 'New Order' || order.status === 'paid_confirmed' ? 'play_arrow' : 'play_circle'}
+                                                </span>
+                                                {order.status === 'New Order' || order.status === 'paid_confirmed' ? 'Start Production' : 'Resume Engine'}
                                             </button>
 
                                             <button 
