@@ -714,7 +714,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                 </tr>
                             )}
                             {displayOrders.map(order => (
-                                <tr key={order.orderNumber} className="group/row hover:bg-brand-navy/[0.03] transition-colors align-middle">
+                                <tr key={order.orderNumber} className="group/row hover:bg-orange-50/50 transition-colors align-middle">
                                     <td className="px-10 py-8">
                                         <div className="flex items-center gap-4">
                                            <div className="w-10 h-10 rounded-xl bg-brand-navy/5 flex items-center justify-center text-brand-navy group-hover/row:bg-brand-navy group-hover/row:text-white transition-all">
@@ -783,7 +783,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                         </div>
                                     </td>
                                     <td className="px-10 py-8">
-                                        <div className="flex flex-wrap justify-center gap-3 max-w-[500px] mx-auto">
+                                        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto max-w-[320px] pb-1 scroller-thin mx-auto">
                                             <button 
                                                 className="p-2 w-10 h-10 rounded-xl glass-panel border-brand-teal/20 text-brand-teal/40 hover:text-brand-teal hover:scale-110 transition-all group/btn relative" 
                                                 onClick={async () => {
