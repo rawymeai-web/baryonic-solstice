@@ -107,7 +107,7 @@ export class EmailService {
 
             // Override recipient for admin notifications
             if (eventType === 'admin_new_order') {
-                recipientEmail = 'rawy.app@gmail.com';
+                recipientEmail = process.env.ADMIN_EMAIL || 'rawy.me.ai@gmail.com';
                 recipientName = 'Rawy Admin';
             }
 
