@@ -1469,7 +1469,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
             {/* Right Pane: Main Processor */}
             <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
-                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center p-4 lg:p-6 border-b border-gray-100 bg-white sticky top-0 z-20 gap-4">
+                <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center p-4 lg:p-6 border-b border-gray-100 bg-white sticky top-0 z-20 gap-4">
                     <div className="flex flex-col md:flex-row md:items-center gap-6">
                         {onBack && (
                             <button onClick={onBack} className="text-gray-400 hover:text-brand-orange transition-all hover:scale-110 active:scale-95 shrink-0">
@@ -1486,7 +1486,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             </div>
                         )}
                     </div>
-                    <div className="flex gap-2 lg:gap-3 flex-nowrap lg:flex-wrap overflow-x-auto pb-2 px-1 w-full lg:w-auto scroller-thin shrink-0 snap-x">
+                    <div className="flex gap-2 lg:gap-3 flex-nowrap overflow-x-auto pb-2 px-1 w-full xl:w-auto scroller-thin shrink-0 snap-x">
                         <Button onClick={() => setShowTerminal(!showTerminal)} variant="outline" className={`shrink-0 snap-start !py-2 !px-4 lg:!py-2.5 lg:!px-6 border-2 transition-all ${showTerminal ? 'bg-brand-navy text-white border-brand-navy' : 'border-gray-200 text-gray-500 hover:border-brand-navy hover:text-brand-navy'}`}>
                             {showTerminal ? t('إخفاء السجل', 'Hide Logs') : t('عرض السجل', 'Show Logs')}
                         </Button>
