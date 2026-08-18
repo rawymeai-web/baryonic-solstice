@@ -19,14 +19,20 @@ function LoginContent() {
         setLoading(true);
         setError('');
 
-        const supabase = createClient();
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-        if (error) {
-            setError(error.message || 'Invalid email or password.');
+            if (error) {
+                setError(error.message || 'Invalid email or password.');
+                setLoading(false);
+            } else {
+                router.push(redirectTo);
+            }
+        } catch (err: any) {
+            console.error("Login unexpected error:", err);
+            setError(err.message || 'An unexpected connection error occurred.');
             setLoading(false);
-        } else {
-            router.push(redirectTo);
         }
     };
 
