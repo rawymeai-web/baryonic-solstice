@@ -27,7 +27,7 @@ function LoginContent() {
                 setError(error.message || 'Invalid email or password.');
                 setLoading(false);
             } else {
-                router.push(redirectTo);
+                window.location.href = redirectTo;
             }
         } catch (err: any) {
             console.error("Login unexpected error:", err);
