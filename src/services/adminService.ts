@@ -242,10 +242,19 @@ export async function saveOrder(orderNumber: string, storyData: StoryData, shipp
   const settings = await getSettings();
   const totalPrice = total || 18.000;
 
-  // Helper to securely upload Base64 images to Bucket and insert to DB
   const uploadAndLogDNA = async (base64Array: string[] | undefined, heroLabel: string, imageType: string) => {
     if (!base64Array || !base64Array[0]) return;
     try {
+      if (base64Array[0].startsWith('http')) {
+        // Already uploaded to storage, log directly to database
+        await supabase.from('order_dna').insert({
+          order_id: orderNumber,
+          hero_label: heroLabel,
+          image_type: imageType,
+          image_url: base64Array[0]
+        });
+        return;
+      }
       const base64Str = base64Array[0].includes('base64,') ? base64Array[0].split('base64,')[1] : base64Array[0];
       const binaryString = atob(base64Str);
       const len = binaryString.length;

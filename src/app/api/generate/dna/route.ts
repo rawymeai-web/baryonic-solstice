@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { generateThemeStylePreview, describeSubject, describeObjectProp, generateObjectStylePreview } from '@/services/generation/imageGenerator';
 import { ART_STYLE_OPTIONS } from '@/constants';
 import { checkRateLimit, logRequest } from '@/utils/rateLimiter';
+import { uploadBase64Image } from '@/services/imageStore';
 
 export async function POST(req: Request) {
     try {
@@ -130,15 +131,32 @@ export async function POST(req: Request) {
                 : Promise.resolve(""),
         ]);
 
-        const heroADNA = [heroA_Front.imageBase64, heroA_34.imageBase64, heroA_Body.imageBase64];
-        const heroBDNA = (heroB_Front && heroB_34 && heroB_Body) 
-            ? [heroB_Front.imageBase64, heroB_34.imageBase64, heroB_Body.imageBase64]
-            : (hasSecond && secondCharacter.type === 'object' ? [secondCharacter.imageBases64[0]] : []);
+        const timestamp = Date.now();
+        const [heroA_Front_Url, heroA_34_Url, heroA_Body_Url] = await Promise.all([
+            uploadBase64Image('dna_previews', heroA_Front.imageBase64, `dna_${timestamp}_heroA_front.jpg`),
+            uploadBase64Image('dna_previews', heroA_34.imageBase64, `dna_${timestamp}_heroA_34.jpg`),
+            uploadBase64Image('dna_previews', heroA_Body.imageBase64, `dna_${timestamp}_heroA_body.jpg`)
+        ]);
+
+        const heroADNA = [heroA_Front_Url, heroA_34_Url, heroA_Body_Url];
+        
+        let heroBDNA: string[] = [];
+        if (heroB_Front && heroB_34 && heroB_Body) {
+            const [heroB_Front_Url, heroB_34_Url, heroB_Body_Url] = await Promise.all([
+                uploadBase64Image('dna_previews', heroB_Front.imageBase64, `dna_${timestamp}_heroB_front.jpg`),
+                uploadBase64Image('dna_previews', heroB_34.imageBase64, `dna_${timestamp}_heroB_34.jpg`),
+                uploadBase64Image('dna_previews', heroB_Body.imageBase64, `dna_${timestamp}_heroB_body.jpg`)
+            ]);
+            heroBDNA = [heroB_Front_Url, heroB_34_Url, heroB_Body_Url];
+        } else if (hasSecond && secondCharacter.type === 'object' && secondCharacter.imageBases64[0]) {
+            const objUrl = await uploadBase64Image('dna_previews', secondCharacter.imageBases64[0], `dna_${timestamp}_heroB_object.jpg`);
+            heroBDNA = [objUrl];
+        }
 
         await logRequest(ip, clientEmail);
 
         return NextResponse.json({
-            artifiedHeroBase64: heroA_Front.imageBase64, // Keep for legacy
+            artifiedHeroBase64: heroA_Front_Url, // Keep for legacy
             heroADNA,
             heroBDNA,
             physicalDescription: description,
