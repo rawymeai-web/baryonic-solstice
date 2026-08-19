@@ -54,7 +54,7 @@ export async function PATCH(
 
     // Trigger status change email notification if status was updated
     if (status !== undefined) {
-      EmailService.sendNotification(id, 'status_changed', { status }).catch(e => console.error("PATCH status change email failed:", e));
+      await EmailService.sendNotification(id, 'status_changed', { status });
     }
 
     return NextResponse.json({ success: true, order: data });

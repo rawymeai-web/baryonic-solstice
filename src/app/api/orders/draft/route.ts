@@ -173,8 +173,8 @@ export async function PUT(req: Request) {
 
                 // Trigger email notifications: customer (order received) and admin (new order alert)
                 const orderTotal = (existing as any)?.total || 0;
-                EmailService.sendNotification(orderId, 'order_received', { total: orderTotal }).catch(e => console.error("Customer checkout email failed:", e));
-                EmailService.sendNotification(orderId, 'admin_new_order', { total: orderTotal }).catch(e => console.error("Admin checkout email failed:", e));
+                await EmailService.sendNotification(orderId, 'order_received', { total: orderTotal });
+                await EmailService.sendNotification(orderId, 'admin_new_order', { total: orderTotal });
 
                 // TRIGGER SCHEDULER asynchronously since local environment lacks cron
                 MasterScheduler.executeTick().catch(e => console.error("Async Scheduler failed:", e));
