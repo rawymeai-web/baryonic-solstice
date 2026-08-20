@@ -705,8 +705,16 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             // --- GENERATION AUDIT: capture exactly what will be sent ---
             const auditSnapshot = {
                 spreadIndex: index,
-                heroAUrl: compressedHeroA ? `data:image/jpeg;base64,${compressedHeroA.replace(/^data:image\/\w+;base64,/, '')}` : null,
-                heroBUrl: compressedHeroB ? `data:image/jpeg;base64,${compressedHeroB.replace(/^data:image\/\w+;base64,/, '')}` : null,
+                heroAUrl: compressedHeroA
+                    ? (compressedHeroA.startsWith('http')
+                        ? compressedHeroA
+                        : `data:image/jpeg;base64,${compressedHeroA.replace(/^data:image\/\w+;base64,/, '')}`)
+                    : null,
+                heroBUrl: compressedHeroB
+                    ? (compressedHeroB.startsWith('http')
+                        ? compressedHeroB
+                        : `data:image/jpeg;base64,${compressedHeroB.replace(/^data:image\/\w+;base64,/, '')}`)
+                    : null,
                 heroACount: compressedHeroA ? 1 : 0,
                 heroBCount: compressedHeroB ? 1 : 0,
                 promptSent: safePromptToUse,
