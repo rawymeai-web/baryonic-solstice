@@ -1486,7 +1486,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             </div>
                         )}
                     </div>
-                    <div className="flex gap-2 lg:gap-3 flex-nowrap overflow-x-auto pb-2 px-1 w-full xl:w-auto scroller-thin shrink-0 snap-x">
+                    <div className="flex gap-2 lg:gap-3 flex-nowrap overflow-x-auto pb-2 px-1 w-full xl:w-auto min-w-0 scroller-thin shrink-0 snap-x">
                         <Button onClick={() => setShowTerminal(!showTerminal)} variant="outline" className={`shrink-0 snap-start !py-2 !px-4 lg:!py-2.5 lg:!px-6 border-2 transition-all ${showTerminal ? 'bg-brand-navy text-white border-brand-navy' : 'border-gray-200 text-gray-500 hover:border-brand-navy hover:text-brand-navy'}`}>
                             {showTerminal ? t('إخفاء السجل', 'Hide Logs') : t('عرض السجل', 'Show Logs')}
                         </Button>

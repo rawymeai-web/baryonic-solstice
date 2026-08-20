@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         console.log('Incoming Body Keys:', Object.keys(body));
-        const { storyData, customerEmail, userId, customerName, total } = body;
+        const { storyData, customerEmail, userId, customerName, total, shippingDetails } = body;
 
         // 1. Validate Minimal Data
         if (!storyData) {
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
             customer_name: customerName || (customerEmail ? customerEmail.split('@')[0] : 'Guest User'),
             total: total || 0,
             story_data: storyData,
-            shipping_details: null,
+            shipping_details: shippingDetails || null,
             created_at: new Date().toISOString(),
             production_cost: 0,
             ai_cost: 0,

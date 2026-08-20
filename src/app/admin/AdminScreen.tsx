@@ -585,7 +585,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
 
             {/* Full visual editor — also used for live pipeline painting (isLegacy=true) */}
             {editorOrder && editorOrder.storyData && (
-                <div className="fixed inset-0 z-50 bg-white overflow-auto">
+                <div className="fixed inset-0 z-50 bg-white overflow-hidden">
                     <EditorScreen
                         storyData={{ ...editorOrder.storyData, orderId: editorOrder.orderNumber } as any}
                         language={editorOrder.storyData.language || language}

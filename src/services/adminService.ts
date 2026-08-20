@@ -302,10 +302,34 @@ export async function saveOrder(orderNumber: string, storyData: StoryData, shipp
     cleanStoryData.secondCharacter.imageDNA = [];
   }
 
-  const email = shippingDetails?.email || `guest-${orderNumber}@rawy.com`;
+  // Fetch existing order info to check customer_id, shipping_details, and status
+  const { data: existingOrder } = await supabase
+    .from('orders')
+    .select('customer_id, shipping_details, status')
+    .eq('order_number', orderNumber)
+    .maybeSingle();
+
+  // Merge shipping details (preserve database record if incoming is empty)
+  const finalShipping = (shippingDetails && Object.keys(shippingDetails).length > 0 && shippingDetails.address)
+    ? shippingDetails
+    : (existingOrder?.shipping_details || shippingDetails);
+
+  // Determine the best email address to prevent guest fallback override
+  let email = finalShipping?.email;
+  if (!email && existingOrder) {
+    if (existingOrder.customer_id && !existingOrder.customer_id.startsWith('guest-')) {
+      email = existingOrder.customer_id;
+    } else if (existingOrder.shipping_details?.email) {
+      email = existingOrder.shipping_details.email;
+    }
+  }
+  if (!email) {
+    email = `guest-${orderNumber}@rawy.com`;
+  }
+
   const customerId = email.toLowerCase();
-  const customerName = shippingDetails?.name || 'Guest User';
-  const customerPhone = shippingDetails?.phone || '';
+  const customerName = finalShipping?.name || 'Guest User';
+  const customerPhone = finalShipping?.phone || '';
   
   // Upsert Customer
   await supabase.from('customers').upsert({
@@ -322,9 +346,9 @@ export async function saveOrder(orderNumber: string, storyData: StoryData, shipp
     customer_id: customerId,
     customer_name: customerName,
     total: totalPrice,
-    status: 'paid_confirmed',
+    status: existingOrder?.status || 'paid_confirmed',
     story_data: cleanStoryData,
-    shipping_details: shippingDetails || {},
+    shipping_details: finalShipping || {},
     production_cost: settings.unitProductionCost,
     ai_cost: settings.unitAiCost,
     shipping_cost: settings.unitShippingCost
