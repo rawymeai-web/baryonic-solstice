@@ -311,36 +311,27 @@ The character must be depicted as a ${age}-year-old ${genderWord}. Ensure they h
                 ageInstructions = `\n\n**AGE & GENDER PORTRAYAL:**\nThe character must be depicted as a ${age}-year-old ${matureWord}. Ensure facial features represent a ${age}-year-old accurately.`;
             }
         }
-        const descText = getFlattenedDescription(mainCharacter.description);
+        
+        const prompt = `**TASK:** Transform the reference Subject (Image 1) into the selected Art Style.
 
-        const prompt = `**TASK:** Create a stylized character DNA portrait of the subject in Image 1 using the selected art style.
+**REFERENCE INPUTS:**
+- **Source:** See attached IMAGE 1 (The Child).
+- **Style:** ${style}
 
-**PURPOSE:** This image is the primary visual reference for character identity, style treatment, color palette, and facial proportion consistency across all story spreads.
-
-**IDENTITY ANCHOR:**
-The facial features in Image 1 are the ONLY source of truth. Preserve the unique eye shape, nose structure, mouth curvature, and face silhouette exactly. Do not shift to a generic "Pixar" or "Cartoon" face. The output character must look like the SAME child as in the photo, just rendered in the requested medium.${ageInstructions}${descText ? '\n- Specific physical traits to preserve: ' + descText : ""}
-- **HAIRSTYLE & DETAILS:** You must preserve the hairstyle, color, length, and texture exactly as described (e.g. pigtails, braids, curls, etc.). The hairstyle must be clearly visible, fully rendered, and styled exactly like the subject's hair. Do not hide or simplify the hair details; render the hairstyle naturally and cleanly according to the reference.
-
-**STYLE ADAPTATION:**
-${identityRule}
-Apply the selected art style ONLY to rendering technique, line treatment, texture, shading, and lighting. Keep the child’s identity recognizable within that style.
-
-**PHOTO NOISE REMOVAL:**
-Do not copy the original photo background, room lighting, shadows, camera distortion, logos, text, hand gestures, or temporary accessories. Render the subject in a clean, professional character-design environment.
-
-
-**POSE:**
-${poseInstruction}
+**STRICT IDENTITY PRESERVATION:**
+- **Likeness is Critical:** The output MUST look like the specific child in Image 1.
+- **Retain:** Facial features, eye brightness, nose structure, and specific hair curl/pattern.
+- **Change Only:** The rendering style (brushstrokes, lighting softness, shading logic).
+- **Age Lock:** Keep them looking approx ${age || "Child"} years old.
 
 **SCENE CONTEXT:**
 - **Setting:** ${theme || "Neutral"} background.
-- **Shot:** ${pose === 'full_body' ? 'Full Body' : (pose === 'front' || pose === 'three_quarter' ? 'Upper Body Shot (Head, Shoulders, and Chest)' : 'Medium-Close Up (Head & Shoulders)')}.
-${occasion ? `- **Special Occasion:** Incorporate subtle festive elements related to "${occasion}" in the background or character accessories.` : ""}
-${customGoal ? `- **Custom Theme Goal:** Match the vibe of "${customGoal}".` : ""}
+- **Pose & Framing:** ${poseInstruction}
+- **Focus:** High-impact character portrait.
 
 **TECHNICAL MANDATES:**
 - 1:1 Aspect Ratio.
-- No text, no frames. No extra characters. No props.
+- No text, no frames.
 - Perfect application of the '${style}' aesthetic.
 ${masterGuardrails}`;
 
@@ -370,12 +361,12 @@ ${masterGuardrails}`;
 
         try {
             console.log("=== ATTEMPTING PRIMARY MODEL (VERIFIED CONFIG) ===");
-            console.log("Model: gemini-2.5-flash-image");
+            console.log("Model: gemini-3-pro-image-preview");
             console.log("Contents: 1 image + 1 text prompt");
 
             // Using the Vision-Capable Image Generation Model
             const model = ai().getGenerativeModel({
-                model: 'gemini-2.5-flash-image'
+                model: 'gemini-3-pro-image-preview'
             });
 
             console.log("Calling model.generateContent...");
