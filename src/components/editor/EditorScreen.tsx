@@ -1198,6 +1198,15 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         };
     }, [isBackendProcessing, storyData.orderId]);
 
+    useEffect(() => {
+        // Lock body scroll when editor is open to prevent double scrollbars
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = originalOverflow;
+        };
+    }, []);
+
     const t = (ar: string, en: string) => language === 'ar' ? ar : en;
 
     // Helper to get selected style string
@@ -1470,7 +1479,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             {/* Right Pane: Main Processor */}
             <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
                 <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center p-4 lg:p-6 border-b border-gray-100 bg-white sticky top-0 z-20 gap-4">
-                    <div className="flex flex-col md:flex-row md:items-center gap-6">
+                    <div className="flex flex-col md:flex-row md:items-center gap-6 shrink-0">
                         {onBack && (
                             <button onClick={onBack} className="text-gray-400 hover:text-brand-orange transition-all hover:scale-110 active:scale-95 shrink-0">
                                 <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -1478,7 +1487,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         )}
                         <h2 className="text-2xl font-black text-brand-navy shrink-0 uppercase tracking-tighter">{t('محرر الصفحات', 'Spread Editor')}</h2>
                         {(isAnyGenerating || currentError || isBackendProcessing) && (
-                            <div className="p-2.5 px-5 rounded-2xl flex items-center gap-4 border bg-orange-50/80 border-orange-200/50 shadow-sm animate-in fade-in zoom-in duration-300">
+                            <div className="p-2.5 px-5 rounded-2xl flex items-center gap-4 border bg-orange-50/80 border-orange-200/50 shadow-sm animate-in fade-in zoom-in duration-300 shrink-0">
                                 <Spinner size="sm" color="text-brand-orange" />
                                 <span className="text-xs font-black text-brand-navy uppercase tracking-widest">
                                     {isBackendProcessing ? backendStatusText : (currentError ? `Error: ${currentError}` : (currentStatus || t('جاري التوليد...', 'Generating...')))}
@@ -1486,35 +1495,33 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             </div>
                         )}
                     </div>
-                    <div className="flex gap-2 lg:gap-3 flex-nowrap overflow-x-auto pb-2 px-1 w-full xl:w-auto min-w-0 scroller-thin shrink-0 snap-x">
-                        <Button onClick={() => setShowTerminal(!showTerminal)} variant="outline" className={`shrink-0 snap-start !py-2 !px-4 lg:!py-2.5 lg:!px-6 border-2 transition-all ${showTerminal ? 'bg-brand-navy text-white border-brand-navy' : 'border-gray-200 text-gray-500 hover:border-brand-navy hover:text-brand-navy'}`}>
+                    <div className="flex gap-3 flex-nowrap overflow-x-auto pb-2 px-1 w-full xl:w-auto min-w-0 scroller-thin shrink snap-x">
+                        <Button onClick={() => setShowTerminal(!showTerminal)} variant="outline" className={`shrink-0 snap-start !py-2 !px-4 border-2 transition-all ${showTerminal ? 'bg-brand-navy text-white border-brand-navy' : 'border-gray-200 text-gray-500 hover:border-brand-navy hover:text-brand-navy'}`}>
                             {showTerminal ? t('إخفاء السجل', 'Hide Logs') : t('عرض السجل', 'Show Logs')}
                         </Button>
-                        <Button onClick={handleMassUploadText} variant="outline" className="shrink-0 snap-start !py-2 !px-3 lg:!py-2.5 lg:!px-4 border-2 border-gray-200 text-gray-500 hover:border-brand-teal hover:text-brand-teal text-[10px] lg:text-xs">
+                        <Button onClick={handleMassUploadText} variant="outline" className="shrink-0 snap-start !py-2 !px-4 border-2 border-gray-200 text-gray-500 hover:border-brand-teal hover:text-brand-teal text-xs">
                             Upload Script
                         </Button>
-                        <Button onClick={handleDownloadText} variant="outline" className="shrink-0 snap-start !py-2 !px-3 lg:!py-2.5 lg:!px-4 border-2 border-gray-200 text-gray-500 hover:border-brand-navy hover:text-brand-navy text-[10px] lg:text-xs">
+                        <Button onClick={handleDownloadText} variant="outline" className="shrink-0 snap-start !py-2 !px-4 border-2 border-gray-200 text-gray-500 hover:border-brand-navy hover:text-brand-navy text-xs">
                             Export Script
                         </Button>
-                        <div className="flex gap-2 lg:gap-4 shrink-0 snap-start">
-                            <Button onClick={() => runPipeline(false)} disabled={isAnyGenerating} variant="secondary" className="!py-2 !px-3 lg:!py-2.5 lg:!px-4 border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-white transition-all font-black uppercase text-[9px] lg:text-[10px]">
-                                {t('إعادة المعالجة', 'Restart Pipeline')}
+                        <Button onClick={() => runPipeline(false)} disabled={isAnyGenerating} variant="secondary" className="shrink-0 snap-start !py-2 !px-4 border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-white transition-all font-black uppercase text-xs">
+                            {t('إعادة المعالجة', 'Restart Pipeline')}
+                        </Button>
+                        <Button onClick={() => runPipeline(true)} disabled={isAnyGenerating} variant="secondary" className="shrink-0 snap-start !py-2 !px-4 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all shadow-lg font-black uppercase text-xs">
+                            {t('إستكمال المعالجة', 'Continue Pipeline')}
+                        </Button>
+                        <Button onClick={handleSilentSave} disabled={isAnyGenerating || isFinalizing} variant="secondary" className="shrink-0 snap-start !py-2 !px-4 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all font-black uppercase text-xs flex items-center justify-center gap-2">
+                            💾 {t('حفظ', 'Save to DB')}
+                        </Button>
+                        {onPreview && (
+                            <Button onClick={onPreview} disabled={isAnyGenerating || isFinalizing} variant="secondary" className="shrink-0 snap-start !py-2 !px-4 border-2 border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white transition-all font-black uppercase text-xs flex items-center justify-center gap-2">
+                                👁️ {t('معاينة', 'Preview')}
                             </Button>
-                            <Button onClick={() => runPipeline(true)} disabled={isAnyGenerating} variant="secondary" className="!py-2 !px-3 lg:!py-2.5 lg:!px-4 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all shadow-lg font-black uppercase text-[9px] lg:text-[10px]">
-                                {t('إستكمال المعالجة', 'Continue Pipeline')}
-                            </Button>
-                            <Button onClick={handleSilentSave} disabled={isAnyGenerating || isFinalizing} variant="secondary" className="!py-2 !px-4 lg:!py-2.5 lg:!px-6 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all font-black uppercase text-[9px] lg:text-[10px] flex items-center justify-center gap-2">
-                                💾 {t('حفظ', 'Save to DB')}
-                            </Button>
-                            {onPreview && (
-                                <Button onClick={onPreview} disabled={isAnyGenerating || isFinalizing} variant="secondary" className="!py-2 !px-4 lg:!py-2.5 lg:!px-6 border-2 border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white transition-all font-black uppercase text-[9px] lg:text-[10px] flex items-center justify-center gap-2">
-                                    👁️ {t('معاينة', 'Preview')}
-                                </Button>
-                            )}
-                            <Button onClick={applyAllEditsAndFinalize} disabled={isAnyGenerating || isFinalizing} className="!py-2 !px-4 lg:!py-2.5 lg:!px-6 shadow-xl shadow-brand-orange/30 font-black uppercase text-[9px] lg:text-[10px] flex items-center justify-center gap-2">
-                                {isFinalizing ? <><Spinner size="sm" color="text-white" /> {t('جاري الإنهاء...', 'Finalizing...')}</> : t('إنهاء وحفظ', 'Finalize')}
-                            </Button>
-                        </div>
+                        )}
+                        <Button onClick={applyAllEditsAndFinalize} disabled={isAnyGenerating || isFinalizing} className="shrink-0 snap-start !py-2 !px-5 shadow-xl shadow-brand-orange/30 font-black uppercase text-xs flex items-center justify-center gap-2">
+                            {isFinalizing ? <><Spinner size="sm" color="text-white" /> {t('جاري الإنهاء...', 'Finalizing...')}</> : t('إنهاء وحفظ', 'Finalize')}
+                        </Button>
                     </div>
                 </div>
 
