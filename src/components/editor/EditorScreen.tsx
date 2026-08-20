@@ -370,6 +370,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const [textRegeneratingIndex, setTextRegeneratingIndex] = useState<number | null>(null);
     const [uploadingIndex, setUploadingIndex] = useState<number | 'cover' | null>(null);
 
+    const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+
     // --- Generation Audit State ---
     // Stores a snapshot of the exact images and prompt sent to Gemini for the last Paint Spread call.
     // Used to render the DNA Audit Panel so you can verify exactly what was sent.
@@ -1558,7 +1560,18 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                     {storyData.coverOriginalUrl ? (
                                         <div className="grid grid-cols-2 gap-4 w-full">
                                             <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner border border-red-300 group">
-                                                <img src={storyData.coverOriginalUrl.startsWith('http') || storyData.coverOriginalUrl.startsWith('data:') ? storyData.coverOriginalUrl : `data:image/jpeg;base64,${storyData.coverOriginalUrl}`} className="w-full h-full object-cover" />
+                                                <img 
+                                                    src={storyData.coverOriginalUrl.startsWith('http') || storyData.coverOriginalUrl.startsWith('data:') ? storyData.coverOriginalUrl : `data:image/jpeg;base64,${storyData.coverOriginalUrl}`} 
+                                                    className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages['cover-orig'] ? 'opacity-100' : 'opacity-0'}`} 
+                                                    loading="lazy"
+                                                    onLoad={() => setLoadedImages(prev => ({ ...prev, 'cover-orig': true }))}
+                                                />
+                                                {!loadedImages['cover-orig'] && (
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-50">
+                                                        <Spinner size="md" color="text-brand-orange" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Loading image...</span>
+                                                    </div>
+                                                )}
                                                 <div className="absolute top-3 left-3 bg-red-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow">
                                                     Flagged (Attempt 1)
                                                 </div>
@@ -1570,7 +1583,22 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
                                                     </div>
                                                 ) : (
-                                                    coverUrl ? <img src={coverUrl.startsWith('http') || coverUrl.startsWith('data:') ? coverUrl : `data:image/jpeg;base64,${coverUrl}`} className="w-full h-full object-cover" /> : <Spinner size="md" color="text-brand-orange" />
+                                                    coverUrl ? (
+                                                        <>
+                                                            <img 
+                                                                src={coverUrl.startsWith('http') || coverUrl.startsWith('data:') ? coverUrl : `data:image/jpeg;base64,${coverUrl}`} 
+                                                                className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages['cover-regen'] ? 'opacity-100' : 'opacity-0'}`} 
+                                                                loading="lazy"
+                                                                onLoad={() => setLoadedImages(prev => ({ ...prev, 'cover-regen': true }))}
+                                                            />
+                                                            {!loadedImages['cover-regen'] && (
+                                                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-50">
+                                                                    <Spinner size="md" color="text-brand-orange" />
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Loading image...</span>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    ) : <Spinner size="md" color="text-brand-orange" />
                                                 )}
                                                 <div className="absolute top-3 left-3 bg-emerald-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow animate-pulse">
                                                     Regenerated (Attempt 2)
@@ -1585,7 +1613,22 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
                                                 </div>
                                             ) : (
-                                                coverUrl ? <img src={coverUrl.startsWith('http') || coverUrl.startsWith('data:') ? coverUrl : `data:image/jpeg;base64,${coverUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <Spinner size="md" color="text-brand-orange" />
+                                                coverUrl ? (
+                                                    <>
+                                                        <img 
+                                                            src={coverUrl.startsWith('http') || coverUrl.startsWith('data:') ? coverUrl : `data:image/jpeg;base64,${coverUrl}`} 
+                                                            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${loadedImages['cover-single'] ? 'opacity-100' : 'opacity-0'}`} 
+                                                            loading="lazy"
+                                                            onLoad={() => setLoadedImages(prev => ({ ...prev, 'cover-single': true }))}
+                                                        />
+                                                        {!loadedImages['cover-single'] && (
+                                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-50">
+                                                                <Spinner size="md" color="text-brand-orange" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Loading image...</span>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                ) : <Spinner size="md" color="text-brand-orange" />
                                             )}
                                             <div className="absolute inset-0 bg-brand-navy/0 group-hover:bg-brand-navy/5 transition-colors duration-300 pointer-events-none"></div>
                                         </div>
@@ -1795,7 +1838,18 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         {spreads[i]?.qcOriginalUrl ? (
                                             <div className="grid grid-cols-2 gap-4 w-full">
                                                 <div className="aspect-[16/9] relative bg-gray-50 rounded-[2rem] overflow-hidden shadow-inner border border-red-300 group">
-                                                    <img src={spreads[i].qcOriginalUrl.startsWith('http') || spreads[i].qcOriginalUrl.startsWith('data:') ? spreads[i].qcOriginalUrl : `data:image/jpeg;base64,${spreads[i].qcOriginalUrl}`} className="w-full h-full object-cover" />
+                                                    <img 
+                                                        src={spreads[i].qcOriginalUrl.startsWith('http') || spreads[i].qcOriginalUrl.startsWith('data:') ? spreads[i].qcOriginalUrl : `data:image/jpeg;base64,${spreads[i].qcOriginalUrl}`} 
+                                                        className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages[`spread-orig-${i}`] ? 'opacity-100' : 'opacity-0'}`} 
+                                                        loading="lazy"
+                                                        onLoad={() => setLoadedImages(prev => ({ ...prev, [`spread-orig-${i}`]: true }))}
+                                                    />
+                                                    {!loadedImages[`spread-orig-${i}`] && (
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-50">
+                                                            <Spinner size="md" color="text-brand-orange" />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Loading image...</span>
+                                                        </div>
+                                                    )}
                                                     <div className="absolute top-3 left-3 bg-red-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow">
                                                         Flagged (Attempt 1)
                                                     </div>
@@ -1807,7 +1861,20 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
                                                         </div>
                                                     ) : spreads[i]?.illustrationUrl ? (
-                                                        <img src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} className="w-full h-full object-cover" />
+                                                        <>
+                                                            <img 
+                                                                src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} 
+                                                                className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages[`spread-regen-${i}`] ? 'opacity-100' : 'opacity-0'}`} 
+                                                                loading="lazy"
+                                                                onLoad={() => setLoadedImages(prev => ({ ...prev, [`spread-regen-${i}`]: true }))}
+                                                            />
+                                                            {!loadedImages[`spread-regen-${i}`] && (
+                                                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-50">
+                                                                    <Spinner size="md" color="text-brand-orange" />
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Loading image...</span>
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     ) : (
                                                         <div className="flex flex-col items-center gap-4 text-gray-300">
                                                             {isAnyGenerating ? (
@@ -1831,7 +1898,20 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
                                                     </div>
                                                 ) : spreads[i]?.illustrationUrl ? (
-                                                    <img src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                                    <>
+                                                        <img 
+                                                            src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} 
+                                                            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${loadedImages[`spread-single-${i}`] ? 'opacity-100' : 'opacity-0'}`} 
+                                                            loading="lazy"
+                                                            onLoad={() => setLoadedImages(prev => ({ ...prev, [`spread-single-${i}`]: true }))}
+                                                        />
+                                                        {!loadedImages[`spread-single-${i}`] && (
+                                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-50">
+                                                                <Spinner size="md" color="text-brand-orange" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Loading image...</span>
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 ) : (
                                                     <div className="flex flex-col items-center gap-4 text-gray-300">
                                                         {isAnyGenerating ? (
