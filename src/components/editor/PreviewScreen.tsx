@@ -49,18 +49,60 @@ const TextOverlay: React.FC<{ text: string, spread: Spread, storyData: StoryData
 
 const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleChange: (v: string) => void }> = ({ storyData, language, onTitleChange }) => {
     const isAr = language === 'ar';
+    const isEn = language === 'en';
     const coverSpread = storyData.spreads?.[0];
-    const textSide = storyData.coverTextSide || (isAr ? 'left' : 'right');
 
-    const offsetX = coverSpread?.textOffsetX ?? 0;
-    const offsetY = coverSpread?.textOffsetY ?? 0;
+    const PDF_W = 400;
+    const PDF_H = 200;
+    const tw = PDF_W * 0.4; // 160 mm
+
+    const side = storyData.coverTextSide || (isAr ? 'left' : 'right');
+    const defaultTx = side === 'left'
+        ? (PDF_W * 0.25) - (tw / 2)
+        : (PDF_W * 0.75) - (tw / 2);
+    const defaultTy = PDF_H * 0.08;
+
+    const tx = coverSpread?.textOffsetX !== undefined && coverSpread?.textOffsetX !== null
+        ? coverSpread.textOffsetX
+        : defaultTx;
+    const ty = coverSpread?.textOffsetY !== undefined && coverSpread?.textOffsetY !== null
+        ? coverSpread.textOffsetY
+        : defaultTy;
+
+    // Load fonts
+    useEffect(() => {
+        if (!document.querySelector('link[data-title-fonts]')) {
+            const fontLink = document.createElement('link');
+            fontLink.setAttribute('data-title-fonts', 'true');
+            fontLink.href = 'https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Tajawal:wght@400;700;900&family=Nunito:wght@900&display=swap';
+            fontLink.rel = 'stylesheet';
+            document.head.appendChild(fontLink);
+        }
+    }, []);
+
+    const fontFamily = isAr ? "'Tajawal', sans-serif" : (isEn ? "'Luckiest Guy', cursive" : "'Nunito', sans-serif");
+    const letterSpacing = isAr ? 'normal' : '0.2cqw';
+    const transform = isAr ? 'none' : 'rotate(-2deg)';
+    
+    // Scale outline stroke and shadows based on container width
+    const textShadow = isAr
+        ? '3px 3px 0 #203A72, -1.5px -1.5px 0 #203A72, 1.5px -1.5px 0 #203A72, -1.5px 1.5px 0 #203A72, 1.5px 1.5px 0 #203A72, 0 6px 10px rgba(0,0,0,0.3)'
+        : '0.4cqw 0.4cqw 0 #203A72, -0.2cqw -0.2cqw 0 #203A72, 0.2cqw -0.2cqw 0 #203A72, -0.2cqw 0.2cqw 0 #203A72, 0.2cqw 0.2cqw 0 #203A72, 0 0.8cqw 1.5cqw rgba(0,0,0,0.3)';
 
     const titleStyle: React.CSSProperties = {
-        fontFamily: isAr ? "'Tajawal', sans-serif" : "'Plus Jakarta Sans', sans-serif",
+        fontFamily,
         fontWeight: 900,
         color: '#FFFFFF',
-        textShadow: '0 8px 24px rgba(0,0,0,0.3), 0 2px 0px rgba(0,0,0,0.2)',
+        textShadow,
         lineHeight: 1.1,
+        letterSpacing,
+        transform,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        width: '100%',
+        textTransform: 'uppercase',
     };
 
     const coverSrc = storyData.coverImageUrl
@@ -69,35 +111,50 @@ const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleCha
             : `data:image/jpeg;base64,${storyData.coverImageUrl}`
         : '';
 
+    const subtitle = storyData.coverSubtitle || '';
+
     return (
         <div className="w-full h-full relative overflow-hidden flex shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] rounded-[3rem] border-[12px] border-white ring-1 ring-black/5"
             style={{
                 backgroundImage: coverSrc ? `url(${coverSrc})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
+                containerType: 'inline-size', // ENABLE CONTAINER QUERIES!
             }}>
-            <div className={`w-full h-full flex ${textSide === 'left' ? 'flex-row' : 'flex-row-reverse'} bg-black/5`}>
-                <div className="w-1/2 h-full p-16 pt-28 flex flex-col justify-start items-center text-center">
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="space-y-8"
+            {/* Absolute positioning container for the title block */}
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute flex flex-col items-center justify-center pointer-events-none"
+                style={{
+                    left: `${(tx / PDF_W) * 100}%`,
+                    top: `${(ty / PDF_H) * 100}%`,
+                    width: `${(tw / PDF_W) * 100}%`,
+                    background: 'rgba(0,0,0,0.35)',
+                    borderRadius: '2.4cqw',
+                    padding: '2.8cqw 4cqw',
+                }}
+            >
+                <h1 style={titleStyle} className="text-[9cqw]">
+                    {storyData.title}
+                </h1>
+                {subtitle && (
+                    <div 
                         style={{
-                            transform: `translate(${offsetX}px, ${offsetY}px)`
+                            fontFamily,
+                            fontWeight: 700,
+                            lineHeight: 1.2,
+                            opacity: 0.95,
+                            textShadow,
+                            letterSpacing,
+                            transform,
                         }}
+                        className="text-[4.5cqw] mt-[2cqw] text-white text-center uppercase"
                     >
-                        <h1 style={titleStyle} className="text-5xl md:text-7xl uppercase tracking-tight leading-tight">
-                            {storyData.title}
-                        </h1>
-                        {storyData.coverSubtitle && (
-                            <div className="inline-block bg-brand-orange text-white px-8 py-3 rounded-full text-xs font-black uppercase tracking-[0.2em] shadow-2xl transform hover:scale-110 transition-transform">
-                                {storyData.coverSubtitle}
-                            </div>
-                        )}
-                    </motion.div>
-                </div>
-                <div className="w-1/2 h-full"></div>
-            </div>
+                        {subtitle}
+                    </div>
+                )}
+            </motion.div>
             <Watermark />
         </div>
     );
