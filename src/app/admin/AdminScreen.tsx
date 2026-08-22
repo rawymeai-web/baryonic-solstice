@@ -691,7 +691,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                 </div>
             </div>
 
-            <div className="glass-panel rounded-[3rem] shadow-2xl border-white/40 overflow-hidden relative group">
+            <div className="bg-white/80 rounded-[3rem] border border-brand-navy/5 shadow-2xl overflow-hidden relative group">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-brand-orange/20 to-transparent"></div>
                 <div className="overflow-x-auto scroller-thin">
                     <table className="w-full text-xs text-left text-brand-navy min-w-[1000px]">
@@ -785,7 +785,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                     <td className="px-10 py-8">
                                         <div className="flex flex-nowrap items-center gap-2 overflow-x-auto max-w-[320px] pb-1 scroller-thin mx-auto">
                                             <button 
-                                                className="p-2 w-10 h-10 rounded-xl glass-panel border-brand-teal/20 text-brand-teal/40 hover:text-brand-teal hover:scale-110 transition-all group/btn relative" 
+                                                className="p-2 w-10 h-10 rounded-xl bg-white border border-brand-teal/20 text-brand-teal/45 hover:bg-brand-teal/5 hover:text-brand-teal hover:scale-110 transition-all group/btn relative" 
                                                 onClick={async () => {
                                                     const full = await adminService.getOrderById(order.orderNumber);
                                                     if (full) setPreviewOrder(full);
@@ -796,7 +796,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                             </button>
 
                                             <button 
-                                                className="p-2 w-10 h-10 rounded-xl glass-panel border-white/60 text-brand-navy/40 hover:text-brand-navy hover:scale-110 transition-all group/btn relative" 
+                                                className="p-2 w-10 h-10 rounded-xl bg-white border border-brand-navy/15 text-brand-navy/40 hover:bg-brand-navy/5 hover:text-brand-navy hover:scale-110 transition-all group/btn relative" 
                                                 onClick={() => handleInspect(order)}
                                                 disabled={loadingOrderId === order.orderNumber}
                                                 title="Inspect Metadata"
@@ -805,7 +805,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                             </button>
 
                                             <button 
-                                                className="px-5 py-2.5 rounded-xl glass-panel border-brand-navy/10 text-[9px] font-black uppercase tracking-widest text-brand-navy hover:bg-brand-navy hover:text-white transition-all flex items-center gap-2 group/btn" 
+                                                className="px-5 py-2.5 rounded-xl bg-white border border-brand-navy/15 text-[9px] font-black uppercase tracking-widest text-brand-navy hover:bg-brand-navy hover:text-white transition-all flex items-center gap-2 group/btn" 
                                                 onClick={() => handleOpenEditor(order)}
                                                 disabled={loadingOrderId === order.orderNumber}
                                             >
@@ -814,7 +814,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                             </button>
 
                                             <button 
-                                                className="px-5 py-2.5 rounded-xl glass-panel border-brand-teal/20 text-[9px] font-black uppercase tracking-widest text-brand-teal hover:bg-brand-teal hover:text-white transition-all flex items-center gap-2 group/btn" 
+                                                className="px-5 py-2.5 rounded-xl bg-white border border-brand-teal/25 text-[9px] font-black uppercase tracking-widest text-brand-teal hover:bg-brand-teal hover:text-white transition-all flex items-center gap-2 group/btn" 
                                                 onClick={() => handleRunPipeline(order, true)}
                                                 disabled={loadingOrderId === order.orderNumber}
                                             >
@@ -825,7 +825,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                             </button>
 
                                             <button 
-                                                className="p-2 w-10 h-10 rounded-xl glass-panel border-brand-orange/20 text-brand-orange/40 hover:text-brand-orange hover:scale-110 transition-all group/btn relative" 
+                                                className="p-2 w-10 h-10 rounded-xl bg-white border border-brand-orange/20 text-brand-orange/40 hover:bg-brand-orange/5 hover:text-brand-orange hover:scale-110 transition-all group/btn relative" 
                                                 onClick={() => {
                                                     if (window.confirm(`DANGER: Restart ALL Pipeline phases for ${order.orderNumber}? DNA, Story, and Artwork will be permanently overwritten.`)) {
                                                         handleRunPipeline(order, false);
@@ -838,7 +838,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                             </button>
 
                                             <button 
-                                                className="p-2 w-10 h-10 rounded-xl glass-panel border-brand-teal/20 text-brand-teal/40 hover:text-brand-teal hover:scale-110 transition-all group/btn relative" 
+                                                className="p-2 w-10 h-10 rounded-xl bg-white border border-brand-teal/20 text-brand-teal/40 hover:bg-brand-teal/5 hover:text-brand-teal hover:scale-110 transition-all group/btn relative" 
                                                 onClick={() => handleOpenTerminal(order)}
                                                 disabled={loadingOrderId === order.orderNumber}
                                                 title="Open Diagnostic Terminal"
@@ -847,7 +847,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                             </button>
 
                                             <button 
-                                                className="p-2 w-10 h-10 rounded-xl glass-panel border-white/60 text-brand-navy/30 hover:text-brand-navy hover:scale-110 transition-all group/btn relative" 
+                                                className="p-2 w-10 h-10 rounded-xl bg-white border border-brand-navy/15 text-brand-navy/30 hover:bg-brand-navy/5 hover:text-brand-navy hover:scale-110 transition-all group/btn relative" 
                                                 onClick={() => handleDownloadZip(order)}
                                                 disabled={isExporting === order.orderNumber || loadingOrderId === order.orderNumber}
                                                 title="Export Print Package"
@@ -856,7 +856,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                             </button>
 
                                             <button 
-                                                className="p-2 w-10 h-10 rounded-xl glass-panel border-red-500/10 text-red-500/40 hover:text-red-500 hover:scale-110 transition-all group/btn relative" 
+                                                className="p-2 w-10 h-10 rounded-xl bg-white border border-red-500/15 text-red-500/40 hover:bg-red-50 hover:text-red-500 hover:scale-110 transition-all group/btn relative" 
                                                 onClick={() => handleHardReset(order)}
                                                 disabled={loadingOrderId === order.orderNumber}
                                                 title="Hard Reset & Clear Spillage"
