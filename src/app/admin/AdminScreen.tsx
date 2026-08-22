@@ -224,12 +224,6 @@ const AdminDashboard: React.FC<AdminScreenProps> = ({ onExit, onEditOrder, langu
 
     return (
         <div className="min-h-screen bg-[#FFF9F0] flex flex-col md:flex-row font-sans relative overflow-hidden">
-            {/* Background Blobs */}
-            <div className="blob-bg opacity-30">
-                <div className="blob blob-1"></div>
-                <div className="blob blob-2"></div>
-                <div className="blob blob-3"></div>
-            </div>
 
             {/* Premium Sidebar */}
             <aside className="w-full md:w-80 glass-panel border-r-0 md:border-r border-white/60 p-8 space-y-12 flex flex-col shrink-0 z-20 relative">
