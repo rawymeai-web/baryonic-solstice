@@ -4,7 +4,8 @@ import { supabase } from '../../utils/supabaseClient';
 export async function runImageQACheck(
     blueprintJson: string,
     resultImageBase64: string,
-    dnaImages: { base64: string, label: string }[]
+    dnaImages: { base64: string, label: string }[],
+    spreadText?: string
 ) {
     const model = ai().getGenerativeModel({
         model: 'gemini-2.5-pro',
@@ -27,28 +28,38 @@ export async function runImageQACheck(
     parts.push({ inlineData: { mimeType: 'image/jpeg', data: resultImageBase64 } });
 
     // Add Instructions
-    const prompt = `You are an expert Art Director and QA Agent. 
-Your job is strictly to evaluate the "FINAL GENERATED SPREAD IMAGE" against the "Reference DNA Images" and the provided Blueprint.
-You DO NOT write prompts. You are an Image Checker.
+    const prompt = `You are a human parent and reviewer performing quality control on a children's storybook.
+Compare the "FINAL GENERATED SPREAD IMAGE" directly against the "Reference DNA Images" and the narrative text.
 
-Here is the Blueprint (JSON) for this spread:
+Story Text for this Spread:
+"${spreadText || 'No text context provided'}"
+
+Blueprint (JSON) for this spread:
 ${blueprintJson}
 
 Evaluate the generated spread based on the following criteria:
-1. Character Consistency: Does the character in the spread look like the EXACT same person as in the Reference DNA Images? (Pay special attention to face shape, eye shape, nose shape, and bone structure). A generic cartoonish simplification that loses the unique facial likeness of the reference is a FAIL. The character must be highly consistent and recognizable, even when displaying different emotions or placed in darker/shaded environmental lighting.
-2. Style Fidelity: Does the overall art style match the intended look?
-3. Text Clearance: Based on the blueprint, is the designated text zone completely free of visual clutter, limbs, and characters? Which side is recommended for text?
+1. Likeness Matching: Does the child in the generated spread look like the child in the Reference DNA Image? If it looks like a completely different kid, or the likeness is lost in a generic cartoon face, answer FAIL.
+2. Narrative Logic: Look at the action and objects in the image. Does it match the story text? (e.g. if the text mentions a character sitting with a book or entering a pyramid, does the image show that action correctly? Do the characters' expressions and poses make logical sense?)
+3. Style Match: Does the overall art style match the intended look?
+4. Text Zone & Position: Based on the blueprint, is the designated text zone completely free of visual clutter, limbs, and characters? 
+   - If the text overlays on top of a character's face, body, or important action, you MUST recommend moving the text.
+   - Specify which side (Left or Right) is best to avoid clutter.
+   - Also recommend manual horizontal/vertical offset adjustments in millimeters (e.g., recommend shifting X by -20 to move left, or Y by -30 to move up).
 
 Return a strictly valid JSON object matching exactly this structure:
 {
     "character_consistency_status": "pass" | "fail",
-    "character_reasoning": "Detailed explanation...",
+    "character_reasoning": "Detailed explanation of likeness consistency...",
     "style_consistency_status": "pass" | "fail",
-    "style_reasoning": "Detailed explanation...",
+    "style_reasoning": "Detailed explanation of style match...",
     "text_clearance_status": "pass" | "fail",
-    "text_reasoning": "Detailed explanation...",
+    "text_reasoning": "Detailed explanation of text layout or overlap...",
     "recommended_text_side": "Right" | "Left",
-    "overall_decision": "pass" | "fail" | "flagged"
+    "recommended_text_offset_x": number, // suggested relative horizontal shift in mm (0 if none)
+    "recommended_text_offset_y": number, // suggested relative vertical shift in mm (0 if none)
+    "request_regeneration": boolean, // set to true if likeness or narrative logic failed and you need a repaint
+    "regeneration_reason": "Specific direction for the AI generator to correct the character/scene on repaint (empty if request_regeneration is false)",
+    "overall_decision": "pass" | "fail" | "flagged" // fail if likeness/narrative logic fails, flagged if minor issues, pass if perfect
 }`;
 
     parts.push({ text: prompt });

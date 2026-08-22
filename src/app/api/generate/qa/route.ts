@@ -14,6 +14,7 @@ export async function POST(req: Request) {
             blueprintJson, 
             dnaImages, 
             iterationNumber,
+            spreadText,
             
             // Legacy/pipeline base64 payload fields
             generatedImageBase64,
@@ -70,7 +71,17 @@ export async function POST(req: Request) {
         }
 
         // Run the QA check using Gemini Vision
-        const qaResult = await runImageQACheck(finalBlueprintJson, resultImageBase64, finalDnaImages);
+        const qaResult = await runImageQACheck(finalBlueprintJson, resultImageBase64, finalDnaImages, spreadText);
+
+        // Enrich the logging text with offset changes and regeneration requests
+        let finalCharacterReasoning = qaResult.character_reasoning || "";
+        if (qaResult.request_regeneration) {
+            finalCharacterReasoning += `\n\n[REGEN REQUESTED] Reason: ${qaResult.regeneration_reason || ""}`;
+        }
+        let finalTextReasoning = qaResult.text_reasoning || "";
+        if (qaResult.recommended_text_offset_x || qaResult.recommended_text_offset_y) {
+            finalTextReasoning += `\n\n[OFFSET SUGGESTION] Shift X: ${qaResult.recommended_text_offset_x ?? 0}mm, Y: ${qaResult.recommended_text_offset_y ?? 0}mm`;
+        }
 
         // Save the result to the database if order ID and spread index are provided
         let savedData = null;
@@ -87,11 +98,11 @@ export async function POST(req: Request) {
                         iteration_number: iterationNumber || 1,
                         image_url: imageUrl || null,
                         character_consistency_status: qaResult.character_consistency_status,
-                        character_reasoning: qaResult.character_reasoning,
+                        character_reasoning: finalCharacterReasoning,
                         style_consistency_status: qaResult.style_consistency_status,
                         style_reasoning: qaResult.style_reasoning,
                         text_clearance_status: qaResult.text_clearance_status,
-                        text_reasoning: qaResult.text_reasoning,
+                        text_reasoning: finalTextReasoning,
                         recommended_text_side: qaResult.recommended_text_side,
                         overall_decision: qaResult.overall_decision
                     })
@@ -117,9 +128,15 @@ export async function POST(req: Request) {
             characterConsistencyStatus: qaResult.character_consistency_status || qaResult.characterConsistencyStatus,
             styleConsistencyStatus: qaResult.style_consistency_status || qaResult.styleConsistencyStatus,
             textClearanceStatus: qaResult.text_clearance_status || qaResult.textClearanceStatus,
-            characterReasoning: qaResult.character_reasoning || qaResult.characterReasoning,
+            characterReasoning: finalCharacterReasoning,
             styleReasoning: qaResult.style_reasoning || qaResult.styleReasoning,
-            textReasoning: qaResult.text_reasoning || qaResult.textReasoning
+            textReasoning: finalTextReasoning,
+            
+            // New active regeneration & offset recommendations
+            requestRegeneration: !!qaResult.request_regeneration,
+            regenerationReason: qaResult.regeneration_reason || "",
+            recommendedTextOffsetX: qaResult.recommended_text_offset_x ?? 0,
+            recommendedTextOffsetY: qaResult.recommended_text_offset_y ?? 0
         };
 
         return NextResponse.json(responsePayload);

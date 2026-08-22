@@ -120,6 +120,7 @@ export const backendApi = {
         secondDNABase64?: string;
         orderId?: string;
         spreadIndex?: number;
+        spreadText?: string;
     }) => fetchBackend<any>('/generate/qa', {
         method: 'POST',
         body: JSON.stringify(payload)

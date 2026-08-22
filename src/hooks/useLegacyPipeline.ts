@@ -788,28 +788,72 @@ export const useLegacyPipeline = (
                     secondCharacterDescription: storyData.secondCharacter?.description
                 })) as any;
                 if (coverRes.imageBase64 || coverRes.data?.imageBase64) {
-                    const b64 = coverRes.imageBase64 || coverRes.data?.imageBase64;
+                    let b64 = coverRes.imageBase64 || coverRes.data?.imageBase64;
                     logMsg(`✓ Cover perfectly generated.`);
 
                     let qcStatus = 'pending';
-                    try {
-                        logMsg(`[QA] Running QA evaluation for Cover...`);
-                        const qaResult = await backendApi.evaluateImageQA({
-                            generatedImageBase64: b64,
-                            heroRawBase64: mainRawPhoto,
-                            heroDNABase64: mainDNAResolved,
-                            pageType: "Cover",
-                            currentTextSide: "right",
-                            targetPrompt: coverImagePrompt,
-                            secondRawBase64: storyData.useSecondCharacter ? secondRawPhoto : undefined,
-                            secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
-                            orderId: orderNumber,
-                            spreadIndex: 0
-                        }) as any;
-                        qcStatus = qaResult.overallDecision === 'pass' ? 'passed' : 'flagged';
-                        logMsg(`[QA RESULT] Cover: ${qcStatus.toUpperCase()}`);
-                    } catch (qaErr: any) {
-                        logMsg(`⚠️ QA evaluation failed for Cover: ${qaErr.message}`);
+                    let qaFeedback = "";
+                    let attempts = 1;
+                    const maxAttempts = 2;
+
+                    while (attempts <= maxAttempts) {
+                        if (attempts > 1) {
+                            logMsg(`[QA REGEN] Retrying Cover generation (Attempt ${attempts}/${maxAttempts}) with feedback: "${qaFeedback}"`);
+                            const retryPrompt = coverImagePrompt + `. NOTE: Correct the following issue in the image: ${qaFeedback}`;
+                            const retryRes = await retryStep('Painting Cover', () => backendApi.generateImage({
+                                prompt: retryPrompt, stylePrompt: visualStylePrompt,
+                                referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
+                                age: storyData.childAge || '5', secondReferenceBase64: secondDNAResolved,
+                                secondCharacterDescription: storyData.secondCharacter?.description
+                            })) as any;
+                            if (retryRes.imageBase64 || retryRes.data?.imageBase64) {
+                                b64 = retryRes.imageBase64 || retryRes.data?.imageBase64;
+                            }
+                        }
+
+                        try {
+                            logMsg(`[QA] Running QA evaluation for Cover (Attempt ${attempts})...`);
+                            const qaResult = await backendApi.evaluateImageQA({
+                                generatedImageBase64: b64,
+                                heroRawBase64: mainRawPhoto,
+                                heroDNABase64: mainDNAResolved,
+                                pageType: "Cover",
+                                currentTextSide: "right",
+                                targetPrompt: coverImagePrompt,
+                                secondRawBase64: storyData.useSecondCharacter ? secondRawPhoto : undefined,
+                                secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
+                                orderId: orderNumber,
+                                spreadIndex: 0,
+                                spreadText: `Title: ${storyData.title || ''}. Subtitle: ${storyData.coverSubtitle || ''}`,
+                                iterationNumber: attempts
+                            }) as any;
+                            
+                            qcStatus = qaResult.overallDecision === 'pass' ? 'passed' : 'flagged';
+                            
+                            // Adjust cover text offset values automatically based on QA suggestion!
+                            if (qaResult.recommendedTextOffsetX !== undefined || qaResult.recommendedTextOffsetY !== undefined) {
+                                const shiftX = qaResult.recommendedTextOffsetX ?? 0;
+                                const shiftY = qaResult.recommendedTextOffsetY ?? 0;
+                                logMsg(`[QA POSITION] Cover: QA Agent recommended text offsets: X = ${shiftX}mm, Y = ${shiftY}mm`);
+                                
+                                if (spreads[0]) {
+                                    spreads[0].textOffsetX = (spreads[0].textOffsetX || 0) + shiftX;
+                                    spreads[0].textOffsetY = (spreads[0].textOffsetY || 0) + shiftY;
+                                }
+                            }
+                            
+                            logMsg(`[QA RESULT] Cover (Attempt ${attempts}): ${qcStatus.toUpperCase()}`);
+
+                            if (qcStatus === 'passed' || !qaResult.requestRegeneration) {
+                                break;
+                            } else {
+                                qaFeedback = qaResult.regenerationReason || qaResult.characterReasoning || qaResult.textReasoning || "likeness consistency issue";
+                                attempts++;
+                            }
+                        } catch (qaErr: any) {
+                            logMsg(`⚠️ QA evaluation failed for Cover: ${qaErr.message}`);
+                            break;
+                        }
                     }
 
                     logMsg(`Uploading Cover image to storage bucket...`);
@@ -893,39 +937,80 @@ export const useLegacyPipeline = (
                     })) as any;
 
                     if (imgRes.imageBase64 || imgRes.data?.imageBase64) {
-                        const b64 = imgRes.imageBase64 || imgRes.data?.imageBase64;
+                        let finalB64 = imgRes.imageBase64 || imgRes.data?.imageBase64;
                         logMsg(`✓ Spread ${spreadNum} perfectly generated.`);
-                        const savedPrompt = imgRes.fullPrompt || imagePrompt;
+                        let savedPrompt = imgRes.fullPrompt || imagePrompt;
                         const modelUsed = imgRes.modelUsed || imgRes.data?.modelUsed;
 
                         let qcStatus = 'pending';
                         let recommendedTextSide = spreads[spreadNum].textSide;
-                        
-                        try {
-                            logMsg(`[QA] Running QA evaluation for Spread ${spreadNum}...`);
-                            const qaResult = await backendApi.evaluateImageQA({
-                                generatedImageBase64: b64,
-                                heroRawBase64: mainRawPhoto,
-                                heroDNABase64: mainDNAResolved,
-                                pageType: "Spread",
-                                currentTextSide: spreads[spreadNum].textSide || "right",
-                                targetPrompt: imagePrompt,
-                                secondRawBase64: storyData.useSecondCharacter ? secondRawPhoto : undefined,
-                                secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
-                                orderId: orderNumber,
-                                spreadIndex: spreadNum
-                            }) as any;
-                            
-                            qcStatus = qaResult.overallDecision === 'pass' ? 'passed' : 'flagged';
-                            if (qaResult.recommendedTextSide) {
-                                recommendedTextSide = qaResult.recommendedTextSide.toLowerCase() as 'left' | 'right';
+                        let qaFeedback = "";
+                        let attempts = 1;
+                        const maxAttempts = 2;
+
+                        while (attempts <= maxAttempts) {
+                            if (attempts > 1) {
+                                logMsg(`[QA REGEN] Retrying Spread ${spreadNum} (Attempt ${attempts}/${maxAttempts}) with feedback: "${qaFeedback}"`);
+                                const retryPrompt = imagePrompt + `. NOTE: Correct the following issue in the image: ${qaFeedback}`;
+                                const imgRetryRes = await retryStep(`Painting Spread ${spreadNum}`, () => backendApi.generateImage({
+                                    prompt: retryPrompt, stylePrompt: visualStylePrompt,
+                                    referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
+                                    age: storyData.childAge || '5', secondReferenceBase64: secondDNAResolved,
+                                    secondCharacterDescription: storyData.secondCharacter?.description
+                                })) as any;
+                                if (imgRetryRes.imageBase64 || imgRetryRes.data?.imageBase64) {
+                                    finalB64 = imgRetryRes.imageBase64 || imgRetryRes.data?.imageBase64;
+                                    savedPrompt = imgRetryRes.fullPrompt || retryPrompt;
+                                }
                             }
-                            logMsg(`[QA RESULT] Spread ${spreadNum}: ${qcStatus.toUpperCase()} (Text Side recommendation: ${recommendedTextSide})`);
-                        } catch (qaErr: any) {
-                            logMsg(`⚠️ QA evaluation failed for Spread ${spreadNum}: ${qaErr.message}`);
+
+                            try {
+                                logMsg(`[QA] Running QA evaluation for Spread ${spreadNum} (Attempt ${attempts})...`);
+                                const qaResult = await backendApi.evaluateImageQA({
+                                    generatedImageBase64: finalB64,
+                                    heroRawBase64: mainRawPhoto,
+                                    heroDNABase64: mainDNAResolved,
+                                    pageType: "Spread",
+                                    currentTextSide: spreads[spreadNum].textSide || "right",
+                                    targetPrompt: imagePrompt,
+                                    secondRawBase64: storyData.useSecondCharacter ? secondRawPhoto : undefined,
+                                    secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
+                                    orderId: orderNumber,
+                                    spreadIndex: spreadNum,
+                                    spreadText: getSpreadText(spreads[spreadNum], spreadNum),
+                                    iterationNumber: attempts
+                                }) as any;
+                                
+                                qcStatus = qaResult.overallDecision === 'pass' ? 'passed' : 'flagged';
+                                if (qaResult.recommendedTextSide) {
+                                    recommendedTextSide = qaResult.recommendedTextSide.toLowerCase() as 'left' | 'right';
+                                }
+
+                                // Automatically apply text position offset adjustments if suggested!
+                                if (qaResult.recommendedTextOffsetX !== undefined || qaResult.recommendedTextOffsetY !== undefined) {
+                                    const shiftX = qaResult.recommendedTextOffsetX ?? 0;
+                                    const shiftY = qaResult.recommendedTextOffsetY ?? 0;
+                                    logMsg(`[QA POSITION] Spread ${spreadNum}: QA Agent recommended text offsets: X = ${shiftX}mm, Y = ${shiftY}mm`);
+                                    
+                                    spreads[spreadNum].textOffsetX = (spreads[spreadNum].textOffsetX || 0) + shiftX;
+                                    spreads[spreadNum].textOffsetY = (spreads[spreadNum].textOffsetY || 0) + shiftY;
+                                }
+
+                                logMsg(`[QA RESULT] Spread ${spreadNum} (Attempt ${attempts}): ${qcStatus.toUpperCase()} (Text Side: ${recommendedTextSide})`);
+
+                                if (qcStatus === 'passed' || !qaResult.requestRegeneration) {
+                                    break;
+                                } else {
+                                    qaFeedback = qaResult.regenerationReason || qaResult.characterReasoning || qaResult.textReasoning || "likeness consistency issue";
+                                    attempts++;
+                                }
+                            } catch (qaErr: any) {
+                                logMsg(`⚠️ QA evaluation failed for Spread ${spreadNum}: ${qaErr.message}`);
+                                break;
+                            }
                         }
 
-                        await uploadSpreadImage(spreadNum, b64, savedPrompt, modelUsed, qcStatus, recommendedTextSide);
+                        await uploadSpreadImage(spreadNum, finalB64, savedPrompt, modelUsed, qcStatus, recommendedTextSide);
                     }
                 } else {
                     logMsg(`Spread ${spreadNum} already exists. Skipping.`);
