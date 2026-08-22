@@ -42,6 +42,13 @@ export async function PATCH(
     if (status !== undefined) updates.status = status;
     if (package_url !== undefined) updates.package_url = package_url;
 
+    // Fetch existing order to check prior state
+    const { data: existing } = await supabase
+      .from('orders')
+      .select('status, total')
+      .eq('order_number', id)
+      .single();
+
     const { data, error } = await supabase
       .from('orders')
       .update(updates)
@@ -54,7 +61,13 @@ export async function PATCH(
 
     // Trigger status change email notification if status was updated
     if (status !== undefined) {
-      await EmailService.sendNotification(id, 'status_changed', { status });
+      if ((status === 'paid_confirmed' || status === 'queued') && existing && existing.status !== 'paid_confirmed' && existing.status !== 'queued') {
+        const orderTotal = existing.total || 0;
+        await EmailService.sendNotification(id, 'order_received', { total: orderTotal });
+        await EmailService.sendNotification(id, 'admin_new_order', { total: orderTotal });
+      } else {
+        await EmailService.sendNotification(id, 'status_changed', { status });
+      }
     }
 
     return NextResponse.json({ success: true, order: data });
