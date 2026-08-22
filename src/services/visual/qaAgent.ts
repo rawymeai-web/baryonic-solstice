@@ -27,6 +27,14 @@ export async function runImageQACheck(
     parts.push({ text: "FINAL GENERATED SPREAD IMAGE (To be evaluated):" });
     parts.push({ inlineData: { mimeType: 'image/jpeg', data: resultImageBase64 } });
 
+    let childAge = "5";
+    try {
+        const parsed = JSON.parse(blueprintJson);
+        const rawAge = parsed.childAge || parsed.age || parsed.foundation?.age || "5";
+        const numMatch = String(rawAge).match(/\d+/);
+        if (numMatch) childAge = numMatch[0];
+    } catch (e) {}
+
     // Add Instructions
     const prompt = `You are a human parent and reviewer performing quality control on a children's storybook.
 Compare the "FINAL GENERATED SPREAD IMAGE" directly against the "Reference DNA Images" and the narrative text.
@@ -38,9 +46,12 @@ Blueprint (JSON) for this spread:
 ${blueprintJson}
 
 Evaluate the generated spread based on the following criteria:
-1. Likeness Matching: Does the child in the generated spread look like the child in the Reference DNA Image? If it looks like a completely different kid, or the likeness is lost in a generic cartoon face, answer FAIL.
-2. Narrative Logic: Look at the action and objects in the image. Does it match the story text? (e.g. if the text mentions a character sitting with a book or entering a pyramid, does the image show that action correctly? Do the characters' expressions and poses make logical sense?)
-3. Style Match: Does the overall art style match the intended look?
+1. Character Likeness & Age/Height Consistency: 
+   - Be realistic and fair. Do NOT fail the likeness just because it is a cartoon illustration instead of a photo. Some simplification and artistic style compromise is expected in drawings.
+   - However, you MUST verify that the hero maintains a consistent age and relative height across the book spreads. The character must look like a child of the correct age (around ${childAge} years old) and maintain consistent body proportions.
+   - FAIL the check if the character looks like a completely different person, looks like a teenager or an adult instead of a child, looks like a baby, or has wildly inconsistent height/anatomy compared to the reference child.
+2. Narrative Logic: Look at the action and objects in the image. Does it match the story text? (e.g. if the text mentions a character sitting with a book or holding a cat, is the character doing that? Do the characters' expressions and poses make logical sense?)
+3. Style Match: Be realistic and fair. Minor variations in texture softness, colors, or lighting are acceptable. Only FAIL the style if there is a massive style mismatch (e.g., a flat vector icon style instead of painterly illustration, or a high-contrast 3D render instead of a drawing).
 4. Text Zone & Position: Based on the blueprint, is the designated text zone completely free of visual clutter, limbs, and characters? 
    - If the text overlays on top of a character's face, body, or important action, you MUST recommend moving the text.
    - Specify which side (Left or Right) is best to avoid clutter.
@@ -49,7 +60,7 @@ Evaluate the generated spread based on the following criteria:
 Return a strictly valid JSON object matching exactly this structure:
 {
     "character_consistency_status": "pass" | "fail",
-    "character_reasoning": "Detailed explanation of likeness consistency...",
+    "character_reasoning": "Detailed explanation of likeness/age/height consistency...",
     "style_consistency_status": "pass" | "fail",
     "style_reasoning": "Detailed explanation of style match...",
     "text_clearance_status": "pass" | "fail",
@@ -57,9 +68,9 @@ Return a strictly valid JSON object matching exactly this structure:
     "recommended_text_side": "Right" | "Left",
     "recommended_text_offset_x": number, // suggested relative horizontal shift in mm (0 if none)
     "recommended_text_offset_y": number, // suggested relative vertical shift in mm (0 if none)
-    "request_regeneration": boolean, // set to true if likeness or narrative logic failed and you need a repaint
+    "request_regeneration": boolean, // set to true if likeness, age/height, or narrative logic failed and you need a repaint
     "regeneration_reason": "Specific direction for the AI generator to correct the character/scene on repaint (empty if request_regeneration is false)",
-    "overall_decision": "pass" | "fail" | "flagged" // fail if likeness/narrative logic fails, flagged if minor issues, pass if perfect
+    "overall_decision": "pass" | "fail" | "flagged" // fail if likeness/age/height or narrative logic fails, flagged if minor issues, pass if perfect
 }`;
 
     parts.push({ text: prompt });
