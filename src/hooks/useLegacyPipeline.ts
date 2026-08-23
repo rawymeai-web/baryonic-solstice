@@ -426,7 +426,7 @@ export const useLegacyPipeline = (
                 try {
                     const str = typeof p === 'string' ? p : JSON.stringify(p || '');
                     // Force upgrade if it's older than v6.0-dna-only
-                    return str.includes('v3.2') || str.includes('v4.0.1') || str.includes('v6.');
+                    return str.includes('v3.2') || str.includes('v4.0.1') || str.includes('v6.') || str.includes('v7.');
                 } catch { return false; }
             };
 
