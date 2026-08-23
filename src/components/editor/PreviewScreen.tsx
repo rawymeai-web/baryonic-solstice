@@ -173,7 +173,7 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
         || (spread.rightText && !spread.leftText ? 'right' : 'left');
 
     // Combine leftText and rightText to display the full narrative on the designated page side
-    const narrativeText = [spread.leftText, spread.rightText].filter(Boolean).join(' ') || spread.text || '';
+    const narrativeText = [spread.leftText, spread.rightText].filter(Boolean).join(' ') || (spread as any).text || '';
 
     return (
         <div className="w-full h-full flex shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] rounded-[3rem] overflow-hidden relative border-[12px] border-white ring-1 ring-black/5"

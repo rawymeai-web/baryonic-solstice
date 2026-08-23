@@ -977,7 +977,7 @@ export const useLegacyPipeline = (
                                     secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
                                     orderId: orderNumber,
                                     spreadIndex: spreadNum,
-                                    spreadText: getSpreadText(spreads[spreadNum], spreadNum),
+                                    spreadText: [spreads[spreadNum]?.leftText, spreads[spreadNum]?.rightText].filter(Boolean).join(' ') || (spreads[spreadNum] as any)?.text || "",
                                     iterationNumber: attempts
                                 }) as any;
                                 
