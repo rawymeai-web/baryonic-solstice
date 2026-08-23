@@ -521,6 +521,130 @@ function assembleEnglishPrompt(
 }
 
 // ---------------------------------------------------------------------------
+// SECTION I.1 — CLEAN PROMPT ASSEMBLER (v7.1)
+// ---------------------------------------------------------------------------
+function assembleEnglishPromptV7_1(
+    spread: any,
+    styleProfile: StyleProfile,
+    heroes: HeroProfile[],
+    isCover: boolean = false
+): { prompt: string; validation: PromptValidationResult } {
+
+    const schemaStamp = `[v7.1-dna-clean]`;
+
+    // 1. Build Legend mapping reference images to Hero tokens (Clean, non-redundant)
+    const legendParts = [`CHARACTER REFERENCES:`];
+    heroes.forEach((h, idx) => {
+        const dnaIdx = (h as any).stylized_dna_image_index;
+        if (dnaIdx > 0) {
+            legendParts.push(`- Image ${dnaIdx}: Reference for [[HERO_${idx + 1}]]`);
+        }
+    });
+    const legend = legendParts.length > 1 ? legendParts.join('\n') : '';
+
+    // 2. Scene setup and environment
+    const s = spread.setting;
+    let settingText = '';
+    if (typeof s === 'string') {
+        const env = spread.environmentType || spread.environment_type;
+        const time = spread.timeOfDay || spread.time_of_day;
+        const mood = spread.mood;
+        const lighting = spread.lighting;
+        
+        const details = [];
+        if (env) details.push(`Environment: ${env}`);
+        if (time) details.push(`Time of Day: ${time}`);
+        if (mood) details.push(`Mood: ${mood}`);
+        if (lighting) details.push(`Lighting: ${lighting}`);
+        
+        settingText = `Scene: Set in ${s}${details.length > 0 ? ` (${details.join(', ')})` : ''}.`;
+    } else if (s && typeof s === 'object') {
+        const details = [];
+        if (s.specific_location) details.push(`Location: ${s.specific_location}`);
+        if (s.environment_type) details.push(`Environment: ${s.environment_type}`);
+        if (s.time_of_day) details.push(`Time of Day: ${s.time_of_day}`);
+        if (s.mood) details.push(`Mood: ${s.mood}`);
+        if (s.lighting) details.push(`Lighting: ${s.lighting}`);
+        
+        settingText = details.length > 0 
+            ? `Scene: ${details.join(', ')}.`
+            : `Scene: A wide 16:9 children's book illustration scene.`;
+    } else {
+        settingText = `Scene: A wide 16:9 children's book illustration scene.`;
+    }
+
+    // 3. Actions & Expressions (Sanitized syntax to avoid clunky grammar/duplicate articles)
+    let actionsText = '';
+    if (typeof spread.keyActions === 'string') {
+        let actionStr = spread.keyActions;
+        heroes.forEach((h, idx) => {
+            const regex = new RegExp(`\\[Hero\\s*${idx + 1}\\]`, 'gi');
+            actionStr = actionStr.replace(regex, h.token);
+        });
+        actionsText = `Action: ${actionStr}`;
+    } else {
+        const actionLines = (spread.hero_actions || [])
+            .filter((a: any) => a.presence !== 'absent' && a.action)
+            .map((a: any) => {
+                const token = a.token.replace(/\[\[hero_(\d+)\]\]/gi, (_: string, n: string) => `[[HERO_${n}]]`);
+                let actionStr = `Show ${token} ${sanitizeText(a.action)}`;
+                if (a.expression) {
+                    let expr = sanitizeText(a.expression).trim();
+                    expr = expr.replace(/^(a|an|the)\s+/i, ''); // Strip leading articles to prevent grammatical clashes
+                    actionStr += `, with a ${expr} expression`;
+                }
+                if (a.eye_line) actionStr += `, ${sanitizeText(a.eye_line)}`;
+                return actionStr.trim().replace(/\.+$/, '') + '.';
+            });
+        actionsText = actionLines.length > 0 
+            ? `Action: ${actionLines.join(' ')}` 
+            : '';
+    }
+
+    // 4. Style Lock (Omitted in v7.1 prompts since it's already globally appended by the generator)
+    const styleText = '';
+
+    // 5. Props (Simplified list names)
+    const propsText = spread.scene_props && spread.scene_props.length > 0 
+        ? `Props to include: ${spread.scene_props.map((p: any) => p.name).join(', ')}.`
+        : '';
+
+    // 6. Composition & Text zones
+    const comp = spread.composition || {};
+    const actionSide = (comp.action_zone_side || spread.mainContentSide || 'right').toLowerCase();
+    let textSide = (comp.text_zone_side || spread.textSide || '').toLowerCase();
+    if (textSide !== 'left' && textSide !== 'right') {
+        textSide = actionSide === 'left' ? 'right' : 'left';
+    }
+    const view = comp.composition_view || spread.compositionView || '';
+    const viewText = view ? ` Framing: Use a ${view} composition.` : '';
+    let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. Keep the opposite ${textSide} side as clean, empty background space (negative space) for text placement.${viewText}`;
+
+    if (isCover) {
+        compositionText = `Composition: Use a wide-angle shot, showing the character zoomed out to leave space at the top. Place the character low in the frame (strictly in the lower 60% of the image), keeping the top 40% of the frame as clean background space (negative space) for the book title. The character's face, head, or hair must not come near the top 20% of the image.`;
+    }
+
+    // 7. Hard Constraints (No text/letters, horizontal 16:9)
+    const constraintsText = `Constraints: Strictly no text, letters, numbers, signs, logos, or watermarks. Must be a wide 16:9 horizontal image. Do not copy the pose or background from the reference images.`;
+
+    const sections = [
+        schemaStamp,
+        legend,
+        settingText,
+        actionsText,
+        styleText,
+        propsText,
+        compositionText,
+        constraintsText
+    ].filter(s => s && s.trim().length > 0);
+
+    const prompt = sections.join('\n\n');
+    const validation = validateAssembledPrompt(prompt);
+
+    return { prompt, validation };
+}
+
+// ---------------------------------------------------------------------------
 // PUBLIC EXPORT
 // ---------------------------------------------------------------------------
 export async function generatePrompts(
@@ -546,7 +670,7 @@ export async function generatePrompts(
             const bpSpread = blueprint?.structure?.spreads?.find(s => s.spreadNumber === spreadIndex);
             const isCover = spreadIndex === 0;
 
-            const { prompt, validation } = assembleEnglishPrompt(spread, styleProfile, heroes, isCover);
+            const { prompt, validation } = assembleEnglishPromptV7_1(spread, styleProfile, heroes, isCover);
 
             if (!validation.passed) {
                 allValidationErrors.push(`Spread ${spreadIndex}: ${validation.errors.join('; ')}`);
@@ -576,7 +700,7 @@ export async function generatePrompts(
                 inputs: { planSize: plan.spreads.length, heroCount: heroes.length },
                 outputs: {
                     promptCount: prompts.length,
-                    method: 'DNA-Only Assembler v7.0',
+                    method: 'DNA-Only Assembler v7.1-clean',
                     validationErrors: allValidationErrors.length > 0 ? allValidationErrors : 'none',
                 },
                 status: allValidationErrors.length > 0 ? 'Warning' : 'Success',
