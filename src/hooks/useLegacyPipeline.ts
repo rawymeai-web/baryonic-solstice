@@ -776,7 +776,7 @@ export const useLegacyPipeline = (
             checkAborted();
             // --- Generate Cover (Spread 0) ---
             const coverUrl = storyData.coverImageUrl;
-            const coverAlreadyDone = coverUrl && coverUrl.length > 55 && !coverUrl.endsWith('...');
+            const coverAlreadyDone = coverUrl && coverUrl.startsWith('http') && !coverUrl.endsWith('...');
             if (!coverAlreadyDone && resolvedCoverPrompt && mainDNAResolved) {
                 setStatus(t('رسم الغلاف...', 'Painting Cover...'));
                 const rawCover = storyDataPropRef.current.finalPrompts?.[0] || resolvedCoverPrompt;
@@ -911,10 +911,9 @@ export const useLegacyPipeline = (
                 setStatus(t(`رسم المشهد ${spreadNum}/${innerPrompts.length}...`, `Painting Spread ${spreadNum}/${innerPrompts.length}...`));
 
                 const existingUrl = spreads[spreadNum]?.illustrationUrl;
-                const isCorrupted = existingUrl && (existingUrl.endsWith('...') || existingUrl.length < 55);
+                const isFinishedUrl = existingUrl && existingUrl.startsWith('http') && !existingUrl.endsWith('...');
 
-                if (!existingUrl || isCorrupted) {
-                    if (isCorrupted) logMsg(`Repainting corrupted image for Spread ${spreadNum}...`);
+                if (!isFinishedUrl) {
                     logMsg(`--> Painting Spread ${spreadNum}/${innerPrompts.length}...`);
 
                     const latestRaw = storyData.finalPrompts?.[hasCoverPrompt ? spreadNum : i] || innerPrompts[i];
