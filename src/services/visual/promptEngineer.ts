@@ -780,15 +780,31 @@ function assembleEnglishPromptV7_3(
 
     // 1. Clean Reference Mapping with Compact Age Identifier
     const legendParts = [`CHARACTER REFERENCES:`];
+    const likenessDirectives: string[] = [];
+
     heroes.forEach((h, idx) => {
-        const dnaIdx = (h as any).stylized_dna_image_index;
-        if (dnaIdx > 0) {
-            const ageVal = (h as any).age || (h as any).childAge || '';
-            const ageDesc = ageVal ? ` (a ${ageVal}-year-old child)` : '';
-            legendParts.push(`- Image ${dnaIdx}: Approved character reference for [[HERO_${idx + 1}]]${ageDesc}.`);
-        }
+        const dnaIdx = (h as any).stylized_dna_image_index || (idx + 1);
+        const name = h.name || `Hero ${idx + 1}`;
+        const ageVal = (h as any).age || (h as any).childAge || '';
+        const ageDesc = ageVal ? ` (a ${ageVal}-year-old child)` : '';
+        legendParts.push(`- Image ${dnaIdx}: Approved character reference for [[HERO_${idx + 1}]]${ageDesc}.`);
+
+        const clothing = (h as any).clothing ? `, wearing ${(h as any).clothing}` : '';
+        const features = (h as any).distinctive_features ? `, with ${(h as any).distinctive_features}` : '';
+        const hair = (h as any).hair ? `, ${(h as any).hair}` : '';
+
+        likenessDirectives.push(`- [[HERO_${idx + 1}]] (${name}${ageDesc}): Transfer the exact recognizable face shape, skin tone, eye shape, and hairstyle directly from Image ${dnaIdx}${clothing}${features}. Keep their face structure and recognizable identity identical to Image ${dnaIdx}.`);
     });
     const legend = legendParts.length > 1 ? legendParts.join('\n') : '';
+    const likenessText = likenessDirectives.length > 0
+        ? `CHARACTER LIKENESS & ANATOMY:\n${likenessDirectives.join('\n')}`
+        : '';
+
+    // Style Matching Directive
+    const stylePrompt = styleProfile?.prompt || styleProfile?.description || '';
+    const styleText = stylePrompt
+        ? `ART STYLE MATCHING:\n- Render in the exact handcrafted art style and medium of the reference image(s): ${stylePrompt}. Do not simplify into flat anime or generic vector cartoon.`
+        : '';
 
     // 2. Setting & Environment (Sanitizing conflicting medium terms)
     const s = spread.setting;
@@ -813,7 +829,7 @@ function assembleEnglishPromptV7_3(
         if (s.specific_location) details.push(`Location: ${cleanSetting(s.specific_location)}`);
         if (s.environment_type) details.push(`Environment: ${s.environment_type}`);
         if (s.time_of_day) details.push(`Time of Day: ${s.time_of_day}`);
-        if (s.mood) details.push(`Mood: ${s.mood}`);
+        if (s.mood) details.push(`Mood: ${mood}`);
         if (s.lighting) details.push(`Lighting: ${cleanSetting(s.lighting)}`);
         
         settingText = details.length > 0 
@@ -877,11 +893,13 @@ function assembleEnglishPromptV7_3(
     }
 
     // 6. Hard Constraints (Disentangling action/pose from facial & outfit consistency)
-    const constraintsText = `Constraints: Strictly no letters, numbers, signs, logos, or watermarks. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while keeping the character's exact face, hairstyle, and outfit from the reference image.`;
+    const constraintsText = `Constraints: Strictly no letters, numbers, signs, hieroglyphs, text, logos, or watermarks anywhere. Strictly no modern books, tablets, or notebooks unless explicitly requested. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while keeping each character's exact face, hairstyle, and outfit from their reference image.`;
 
     const sections = [
         schemaStamp,
         legend,
+        likenessText,
+        styleText,
         settingText,
         actionsText,
         propsText,
