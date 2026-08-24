@@ -475,12 +475,14 @@ export const useLegacyPipeline = (
                         { 
                             role: 'primary', 
                             name: storyData.childName,
+                            age: storyData.childAge,
                             has_real_photo: !!mainRawPhoto,
                             has_stylized_dna: !!mainStylizedDNA 
                         },
                         { 
                             role: 'secondary', 
                             name: storyData.secondCharacter?.name,
+                            age: storyData.secondCharacter?.age,
                             has_real_photo: !!secondRawPhoto,
                             has_stylized_dna: !!secondStylizedDNA 
                         }

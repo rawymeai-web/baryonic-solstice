@@ -25,6 +25,7 @@ function buildHeroProfiles(frontendHeroes: any[]) {
             token: `[[HERO_${i + 1}]]`,
             name: h.name || (i === 0 ? 'Primary Hero' : 'Secondary Hero'),
             role: (h.role || (i === 0 ? 'primary' : 'secondary')) as 'primary' | 'secondary' | 'supporting',
+            age: h.age || h.childAge,
 
             // DNA-only: identity_anchor is -1 (no raw photo), DNA gets the index
             identity_anchor_image_index: -1,
