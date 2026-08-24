@@ -425,8 +425,8 @@ export const useLegacyPipeline = (
             const hasV3Stamp = (p: any): boolean => {
                 try {
                     const str = typeof p === 'string' ? p : JSON.stringify(p || '');
-                    // Force upgrade if it's older than v7.2-dna-balanced
-                    return str.includes('v7.2');
+                    // Force upgrade if it's older than v7.3-dna-unified
+                    return str.includes('v7.3');
                 } catch { return false; }
             };
 
@@ -918,7 +918,10 @@ export const useLegacyPipeline = (
                     logMsg(`--> Painting Spread ${spreadNum}/${innerPrompts.length}...`);
 
                     const latestRaw = storyData.finalPrompts?.[hasCoverPrompt ? spreadNum : i] || innerPrompts[i];
-                    const imagePrompt = typeof latestRaw === 'string' ? latestRaw : (latestRaw?.imagePrompt || latestRaw?.prompt);
+                    let imagePrompt = typeof latestRaw === 'string' ? latestRaw : (latestRaw?.imagePrompt || latestRaw?.prompt || '');
+                    if (imagePrompt) {
+                        imagePrompt = imagePrompt.replace(/\*\*CHARACTER IDENTITY & LIKENESS:\*\*[\s\S]*?(?=\*\*ART STYLE REQUIREMENT:\*\*|$)/i, '').trim();
+                    }
 
                     if (!imagePrompt || !mainDNAResolved) {
                         logMsg(`⚠️ Missing prompt or character DNA for Spread ${spreadNum}, skipping.`);
