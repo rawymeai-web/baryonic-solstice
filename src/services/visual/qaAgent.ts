@@ -52,17 +52,20 @@ Story Text for this Spread:
 Blueprint (JSON) for this spread:
 ${blueprintJson}
 
-Evaluate the generated spread based on the following criteria:
+Evaluate the generated spread based on the following practical criteria:
 1. Character Likeness & Age/Height Consistency: 
-   - Be realistic and fair. Do NOT fail the likeness just because it is a cartoon illustration instead of a photo. Some simplification and artistic style compromise is expected in drawings.
-   - However, you MUST verify that the hero maintains a consistent age and relative height across the book spreads. The character must look like a child of the correct age (around ${childAge} years old) and maintain consistent body proportions.
-   - FAIL the check if the character looks like a completely different person, looks like a teenager or an adult instead of a child, looks like a baby, or has wildly inconsistent height/anatomy compared to the reference child.
-2. Narrative Logic: Look at the action and objects in the image. Does it match the story text? (e.g. if the text mentions a character sitting with a book or holding a cat, is the character doing that? Do the characters' expressions and poses make logical sense?)
-3. Style Match: Be realistic and fair. Minor variations in texture softness, colors, or lighting are acceptable. Only FAIL the style if there is a massive style mismatch (e.g., a flat vector icon style instead of painterly illustration, or a high-contrast 3D render instead of a drawing).
-4. Text Zone & Position: Based on the blueprint, is the designated text zone completely free of visual clutter, limbs, and characters? 
-   - If the text overlays on top of a character's face, body, or important action, you MUST recommend moving the text.
-   - Specify which side (Left or Right) is best to avoid clutter.
-   - Also recommend manual horizontal/vertical offset adjustments in millimeters (e.g., recommend shifting X by -20 to move left, or Y by -30 to move up).
+   - Be realistic and practical. In dynamic storybook illustrations, characters change angles, perspective, and facial expressions (smiling, running, surprised). Some cartoon simplification is expected and desirable.
+   - If the character has the same hair color/texture, skin tone, approximate age (${childAge} years old), and recognizable identity, mark character_consistency_status as "pass".
+   - ONLY fail if: The character looks like a totally different person (different gender, different ethnicity, wrong hair), appears as an adult/baby, or has severe anatomical distortions.
+2. Narrative Logic: 
+   - Does the action reasonably match the story beat? Minor prop variations are acceptable.
+3. Style Match: 
+   - Storybook illustrations will naturally vary in lighting between indoor/outdoor scenes. Minor differences in brushstroke texture or color saturation are completely normal and should PASS.
+   - ONLY fail if: The image is an actual photograph, a 3D videogame render, or a flat clip-art vector.
+4. Text Zone & Position: 
+   - Is the designated empty side reasonably clear of main character faces or critical actions? 
+   - If clear, mark text_clearance_status as "pass".
+   - If a character's face is right in the text zone, recommend shifting text side or offset.
 
 Return a strictly valid JSON object matching exactly this structure:
 {
