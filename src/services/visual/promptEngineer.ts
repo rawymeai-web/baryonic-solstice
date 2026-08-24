@@ -767,16 +767,16 @@ function assembleEnglishPromptV7_2(
 }
 
 // ---------------------------------------------------------------------------
-// SECTION I.3 — UNIFIED PROMPT ASSEMBLER (v7.3)
+// SECTION I.3 — UNIFIED PROMPT ASSEMBLER (v7.4)
 // ---------------------------------------------------------------------------
-function assembleEnglishPromptV7_3(
+function assembleEnglishPromptV7_4(
     spread: any,
     styleProfile: StyleProfile,
     heroes: HeroProfile[],
     isCover: boolean = false
 ): { prompt: string; validation: PromptValidationResult } {
 
-    const schemaStamp = `[v7.3-dna-unified]`;
+    const schemaStamp = `[v7.4-dna-unified]`;
 
     // 1. Clean Reference Mapping with Compact Age Identifier
     const legendParts = [`CHARACTER REFERENCES:`];
@@ -939,7 +939,7 @@ export async function generatePrompts(
             const bpSpread = blueprint?.structure?.spreads?.find(s => s.spreadNumber === spreadIndex);
             const isCover = spreadIndex === 0;
 
-            const { prompt, validation } = assembleEnglishPromptV7_3(spread, styleProfile, heroes, isCover);
+            const { prompt, validation } = assembleEnglishPromptV7_4(spread, styleProfile, heroes, isCover);
 
             if (!validation.passed) {
                 allValidationErrors.push(`Spread ${spreadIndex}: ${validation.errors.join('; ')}`);
@@ -969,7 +969,7 @@ export async function generatePrompts(
                 inputs: { planSize: plan.spreads.length, heroCount: heroes.length },
                 outputs: {
                     promptCount: prompts.length,
-                    method: 'DNA-Only Assembler v7.3-unified',
+                    method: 'DNA-Only Likeness Assembler v7.4-unified',
                     validationErrors: allValidationErrors.length > 0 ? allValidationErrors : 'none',
                 },
                 status: allValidationErrors.length > 0 ? 'Warning' : 'Success',

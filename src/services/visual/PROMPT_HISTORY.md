@@ -73,3 +73,39 @@ Keep this file as a strict reference for the successful prompt structures that p
 2. **STYLE LOCK:** You MUST render the entire scene in the following specific Art Style: "[Global Style Prompt]". Do not stray from this global art style description. Use the attached image as a supplemental reference for the rendering technique (brushwork/color grading).
 3. **ZERO REALISM:** Maintain the illustration/storybook aesthetic. No realistic lighting or photography physics.
 ```
+
+---
+
+## Version 7.4: Likeness-Anchored DNA & Dynamic Style Pipeline (`[v7.4-dna-unified]`)
+*Date: August 2026*
+
+### Core Architectural Principles:
+1. **Dynamic Character Likeness Anchors:** Per-character transfer directives that preserve facial anatomy, eye shapes, hair textures, skin tones, and distinct traits directly from `Image 1`, `Image 2`, etc., without hardcoding clothing or names.
+2. **Dynamic Art Style Matching:** Injects the selected art style prompt and medium anchors (gouache, watercolor, 3D, etc.) to prevent Gemini from flattening art into generic vector anime.
+3. **Hardcover Wrap Geometry:** English covers automatically enforce Front Cover (Right half) character action with open top banner space, leaving the Back Cover (Left half) for calm landscape. Arabic covers invert appropriately.
+4. **Universal Clean Constraints:** Strictly disallows text, letters, logos, and watermarks without any scene-specific or theme-specific prohibitions.
+
+### Standard v7.4 Prompt Template:
+```text
+[v7.4-dna-unified]
+
+CHARACTER REFERENCES:
+- Image 1: Approved character reference for [[HERO_1]] (a [Age]-year-old child).
+- Image 2: Approved character reference for [[HERO_2]] (a [Age]-year-old child).
+
+CHARACTER LIKENESS & ANATOMY:
+- [[HERO_1]] ([Name], a [Age]-year-old child): Transfer the exact recognizable face shape, skin tone, eye shape, and hairstyle directly from Image 1, wearing [Clothing], with [Distinctive Features]. Keep their face structure and recognizable identity identical to Image 1.
+
+ART STYLE MATCHING:
+- Render in the exact handcrafted art style and medium of the reference image(s): [Dynamic Style Prompt]. Do not simplify into flat anime or generic vector cartoon.
+
+Scene: Location: [Location], Environment: [Type], Time of Day: [Time], Mood: [Mood], Lighting: [Lighting].
+
+Action: Show [[HERO_1]] [Dynamic Action], with a [Expression] expression, [Eye Line].
+
+Props to include: [Scene Props].
+
+Composition: Place all characters, actions, and key props on the [right/left] side of the frame. The opposite [left/right] side must remain open, uncluttered negative space with simple, soft background scenery. Framing: Use a [Camera Angle] composition.
+
+Constraints: Strictly no letters, numbers, signs, text, logos, or watermarks anywhere in the illustration. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while keeping each character's exact face, hairstyle, and outfit from their reference image.
+```
