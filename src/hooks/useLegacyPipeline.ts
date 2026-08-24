@@ -425,8 +425,8 @@ export const useLegacyPipeline = (
             const hasV3Stamp = (p: any): boolean => {
                 try {
                     const str = typeof p === 'string' ? p : JSON.stringify(p || '');
-                    // Force upgrade if it's older than v6.0-dna-only
-                    return str.includes('v3.2') || str.includes('v4.0.1') || str.includes('v6.') || str.includes('v7.');
+                    // Force upgrade if it's older than v7.2-dna-balanced
+                    return str.includes('v7.2');
                 } catch { return false; }
             };
 
