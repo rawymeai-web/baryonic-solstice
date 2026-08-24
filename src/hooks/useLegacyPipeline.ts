@@ -815,12 +815,10 @@ export const useLegacyPipeline = (
                             logMsg(`[QA] Running QA evaluation for Cover (Attempt ${attempts})...`);
                             const qaResult = await backendApi.evaluateImageQA({
                                 generatedImageBase64: b64,
-                                heroRawBase64: mainRawPhoto,
                                 heroDNABase64: mainDNAResolved,
                                 pageType: "Cover",
                                 currentTextSide: "right",
                                 targetPrompt: coverImagePrompt,
-                                secondRawBase64: storyData.useSecondCharacter ? secondRawPhoto : undefined,
                                 secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
                                 orderId: orderNumber,
                                 spreadIndex: 0,
@@ -971,12 +969,10 @@ export const useLegacyPipeline = (
                                 logMsg(`[QA] Running QA evaluation for Spread ${spreadNum} (Attempt ${attempts})...`);
                                 const qaResult = await backendApi.evaluateImageQA({
                                     generatedImageBase64: finalB64,
-                                    heroRawBase64: mainRawPhoto,
                                     heroDNABase64: mainDNAResolved,
                                     pageType: "Spread",
                                     currentTextSide: spreads[spreadNum].textSide || "right",
                                     targetPrompt: imagePrompt,
-                                    secondRawBase64: storyData.useSecondCharacter ? secondRawPhoto : undefined,
                                     secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
                                     orderId: orderNumber,
                                     spreadIndex: spreadNum,
