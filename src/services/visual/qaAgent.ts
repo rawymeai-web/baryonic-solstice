@@ -17,15 +17,22 @@ export async function runImageQACheck(
 
     const parts: any[] = [];
 
+    const cleanB64 = (str: string) => (str || '').replace(/^data:image\/\w+;base64,/, '');
+    const getMime = (str: string) => {
+        if (str?.startsWith('data:image/png') || str?.startsWith('iVBORw')) return 'image/png';
+        if (str?.startsWith('data:image/webp') || str?.startsWith('UklGR')) return 'image/webp';
+        return 'image/jpeg';
+    };
+
     // Add DNA Images
     dnaImages.forEach(img => {
         parts.push({ text: `Reference DNA Image: ${img.label}` });
-        parts.push({ inlineData: { mimeType: 'image/jpeg', data: img.base64 } });
+        parts.push({ inlineData: { mimeType: getMime(img.base64), data: cleanB64(img.base64) } });
     });
 
     // Add Result Image
     parts.push({ text: "FINAL GENERATED SPREAD IMAGE (To be evaluated):" });
-    parts.push({ inlineData: { mimeType: 'image/jpeg', data: resultImageBase64 } });
+    parts.push({ inlineData: { mimeType: getMime(resultImageBase64), data: cleanB64(resultImageBase64) } });
 
     let childAge = "5";
     try {

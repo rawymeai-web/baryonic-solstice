@@ -555,19 +555,23 @@ export async function generateMethod4Image(
             if (match) eyeColorStr = match[1];
         }
 
-        let ageAndDescBlock = `\n\n**CHARACTER IDENTITY & LIKENESS:**
+        const isV71 = finalPromptText.includes('[v7.1-dna-clean]');
+
+        if (!isV71) {
+            let ageAndDescBlock = `\n\n**CHARACTER IDENTITY & LIKENESS:**
 - **[[HERO_1]] IDENTITY:** Replicate the exact facial features, hairstyle, and clothing of [[HERO_1]] shown in their reference image (Image 1). The character must look identical to the person in Image 1. Do not alter their recognizable features.
 - [[HERO_1]] is a ${age}-year-old child. ${ageInstructions}
 - **[[HERO_1]] EXPRESSION:** Keep their unique face shape and features recognizable from Image 1 when showing different expressions.
 - **[[HERO_1]] LIGHTING:** Keep their face and features clean, clear, and recognizable in all environments and lighting.`;
 
-        if (secondReferenceBase64OrSet) {
-            ageAndDescBlock += `\n- **[[HERO_2]] IDENTITY:** Replicate the exact facial features, hairstyle, and clothing of [[HERO_2]] shown in their reference image (Image 2). The character must look identical to the person in Image 2.`;
+            if (secondReferenceBase64OrSet) {
+                ageAndDescBlock += `\n- **[[HERO_2]] IDENTITY:** Replicate the exact facial features, hairstyle, and clothing of [[HERO_2]] shown in their reference image (Image 2). The character must look identical to the person in Image 2.`;
+            }
+
+            finalPromptText = finalPromptText + ageAndDescBlock;
         }
 
-        finalPromptText = finalPromptText + ageAndDescBlock;
-
-        if (cleanStylePrompt) {
+        if (cleanStylePrompt && !finalPromptText.includes('ART STYLE REQUIREMENT')) {
             finalPromptText += `\n\n**ART STYLE REQUIREMENT:**
 - **STYLE:** Render this illustration in the following style: ${cleanStylePrompt}. Make sure the colors, lighting, rendering technique, brushwork, and background style align perfectly with this description.`;
         }
