@@ -13,25 +13,30 @@ export async function GET(
       return NextResponse.json({ error: 'Missing customer ID' }, { status: 400 });
     }
 
-    // 1. Fetch the user's email from Supabase Auth using admin client
+    // 1. Resolve customer email and ID
     let email: string | null = null;
-    try {
-      const { data } = await supabase.auth.admin.getUserById(id);
-      if (data?.user) {
-        email = data.user.email || null;
+    let userId: string = id;
+
+    if (id.includes('@')) {
+      email = id.trim().toLowerCase();
+    } else {
+      try {
+        const { data } = await supabase.auth.admin.getUserById(id);
+        if (data?.user?.email) {
+          email = data.user.email.trim().toLowerCase();
+        }
+      } catch (authErr) {
+        console.warn('[API /api/orders/customer] Auth lookup notice:', authErr);
       }
-    } catch (authErr) {
-      console.warn('[API /api/orders/customer] Could not fetch user from auth:', authErr);
     }
 
-    // 2. Fetch orders from the database
-    // Query where customer_id equals the UUID OR equals the email address
+    // 2. Fetch orders matching customer ID or email
     let query = supabase.from('orders').select('*');
     
     if (email) {
-      query = query.or(`customer_id.eq.${id},customer_id.eq.${email}`);
+      query = query.or(`customer_id.eq.${userId},customer_id.eq.${email},customer_id.ilike.%${email}%,shipping_details->>email.ilike.%${email}%`);
     } else {
-      query = query.eq('customer_id', id);
+      query = query.eq('customer_id', userId);
     }
 
     const { data: dbOrders, error: dbError } = await query.order('created_at', { ascending: false });
@@ -46,6 +51,8 @@ export async function GET(
       orderNumber: order.order_number,
       status: order.status,
       orderDate: order.created_at,
+      total: order.total,
+      shippingDetails: order.shipping_details || {},
       storyData: order.story_data || {}
     }));
 
