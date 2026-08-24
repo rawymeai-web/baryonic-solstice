@@ -893,7 +893,7 @@ function assembleEnglishPromptV7_3(
     }
 
     // 6. Hard Constraints (Disentangling action/pose from facial & outfit consistency)
-    const constraintsText = `Constraints: Strictly no letters, numbers, signs, hieroglyphs, text, logos, or watermarks anywhere. Strictly no modern books, tablets, or notebooks unless explicitly requested. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while keeping each character's exact face, hairstyle, and outfit from their reference image.`;
+    const constraintsText = `Constraints: Strictly no letters, numbers, signs, text, logos, or watermarks anywhere in the illustration. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while keeping each character's exact face, hairstyle, and outfit from their reference image.`;
 
     const sections = [
         schemaStamp,
