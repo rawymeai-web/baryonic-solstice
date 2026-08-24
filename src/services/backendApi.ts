@@ -48,11 +48,16 @@ async function fetchBackend<T>(endpoint: string, options: RequestInit = {}): Pro
                 parsedError.details,
                 parsedError.hint
             ].filter(Boolean).join(' | ');
-            
-            throw new Error(`[HTTP ${response.status}] ${fullMessage || errorText || 'Server Error'}`);
+            const msg = fullMessage || errorText || 'Server Error';
+            throw new Error(`[HTTP ${response.status}] ${msg.length > 200 ? msg.substring(0, 200) + '...' : msg}`);
         }
 
-        return await response.json();
+        const rawText = await response.text();
+        try {
+            return JSON.parse(rawText);
+        } catch (jsonErr) {
+            throw new Error(`Invalid response from server: ${rawText.substring(0, 150)}`);
+        }
         
     } catch (networkError: any) {
         // Network-level drops (CORS, 413 abrupt closure, invalid URL)

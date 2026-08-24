@@ -690,10 +690,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 promptToUse = pageEdits[index]?.prompt || getPromptForIndex(index, spreads[index]);
             }
 
-            // Compress to avoid payload size limits
+            // Compress to avoid Vercel/Cloudflare 4.5MB payload size limits
             const compressSingle = async (img: string | undefined): Promise<string | undefined> => {
                 if (!img) return undefined;
-                return compressBase64Image(img, 1024, 0.85);
+                return compressBase64Image(img, 768, 0.75);
             };
 
             const compressedHeroA = await compressSingle(heroADNA);
@@ -966,7 +966,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             
             const compressSet = async (set: string[] | undefined): Promise<string[] | undefined> => {
                 if (!set || set.length === 0) return undefined;
-                return Promise.all(set.map(img => compressBase64Image(img, 1024, 0.85)));
+                return Promise.all(set.map(img => compressBase64Image(img, 768, 0.75)));
             };
 
             const compressedMaster = await compressSet(mainDNASet);
