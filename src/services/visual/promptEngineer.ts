@@ -873,7 +873,7 @@ function assembleEnglishPromptV7_3(
     let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. The opposite ${quietSide} side must remain open, uncluttered negative space with simple, soft background scenery.${viewText}`;
 
     if (isCover) {
-        compositionText = `Composition: Use a wide-angle shot, placing the characters low in the frame (strictly within the lower 60% of the image). The upper 40% of the frame must be clean, open negative space with empty sky or minimal background scenery. Characters' heads and faces must not enter the upper 20% area.`;
+        compositionText = `Composition: Full hardcover wrap layout. Place all main characters and the primary hero action strictly on the RIGHT side of the frame (within the lower 60% of the right half, which serves as the front cover). The upper 40% of the right side must remain open, uncluttered negative space with empty sky or soft background scenery for the story title. Characters' heads and faces must not enter the upper 20% area. The entire LEFT side of the frame (which serves as the back cover) must contain calm, peaceful background scenery without any character figures.`;
     }
 
     // 6. Hard Constraints (Disentangling action/pose from facial & outfit consistency)

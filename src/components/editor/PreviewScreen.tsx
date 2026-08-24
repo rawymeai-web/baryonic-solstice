@@ -9,42 +9,14 @@ const ShareComponent = lazy(() => import('@/components/ui/ShareComponent'));
 
 const formatStoryTextHTML = (text: string, childName: string): string => {
     if (!text || typeof text !== 'string') return '';
-    const childFirstName = childName.trim().split(/\s+/)[0];
-    const escapedName = childFirstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const nameRegex = new RegExp(`\\b(${escapedName})\\b`, 'gi');
-    let formatted = text.split('\n\n').map(p => `<p class="mb-6 last:mb-0 leading-relaxed">${p.trim()}</p>`).join('');
-    if (childFirstName) {
+    const childFirstName = childName?.trim().split(/\s+/)[0] || '';
+    const escapedName = childFirstName ? childFirstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+    const nameRegex = escapedName ? new RegExp(`\\b(${escapedName})\\b`, 'gi') : null;
+    let formatted = text.split('\n\n').map(p => `<p class="mb-[0.8cqw] last:mb-0 leading-relaxed">${p.trim()}</p>`).join('');
+    if (nameRegex) {
         formatted = formatted.replace(nameRegex, `<span class="font-black text-brand-orange">$1</span>`);
     }
     return formatted;
-};
-
-const PageWrapper: React.FC<{ children: React.ReactNode, side: 'left' | 'right' }> = ({ children, side }) => {
-    return (
-        <div className={`w-1/2 h-full relative overflow-hidden ${side === 'left' ? 'border-r border-black/5' : ''}`}>
-            {children}
-        </div>
-    );
-};
-
-const TextOverlay: React.FC<{ text: string, spread: Spread, storyData: StoryData, language: Language, side: 'left' | 'right' }> = ({ text, spread, storyData, language, side }) => {
-    if (!text) return null;
-    const isAr = language === 'ar';
-    
-    const offsetX = spread.textOffsetX ?? 0;
-    const offsetY = spread.textOffsetY ?? 0;
-
-    return (
-        <div className={`absolute inset-0 z-20 p-12 flex flex-col justify-center ${side === 'left' ? 'items-start' : 'items-end'}`}
-             style={{ transform: `translate(${offsetX}px, ${offsetY}px)` }}>
-            <div className="glass-panel p-10 rounded-[2.5rem] shadow-2xl border-white/60 text-brand-navy max-w-[90%] transform transition-all duration-500 hover:scale-[1.03] hover:shadow-brand-orange/10">
-                <div
-                    className={`${parseInt(storyData.childAge) <= 4 ? 'text-2xl font-black' : 'text-xl font-bold'} ${isAr ? 'text-right font-tajawal' : 'text-left font-nunito'}`}
-                    dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(text, storyData.childName) }}
-                />
-            </div>
-        </div>
-    );
 };
 
 const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleChange: (v: string) => void }> = ({ storyData, language, onTitleChange }) => {
@@ -81,20 +53,20 @@ const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleCha
     }, []);
 
     const fontFamily = isAr ? "'Tajawal', sans-serif" : (isEn ? "'Luckiest Guy', cursive" : "'Nunito', sans-serif");
-    const letterSpacing = isAr ? 'normal' : '0.2cqw';
+    const letterSpacing = isAr ? 'normal' : '0.08cqw';
     const transform = isAr ? 'none' : 'rotate(-2deg)';
     
     // Scale outline stroke and shadows based on container width
     const textShadow = isAr
-        ? '3px 3px 0 #203A72, -1.5px -1.5px 0 #203A72, 1.5px -1.5px 0 #203A72, -1.5px 1.5px 0 #203A72, 1.5px 1.5px 0 #203A72, 0 6px 10px rgba(0,0,0,0.3)'
-        : '0.4cqw 0.4cqw 0 #203A72, -0.2cqw -0.2cqw 0 #203A72, 0.2cqw -0.2cqw 0 #203A72, -0.2cqw 0.2cqw 0 #203A72, 0.2cqw 0.2cqw 0 #203A72, 0 0.8cqw 1.5cqw rgba(0,0,0,0.3)';
+        ? '0.12cqw 0.12cqw 0 #203A72, -0.06cqw -0.06cqw 0 #203A72, 0.06cqw -0.06cqw 0 #203A72, -0.06cqw 0.06cqw 0 #203A72, 0.06cqw 0.06cqw 0 #203A72, 0 0.3cqw 0.5cqw rgba(0,0,0,0.3)'
+        : '0.15cqw 0.15cqw 0 #203A72, -0.08cqw -0.08cqw 0 #203A72, 0.08cqw -0.08cqw 0 #203A72, -0.08cqw 0.08cqw 0 #203A72, 0.08cqw 0.08cqw 0 #203A72, 0 0.3cqw 0.6cqw rgba(0,0,0,0.3)';
 
     const titleStyle: React.CSSProperties = {
         fontFamily,
         fontWeight: 900,
         color: '#FFFFFF',
         textShadow,
-        lineHeight: 1.1,
+        lineHeight: 1.15,
         letterSpacing,
         transform,
         display: 'flex',
@@ -131,11 +103,11 @@ const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleCha
                     top: `${(ty / PDF_H) * 100}%`,
                     width: `${(tw / PDF_W) * 100}%`,
                     background: 'rgba(0,0,0,0.35)',
-                    borderRadius: '2.4cqw',
-                    padding: '2.8cqw 4cqw',
+                    borderRadius: '1.2cqw',
+                    padding: '1.2cqw 1.8cqw',
                 }}
             >
-                <h1 style={titleStyle} className="text-[9cqw]">
+                <h1 style={titleStyle} className="text-[2.2cqw]">
                     {storyData.title}
                 </h1>
                 {subtitle && (
@@ -149,7 +121,7 @@ const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleCha
                             letterSpacing,
                             transform,
                         }}
-                        className="text-[4.5cqw] mt-[2cqw] text-white text-center uppercase"
+                        className="text-[1.1cqw] mt-[0.5cqw] text-white text-center uppercase"
                     >
                         {subtitle}
                     </div>
@@ -161,39 +133,72 @@ const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleCha
 };
 
 const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Language }> = ({ spread, storyData, language }) => {
+    const isAr = language === 'ar';
     const spreadSrc = spread.illustrationUrl
         ? (spread.illustrationUrl.startsWith('http') || spread.illustrationUrl.startsWith('data:'))
             ? spread.illustrationUrl
             : `data:image/jpeg;base64,${spread.illustrationUrl}`
         : '';
 
-    // Determine which side carries the text. Use textSide from the spread,
-    // fall back to leftText/rightText presence, then default to 'left'.
+    // Determine which side carries the text.
     const textSide: 'left' | 'right' = spread.textSide
         || (spread.rightText && !spread.leftText ? 'right' : 'left');
 
-    // Combine leftText and rightText to display the full narrative on the designated page side
     const narrativeText = [spread.leftText, spread.rightText].filter(Boolean).join(' ') || (spread as any).text || '';
+
+    // Mirror SpreadLayoutPanel / PDF math (PDF_W=400mm, PDF_H=200mm, TEXT_W=160mm)
+    const PDF_W = 400;
+    const PDF_H = 200;
+    const TEXT_W = 160; // 40% of spread width
+
+    const textOnLeft = textSide === 'left';
+    const defaultX = textOnLeft ? (PDF_W * 0.05) : (PDF_W * 0.55); // 20mm or 220mm
+    const defaultY = PDF_H * 0.12; // 24mm from top
+
+    const activeX = spread.textOffsetX !== undefined && spread.textOffsetX !== null
+        ? spread.textOffsetX
+        : defaultX;
+    const activeY = spread.textOffsetY !== undefined && spread.textOffsetY !== null
+        ? spread.textOffsetY
+        : defaultY;
+
+    const leftPercent = (activeX / PDF_W) * 100;
+    const topPercent = (activeY / PDF_H) * 100;
+    const widthPercent = (TEXT_W / PDF_W) * 100;
 
     return (
         <div className="w-full h-full flex shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] rounded-[3rem] overflow-hidden relative border-[12px] border-white ring-1 ring-black/5"
             style={{ 
                 backgroundImage: spreadSrc ? `url(${spreadSrc})` : undefined,
                 backgroundSize: 'cover', 
-                backgroundPosition: 'center' 
+                backgroundPosition: 'center',
+                containerType: 'inline-size', // ENABLE CONTAINER QUERIES!
             }}>
-            {/* Only render text on the designated side — illustration side stays clean */}
-            <PageWrapper side="left">
-                {textSide === 'left' && (
-                    <TextOverlay text={narrativeText} spread={spread} storyData={storyData} language={language} side="left" />
-                )}
-            </PageWrapper>
-            <PageWrapper side="right">
-                {textSide === 'right' && (
-                    <TextOverlay text={narrativeText} spread={spread} storyData={storyData} language={language} side="right" />
-                )}
-            </PageWrapper>
-            <div className="absolute inset-y-0 left-1/2 w-[2px] bg-black/10 z-30 shadow-xl"></div>
+            
+            {narrativeText && (
+                <div 
+                    className="absolute z-20 transition-all duration-300 pointer-events-none"
+                    style={{
+                        left: `${leftPercent}%`,
+                        top: `${topPercent}%`,
+                        width: `${widthPercent}%`,
+                    }}
+                >
+                    <div className="glass-panel p-[1.8cqw] rounded-[1.6cqw] shadow-xl border-white/60 text-brand-navy max-w-full">
+                        <div
+                            style={{
+                                fontSize: '1.45cqw',
+                                lineHeight: '1.5',
+                                fontFamily: isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif",
+                            }}
+                            className={`font-bold ${isAr ? 'text-right' : 'text-left'}`}
+                            dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(narrativeText, storyData.childName) }}
+                        />
+                    </div>
+                </div>
+            )}
+
+            <div className="absolute inset-y-0 left-1/2 w-[2px] bg-black/10 z-30 shadow-xl pointer-events-none"></div>
             <Watermark />
         </div>
     );

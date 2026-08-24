@@ -856,8 +856,27 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             }
             
             const flippedB64 = await flipImageHorizontal(base64);
-            const newStoryData = { ...storyData, coverImageUrl: flippedB64 };
-            onUpdateStory({ coverImageUrl: flippedB64 });
+            let finalCoverUrl = flippedB64;
+            try {
+                const uploadRes = await backendApi.uploadImage({
+                    orderNumber: storyData.orderId || 'RWY-UNKNOWN',
+                    spreadNum: 0,
+                    imageBase64: flippedB64
+                });
+                if (uploadRes.publicUrl) {
+                    finalCoverUrl = uploadRes.publicUrl;
+                }
+            } catch (uploadErr) {
+                console.warn("Storage upload for flipped cover failed, using base64 fallback", uploadErr);
+            }
+
+            const updatedSpreads = [...spreads];
+            if (updatedSpreads[0]) {
+                updatedSpreads[0] = { ...updatedSpreads[0], illustrationUrl: finalCoverUrl };
+            }
+
+            const newStoryData = { ...storyData, coverImageUrl: finalCoverUrl, spreads: updatedSpreads };
+            onUpdateStory({ coverImageUrl: finalCoverUrl, spreads: updatedSpreads });
             
             // Instantly save to DB
             if (storyData.orderId) {
