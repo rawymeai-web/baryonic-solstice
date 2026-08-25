@@ -129,67 +129,76 @@ export class EmailService {
 
             switch (eventType) {
                 case 'order_received':
-                    subject = `Your Rawy Storybook Order is Confirmed! 🚀📚`;
+                    subject = `We're crafting ${childName}'s custom storybook! 🎨✨ (#${order.order_number})`;
                     html = `
-                        <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #FFF9F0; color: #001A40; border-radius: 24px; border: 1px solid rgba(0, 26, 64, 0.05); direction: ltr; text-align: left;">
+                        <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; background-color: #FFF9F0; color: #001A40; border-radius: 28px; border: 1px solid rgba(0, 26, 64, 0.06); direction: ltr; text-align: left;">
                             <div style="text-align: center; margin-bottom: 24px;">
-                                <span style="font-size: 40px;">🎉</span>
+                                <span style="font-size: 44px;">✨📖</span>
                             </div>
-                            <h2 style="color: #F78F50; font-size: 24px; font-weight: 800; margin-bottom: 16px; text-align: center;">Order Confirmed! 🚀</h2>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Hi ${recipientName},</p>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Thank you for your order! We have successfully received your payment and our creative engines have begun weaving your custom storybook.</p>
+                            <h2 style="color: #006B5D; font-size: 24px; font-weight: 800; margin-bottom: 12px; text-align: center;">Order Confirmed! 🎉</h2>
+                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hi ${recipientName},</p>
+                            <p style="font-size: 16px; line-height: 1.7; color: #2D3748; margin-bottom: 20px;">
+                                Thank you for your order! We have received your request and our creative engines have officially begun crafting <strong>"${storyTitle}"</strong> starring <strong>${childName}</strong>.
+                            </p>
                             
-                            <div style="background-color: rgba(0, 26, 64, 0.03); padding: 20px; border-radius: 16px; margin: 24px 0; border: 1px dashed rgba(0, 26, 64, 0.1);">
-                                <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;"><strong>Order Number:</strong> ${order.order_number}</p>
-                                <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;"><strong>Story:</strong> ${storyTitle}</p>
-                                <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;"><strong>Amount Paid:</strong> ${payload.total ? payload.total + ' KD' : 'Confirmed'}</p>
-                                <p style="margin: 0; font-size: 14px; color: #555;"><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                            <div style="background: linear-gradient(135deg, rgba(0,107,93,0.06) 0%, rgba(247,143,80,0.08) 100%); padding: 22px; border-radius: 20px; margin: 24px 0; border: 1px dashed rgba(0, 107, 93, 0.25);">
+                                <p style="margin: 0 0 10px 0; font-size: 14px; color: #4A5568;"><strong>📦 Order Number:</strong> <span style="font-family: monospace; font-weight: 700; color: #006B5D;">#${order.order_number}</span></p>
+                                <p style="margin: 0 0 10px 0; font-size: 14px; color: #4A5568;"><strong>🌟 Story:</strong> ${storyTitle}</p>
+                                <p style="margin: 0 0 10px 0; font-size: 14px; color: #4A5568;"><strong>⭐ Hero:</strong> ${childName}</p>
+                                <p style="margin: 0; font-size: 14px; color: #4A5568;"><strong>📅 Order Date:</strong> ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                             </div>
                             
-                            <h3 style="color: #001A40; font-size: 18px; font-weight: 700; margin-top: 32px; margin-bottom: 12px;">What happens next?</h3>
-                            <ol style="font-size: 15px; line-height: 1.8; color: #333; margin-left: 20px; padding-left: 0;">
-                                <li><strong>Creation:</strong> Our AI storytelling and illustration models are generating your unique book layouts.</li>
-                                <li><strong>Preview:</strong> Once generated, you will receive an email to review and approve the design.</li>
-                                <li><strong>Delivery:</strong> Once approved, we compile your soft copy and dispatch your package (if printed book was selected).</li>
-                            </ol>
+                            <div style="background-color: #FFFFFF; padding: 24px; border-radius: 20px; margin: 28px 0; border: 1px solid rgba(0, 26, 64, 0.06); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+                                <h3 style="color: #F78F50; font-size: 16px; font-weight: 800; margin-top: 0; margin-bottom: 10px; display: flex; items-center;">
+                                    ⏳ Good things take a little time...
+                                </h3>
+                                <p style="font-size: 14px; line-height: 1.7; color: #4A5568; margin: 0 0 14px 0;">
+                                    Every illustration and spread is custom-generated with love and attention to detail. We ensure every scene captures ${childName}'s character and personality.
+                                </p>
+                                <p style="font-size: 14px; line-height: 1.7; color: #006B5D; font-weight: 700; margin: 0;">
+                                    💌 You don't need to do anything right now — the moment your storybook is ready, we'll send you an email with your direct link to read and flip through the story!
+                                </p>
+                            </div>
                             
                             <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy. Where Every Child Becomes the Hero.</p>
+                            <p style="font-size: 12px; color: #A0AEC0; text-align: center; margin: 0;">Rawy • Where Every Child Becomes the Hero.</p>
                         </div>
                     `;
                     break;
 
                 case 'preview_ready':
                     const previewLink = payload.previewLink || `https://rawytime.com/?preview=${order.order_number}`;
-                    subject = `Your Custom Storybook is Ready to Preview! 📚✨ (#${order.order_number})`;
+                    subject = `Your Custom Storybook is Ready! 📚✨ (#${order.order_number})`;
                     html = `
-                        <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #FFF9F0; color: #001A40; border-radius: 24px; border: 1px solid rgba(0, 26, 64, 0.05); direction: ltr; text-align: left;">
+                        <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; background-color: #FFF9F0; color: #001A40; border-radius: 28px; border: 1px solid rgba(0, 26, 64, 0.06); direction: ltr; text-align: left;">
                             <div style="text-align: center; margin-bottom: 20px;">
-                                <span style="font-size: 40px;">🎨📖</span>
+                                <span style="font-size: 44px;">🎉📖</span>
                             </div>
-                            <h2 style="color: #006B5D; font-size: 24px; font-weight: 800; margin-bottom: 12px; text-align: center;">Your Book is Ready to View! 🎉</h2>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">Hi ${recipientName},</p>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">The illustrations and story for <strong>"${storyTitle}"</strong> starring <strong>${childName}</strong> are ready for you to preview!</p>
+                            <h2 style="color: #006B5D; font-size: 24px; font-weight: 800; margin-bottom: 12px; text-align: center;">Your Book is Ready! 🌟</h2>
+                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 16px;">Hi ${recipientName},</p>
+                            <p style="font-size: 16px; line-height: 1.7; color: #2D3748; margin-bottom: 24px;">
+                                Great news! The custom illustrations and story for <strong>"${storyTitle}"</strong> starring <strong>${childName}</strong> are completely ready for you and your family to enjoy!
+                            </p>
                             
                             ${coverImg ? `
                                 <div style="text-align: center; margin: 24px 0;">
-                                    <img src="${coverImg}" alt="Storybook Cover" style="max-width: 85%; max-height: 260px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); object-fit: cover;" />
+                                    <img src="${coverImg}" alt="Storybook Cover" style="max-width: 85%; max-height: 260px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); object-fit: cover;" />
                                 </div>
                             ` : ''}
 
                             <div style="text-align: center; margin: 32px 0;">
-                                <a href="${previewLink}" style="background-color: #006B5D; color: white; padding: 16px 36px; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 16px; display: inline-block; box-shadow: 0 4px 16px rgba(0, 107, 93, 0.3);">
-                                    👁️ Preview & Flip Through Book
+                                <a href="${previewLink}" style="background-color: #006B5D; color: white; padding: 18px 40px; text-decoration: none; border-radius: 16px; font-weight: 800; font-size: 16px; display: inline-block; box-shadow: 0 6px 20px rgba(0, 107, 93, 0.35);">
+                                    📖 Open & Flip Through Book
                                 </a>
                             </div>
 
-                            <p style="font-size: 13px; color: #666; line-height: 1.6; text-align: center;">
-                                Click above to flip through every page. If you'd like to open the link directly:<br/>
-                                <a href="${previewLink}" style="color: #006B5D; word-break: break-all;">${previewLink}</a>
+                            <p style="font-size: 13px; color: #718096; line-height: 1.6; text-align: center;">
+                                Click the button above to flip through every page. You can also open the link directly:<br/>
+                                <a href="${previewLink}" style="color: #006B5D; font-weight: 700; word-break: break-all;">${previewLink}</a>
                             </p>
 
                             <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy • Where Every Child Becomes the Hero.</p>
+                            <p style="font-size: 12px; color: #A0AEC0; text-align: center; margin: 0;">Rawy • Where Every Child Becomes the Hero.</p>
                         </div>
                     `;
                     break;

@@ -333,7 +333,7 @@ export const OrderPreviewModal: React.FC<OrderPreviewModalProps> = ({ order, onC
                 disabled={isNotifyingPreview}
                 className="bg-brand-teal text-white hover:bg-brand-teal/90 font-bold text-xs flex items-center gap-1.5 shadow-md"
               >
-                {isNotifyingPreview ? <><Spinner size="sm" color="text-white" /> {t('جاري الإرسال...', 'Sending...')}</> : t('📩 إرسال إيميل: القصة جاهزة للمعاينة', '📩 Send Email: Story Ready to Preview')}
+                {isNotifyingPreview ? <><Spinner size="sm" color="text-white" /> {t('جاري الإرسال...', 'Sending...')}</> : t('📩 إرسال إيميل: القصة جاهزة للقراءة', '📩 Send Email: Book is Ready')}
               </Button>
 
               <Button

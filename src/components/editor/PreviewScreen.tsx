@@ -286,8 +286,15 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
         utterance.rate = 0.88; // Gentle storybook pace
 
         const voices = window.speechSynthesis.getVoices();
-        const matchingVoice = voices.find(v => v.lang.startsWith(props.language === 'ar' ? 'ar' : 'en'));
-        if (matchingVoice) utterance.voice = matchingVoice;
+        const langPrefix = props.language === 'ar' ? 'ar' : 'en';
+        const langVoices = voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
+
+        // Prioritize Natural, Neural, Enhanced, Google, and Siri voices if installed on device
+        const bestVoice = langVoices.find(v => 
+            /natural|neural|enhanced|premium|siri|google/i.test(v.name)
+        ) || langVoices.find(v => !v.localService) || langVoices[0];
+
+        if (bestVoice) utterance.voice = bestVoice;
 
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => setIsSpeaking(false);

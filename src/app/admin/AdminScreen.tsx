@@ -797,7 +797,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                                 {/* Finalization */}
                                                 <option value="book_compiling">Book Compiling</option>
                                                 <option value="softcopy_ready">Softcopy Ready</option>
-                                                <option value="awaiting_preview_approval">Awaiting Approval</option>
+                                                <option value="awaiting_preview_approval">Book Ready (Customer Notified)</option>
                                                 <option value="sent_to_print">Sent to Print</option>
                                                 <option value="printing">Printing</option>
                                                 <option value="shipped">Shipped</option>
@@ -820,7 +820,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                                     const full = await adminService.getOrderById(order.orderNumber);
                                                     if (full) setPreviewOrder(full);
                                                 }}
-                                                title="Direct Book Preview"
+                                                title="View Book"
                                             >
                                                 <span className="material-symbols-outlined text-xl">menu_book</span>
                                             </button>
@@ -833,12 +833,12 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                                 }`}
                                                 onClick={() => handleQuickNotifyPreview(order.orderNumber)}
                                                 disabled={notifyingPreviewId === order.orderNumber}
-                                                title="Send Customer Email: Ready to Preview"
+                                                title="Send Customer Email: Story is Ready"
                                             >
                                                 <span className="material-symbols-outlined text-sm">
                                                     {notifyingPreviewId === order.orderNumber ? 'sync' : 'mark_email_read'}
                                                 </span>
-                                                {notifyingPreviewId === order.orderNumber ? 'Sending...' : 'Notify Preview'}
+                                                {notifyingPreviewId === order.orderNumber ? 'Sending...' : 'Notify Ready'}
                                             </button>
 
                                             <button 
