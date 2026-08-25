@@ -132,13 +132,79 @@ const CoverView: React.FC<{ storyData: StoryData, language: Language, isPurchase
     );
 };
 
+export const StorybookSkeleton: React.FC<{ language: Language; onBack?: () => void }> = ({ language, onBack }) => {
+    const isAr = language === 'ar';
+    return (
+        <div className="w-full max-w-5xl mx-auto p-4 sm:p-8 flex flex-col items-center justify-center min-h-[550px] animate-fade-in text-brand-navy">
+            {/* Top Bar Skeleton */}
+            <div className="w-full flex justify-between items-center mb-6">
+                {onBack ? (
+                    <button onClick={onBack} className="p-3 bg-white rounded-2xl border border-gray-200 shadow-sm text-brand-navy hover:scale-105 transition-all">
+                        <span className="material-symbols-outlined">{isAr ? 'arrow_forward' : 'arrow_back'}</span>
+                    </button>
+                ) : (
+                    <div className="h-10 w-24 bg-gray-200/80 rounded-2xl animate-pulse"></div>
+                )}
+                <div className="h-8 w-40 sm:w-56 bg-gray-200/80 rounded-2xl animate-pulse"></div>
+                <div className="h-10 w-24 bg-gray-200/80 rounded-2xl animate-pulse"></div>
+            </div>
+
+            {/* 3D Open Book Skeleton Frame */}
+            <div className="w-full aspect-[2/1] bg-gradient-to-br from-white via-amber-50/40 to-slate-100 rounded-[3rem] shadow-2xl border-[12px] border-white relative overflow-hidden flex ring-1 ring-black/5">
+                {/* Center Book Spine */}
+                <div className="absolute inset-y-0 left-1/2 w-[2px] bg-black/10 z-20"></div>
+                
+                {/* Left Page Skeleton */}
+                <div className="w-1/2 p-6 sm:p-12 flex flex-col justify-end space-y-3 z-10">
+                    <div className="h-6 w-3/4 bg-gray-200/90 rounded-xl animate-pulse"></div>
+                    <div className="h-4 w-full bg-gray-200/70 rounded-lg animate-pulse"></div>
+                    <div className="h-4 w-5/6 bg-gray-200/70 rounded-lg animate-pulse"></div>
+                </div>
+
+                {/* Right Page Skeleton */}
+                <div className="w-1/2 p-6 sm:p-12 flex items-center justify-center z-10">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-brand-orange/10 flex items-center justify-center shadow-inner">
+                        <span className="material-symbols-outlined text-4xl text-brand-orange animate-spin">auto_stories</span>
+                    </div>
+                </div>
+
+                {/* Shimmer Sweep Animation */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-[shimmer_2s_infinite] -translate-x-full"></div>
+            </div>
+
+            {/* Loading Message */}
+            <div className="mt-8 text-center space-y-2">
+                <div className="flex items-center justify-center gap-2 text-brand-orange font-black text-sm uppercase tracking-widest">
+                    <span className="material-symbols-outlined text-lg animate-bounce">magic_button</span>
+                    <span>{isAr ? 'جاري فتح كتابك السحري وتحميل المغامرة...' : 'Opening your magical storybook...'}</span>
+                </div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    {isAr ? 'نحضر لك الرسوم والصفحات بأعلى جودة' : 'Loading high-definition illustrations & story'}
+                </p>
+            </div>
+        </div>
+    );
+};
+
 const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Language, isPurchased?: boolean }> = ({ spread, storyData, language, isPurchased }) => {
     const isAr = language === 'ar';
+    const [isImgLoaded, setIsImgLoaded] = useState(false);
+
     const spreadSrc = spread.illustrationUrl
         ? (spread.illustrationUrl.startsWith('http') || spread.illustrationUrl.startsWith('data:'))
             ? spread.illustrationUrl
             : `data:image/jpeg;base64,${spread.illustrationUrl}`
         : '';
+
+    useEffect(() => {
+        if (!spreadSrc) {
+            setIsImgLoaded(false);
+            return;
+        }
+        const img = new Image();
+        img.src = spreadSrc;
+        img.onload = () => setIsImgLoaded(true);
+    }, [spreadSrc]);
 
     // Determine which side carries the text.
     const textSide: 'left' | 'right' = spread.textSide
@@ -167,14 +233,28 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
     const widthPercent = (TEXT_W / PDF_W) * 100;
 
     return (
-        <div className="w-full h-full flex shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] rounded-[3rem] overflow-hidden relative border-[12px] border-white ring-1 ring-black/5"
+        <div className="w-full h-full flex shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] rounded-[3rem] overflow-hidden relative border-[12px] border-white ring-1 ring-black/5 bg-gradient-to-br from-slate-100 via-amber-50/30 to-slate-100"
             style={{ 
-                backgroundImage: spreadSrc ? `url(${spreadSrc})` : undefined,
+                backgroundImage: isImgLoaded && spreadSrc ? `url(${spreadSrc})` : undefined,
                 backgroundSize: 'cover', 
                 backgroundPosition: 'center',
                 containerType: 'inline-size', // ENABLE CONTAINER QUERIES!
             }}>
             
+            {/* Shimmer Placeholder while high-res image loads */}
+            {!isImgLoaded && spreadSrc && (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-100/90 backdrop-blur-sm z-10">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="w-14 h-14 rounded-2xl bg-brand-orange/10 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-2xl text-brand-orange animate-spin">auto_stories</span>
+                        </div>
+                        <span className="text-[11px] font-black uppercase tracking-widest text-brand-navy/60">
+                            {isAr ? 'جاري تجهيز الرسمة...' : 'Rendering Illustration...'}
+                        </span>
+                    </div>
+                </div>
+            )}
+
             {narrativeText && (
                 <div 
                     className="absolute z-20 transition-all duration-300 pointer-events-none"
@@ -223,19 +303,19 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
     const [isSpeaking, setIsSpeaking] = useState(false);
 
     const isPurchased = props.isPurchased ?? Boolean(
-        props.storyData.orderId ||
-        (props.storyData as any).orderNumber ||
-        (props.storyData as any).isPurchased ||
-        (props.storyData as any).isPaid ||
-        ['confirmed', 'shipped', 'delivered', 'awaiting_preview_approval', 'softcopy_ready'].includes((props.storyData as any).status)
+        props.storyData?.orderId ||
+        (props.storyData as any)?.orderNumber ||
+        (props.storyData as any)?.isPurchased ||
+        (props.storyData as any)?.isPaid ||
+        ['confirmed', 'shipped', 'delivered', 'awaiting_preview_approval', 'softcopy_ready'].includes((props.storyData as any)?.status)
     );
     const t = (ar: string, en: string) => props.language === 'ar' ? ar : en;
     const isAr = props.language === 'ar';
 
     const sortedSpreads = useMemo(() => {
-        const s = [...(props.storyData.spreads || [])].sort((a, b) => a.spreadNumber - b.spreadNumber);
+        const s = [...(props.storyData?.spreads || [])].sort((a, b) => a.spreadNumber - b.spreadNumber);
         return s;
-    }, [props.storyData.spreads]);
+    }, [props.storyData?.spreads]);
 
     const views = useMemo(() => {
         return [
@@ -243,6 +323,11 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
             ...sortedSpreads.filter(s => s.spreadNumber > 0).map(s => ({ type: 'spread' as const, data: s }))
         ];
     }, [sortedSpreads]);
+
+    // If story data is not loaded yet, show magical storybook skeleton
+    if (!props.storyData || (!props.storyData.spreads && !props.storyData.coverImageUrl && !props.storyData.title)) {
+        return <StorybookSkeleton language={props.language} onBack={props.onBack} />;
+    }
 
     const goNext = () => {
         if (viewIndex < views.length - 1) {
