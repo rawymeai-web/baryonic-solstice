@@ -136,12 +136,38 @@ export interface AppSettings {
   targetModel: string;
 }
 
+export interface ShippingTracking {
+  courier?: string;
+  awbNumber?: string;
+  trackingUrl?: string;
+  courierPhone?: string;
+  dispatchedAt?: string;
+  notes?: string;
+}
+
 export interface ShippingDetails {
   name: string;
   address: string;
   city: string;
   phone: string;
   email: string;
+  isPhysicalDelivery?: boolean;
+  country?: string;
+  countryName?: string;
+  region?: 'kuwait' | 'gcc' | 'row' | string;
+  governorate?: string;
+  state?: string;
+  emirate?: string;
+  province?: string;
+  area?: string;
+  block?: string;
+  street?: string;
+  building?: string;
+  floorApt?: string;
+  postalCode?: string;
+  deliveryNotes?: string;
+  tracking?: ShippingTracking;
+  [key: string]: any;
 }
 
 export interface AdminOrder {

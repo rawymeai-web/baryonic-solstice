@@ -11,6 +11,7 @@ import SpreadLayoutPanel from '@/components/editor/SpreadLayoutPanel';
 import SpreadGeminiEditPanel from '@/components/editor/SpreadGeminiEditPanel';
 import QALogPanel from '@/components/editor/QALogPanel';
 import { DNAManagerModal } from '@/components/editor/DNAManagerModal';
+import { ShippingModal } from '@/components/admin/ShippingModal';
 import { ClientLogger } from '@/utils/clientLogger';
 
 
@@ -131,6 +132,31 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const [masterRaw2, setMasterRaw2] = useState<string | undefined>(undefined);
     // Tracks whether DNA came from the trusted order_dna table, storyData blob fallback, or is still loading
     const [dnaSource, setDnaSource] = useState<'order_dna' | 'storydata_fallback' | 'loading'>('loading');
+
+    // Customer Notification & Shipping States
+    const [isNotifyingPreview, setIsNotifyingPreview] = useState(false);
+    const [previewNotifyStatus, setPreviewNotifyStatus] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+    const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+
+    const handleNotifyCustomerPreview = async () => {
+        const orderNum = storyData.orderId || storyData.orderNumber;
+        if (!orderNum) return;
+        setIsNotifyingPreview(true);
+        setPreviewNotifyStatus(null);
+        try {
+            const res = await fetch(`/api/admin/orders/${orderNum}/notify-preview`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to send preview email');
+            setPreviewNotifyStatus({ text: t('تم إرسال إيميل رابط المعاينة للعميل بنجاح! 🚀', 'Preview email dispatched to customer! 🚀'), type: 'success' });
+            setTimeout(() => setPreviewNotifyStatus(null), 5000);
+        } catch (err: any) {
+            setPreviewNotifyStatus({ text: err.message || 'Error sending preview email', type: 'error' });
+        } finally {
+            setIsNotifyingPreview(false);
+        }
+    };
 
     // Fetch modern DNA links from new order_dna table
     useEffect(() => {
@@ -1548,6 +1574,21 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                 👁️ {t('معاينة', 'Preview')}
                             </Button>
                         )}
+                        <Button
+                            onClick={handleNotifyCustomerPreview}
+                            disabled={isAnyGenerating || isFinalizing || isNotifyingPreview}
+                            variant="secondary"
+                            className="shrink-0 snap-start !py-2 !px-4 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all font-black uppercase text-xs flex items-center justify-center gap-2"
+                        >
+                            {isNotifyingPreview ? <Spinner size="sm" color="text-brand-teal" /> : '📩'} {t('إرسال رابط المعاينة للعميل', 'Notify Customer Preview')}
+                        </Button>
+                        <Button
+                            onClick={() => setIsShippingModalOpen(true)}
+                            variant="secondary"
+                            className="shrink-0 snap-start !py-2 !px-4 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all font-black uppercase text-xs flex items-center justify-center gap-2"
+                        >
+                            🚚 {t('بيانات الشحن والتتبع', 'Shipping & Tracking')}
+                        </Button>
                         <Button onClick={applyAllEditsAndFinalize} disabled={isAnyGenerating || isFinalizing} className="shrink-0 snap-start !py-2 !px-5 shadow-xl shadow-brand-orange/30 font-black uppercase text-xs flex items-center justify-center gap-2">
                             {isFinalizing ? <><Spinner size="sm" color="text-white" /> {t('جاري الإنهاء...', 'Finalizing...')}</> : t('إنهاء وحفظ', 'Finalize')}
                         </Button>
@@ -1555,7 +1596,83 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 </div>
 
                 <div className="flex-1 flex overflow-hidden">
-                    <div className="flex-1 overflow-y-auto p-8 sm:p-12 space-y-16 scroller-thin bg-[#fcfcfc]">
+                    <div className="flex-1 overflow-y-auto p-8 sm:p-12 space-y-12 scroller-thin bg-[#fcfcfc]">
+                        
+                        {/* Preview Notification Banner */}
+                        {previewNotifyStatus && (
+                            <div className={`p-4 rounded-2xl text-xs font-bold flex items-center justify-between shadow-sm animate-fade-in ${
+                                previewNotifyStatus.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+                            }`}>
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-base">{previewNotifyStatus.type === 'success' ? 'check_circle' : 'error'}</span>
+                                    <span>{previewNotifyStatus.text}</span>
+                                </div>
+                                <button onClick={() => setPreviewNotifyStatus(null)} className="text-gray-400 hover:text-gray-600">&times;</button>
+                            </div>
+                        )}
+
+                        {/* Customer & Delivery Profile Card */}
+                        {(shippingDetails || storyData.orderId || storyData.parentName) && (
+                            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:shadow-md transition-shadow">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs bg-brand-navy text-white px-2.5 py-0.5 rounded-lg font-mono font-bold">
+                                            #{storyData.orderId || storyData.orderNumber || 'ORDER'}
+                                        </span>
+                                        <h4 className="text-base font-black text-brand-navy">
+                                            {shippingDetails?.name || storyData.parentName || 'Customer'}
+                                        </h4>
+                                        <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                                            (shippingDetails?.isPhysicalDelivery ?? (storyData.isPhysicalPrint || false))
+                                                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                                : 'bg-blue-100 text-blue-800 border border-blue-200'
+                                        }`}>
+                                            {(shippingDetails?.isPhysicalDelivery ?? (storyData.isPhysicalPrint || false)) ? t('📦 نسخة مطبوعة فاخرة + توصيل', '📦 Hardcover Delivery') : t('📥 نسخة رقمية فقط (PDF)', '📥 Softcopy Only')}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 font-medium">
+                                        {shippingDetails?.email && (
+                                            <span className="flex items-center gap-1">✉️ {shippingDetails.email}</span>
+                                        )}
+                                        {shippingDetails?.phone && (
+                                            <span className="flex items-center gap-1.5 font-mono font-bold text-brand-navy">
+                                                📞 {shippingDetails.phone}
+                                                <a
+                                                    href={`https://wa.me/${shippingDetails.phone.replace(/\D/g, '').startsWith('965') || shippingDetails.phone.replace(/\D/g, '').startsWith('966') || shippingDetails.phone.replace(/\D/g, '').startsWith('971') || shippingDetails.phone.replace(/\D/g, '').length > 8 ? shippingDetails.phone.replace(/\D/g, '') : '965' + shippingDetails.phone.replace(/\D/g, '')}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm transition-all"
+                                                    title="WhatsApp Customer"
+                                                >
+                                                    💬 WhatsApp
+                                                </a>
+                                            </span>
+                                        )}
+                                        {shippingDetails?.address && (
+                                            <span className="flex items-center gap-1 text-gray-600">📍 {shippingDetails.address}</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <Button
+                                        onClick={handleNotifyCustomerPreview}
+                                        disabled={isNotifyingPreview}
+                                        className="bg-brand-teal text-white hover:bg-brand-teal/90 font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                                    >
+                                        {isNotifyingPreview ? <Spinner size="sm" color="text-white" /> : '📩'} {t('إرسال رابط المعاينة', 'Send Preview Link')}
+                                    </Button>
+                                    <Button
+                                        onClick={() => setIsShippingModalOpen(true)}
+                                        variant="secondary"
+                                        className="border border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white font-bold text-xs flex items-center gap-1.5"
+                                    >
+                                        🚚 {t('الشحن والتتبع', 'Shipping & Tracking')}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Cover */}
                         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
                             <h3 className="text-xl font-black mb-6 text-brand-navy uppercase tracking-tighter flex items-center gap-3">
@@ -2139,6 +2256,25 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     storyData={storyData} 
                     onClose={() => setIsDNAManagerOpen(false)} 
                     onUpdateDNA={handleUpdateDNA} 
+                />
+            )}
+            {isShippingModalOpen && (
+                <ShippingModal
+                    order={{
+                        orderNumber: storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN',
+                        customerName: shippingDetails?.name || storyData.parentName || 'Customer',
+                        orderDate: new Date().toISOString(),
+                        status: 'shipped',
+                        total: total || 0,
+                        productionCost: 0,
+                        aiCost: 0,
+                        shippingCost: 0,
+                        storyData: storyData,
+                        shippingDetails: shippingDetails || {}
+                    }}
+                    isOpen={isShippingModalOpen}
+                    onClose={() => setIsShippingModalOpen(false)}
+                    language={language}
                 />
             )}
         </div>

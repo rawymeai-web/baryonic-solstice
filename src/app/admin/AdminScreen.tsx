@@ -10,6 +10,7 @@ import * as imageStore from '../../services/imageStore';
 import * as storageCleanup from '../../services/storageCleanupService';
 import type { Language, AdminOrder, AdminCustomer, OrderStatus, ProductSize, StoryTheme, AppSettings } from '../../types';
 import { OrderPreviewModal } from '../../components/admin/OrderPreviewModal';
+import { ShippingModal } from '../../components/admin/ShippingModal';
 import { ProductEditorModal } from '../../components/admin/ProductEditorModal';
 import { ThemeEditorModal } from '../../components/admin/ThemeEditorModal';
 import { ThemePreviewView } from '../../components/admin/ThemePreviewView';
@@ -402,6 +403,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
     const [isExporting, setIsExporting] = useState<string | null>(null);
     const [terminalOrder, setTerminalOrder] = useState<AdminOrder | null>(null);
+    const [isBulkShippingOpen, setIsBulkShippingOpen] = useState(false);
     const [previewOrder, setPreviewOrder] = useState<AdminOrder | null>(null);
 
     useEffect(() => {
@@ -566,7 +568,16 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
 
     return (
         <div className="space-y-4 animate-enter-forward">
-            {previewingOrder && <OrderPreviewModal order={previewingOrder} onClose={() => setPreviewingOrder(null)} language={language} />}
+            {previewingOrder && <OrderPreviewModal order={previewingOrder} onClose={() => setPreviewingOrder(null)} onRefresh={refreshOrders} language={language} />}
+            
+            {isBulkShippingOpen && (
+                <ShippingModal 
+                    isOpen={isBulkShippingOpen} 
+                    onClose={() => setIsBulkShippingOpen(false)} 
+                    onSuccess={refreshOrders} 
+                    language={language} 
+                />
+            )}
 
             {terminalOrder && (
                 <PipelineExecutionTerminal 
@@ -661,7 +672,14 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                         Incomplete Drafts
                     </button>
                 </div>
-                <div className="flex flex-wrap justify-center sm:justify-end w-full sm:w-auto gap-4">
+                <div className="flex flex-wrap justify-center sm:justify-end w-full sm:w-auto gap-3">
+                    <button 
+                        onClick={() => setIsBulkShippingOpen(true)} 
+                        className="px-6 py-3 rounded-xl bg-brand-orange text-white shadow-lg text-[9px] font-black uppercase tracking-[0.2em] hover:bg-brand-orange/90 transition-all flex items-center gap-2"
+                    >
+                        <span className="material-symbols-outlined text-sm">local_shipping</span>
+                        Bulk Shipping (Excel/CSV)
+                    </button>
                     <button 
                         onClick={async () => {
                             if (confirm("Sync all local orders to DB?")) {

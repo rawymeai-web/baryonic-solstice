@@ -80,8 +80,8 @@ export class EmailService {
             // Find order by ID or order_number
             const { data: order } = await supabase
                 .from('orders')
-                .select('customer_id, subscription_id, order_number')
-                .or(`order_number.eq.${orderId},customer_id.eq.${orderId}`)
+                .select('customer_id, subscription_id, order_number, shipping_details, story_data')
+                .or(`order_number.eq.${orderId},customer_id.eq.${orderId},id.eq.${orderId}`)
                 .limit(1)
                 .maybeSingle();
 
@@ -90,20 +90,27 @@ export class EmailService {
                 return;
             }
 
-            // Fetch Customer Email from customers table
-            const { data: customer } = await supabase
-                .from('customers')
-                .select('email, name')
-                .eq('id', order.customer_id)
-                .single();
+            let recipientEmail = order.shipping_details?.email || (order.customer_id?.includes('@') ? order.customer_id : '');
+            let recipientName = order.shipping_details?.name || order.story_data?.parentName || 'Valued Customer';
 
-            if (!customer || !customer.email) {
-                ServerLogger.error('EMAIL_SEND_FAILED', new Error(`Customer or email not found for ID: ${order.customer_id}`));
-                return;
+            // If email not found in order or customer_id is a UUID, check customers table
+            if (!recipientEmail && order.customer_id) {
+                const { data: customer } = await supabase
+                    .from('customers')
+                    .select('email, name')
+                    .eq('id', order.customer_id)
+                    .maybeSingle();
+
+                if (customer?.email) {
+                    recipientEmail = customer.email;
+                    if (customer.name) recipientName = customer.name;
+                }
             }
 
-            let recipientEmail = customer.email;
-            let recipientName = customer.name || 'Valued Customer';
+            if (!recipientEmail) {
+                ServerLogger.error('EMAIL_SEND_FAILED', new Error(`Customer email not found for Order: ${order.order_number}`));
+                return;
+            }
 
             // Override recipient for admin notifications
             if (eventType === 'admin_new_order') {
@@ -115,6 +122,10 @@ export class EmailService {
 
             let subject = '';
             let html = '';
+
+            const storyTitle = order.story_data?.title || 'Your Custom Storybook';
+            const childName = order.story_data?.childName || 'Your Child';
+            const coverImg = order.story_data?.coverOriginalUrl || order.story_data?.spreads?.[0]?.illustrationUrl || '';
 
             switch (eventType) {
                 case 'order_received':
@@ -130,6 +141,7 @@ export class EmailService {
                             
                             <div style="background-color: rgba(0, 26, 64, 0.03); padding: 20px; border-radius: 16px; margin: 24px 0; border: 1px dashed rgba(0, 26, 64, 0.1);">
                                 <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;"><strong>Order Number:</strong> ${order.order_number}</p>
+                                <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;"><strong>Story:</strong> ${storyTitle}</p>
                                 <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;"><strong>Amount Paid:</strong> ${payload.total ? payload.total + ' KD' : 'Confirmed'}</p>
                                 <p style="margin: 0; font-size: 14px; color: #555;"><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
                             </div>
@@ -138,7 +150,7 @@ export class EmailService {
                             <ol style="font-size: 15px; line-height: 1.8; color: #333; margin-left: 20px; padding-left: 0;">
                                 <li><strong>Creation:</strong> Our AI storytelling and illustration models are generating your unique book layouts.</li>
                                 <li><strong>Preview:</strong> Once generated, you will receive an email to review and approve the design.</li>
-                                <li><strong>Delivery:</strong> Once approved, we compile your soft copy and send it to our premium printing partner (if printed book was selected).</li>
+                                <li><strong>Delivery:</strong> Once approved, we compile your soft copy and dispatch your package (if printed book was selected).</li>
                             </ol>
                             
                             <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
@@ -146,79 +158,94 @@ export class EmailService {
                         </div>
                     `;
                     break;
-                case 'admin_new_order':
-                    subject = `🔔 New Order Received: #${order.order_number}`;
-                    html = `
-                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; background-color: #f4f6f8; border-radius: 16px; border: 1px solid #e1e4e8; text-align: left; direction: ltr;">
-                            <h2 style="color: #006B5D; margin-bottom: 20px; text-align: center;">🔔 New Order Received!</h2>
-                            <p style="font-size: 16px;">An order has been successfully placed and paid on Rawy:</p>
-                            
-                            <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 15px;">
-                                <tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px 0; font-weight: bold;">Order Number:</td><td style="padding: 10px 0; text-align: right;">${order.order_number}</td></tr>
-                                <tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px 0; font-weight: bold;">Customer Name:</td><td style="padding: 10px 0; text-align: right;">${customer.name || 'N/A'}</td></tr>
-                                <tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px 0; font-weight: bold;">Customer Email:</td><td style="padding: 10px 0; text-align: right;">${customer.email}</td></tr>
-                                <tr style="border-bottom: 1px solid #ddd;"><td style="padding: 10px 0; font-weight: bold;">Total Amount:</td><td style="padding: 10px 0; text-align: right; font-weight: bold; color: #F78F50;">${payload.total ? payload.total + ' KD' : 'N/A'}</td></tr>
-                            </table>
-                            
-                            <div style="text-align: center; margin-top: 30px;">
-                                <a href="https://rawytime.com/admin/orders/${order.order_number}" style="background-color: #006B5D; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View in Admin Panel</a>
-                            </div>
-                        </div>
-                    `;
-                    break;
-                case 'softcopy_ready':
-                    subject = 'Your AI Storybook Soft Copy is Ready! 📚✨';
-                    html = `
-                        <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #FFF9F0; color: #001A40; border-radius: 24px; border: 1px solid rgba(0, 26, 64, 0.05); direction: ltr; text-align: left;">
-                            <div style="text-align: center; margin-bottom: 24px;">
-                                <span style="font-size: 40px;">📚</span>
-                            </div>
-                            <h2 style="color: #F78F50; font-size: 24px; font-weight: 800; margin-bottom: 16px; text-align: center;">Your Storybook is Ready! 🎉</h2>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Hi ${recipientName},</p>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">We are thrilled to let you know that your custom AI storybook (Order: <strong>${order.order_number}</strong>) has been fully compiled and is ready for download!</p>
-                            <div style="text-align: center; margin: 32px 0;">
-                                <a href="${payload.downloadLink}" style="background-color: #F78F50; color: white; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 12px rgba(247, 143, 80, 0.25);">Download PDF Softcopy</a>
-                            </div>
-                            <p style="font-size: 12px; color: #666; line-height: 1.6; margin-top: 32px;">If the button above does not work, copy and paste this link in your browser:<br/><a href="${payload.downloadLink}" style="color: #F78F50; text-decoration: underline;">${payload.downloadLink}</a></p>
-                            <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy. Where Every Child Becomes the Hero.</p>
-                        </div>
-                    `;
-                    break;
+
                 case 'preview_ready':
-                    subject = 'Review your Yearly Storybook Preview 🔍';
+                    const previewLink = payload.previewLink || `https://rawytime.com/?preview=${order.order_number}`;
+                    subject = `Your Custom Storybook is Ready to Preview! 📚✨ (#${order.order_number})`;
                     html = `
                         <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #FFF9F0; color: #001A40; border-radius: 24px; border: 1px solid rgba(0, 26, 64, 0.05); direction: ltr; text-align: left;">
-                            <div style="text-align: center; margin-bottom: 24px;">
-                                <span style="font-size: 40px;">🔍</span>
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <span style="font-size: 40px;">🎨📖</span>
                             </div>
-                            <h2 style="color: #006B5D; font-size: 24px; font-weight: 800; margin-bottom: 16px; text-align: center;">Review Your Storybook Preview 👀</h2>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Hi ${recipientName},</p>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Your custom storybook preview is ready! You have <strong>72 hours</strong> to review the design and request 1 free regeneration before we automatically send it to our premium printing partner.</p>
+                            <h2 style="color: #006B5D; font-size: 24px; font-weight: 800; margin-bottom: 12px; text-align: center;">Your Book is Ready to View! 🎉</h2>
+                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">Hi ${recipientName},</p>
+                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">The illustrations and story for <strong>"${storyTitle}"</strong> starring <strong>${childName}</strong> are ready for you to preview!</p>
+                            
+                            ${coverImg ? `
+                                <div style="text-align: center; margin: 24px 0;">
+                                    <img src="${coverImg}" alt="Storybook Cover" style="max-width: 85%; max-height: 260px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); object-fit: cover;" />
+                                </div>
+                            ` : ''}
+
                             <div style="text-align: center; margin: 32px 0;">
-                                <a href="${payload.previewLink}" style="background-color: #006B5D; color: white; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 12px rgba(0, 107, 93, 0.25);">Review & Approve Preview</a>
+                                <a href="${previewLink}" style="background-color: #006B5D; color: white; padding: 16px 36px; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 16px; display: inline-block; box-shadow: 0 4px 16px rgba(0, 107, 93, 0.3);">
+                                    👁️ Preview & Flip Through Book
+                                </a>
                             </div>
-                            <p style="font-size: 12px; color: #666; line-height: 1.6; margin-top: 32px;">If the button above does not work, copy and paste this link in your browser:<br/><a href="${payload.previewLink}" style="color: #006B5D; text-decoration: underline;">${payload.previewLink}</a></p>
+
+                            <p style="font-size: 13px; color: #666; line-height: 1.6; text-align: center;">
+                                Click above to flip through every page. If you'd like to open the link directly:<br/>
+                                <a href="${previewLink}" style="color: #006B5D; word-break: break-all;">${previewLink}</a>
+                            </p>
+
                             <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy. Where Every Child Becomes the Hero.</p>
+                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy • Where Every Child Becomes the Hero.</p>
                         </div>
                     `;
                     break;
+
+                case 'order_shipped':
                 case 'book_shipped':
-                    subject = 'Your Printed Storybook Has Shipped! 🚚📦';
+                    const courier = payload.courier || payload.courierName || 'Express Courier';
+                    const awb = payload.awbNumber || payload.trackingNumber || payload.awb || 'N/A';
+                    const trackUrl = payload.trackingUrl || payload.trackingLink || '';
+                    const courierPhone = payload.courierPhone || '';
+
+                    subject = `Your Storybook Has Shipped! 🚚📦 (#${order.order_number})`;
                     html = `
                         <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #FFF9F0; color: #001A40; border-radius: 24px; border: 1px solid rgba(0, 26, 64, 0.05); direction: ltr; text-align: left;">
-                            <div style="text-align: center; margin-bottom: 24px;">
-                                <span style="font-size: 40px;">🚚</span>
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <span style="font-size: 40px;">🚚📦</span>
                             </div>
-                            <h2 style="color: #ECC156; font-size: 24px; font-weight: 800; margin-bottom: 16px; text-align: center;">On Its Way! 📦</h2>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Hi ${recipientName},</p>
-                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Your physical storybook has completed printing and is now on its way to you! You can track your shipment using the link below.</p>
-                            <div style="text-align: center; margin: 32px 0;">
-                                <a href="${payload.trackingLink}" style="background-color: #ECC156; color: #001A40; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 12px rgba(236, 193, 86, 0.25);">Track Shipment</a>
+                            <h2 style="color: #F78F50; font-size: 24px; font-weight: 800; margin-bottom: 12px; text-align: center;">Your Book is On Its Way! 🚀</h2>
+                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">Hi ${recipientName},</p>
+                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Great news! Your hardcover storybook (Order: <strong>${order.order_number}</strong>) has been printed, packed with love, and handed over for delivery.</p>
+
+                            <div style="background-color: white; padding: 24px; border-radius: 18px; margin: 24px 0; border: 1px solid rgba(0, 26, 64, 0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                                        <td style="padding: 10px 0; color: #777; font-weight: 600;">Courier:</td>
+                                        <td style="padding: 10px 0; font-weight: 800; color: #001A40; text-align: right;">${courier}</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                                        <td style="padding: 10px 0; color: #777; font-weight: 600;">Tracking / AWB #:</td>
+                                        <td style="padding: 10px 0; font-family: monospace; font-size: 15px; font-weight: 800; color: #F78F50; text-align: right;">${awb}</td>
+                                    </tr>
+                                    ${courierPhone ? `
+                                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                                        <td style="padding: 10px 0; color: #777; font-weight: 600;">Courier Contact:</td>
+                                        <td style="padding: 10px 0; font-weight: 700; color: #001A40; text-align: right;">${courierPhone}</td>
+                                    </tr>
+                                    ` : ''}
+                                    ${order.shipping_details?.address ? `
+                                    <tr>
+                                        <td style="padding: 10px 0; color: #777; font-weight: 600;">Shipping To:</td>
+                                        <td style="padding: 10px 0; font-weight: 600; color: #555; text-align: right; font-size: 13px;">${order.shipping_details.address}</td>
+                                    </tr>
+                                    ` : ''}
+                                </table>
                             </div>
+
+                            ${trackUrl ? `
+                                <div style="text-align: center; margin: 32px 0;">
+                                    <a href="${trackUrl}" style="background-color: #F78F50; color: white; padding: 16px 36px; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 16px; display: inline-block; box-shadow: 0 4px 16px rgba(247, 143, 80, 0.3);">
+                                        📍 Track Your Package
+                                    </a>
+                                </div>
+                            ` : ''}
+
                             <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy. Where Every Child Becomes the Hero.</p>
+                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy • Where Every Child Becomes the Hero.</p>
                         </div>
                     `;
                     break;
