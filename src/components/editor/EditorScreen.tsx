@@ -1660,7 +1660,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         disabled={isNotifyingPreview}
                                         className="bg-brand-teal text-white hover:bg-brand-teal/90 font-bold text-xs flex items-center gap-1.5 shadow-sm"
                                     >
-                                        {isNotifyingPreview ? <Spinner size="sm" color="text-white" /> : '📩'} {t('إرسال رابط المعاينة', 'Send Preview Link')}
+                                        {isNotifyingPreview ? <Spinner size="sm" color="text-white" /> : '📩'} {t('إرسال إيميل: القصة جاهزة للمعاينة', 'Notify Customer: Preview Ready')}
                                     </Button>
                                     <Button
                                         onClick={() => setIsShippingModalOpen(true)}

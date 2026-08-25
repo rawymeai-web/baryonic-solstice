@@ -405,12 +405,30 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     const [terminalOrder, setTerminalOrder] = useState<AdminOrder | null>(null);
     const [isBulkShippingOpen, setIsBulkShippingOpen] = useState(false);
     const [previewOrder, setPreviewOrder] = useState<AdminOrder | null>(null);
+    const [notifyingPreviewId, setNotifyingPreviewId] = useState<string | null>(null);
 
     useEffect(() => {
         // Ensure sorted by date descending globally
         const sorted = [...orders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
         setAllOrders(sorted);
     }, [orders]);
+
+    const handleQuickNotifyPreview = async (orderNumber: string) => {
+        setNotifyingPreviewId(orderNumber);
+        try {
+            const res = await fetch(`/api/admin/orders/${orderNumber}/notify-preview`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to send preview notification');
+            alert(`✅ Preview email sent successfully to customer for order #${orderNumber}!\n\nPreview Link: ${data.previewLink || `https://rawytime.com/?preview=${orderNumber}`}`);
+            refreshOrders();
+        } catch (err: any) {
+            alert(`❌ Error sending preview email: ${err.message}`);
+        } finally {
+            setNotifyingPreviewId(null);
+        }
+    };
 
     const handleStatusChange = async (orderNumber: string, status: OrderStatus) => {
         await adminService.updateOrderStatus(orderNumber, status);
@@ -805,6 +823,22 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                                 title="Direct Book Preview"
                                             >
                                                 <span className="material-symbols-outlined text-xl">menu_book</span>
+                                            </button>
+
+                                            <button 
+                                                className={`px-3 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shrink-0 ${
+                                                    order.status === 'awaiting_preview_approval' || order.status === 'softcopy_ready' || order.status === 'illustrations_ready'
+                                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md hover:bg-emerald-700'
+                                                        : 'bg-white border-emerald-500/30 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-500'
+                                                }`}
+                                                onClick={() => handleQuickNotifyPreview(order.orderNumber)}
+                                                disabled={notifyingPreviewId === order.orderNumber}
+                                                title="Send Customer Email: Ready to Preview"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">
+                                                    {notifyingPreviewId === order.orderNumber ? 'sync' : 'mark_email_read'}
+                                                </span>
+                                                {notifyingPreviewId === order.orderNumber ? 'Sending...' : 'Notify Preview'}
                                             </button>
 
                                             <button 
