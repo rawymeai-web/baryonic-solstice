@@ -14,14 +14,22 @@ export async function POST(
             return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
         }
 
-        // Fetch Order
-        const { data: order, error: orderErr } = await supabase
+        // Fetch Order safely (handle both UUID and string order_number like RWY-XXXXX)
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        let query = supabase
             .from('orders')
-            .select('id, order_number, status, shipping_details, story_data')
-            .or(`id.eq.${id},order_number.eq.${id}`)
-            .single();
+            .select('id, order_number, status, shipping_details, story_data');
+            
+        if (isUuid) {
+            query = query.or(`id.eq.${id},order_number.eq.${id}`);
+        } else {
+            query = query.eq('order_number', id);
+        }
+
+        const { data: order, error: orderErr } = await query.maybeSingle();
 
         if (orderErr || !order) {
+            ServerLogger.error('NOTIFY_PREVIEW_ORDER_NOT_FOUND', { id, orderErr });
             return NextResponse.json({ error: 'Order not found' }, { status: 404 });
         }
 

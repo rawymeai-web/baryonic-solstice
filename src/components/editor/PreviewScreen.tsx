@@ -19,7 +19,7 @@ const formatStoryTextHTML = (text: string, childName: string): string => {
     return formatted;
 };
 
-const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleChange: (v: string) => void }> = ({ storyData, language, onTitleChange }) => {
+const CoverView: React.FC<{ storyData: StoryData, language: Language, isPurchased?: boolean, onTitleChange: (v: string) => void }> = ({ storyData, language, isPurchased, onTitleChange }) => {
     const isAr = language === 'ar';
     const isEn = language === 'en';
     const coverSpread = storyData.spreads?.[0];
@@ -127,12 +127,12 @@ const CoverView: React.FC<{ storyData: StoryData, language: Language, onTitleCha
                     </div>
                 )}
             </motion.div>
-            <Watermark />
+            {!isPurchased && <Watermark />}
         </div>
     );
 };
 
-const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Language }> = ({ spread, storyData, language }) => {
+const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Language, isPurchased?: boolean }> = ({ spread, storyData, language, isPurchased }) => {
     const isAr = language === 'ar';
     const spreadSrc = spread.illustrationUrl
         ? (spread.illustrationUrl.startsWith('http') || spread.illustrationUrl.startsWith('data:'))
@@ -199,7 +199,7 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
             )}
 
             <div className="absolute inset-y-0 left-1/2 w-[2px] bg-black/10 z-30 shadow-xl pointer-events-none"></div>
-            <Watermark />
+            {!isPurchased && <Watermark />}
         </div>
     );
 };
@@ -213,11 +213,19 @@ export interface PreviewScreenProps {
     onRegenerate: (feedback: string) => void;
     language: Language;
     onBack: () => void;
+    isPurchased?: boolean;
 }
 
 const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
     const [viewIndex, setViewIndex] = useState(0);
     const [viewMode, setViewMode] = useState<'presentation' | 'scroll'>('presentation');
+    const isPurchased = props.isPurchased ?? Boolean(
+        props.storyData.orderId ||
+        (props.storyData as any).orderNumber ||
+        (props.storyData as any).isPurchased ||
+        (props.storyData as any).isPaid ||
+        ['confirmed', 'shipped', 'delivered', 'awaiting_preview_approval', 'softcopy_ready'].includes((props.storyData as any).status)
+    );
     const t = (ar: string, en: string) => props.language === 'ar' ? ar : en;
 
     const sortedSpreads = useMemo(() => {
@@ -318,9 +326,9 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                                             className="w-full h-full"
                                         >
                                             {views[viewIndex].type === 'cover' ? (
-                                                <CoverView storyData={props.storyData} language={props.language} onTitleChange={props.onTitleChange} />
+                                                <CoverView storyData={props.storyData} language={props.language} isPurchased={isPurchased} onTitleChange={props.onTitleChange} />
                                             ) : (
-                                                <SpreadView spread={views[viewIndex].data!} storyData={props.storyData} language={props.language} />
+                                                <SpreadView spread={views[viewIndex].data!} storyData={props.storyData} language={props.language} isPurchased={isPurchased} />
                                             )}
                                         </motion.div>
                                     </AnimatePresence>
@@ -363,14 +371,14 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                             className="space-y-24"
                         >
                             <div className="aspect-[2/1.1] max-w-6xl mx-auto">
-                                <CoverView storyData={props.storyData} language={props.language} onTitleChange={props.onTitleChange} />
+                                <CoverView storyData={props.storyData} language={props.language} isPurchased={isPurchased} onTitleChange={props.onTitleChange} />
                             </div>
                             {sortedSpreads.filter(s => s.spreadNumber > 0).map((s, i) => (
                                 <div key={i} className="aspect-[2/1.1] max-w-6xl mx-auto group">
                                     <div className="mb-4 flex justify-between items-end px-4">
                                        <span className="text-[10px] font-black text-brand-navy/20 uppercase tracking-[0.4em]">SPREAD {s.spreadNumber}</span>
                                     </div>
-                                    <SpreadView spread={s} storyData={props.storyData} language={props.language} />
+                                    <SpreadView spread={s} storyData={props.storyData} language={props.language} isPurchased={isPurchased} />
                                 </div>
                             ))}
                         </motion.div>
