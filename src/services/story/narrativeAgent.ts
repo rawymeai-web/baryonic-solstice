@@ -71,35 +71,41 @@ export async function generateStoryDraft(
             **THE ${spreadCount}-PART STRUCTURAL FRAMEWORK (MANDATORY TONE GUIDES):**
             You must write the text for each spread to match its exact psychological purpose in the sequence:
             - **Spread 1 (Intro):** Establish the Normal World, Setting, and point clearly to the Hero's Desire.
-            - **Spread 2 (Catalyst):** Introduce the Problem/Obstacle that disrupts the Normal World.
-            - **Spread 3 (First Attempt):** Show the Hero actively trying to solve the problem and failing/struggling.
-            - **Spread 4 (Complication):** The situation gets harder or a secondary issue/character arises.
-            - **Spread 5 (Lowest Point):** The hardest emotional beat. The Hero feels sad, hopeless, or stuck. 
-            - **Spread ${Math.ceil(spreadCount * 0.75)} (Insight):** The "Aha!" moment. A shift in strategy or realization.
-            - **Spread ${spreadCount - 1} (Final Attempt):** The Hero tries the new strategy and succeeds.
-            - **Spread ${spreadCount} (Resolution):** You MUST explicitly state the moral of the story in the final sentences so a child perfectly understands the lesson (e.g., "And they learned that sharing makes playing more fun!"). Callback to the beginning to show growth.
+            - **Spread 2 (Catalyst / The Interruption):** A sudden external sound, sight, or disruption physically breaks into the Hero's quiet world (e.g., a sharp tap at the glass, a loud chirp outside).
+            - **Spread 3 (First Attempt):** Show the Hero eagerly rushing in to solve the problem and failing/struggling.
+            - **Spread 4 (Complication):** The situation gets trickier or the obstacle moves further away.
+            - **Spread 5 (Lowest Point):** The hardest emotional beat. Physicalize the sadness (drooping shoulders, heavy sigh).
+            - **Spread ${Math.ceil(spreadCount * 0.75)} (Insight / Epiphany):** The "Aha!" moment. The Hero pauses, quietly observes a specific natural clue or animal guide, and realizes what to do.
+            - **Spread ${spreadCount - 1} (Final Attempt):** The Hero applies the quiet/clever lesson and succeeds!
+            - **Spread ${spreadCount} (Warm Emotional Payoff & Bedtime Comfort):** End with a comforting, cozy, heartwarming resolution (snuggling under the blanket, drawing the adventure in a book, whispering a bedtime goodnight, a warm hug).
+              - ❌ **STRICTLY FORBIDDEN:** NEVER state the moral as an adult proverb, thesis statement, or essay conclusion (e.g. NEVER write: "He knew: patience and observation achieve more than hurried effort").
+              - ✅ **REQUIRED:** Show the child feeling happy, safe, loved, and proud of themselves.
     
             **CRITICAL QUALITY GUIDELINES (Must Follow):**
-            1. **STORYBOOK PROSE (BE CREATIVE & SENSORY):**
-               - Write in **Rich, Beautiful Storybook Prose**.
-               - Ensure beautiful, rhythmic sentence variety (mix short punchy sentences with longer flowing ones).
-               - **SENSORY DETAILS:** Do not just state facts. Describe what the hero *hears, feels, and sees*. Use the environment (e.g. "the heavy air," "a soft buzz of leaves," "the warmth on her cheeks").
-               - If a natural rhyme occurs and fits perfectly, use it, but NEVER sacrifice story logic just to force a rhyme.
-               - **VOCABULARY LOCK:** STRICTLY use simple, common words easily understood by a ${age}-year-old. ABSOLUTELY NO archaic or complex words. No big abstract words.
-            2. **ADJECTIVE BAN:** Do NOT use overly abstract adjectives (e.g. "magical", "wondrous").
-               - Use Concrete Adjectives (Size, Color, Texture).
-               ${age < 6 ? `
-            3. **COGNITIVE LOAD (CRITICAL FOR AGE 1-5):** 
-               - **ONE NEW THING PER PAGE:** A page can have a new location OR a new character, NOT BOTH.
-               - Keep the action simple linear: A -> B.
+            1. **CONCISE & PUNCHY STORYBOOK PROSE:**
+               - Parents prefer crisp, beautiful, easy-to-read lines that leave room for the illustrations to shine.
+               - Keep strictly within target: **${wordCountRule.min}–${wordCountRule.max} words per spread**.
+               - Mix short, energetic sentences with smooth, rhythmic lines.
+               - **VOCABULARY LOCK FOR AGE ${age}:** STRICTLY use simple, concrete, everyday words understood by a ${age}-year-old. ABSOLUTELY NO archaic, academic, or adult literary words (❌ No "nook", "endeavor", "observation", "haste", "foster", "fatigue"). Use concrete child words (✅ "bed", "blanket", "rug", "puddle", "sneakers", "branches", "window").
+
+            2. **THE PAGE-TURN SENSORY BRIDGE RULE (APPLIES ACROSS ALL SPREADS):**
+               - Every spread must end with a natural setup, and the next spread must start by continuing that exact physical action or sensory event.
+               - **No Teleporting:** If the hero is in their bedroom in Spread 1, they cannot suddenly be in the desert in Spread 2 without stepping out the door or peering out the window.
+               - **No Unearned Names:** The hero cannot magically know an unfamiliar animal's name in Spread 2 before meeting it.
+               - **Sensory Triggers:** Link page turns with sounds, visual flashes, or physical motions (e.g., *Spread 1 ends with quiet $\rightarrow$ Spread 2 starts with a sharp TWEET! at the window $\rightarrow$ Spread 3 starts with Zayn rushing out the door*).
+
+            3. **AGE-TIERED SENSORY & ONOMATOPOEIA MANDATE:**
+               ${age <= 5 ? `
+               - **INTERACTIVE SOUND WORDS MANDATORY:** For children aged ${age}, every action spread MUST include at least one fun, expressive sound effect in capital letters (e.g. *CRUNCH-CRUNCH!*, *FLAP-FLAP!*, *TWEET!*, *SPLASH!*, *SHHH...*, *ZOOM!*).
+               - **PHYSICALIZED EMOTIONS:** Show feelings in the body (tummy fluttering, big smiles, heavy sighs, fast thumping hearts, tip-toeing feet).
                ` : `
-            3. **COGNITIVE LOAD & NARRATIVE FLOW (CRITICAL FOR AGE 6+):**
-               - **LOGICAL TRANSITIONS:** Ensure the narrative flows logically and smoothly from page to page.
-               - **EARNED ACTION:** Transitions must be earned through the hero's actions. 
-               - DO NOT produce disjointed, bullet-point sentences. Do not just summarize the blueprint. You must write a cohesive, engaging scene that expands on the blueprint naturally.
+               - **ACTIVE DIALOGUE & CLEVERNESS:** Include lively spoken dialogue and show the hero actively making smart choices.
                `}
-            4. **CHARACTER ROLES:** Characters must ACT, not just look. They must help solve the specific page's problem.
-               - **DISPOSABLE SUB-CHARACTERS:** Any secondary characters (e.g., animals, villagers, guides) that are NOT the main hero(es) should ideally belong to a single setting. When the hero leaves that location in the next spread, leave the secondary character behind and introduce someone new if needed. Do NOT drag random sub-characters across multiple spreads.
+
+            4. **STRICT ENTITY & MENTOR PERSISTENCE:**
+               - If a helper animal or guide is introduced in Spread 4 (e.g. a quiet lizard), the hero MUST learn the lesson from that EXACT same creature in Spread 6. Do NOT randomly switch creatures mid-story (e.g. from lizard to beetle).
+
+            5. **ADJECTIVE BAN:** Do NOT use overly abstract adjectives (e.g. "magical", "wondrous"). Use Concrete Adjectives (Size, Color, Texture, Sound).
             
             **5. INTRODUCTION PROTOCOL (CRITICAL):**
             - **Spread 1 (The Hero & World):** Open with a VIVID SCENE, ACTION, or EMOTION that drops the reader right into the story world. The hero's name (${childName}) MUST appear naturally within the first 1-2 sentences, but NEVER as the subject of the very first sentence as a bare factual introduction.

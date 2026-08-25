@@ -65,10 +65,12 @@ export async function runEditorPass(
             **THE BLUEPRINT (Intended Story Structure):**
             ${JSON.stringify(blueprint)}
 
-            G. **MORAL DELIVERED?** Does the story's final spread explicitly and clearly state the lesson in child-friendly language? A child must understand it. Do not assume it was "implied."
+            G. **WARM COZY ENDING (ANTI-PREACHY CHECK):** Does the final spread deliver an emotional, cozy resolution (bedtime comfort, a hug, drawing in a book, whispering goodnight)?
+               - ❌ **FLAG & FIX:** If the draft states the moral like an adult proverb (e.g. "He knew: patience achieves more than hurried effort"), REWRITE IT IMMEDIATELY into a warm child action or happy bedtime realization.
             H. **RESOLUTION CALLBACK:** Does the ending specifically reference the hero's initial situation or desire so the child sees how far the hero has come?
-            I. **ARC ALIGNMENT:** Does the story achieve the intended arc? (Spread 1=Normal World, 2=Catalyst, 3=First Attempt, 4=Complication, 5=Lowest Point, 6=Insight, 7=Final Attempt, 8=Resolution)
-            J. **BLUEPRINT SETTINGS:** Are the locations consistent with the Blueprint's spread-by-spread plan? If the Blueprint says "Forest Path" and the draft says "The Mountain", flag and fix it.
+            I. **PAGE-TURN SENSORY BRIDGES:** Check transitions between all spreads. Does Spread 2 interrupt Spread 1 with a sudden sensory cue? Does each spread start by continuing the previous spread's action? (No teleporting or unearned animal names).
+            J. **ENTITY PERSISTENCE:** Did the story stay consistent with its helper animals/tools (e.g. not swapping a lizard for a beetle)?
+            K. **BLUEPRINT SETTINGS:** Are the locations consistent with the Blueprint?
 
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             ✍️ PASS 3 — SURGICAL REWRITE
@@ -77,18 +79,19 @@ export async function runEditorPass(
 
             1. **REWRITE FREELY:** You are allowed and expected to rewrite entire paragraphs or spreads that fail. Do not just polish a broken structure.
             ${customStoryText ? `**CRITICAL EXCEPTION FOR CUSTOM POEM/TEXT:** The user has provided an exact poem/text: """${customStoryText}""". Under NO circumstances should you rewrite, "fix", or change the words of this provided poem. Your ONLY job in this rewrite phase is to distribute the provided words accurately across the spreads. Do not alter the rhythm or vocabulary of the provided text.` : ''}
-            2. **CAUSAL CHAIN REPAIR:** Where a character finds something or moves somewhere without a causal trigger, add the physical action that creates the discovery.
-            3. **CONTEXT BRIDGE REPAIR:** Where a mythical/new figure appears without context, add a one-sentence introduction that establishes why the child knows them.
+            2. **CAUSAL CHAIN & SENSORY BRIDGE REPAIR:** Where a character finds something, moves somewhere, or enters a new scene, add the physical sensory trigger.
+            3. **STRIP ADULT PREACHING:** Rewrite any essay-like moral sentence into a child's sensory action, happy bedtime whisper, or comforting feeling.
             4. **SHOW, DON'T TELL — PHYSICALLY:** Replace every emotional statement with a physical sensation.
                - Strip: "He felt sad."
                - Add: "His shoulders dropped. He pulled his knees up to his chest."
             5. **INSIGHT STRUCTURE:** Spread 6 must have TWO beats:
-               - First: The hero **observes** something specific.
+               - First: The hero **observes** a specific clue from their guide.
                - Then: The hero **internally realizes** what it means.
                - Do not rush to the solution before the realization is felt.
-            6. **RHYTHM AND VOCABULARY:**
-               - Write in beautiful, rhythmic storybook prose. Mix short punchy sentences with longer flowing ones.
-               - STRICTLY use simple, age-appropriate words (${childAge} years old). No archaic or complex vocabulary.
+            6. **RHYTHM, CONCISENESS AND VOCABULARY:**
+               - Keep text punchy, crisp, and within target: **${wordCountRule.min}–${wordCountRule.max} words per spread**.
+               - STRICTLY use simple, concrete, everyday words (${childAge} years old). ❌ Ban adult words ("nook", "endeavor", "observation", "haste", "foster").
+               ${childAge <= 5 ? `- For age ${childAge}, ensure action spreads have fun, capitalized sound words (*CRUNCH!*, *FLAP-FLAP!*, *TWEET!*, *SHHH...*).` : ''}
             7. **LANGUAGE:** All output text MUST be in ${targetLang}. Arabic MUST NOT contain Tashkeel (vowel diacritics).
             8. **HERO NAME:** You MUST use the exact name "${childName}" throughout. Do NOT change it.
             9. **PAGE BUDGET:** You MUST return EXACTLY ${draft.length} spreads. Do not add or remove pages.

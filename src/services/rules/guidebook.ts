@@ -13,9 +13,10 @@ export const GUIDEBOOK = {
             "Neighbor (Fictional)", "Shopkeeper (Fictional)"
         ],
         wordCount: {
-            "3-5": { min: 15, max: 30 },
-            "6-8": { min: 40, max: 65 },
-            "9-12": { min: 80, max: 120 }
+            "1-3": { min: 10, max: 18 },
+            "4-5": { min: 18, max: 28 },
+            "6-8": { min: 30, max: 50 },
+            "9-12": { min: 55, max: 85 }
         },
         structure: {
             intro: "Establish Hero in Normal World. Hint at Desire.",
@@ -60,7 +61,8 @@ export const GUIDEBOOK = {
 };
 
 export function getWordCountForAge(age: number): { min: number, max: number } {
-    if (age <= 5) return GUIDEBOOK.narrative.wordCount["3-5"];
+    if (age <= 3) return GUIDEBOOK.narrative.wordCount["1-3"];
+    if (age <= 5) return GUIDEBOOK.narrative.wordCount["4-5"];
     if (age <= 8) return GUIDEBOOK.narrative.wordCount["6-8"];
     return GUIDEBOOK.narrative.wordCount["9-12"];
 }
