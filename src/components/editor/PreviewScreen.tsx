@@ -428,35 +428,63 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
         })
     };
 
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchStartX(e.touches[0].clientX);
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchStartX === null) return;
+        const touchEndX = e.changedTouches[0].clientX;
+        const diffX = touchStartX - touchEndX;
+
+        // Threshold of 50px
+        if (Math.abs(diffX) > 50) {
+            if (diffX > 0) {
+                // Swiped left
+                if (isAr) goPrev(); else goNext();
+            } else {
+                // Swiped right
+                if (isAr) goNext(); else goPrev();
+            }
+        }
+        setTouchStartX(null);
+    };
+
+    const currentSpread = views[viewIndex]?.type === 'spread' ? views[viewIndex].data : null;
+    const currentSpreadText = currentSpread ? ([currentSpread.leftText, currentSpread.rightText].filter(Boolean).join(' ') || (currentSpread as any).text || '') : '';
+
     return (
-        <div className="min-h-screen bg-[#FFF9F0] pb-24 px-6 relative overflow-hidden">
+        <div className="min-h-screen bg-[#FFF9F0] pb-20 px-3 sm:px-6 relative overflow-hidden">
             {/* Background Blobs */}
-            <div className="blob-bg opacity-20">
+            <div className="blob-bg opacity-20 pointer-events-none">
                 <div className="blob blob-1"></div>
                 <div className="blob blob-2"></div>
                 <div className="blob blob-3"></div>
             </div>
 
             {/* Header Controls */}
-            <div className="max-w-7xl mx-auto pt-10 mb-16 relative z-50">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-8 glass-panel p-8 rounded-[3rem] shadow-2xl border-white/60 sticky top-8">
-                    <div className="flex flex-wrap items-center gap-4 sm:gap-8">
+            <div className="max-w-7xl mx-auto pt-3 md:pt-8 mb-6 md:mb-12 relative z-50">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-8 glass-panel p-4 md:p-6 rounded-2xl md:rounded-[2.5rem] shadow-xl border-white/60">
+                    <div className="flex flex-wrap items-center justify-between md:justify-start w-full md:w-auto gap-2 sm:gap-4">
                         <button 
                             onClick={props.onBack} 
-                            className="w-14 h-14 rounded-2xl glass-panel hover:bg-white flex items-center justify-center text-brand-navy transition-all active:scale-90 shadow-sm"
+                            className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl glass-panel hover:bg-white flex items-center justify-center text-brand-navy transition-all active:scale-90 shadow-sm"
                         >
-                            <span className="material-symbols-outlined font-black">arrow_back</span>
+                            <span className="material-symbols-outlined font-black text-lg md:text-xl">{isAr ? 'arrow_forward' : 'arrow_back'}</span>
                         </button>
-                        <div className="flex gap-2 p-2 bg-brand-navy/5 rounded-[1.5rem]">
+                        
+                        <div className="flex gap-1 p-1 bg-brand-navy/5 rounded-xl md:rounded-2xl">
                             <button 
                                 onClick={() => setViewMode('presentation')} 
-                                className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'presentation' ? 'bg-white text-brand-orange shadow-xl scale-105' : 'text-brand-navy/40 hover:text-brand-navy'}`}
+                                className={`px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-[11px] font-black uppercase tracking-wider transition-all ${viewMode === 'presentation' ? 'bg-white text-brand-orange shadow-md scale-102' : 'text-brand-navy/40 hover:text-brand-navy'}`}
                             >
                                 {t('عرض القصة', 'Presentation')}
                             </button>
                             <button 
                                 onClick={() => setViewMode('scroll')} 
-                                className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'scroll' ? 'bg-white text-brand-orange shadow-xl scale-105' : 'text-brand-navy/40 hover:text-brand-navy'}`}
+                                className={`px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl text-[10px] md:text-[11px] font-black uppercase tracking-wider transition-all ${viewMode === 'scroll' ? 'bg-white text-brand-orange shadow-md scale-102' : 'text-brand-navy/40 hover:text-brand-navy'}`}
                             >
                                 {t('قائمة الصفحات', 'Scroll View')}
                             </button>
@@ -465,7 +493,7 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                         {/* Audio Narrator Button */}
                         <button
                             onClick={handleToggleAudioReader}
-                            className={`px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg ${
+                            className={`px-3.5 md:px-5 py-2 md:py-2.5 rounded-xl md:rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md ${
                                 isSpeaking 
                                     ? 'bg-emerald-500 text-white animate-pulse shadow-emerald-500/30' 
                                     : 'bg-brand-teal text-white hover:bg-brand-teal/90 shadow-brand-teal/20'
@@ -474,20 +502,20 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                             <span className="material-symbols-outlined text-base">
                                 {isSpeaking ? 'pause_circle' : 'volume_up'}
                             </span>
-                            {isSpeaking ? t('إيقاف القراءة', 'Pause Voice') : t('🔊 اقرأ لي', '🔊 Read to Me')}
+                            <span>{isSpeaking ? t('إيقاف', 'Pause') : t('🔊 اقرأ لي', '🔊 Read to Me')}</span>
                         </button>
                     </div>
 
-                    <div className="flex gap-4 w-full md:w-auto">
+                    <div className="flex gap-2.5 w-full md:w-auto">
                         <button 
                             onClick={props.onRestart} 
-                            className="flex-1 md:flex-none px-10 py-4 rounded-full font-bold text-brand-navy border-2 border-brand-navy/10 hover:bg-white transition-all uppercase text-[10px] tracking-widest"
+                            className="flex-1 md:flex-none px-4 md:px-7 py-2.5 md:py-3.5 rounded-xl md:rounded-full font-bold text-brand-navy border border-brand-navy/15 hover:bg-white transition-all uppercase text-[10px] md:text-[11px] tracking-wider"
                         >
                             {t('إعادة البداية', 'Restart')}
                         </button>
                         <button 
                             onClick={props.onOrder} 
-                            className="flex-[2] md:flex-none px-12 py-4 rounded-full font-black text-white bg-brand-orange shadow-2xl shadow-brand-orange/30 hover:-translate-y-1 transition-all uppercase text-[10px] tracking-[0.2em]"
+                            className="flex-[1.5] md:flex-none px-5 md:px-8 py-2.5 md:py-3.5 rounded-xl md:rounded-full font-black text-white bg-brand-orange shadow-lg shadow-brand-orange/30 hover:scale-102 transition-all uppercase text-[10px] md:text-[11px] tracking-wider"
                         >
                             {t('اطلب كتابك الآن!', 'Print My Book!')}
                         </button>
@@ -501,21 +529,25 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                     {viewMode === 'presentation' ? (
                         <motion.div 
                             key="presentation"
-                            initial={{ opacity: 0, y: 30 }}
+                            initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -30 }}
+                            exit={{ opacity: 0, y: -20 }}
                             className="relative"
                         >
-                            <div className="flex items-center justify-center gap-8">
+                            <div className="flex items-center justify-center gap-4 md:gap-8">
                                 <button 
                                     onClick={goPrev} 
                                     disabled={viewIndex === 0} 
-                                    className="hidden md:flex w-20 h-20 rounded-full glass-panel shadow-2xl text-brand-navy hover:scale-110 disabled:opacity-20 transition-all items-center justify-center group"
+                                    className="hidden md:flex w-16 h-16 rounded-full glass-panel shadow-xl text-brand-navy hover:scale-110 disabled:opacity-20 transition-all items-center justify-center group"
                                 >
-                                    <span className="material-symbols-outlined text-4xl font-black group-hover:-translate-x-1 transition-transform">chevron_left</span>
+                                    <span className="material-symbols-outlined text-3xl font-black group-hover:-translate-x-0.5 transition-transform">{isAr ? 'chevron_right' : 'chevron_left'}</span>
                                 </button>
                                 
-                                <div className="w-full aspect-[2/1.1] max-w-6xl [perspective:1800px]">
+                                <div 
+                                    className="w-full aspect-[2/1.1] max-w-6xl [perspective:1800px] touch-pan-y"
+                                    onTouchStart={handleTouchStart}
+                                    onTouchEnd={handleTouchEnd}
+                                >
                                     <AnimatePresence mode="wait" custom={direction}>
                                         <motion.div
                                             key={viewIndex}
@@ -539,27 +571,71 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                                 <button 
                                     onClick={goNext} 
                                     disabled={viewIndex === views.length - 1} 
-                                    className="hidden md:flex w-20 h-20 rounded-full glass-panel shadow-2xl text-brand-navy hover:scale-110 disabled:opacity-20 transition-all items-center justify-center group"
+                                    className="hidden md:flex w-16 h-16 rounded-full glass-panel shadow-xl text-brand-navy hover:scale-110 disabled:opacity-20 transition-all items-center justify-center group"
                                 >
-                                    <span className="material-symbols-outlined text-4xl font-black group-hover:translate-x-1 transition-transform">chevron_right</span>
+                                    <span className="material-symbols-outlined text-3xl font-black group-hover:translate-x-0.5 transition-transform">{isAr ? 'chevron_left' : 'chevron_right'}</span>
                                 </button>
                             </div>
 
-                            {/* Mobile Nav */}
-                            <div className="flex md:hidden justify-between mt-12 gap-6">
-                                <button onClick={goPrev} disabled={viewIndex === 0} className="flex-1 py-5 glass-panel rounded-2xl font-black uppercase text-[10px] tracking-widest disabled:opacity-30">Previous</button>
-                                <button onClick={goNext} disabled={viewIndex === views.length - 1} className="flex-1 py-5 bg-brand-navy text-white rounded-2xl font-black uppercase text-[10px] tracking-widest disabled:opacity-30">Next Page</button>
+                            {/* Mobile Dedicated Story Reader Card (Clear, Large, High-Contrast Typography for Phones) */}
+                            {views[viewIndex].type === 'spread' && currentSpreadText && (
+                                <div className="block md:hidden mt-4 p-5 bg-white/95 backdrop-blur-md rounded-3xl shadow-xl border border-amber-100/80 ring-1 ring-black/5 text-brand-navy animate-fade-in">
+                                    <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse"></span>
+                                            <span className="text-[11px] font-black uppercase tracking-wider text-brand-navy/60">
+                                                {isAr 
+                                                    ? `📖 صفحة ${views[viewIndex].data?.spreadNumber} من ${sortedSpreads.filter(s => s.spreadNumber > 0).length}` 
+                                                    : `📖 Page ${views[viewIndex].data?.spreadNumber} of ${sortedSpreads.filter(s => s.spreadNumber > 0).length}`}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={handleToggleAudioReader}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-brand-orange text-[11px] font-bold hover:bg-amber-100 transition-all"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">
+                                                {isSpeaking ? 'pause' : 'volume_up'}
+                                            </span>
+                                            <span>{isSpeaking ? (isAr ? 'إيقاف' : 'Pause') : (isAr ? 'استمع' : 'Listen')}</span>
+                                        </button>
+                                    </div>
+                                    <div 
+                                        className={`text-[16px] leading-[1.8] font-medium ${isAr ? 'text-right' : 'text-left'}`}
+                                        style={{ fontFamily: isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif" }}
+                                        dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(currentSpreadText, props.storyData.childName) }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Mobile Navigation Buttons */}
+                            <div className="flex md:hidden justify-between mt-5 gap-4">
+                                <button 
+                                    onClick={goPrev} 
+                                    disabled={viewIndex === 0} 
+                                    className="flex-1 py-3.5 glass-panel rounded-2xl font-black uppercase text-[11px] tracking-wider text-brand-navy disabled:opacity-30 flex items-center justify-center gap-1 shadow-sm"
+                                >
+                                    <span className="material-symbols-outlined text-base">{isAr ? 'arrow_forward' : 'arrow_back'}</span>
+                                    <span>{t('السابق', 'Previous')}</span>
+                                </button>
+                                <button 
+                                    onClick={goNext} 
+                                    disabled={viewIndex === views.length - 1} 
+                                    className="flex-1 py-3.5 bg-brand-navy text-white rounded-2xl font-black uppercase text-[11px] tracking-wider disabled:opacity-30 flex items-center justify-center gap-1 shadow-md shadow-brand-navy/20"
+                                >
+                                    <span>{t('الصفحة التالية', 'Next Page')}</span>
+                                    <span className="material-symbols-outlined text-base">{isAr ? 'arrow_back' : 'arrow_forward'}</span>
+                                </button>
                             </div>
 
-                            {/* Pagination */}
-                            <div className="flex justify-center items-center gap-4 mt-16">
-                                <p className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.2em]">{viewIndex + 1} / {views.length}</p>
-                                <div className="flex gap-2">
+                            {/* Pagination Indicators */}
+                            <div className="flex justify-center items-center gap-3 mt-6 md:mt-12">
+                                <p className="text-[10px] md:text-[11px] font-black text-brand-navy/40 uppercase tracking-[0.15em]">{viewIndex + 1} / {views.length}</p>
+                                <div className="flex gap-1.5">
                                     {views.map((_, i) => (
                                         <button 
                                             key={i} 
                                             onClick={() => setViewIndex(i)}
-                                            className={`h-2 rounded-full transition-all duration-500 ${i === viewIndex ? 'w-12 bg-brand-orange shadow-lg shadow-brand-orange/40' : 'w-2 bg-brand-navy/10 hover:bg-brand-navy/20'}`}
+                                            className={`h-2 rounded-full transition-all duration-300 ${i === viewIndex ? 'w-8 bg-brand-orange shadow-md shadow-brand-orange/40' : 'w-2 bg-brand-navy/15 hover:bg-brand-navy/30'}`}
                                         />
                                     ))}
                                 </div>
@@ -570,15 +646,15 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                             key="scroll"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="space-y-24"
+                            className="space-y-16 md:space-y-24"
                         >
                             <div className="aspect-[2/1.1] max-w-6xl mx-auto">
                                 <CoverView storyData={props.storyData} language={props.language} isPurchased={isPurchased} onTitleChange={props.onTitleChange} />
                             </div>
                             {sortedSpreads.filter(s => s.spreadNumber > 0).map((s, i) => (
                                 <div key={i} className="aspect-[2/1.1] max-w-6xl mx-auto group">
-                                    <div className="mb-4 flex justify-between items-end px-4">
-                                       <span className="text-[10px] font-black text-brand-navy/20 uppercase tracking-[0.4em]">SPREAD {s.spreadNumber}</span>
+                                    <div className="mb-3 flex justify-between items-end px-4">
+                                       <span className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.3em]">SPREAD {s.spreadNumber}</span>
                                     </div>
                                     <SpreadView spread={s} storyData={props.storyData} language={props.language} isPurchased={isPurchased} />
                                 </div>
@@ -587,7 +663,7 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                     )}
                 </AnimatePresence>
 
-                <div className="mt-32">
+                <div className="mt-20 md:mt-32">
                     <Suspense fallback={<Spinner />}>
                         <ShareComponent storyData={props.storyData} language={props.language} />
                     </Suspense>
