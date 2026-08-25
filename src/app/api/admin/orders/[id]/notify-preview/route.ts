@@ -14,19 +14,12 @@ export async function POST(
             return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
         }
 
-        // Fetch Order safely (handle both UUID and string order_number like RWY-XXXXX)
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-        let query = supabase
+        // Fetch Order by order_number
+        const { data: order, error: orderErr } = await supabase
             .from('orders')
-            .select('id, order_number, status, shipping_details, story_data');
-            
-        if (isUuid) {
-            query = query.or(`id.eq.${id},order_number.eq.${id}`);
-        } else {
-            query = query.eq('order_number', id);
-        }
-
-        const { data: order, error: orderErr } = await query.maybeSingle();
+            .select('order_number, status, shipping_details, story_data')
+            .eq('order_number', id)
+            .maybeSingle();
 
         if (orderErr || !order) {
             ServerLogger.error('NOTIFY_PREVIEW_ORDER_NOT_FOUND', { id, orderErr });
@@ -39,9 +32,8 @@ export async function POST(
             .from('orders')
             .update({ 
                 status: newStatus,
-                updated_at: new Date().toISOString()
             })
-            .eq('id', order.id);
+            .eq('order_number', order.order_number);
 
         if (updateErr) {
             ServerLogger.error('NOTIFY_PREVIEW_DB_ERROR', updateErr);
@@ -51,7 +43,7 @@ export async function POST(
         const previewLink = `https://rawytime.com/?preview=${order.order_number}`;
 
         // Dispatch Preview Ready Email
-        await EmailService.sendNotification(order.id, 'preview_ready', {
+        await EmailService.sendNotification(order.order_number, 'preview_ready', {
             previewLink,
             orderNumber: order.order_number
         });

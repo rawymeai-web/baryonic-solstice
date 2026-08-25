@@ -17,19 +17,12 @@ export async function POST(
             return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
         }
 
-        // Fetch Order safely (handle both UUID and string order_number like RWY-XXXXX)
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-        let query = supabase
+        // Fetch Order by order_number
+        const { data: order, error: orderErr } = await supabase
             .from('orders')
-            .select('id, order_number, status, shipping_details, story_data');
-            
-        if (isUuid) {
-            query = query.or(`id.eq.${id},order_number.eq.${id}`);
-        } else {
-            query = query.eq('order_number', id);
-        }
-
-        const { data: order, error: orderErr } = await query.maybeSingle();
+            .select('order_number, status, shipping_details, story_data')
+            .eq('order_number', id)
+            .maybeSingle();
 
         if (orderErr || !order) {
             ServerLogger.error('SHIP_ORDER_NOT_FOUND', { id, orderErr });
@@ -52,9 +45,8 @@ export async function POST(
             .update({ 
                 status: 'shipped',
                 shipping_details: shippingDetails,
-                updated_at: new Date().toISOString()
             })
-            .eq('id', order.id);
+            .eq('order_number', order.order_number);
 
         if (updateErr) {
             ServerLogger.error('SHIP_ORDER_DB_ERROR', updateErr);
@@ -62,7 +54,7 @@ export async function POST(
         }
 
         // Send Shipping Email Notification
-        await EmailService.sendNotification(order.id, 'order_shipped', {
+        await EmailService.sendNotification(order.order_number, 'order_shipped', {
             courier: shippingDetails.tracking.courier,
             awbNumber: shippingDetails.tracking.awbNumber,
             trackingUrl: shippingDetails.tracking.trackingUrl,

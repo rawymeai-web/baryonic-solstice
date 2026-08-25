@@ -7,7 +7,7 @@ export async function POST(req: Request, context: any) {
         const adminId = req.headers.get('x-admin-id');
         if (!adminId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const { data: order, error } = await supabase.from('orders').select('status, generation_snapshot').eq('id', orderId).single();
+        const { data: order, error } = await supabase.from('orders').select('status, generation_snapshot').eq('order_number', orderId).single();
         if (error || !order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
         // Free regeneration means wiping the entire story and prompts and generating again
@@ -15,8 +15,7 @@ export async function POST(req: Request, context: any) {
         await supabase.from('orders').update({
             status: 'queued',
             story_data: {},
-            error_message: null
-        }).eq('id', orderId);
+        }).eq('order_number', orderId);
 
         await supabase.from('event_audit_log').insert({
             event_type: 'manual_override',

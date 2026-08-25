@@ -77,11 +77,11 @@ export class EmailService {
      */
     static async sendNotification(orderId: string, eventType: string, payload: any) {
         try {
-            // Find order by ID or order_number
+            // Find order by order_number or customer_id
             const { data: order } = await supabase
                 .from('orders')
                 .select('customer_id, subscription_id, order_number, shipping_details, story_data')
-                .or(`order_number.eq.${orderId},customer_id.eq.${orderId},id.eq.${orderId}`)
+                .or(`order_number.eq.${orderId},customer_id.eq.${orderId}`)
                 .limit(1)
                 .maybeSingle();
 

@@ -9,7 +9,7 @@ export async function POST(req: Request, context: any) {
         const adminId = req.headers.get('x-admin-id');
         if (!adminId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const { data: order, error } = await supabase.from('orders').select('story_data, status').eq('id', orderId).single();
+        const { data: order, error } = await supabase.from('orders').select('story_data, status').eq('order_number', orderId).single();
         if (error || !order || !order.story_data) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
         let storyData = order.story_data as any;
@@ -25,11 +25,11 @@ export async function POST(req: Request, context: any) {
 
         await supabase.from('orders').update({
             story_data: storyData,
-        }).eq('id', orderId);
+        }).eq('order_number', orderId);
 
         // Standard recompilation if it was ready
         if (order.status === 'awaiting_preview_approval' || order.status === 'softcopy_ready') {
-            await supabase.from('orders').update({ status: 'illustrations_ready' }).eq('id', orderId);
+            await supabase.from('orders').update({ status: 'illustrations_ready' }).eq('order_number', orderId);
             const { MasterScheduler } = await import('@/services/workers/scheduler');
             await MasterScheduler.dispatchJob(orderId, 'compilation');
         }

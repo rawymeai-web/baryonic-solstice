@@ -12,7 +12,7 @@ export async function POST(req: Request, context: any) {
         const { data: order, error } = await supabase
             .from('orders')
             .select('status')
-            .eq('id', orderId)
+            .eq('order_number', orderId)
             .single();
 
         if (error || !order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -21,8 +21,7 @@ export async function POST(req: Request, context: any) {
 
         await supabase.from('orders').update({
             status: 'on_hold',
-            error_message: 'Manually placed on hold by Admin'
-        }).eq('id', orderId);
+        }).eq('order_number', orderId);
 
         await supabase.from('event_audit_log').insert({
             event_type: 'manual_override',

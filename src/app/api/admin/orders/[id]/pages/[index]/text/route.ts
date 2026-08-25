@@ -10,7 +10,7 @@ export async function PATCH(req: Request, context: any) {
         const adminId = req.headers.get('x-admin-id');
         if (!adminId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const { data: order, error } = await supabase.from('orders').select('story_data, status').eq('id', orderId).single();
+        const { data: order, error } = await supabase.from('orders').select('story_data, status').eq('order_number', orderId).single();
         if (error || !order || !order.story_data) return NextResponse.json({ error: "Order or story data not found" }, { status: 404 });
 
         let storyData = order.story_data as any;
@@ -21,11 +21,11 @@ export async function PATCH(req: Request, context: any) {
         const oldText = storyData.pages[pageIndex].text;
         storyData.pages[pageIndex].text = newText;
 
-        await supabase.from('orders').update({ story_data: storyData }).eq('id', orderId);
+        await supabase.from('orders').update({ story_data: storyData }).eq('order_number', orderId);
 
         // If it was already compiled or awaiting preview, it needs to be recompiled
         if (order.status === 'awaiting_preview_approval' || order.status === 'softcopy_ready') {
-            await supabase.from('orders').update({ status: 'illustrations_ready' }).eq('id', orderId); // this will trigger recompilation conceptually
+            await supabase.from('orders').update({ status: 'illustrations_ready' }).eq('order_number', orderId); // this will trigger recompilation conceptually
             const { MasterScheduler } = await import('@/services/workers/scheduler');
             await MasterScheduler.dispatchJob(orderId, 'compilation');
         }

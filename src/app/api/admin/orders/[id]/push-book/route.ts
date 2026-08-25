@@ -7,13 +7,13 @@ export async function POST(req: Request, context: any) {
         const adminId = req.headers.get('x-admin-id');
         if (!adminId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const { data: order, error } = await supabase.from('orders').select('status, subscription_id').eq('id', orderId).single();
+        const { data: order, error } = await supabase.from('orders').select('status, subscription_id').eq('order_number', orderId).single();
         if (error || !order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
         // We can only push books that are successfully compiled but paused/waiting
         let newStatus = 'sent_to_print';
         if (order.status === 'awaiting_preview_approval' || order.status === 'softcopy_ready') {
-            await supabase.from('orders').update({ status: 'sent_to_print' }).eq('id', orderId);
+            await supabase.from('orders').update({ status: 'sent_to_print' }).eq('order_number', orderId);
 
             // Queue print handoff worker
             const { MasterScheduler } = await import('@/services/workers/scheduler');
