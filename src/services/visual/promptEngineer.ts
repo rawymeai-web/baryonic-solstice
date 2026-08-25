@@ -784,14 +784,14 @@ function assembleEnglishPromptV7_4(
 
     heroes.forEach((h, idx) => {
         const dnaIdx = (h as any).stylized_dna_image_index || (idx + 1);
-        const name = h.name || `Hero ${idx + 1}`;
+        const name = h.name || (h as any).hero_id || `Hero ${idx + 1}`;
         const ageVal = (h as any).age || (h as any).childAge || '';
         const ageDesc = ageVal ? ` (a ${ageVal}-year-old child)` : '';
         legendParts.push(`- Image ${dnaIdx}: Approved character reference for [[HERO_${idx + 1}]]${ageDesc}.`);
 
-        const clothing = (h as any).clothing ? `, wearing ${(h as any).clothing}` : '';
-        const features = (h as any).distinctive_features ? `, with ${(h as any).distinctive_features}` : '';
-        const hair = (h as any).hair ? `, ${(h as any).hair}` : '';
+        const clothing = h.clothing || (h as any).clothing_lock ? `, wearing ${h.clothing || (h as any).clothing_lock}` : '';
+        const features = h.distinctive_features || (h as any).accessory_lock ? `, with ${h.distinctive_features || (h as any).accessory_lock}` : '';
+        const hair = h.hair || (h as any).hair_lock ? `, ${h.hair || (h as any).hair_lock}` : '';
 
         likenessDirectives.push(`- [[HERO_${idx + 1}]] (${name}${ageDesc}): Transfer the exact recognizable face shape, skin tone, eye shape, and hairstyle directly from Image ${dnaIdx}${clothing}${features}. Keep their face structure and recognizable identity identical to Image ${dnaIdx}.`);
     });
@@ -801,7 +801,7 @@ function assembleEnglishPromptV7_4(
         : '';
 
     // Style Matching Directive
-    const stylePrompt = styleProfile?.prompt || styleProfile?.description || '';
+    const stylePrompt = styleProfile?.prompt || styleProfile?.description || styleProfile?.positive_style_lock || styleProfile?.style_name || '';
     const styleText = stylePrompt
         ? `ART STYLE MATCHING:\n- Render in the exact handcrafted art style and medium of the reference image(s): ${stylePrompt}. Do not simplify into flat anime or generic vector cartoon.`
         : '';
@@ -829,7 +829,7 @@ function assembleEnglishPromptV7_4(
         if (s.specific_location) details.push(`Location: ${cleanSetting(s.specific_location)}`);
         if (s.environment_type) details.push(`Environment: ${s.environment_type}`);
         if (s.time_of_day) details.push(`Time of Day: ${s.time_of_day}`);
-        if (s.mood) details.push(`Mood: ${mood}`);
+        if (s.mood) details.push(`Mood: ${s.mood}`);
         if (s.lighting) details.push(`Lighting: ${cleanSetting(s.lighting)}`);
         
         settingText = details.length > 0 

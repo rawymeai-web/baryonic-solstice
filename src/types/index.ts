@@ -301,24 +301,34 @@ export type StyleProfile = {
   line_treatment?: string;
   shading_treatment?: string;
   background_treatment?: string;
+  prompt?: string;
+  description?: string;
+  [key: string]: any;
 };
 
 export type HeroProfile = {
   hero_id: string;
+  name?: string;
+  age?: string | number;
+  childAge?: string | number;
   token: string;
   role: "primary" | "secondary" | "supporting";
   identity_anchor_image_index: number;
   stylized_dna_image_index?: number;
-  real_photo_role: "identity only";
-  stylized_reference_role?: "outfit and character design only";
-  likeness_rules: {
+  real_photo_role?: "identity only" | string;
+  stylized_reference_role?: "outfit and character design only" | string;
+  likeness_rules?: {
     preserve: string[];
     avoid: string[];
     translation_rule: string;
   };
+  clothing?: string;
   clothing_lock?: string;
+  hair?: string;
   hair_lock?: string;
   accessory_lock?: string;
+  distinctive_features?: string;
+  [key: string]: any;
 };
 
 export type SpreadHeroAction = {
