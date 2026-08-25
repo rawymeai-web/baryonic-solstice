@@ -218,7 +218,10 @@ export interface PreviewScreenProps {
 
 const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
     const [viewIndex, setViewIndex] = useState(0);
+    const [direction, setDirection] = useState<number>(1);
     const [viewMode, setViewMode] = useState<'presentation' | 'scroll'>('presentation');
+    const [isSpeaking, setIsSpeaking] = useState(false);
+
     const isPurchased = props.isPurchased ?? Boolean(
         props.storyData.orderId ||
         (props.storyData as any).orderNumber ||
@@ -227,6 +230,7 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
         ['confirmed', 'shipped', 'delivered', 'awaiting_preview_approval', 'softcopy_ready'].includes((props.storyData as any).status)
     );
     const t = (ar: string, en: string) => props.language === 'ar' ? ar : en;
+    const isAr = props.language === 'ar';
 
     const sortedSpreads = useMemo(() => {
         const s = [...(props.storyData.spreads || [])].sort((a, b) => a.spreadNumber - b.spreadNumber);
@@ -240,8 +244,97 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
         ];
     }, [sortedSpreads]);
 
-    const goNext = () => setViewIndex(i => Math.min(i + 1, views.length - 1));
-    const goPrev = () => setViewIndex(i => Math.max(i - 1, 0));
+    const goNext = () => {
+        if (viewIndex < views.length - 1) {
+            setDirection(1);
+            setViewIndex(i => i + 1);
+        }
+    };
+
+    const goPrev = () => {
+        if (viewIndex > 0) {
+            setDirection(-1);
+            setViewIndex(i => i - 1);
+        }
+    };
+
+    // AI Audio Story Narration
+    const handleToggleAudioReader = () => {
+        if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+        if (isSpeaking) {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+            return;
+        }
+
+        const currentView = views[viewIndex];
+        let textToRead = '';
+
+        if (currentView.type === 'cover') {
+            textToRead = `${props.storyData.title}. ${props.storyData.coverSubtitle || ''}`;
+        } else if (currentView.data) {
+            textToRead = [currentView.data.leftText, currentView.data.rightText].filter(Boolean).join('. ') || (currentView.data as any).text || '';
+        }
+
+        if (!textToRead) return;
+
+        window.speechSynthesis.cancel();
+        const cleanText = textToRead.replace(/<[^>]*>/g, '');
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = props.language === 'ar' ? 'ar-SA' : 'en-US';
+        utterance.rate = 0.88; // Gentle storybook pace
+
+        const voices = window.speechSynthesis.getVoices();
+        const matchingVoice = voices.find(v => v.lang.startsWith(props.language === 'ar' ? 'ar' : 'en'));
+        if (matchingVoice) utterance.voice = matchingVoice;
+
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+
+        window.speechSynthesis.speak(utterance);
+    };
+
+    // Cancel speech on slide change
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+        }
+    }, [viewIndex]);
+
+    // 3D Flip Variants
+    const flipVariants = {
+        initial: (dir: number) => ({
+            opacity: 0,
+            rotateY: dir > 0 ? (isAr ? 35 : -35) : (isAr ? -35 : 35),
+            transformOrigin: dir > 0 ? (isAr ? 'right center' : 'left center') : (isAr ? 'left center' : 'right center'),
+            scale: 0.96,
+            filter: 'blur(1px)',
+        }),
+        animate: {
+            opacity: 1,
+            rotateY: 0,
+            scale: 1,
+            filter: 'blur(0px)',
+            transition: {
+                duration: 0.65,
+                ease: [0.25, 1, 0.5, 1] as any
+            }
+        },
+        exit: (dir: number) => ({
+            opacity: 0,
+            rotateY: dir > 0 ? (isAr ? -35 : 35) : (isAr ? 35 : -35),
+            transformOrigin: dir > 0 ? (isAr ? 'left center' : 'right center') : (isAr ? 'right center' : 'left center'),
+            scale: 0.96,
+            filter: 'blur(1px)',
+            transition: {
+                duration: 0.45,
+                ease: [0.5, 0, 0.75, 0] as any
+            }
+        })
+    };
 
     return (
         <div className="min-h-screen bg-[#FFF9F0] pb-24 px-6 relative overflow-hidden">
@@ -255,10 +348,10 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
             {/* Header Controls */}
             <div className="max-w-7xl mx-auto pt-10 mb-16 relative z-50">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-8 glass-panel p-8 rounded-[3rem] shadow-2xl border-white/60 sticky top-8">
-                    <div className="flex items-center gap-8">
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-8">
                         <button 
                             onClick={props.onBack} 
-                            className="w-14 h-14 rounded-2xl glass-panel hover:bg-white flex items-center justify-center text-brand-navy transition-all active:scale-90"
+                            className="w-14 h-14 rounded-2xl glass-panel hover:bg-white flex items-center justify-center text-brand-navy transition-all active:scale-90 shadow-sm"
                         >
                             <span className="material-symbols-outlined font-black">arrow_back</span>
                         </button>
@@ -276,6 +369,21 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                                 {t('قائمة الصفحات', 'Scroll View')}
                             </button>
                         </div>
+
+                        {/* Audio Narrator Button */}
+                        <button
+                            onClick={handleToggleAudioReader}
+                            className={`px-5 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg ${
+                                isSpeaking 
+                                    ? 'bg-emerald-500 text-white animate-pulse shadow-emerald-500/30' 
+                                    : 'bg-brand-teal text-white hover:bg-brand-teal/90 shadow-brand-teal/20'
+                            }`}
+                        >
+                            <span className="material-symbols-outlined text-base">
+                                {isSpeaking ? 'pause_circle' : 'volume_up'}
+                            </span>
+                            {isSpeaking ? t('إيقاف القراءة', 'Pause Voice') : t('🔊 اقرأ لي', '🔊 Read to Me')}
+                        </button>
                     </div>
 
                     <div className="flex gap-4 w-full md:w-auto">
@@ -315,15 +423,17 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                                     <span className="material-symbols-outlined text-4xl font-black group-hover:-translate-x-1 transition-transform">chevron_left</span>
                                 </button>
                                 
-                                <div className="w-full aspect-[2/1.1] max-w-6xl">
-                                    <AnimatePresence mode="wait">
+                                <div className="w-full aspect-[2/1.1] max-w-6xl [perspective:1800px]">
+                                    <AnimatePresence mode="wait" custom={direction}>
                                         <motion.div
                                             key={viewIndex}
-                                            initial={{ opacity: 0, scale: 0.98 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 1.02 }}
-                                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                                            className="w-full h-full"
+                                            custom={direction}
+                                            variants={flipVariants}
+                                            initial="initial"
+                                            animate="animate"
+                                            exit="exit"
+                                            className="w-full h-full transform-gpu"
+                                            style={{ transformStyle: 'preserve-3d' }}
                                         >
                                             {views[viewIndex].type === 'cover' ? (
                                                 <CoverView storyData={props.storyData} language={props.language} isPurchased={isPurchased} onTitleChange={props.onTitleChange} />
