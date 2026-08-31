@@ -69,4 +69,35 @@ test_*.js
 /testProBanana.js
 /sync-from-frontend.ps1
 
-
+# Scratch & Debug artifacts
+*.txt
+*.html
+*.dump.json
+debug_*
+inspect_*
+hero*.txt
+temp_*.js
+print_*.ts
+run_local_*.ts
+regenerate_*.ts
+test_*.ts
+download_*.js
+extract_*.js
+fetch_*.js
+fetchPrompt.js
+compare.js
+fix_prompts.ts
+apply_v4_0_1_prompts.ts
+original_types.ts
+order_*.json
+plan_res_debug.json
+rwy_*.json
+debug_images/
+scripts/test_output/
+scripts/*.mjs
+scripts/*.js
+scripts/*.cjs
+scripts/*.ts
+get_dim.js
+last_gemini_payload_debug.json
+newest_order_debug.json

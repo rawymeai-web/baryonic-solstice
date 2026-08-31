@@ -8,6 +8,7 @@ import * as promptService from '../../services/promptService';
 import * as fileService from '../../services/fileService';
 import * as imageStore from '../../services/imageStore';
 import * as storageCleanup from '../../services/storageCleanupService';
+import * as csvExport from '../../services/csvExport';
 import type { Language, AdminOrder, AdminCustomer, OrderStatus, ProductSize, StoryTheme, AppSettings } from '../../types';
 import { OrderPreviewModal } from '../../components/admin/OrderPreviewModal';
 import { ShippingModal } from '../../components/admin/ShippingModal';
@@ -160,18 +161,37 @@ const GuidelinesView: React.FC = () => {
     );
 };
 
-const NavItem: React.FC<{ icon: string; label: string; onClick: () => void; isActive: boolean; }> = ({ icon, label, onClick, isActive }) => (
+const NavItem: React.FC<{ icon: string; label: string; onClick: () => void; isActive: boolean; isCollapsed?: boolean; }> = ({ icon, label, onClick, isActive, isCollapsed }) => (
     <button 
         onClick={onClick} 
-        className={`w-full flex items-center space-x-4 rtl:space-x-reverse px-5 py-4 rounded-2xl transition-all group ${isActive ? 'bg-brand-navy text-white shadow-2xl scale-[1.02]' : 'text-brand-navy/40 hover:bg-white hover:text-brand-navy'}`}
+        title={label}
+        className={`w-full flex items-center ${isCollapsed ? 'justify-center px-3 py-3.5' : 'space-x-4 rtl:space-x-reverse px-5 py-4'} rounded-2xl transition-all group ${isActive ? 'bg-brand-navy text-white shadow-2xl scale-[1.02]' : 'text-brand-navy/40 hover:bg-white hover:text-brand-navy'}`}
     >
         <span className={`material-symbols-outlined text-2xl transition-transform group-hover:scale-110 ${isActive ? 'text-brand-orange' : 'text-brand-navy/30'}`}>{icon}</span>
-        <span className={`text-[10px] font-black uppercase tracking-[0.15em] ${isActive ? 'text-white' : ''}`}>{label}</span>
+        {!isCollapsed && <span className={`text-[10px] font-black uppercase tracking-[0.15em] ${isActive ? 'text-white' : ''}`}>{label}</span>}
     </button>
 );
 
 const AdminDashboard: React.FC<AdminScreenProps> = ({ onExit, onEditOrder, language }) => {
     const [view, setView] = useState<AdminView>('orders');
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+        try {
+            return localStorage.getItem('admin_sidebar_collapsed') === 'true';
+        } catch (e) {
+            return false;
+        }
+    });
+
+    const toggleSidebar = () => {
+        setIsSidebarCollapsed(prev => {
+            const next = !prev;
+            try {
+                localStorage.setItem('admin_sidebar_collapsed', String(next));
+            } catch (e) {}
+            return next;
+        });
+    };
+
     const t = (ar: string, en: string) => language === 'ar' ? ar : en;
     const [orders, setOrders] = useState<AdminOrder[]>([]);
     const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -226,52 +246,81 @@ const AdminDashboard: React.FC<AdminScreenProps> = ({ onExit, onEditOrder, langu
     return (
         <div className="min-h-screen bg-[#FFF9F0] flex flex-col md:flex-row font-sans relative overflow-hidden">
 
-            {/* Premium Sidebar */}
-            <aside className="w-full md:w-80 glass-panel border-r-0 md:border-r border-white/60 p-8 space-y-12 flex flex-col shrink-0 z-20 relative">
-                <div className="flex items-center gap-4 px-2">
-                   <Logo />
-                   <div className="h-8 w-[2px] bg-brand-navy/10"></div>
-                   <span className="text-[10px] font-black text-brand-navy/40 uppercase tracking-widest">Core OS</span>
+            {/* Premium Minimizable Sidebar */}
+            <aside className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-full md:w-24 p-4 space-y-6' : 'w-full md:w-80 p-8 space-y-10'} glass-panel border-r-0 md:border-r border-white/60 flex flex-col shrink-0 z-20 relative`}>
+                <div className={`flex items-center ${isSidebarCollapsed ? 'flex-col gap-3 justify-center' : 'justify-between'} px-2`}>
+                    <div className="flex items-center gap-3">
+                        <Logo showText={!isSidebarCollapsed} className={isSidebarCollapsed ? "h-10 w-auto" : "h-12 w-auto"} />
+                        {!isSidebarCollapsed && (
+                            <>
+                                <div className="h-8 w-[2px] bg-brand-navy/10"></div>
+                                <span className="text-[10px] font-black text-brand-navy/40 uppercase tracking-widest">Core OS</span>
+                            </>
+                        )}
+                    </div>
+                    <button 
+                        onClick={toggleSidebar}
+                        className="w-8 h-8 rounded-xl bg-brand-navy/5 hover:bg-brand-navy/10 text-brand-navy/60 hover:text-brand-navy flex items-center justify-center transition-all shadow-sm"
+                        title={isSidebarCollapsed ? "Expand Sidebar" : "Minimize Sidebar"}
+                    >
+                        <span className="material-symbols-outlined text-lg">
+                            {isSidebarCollapsed ? 'chevron_right' : 'chevron_left'}
+                        </span>
+                    </button>
                 </div>
 
-                <nav className="space-y-2 flex-grow overflow-y-auto no-scrollbar pr-2">
-                    <p className="text-[9px] font-black text-brand-navy/20 uppercase tracking-[0.3em] px-5 mb-4">Operations</p>
-                    <NavItem icon="dashboard" label="Performance" onClick={() => setView('orders')} isActive={view === 'orders'} />
-                    <NavItem icon="group" label="Customers" onClick={() => setView('customers')} isActive={view === 'customers'} />
-                    <NavItem icon="loyalty" label="Subscriptions" onClick={() => setView('subscriptions')} isActive={view === 'subscriptions'} />
+                <nav className="space-y-2 flex-grow overflow-y-auto no-scrollbar pr-1">
+                    {!isSidebarCollapsed && <p className="text-[9px] font-black text-brand-navy/20 uppercase tracking-[0.3em] px-5 mb-4">Operations</p>}
+                    {isSidebarCollapsed && <div className="h-px bg-brand-navy/5 my-2"></div>}
+                    <NavItem icon="dashboard" label="Performance" onClick={() => setView('orders')} isActive={view === 'orders'} isCollapsed={isSidebarCollapsed} />
+                    <NavItem icon="group" label="Customers" onClick={() => setView('customers')} isActive={view === 'customers'} isCollapsed={isSidebarCollapsed} />
+                    <NavItem icon="loyalty" label="Subscriptions" onClick={() => setView('subscriptions')} isActive={view === 'subscriptions'} isCollapsed={isSidebarCollapsed} />
                     
-                    <p className="text-[9px] font-black text-brand-navy/20 uppercase tracking-[0.3em] px-5 mt-10 mb-4">Engine Logic</p>
-                    <NavItem icon="menu_book" label="Guidelines" onClick={() => setView('bible')} isActive={view === 'bible'} />
-                    <NavItem icon="palette" label="Themes" onClick={() => setView('themes')} isActive={view === 'themes'} />
-                    <NavItem icon="inventory_2" label="Products" onClick={() => setView('products')} isActive={view === 'products'} />
+                    {!isSidebarCollapsed && <p className="text-[9px] font-black text-brand-navy/20 uppercase tracking-[0.3em] px-5 mt-8 mb-4">Engine Logic</p>}
+                    {isSidebarCollapsed && <div className="h-px bg-brand-navy/5 my-3"></div>}
+                    <NavItem icon="menu_book" label="Guidelines" onClick={() => setView('bible')} isActive={view === 'bible'} isCollapsed={isSidebarCollapsed} />
+                    <NavItem icon="palette" label="Themes" onClick={() => setView('themes')} isActive={view === 'themes'} isCollapsed={isSidebarCollapsed} />
+                    <NavItem icon="inventory_2" label="Products" onClick={() => setView('products')} isActive={view === 'products'} isCollapsed={isSidebarCollapsed} />
                     
-                    <p className="text-[9px] font-black text-brand-navy/20 uppercase tracking-[0.3em] px-5 mt-10 mb-4">Laboratory</p>
-                    <NavItem icon="biotech" label="Visual Lab" onClick={() => setView('themePreview')} isActive={view === 'themePreview'} />
-                    <NavItem icon="terminal" label="Tech Prompts" onClick={() => setView('prompts')} isActive={view === 'prompts'} />
-                    <NavItem icon="hub" label="Stitching" onClick={() => setView('stitching')} isActive={view === 'stitching'} />
+                    {!isSidebarCollapsed && <p className="text-[9px] font-black text-brand-navy/20 uppercase tracking-[0.3em] px-5 mt-8 mb-4">Laboratory</p>}
+                    {isSidebarCollapsed && <div className="h-px bg-brand-navy/5 my-3"></div>}
+                    <NavItem icon="biotech" label="Visual Lab" onClick={() => setView('themePreview')} isActive={view === 'themePreview'} isCollapsed={isSidebarCollapsed} />
+                    <NavItem icon="terminal" label="Tech Prompts" onClick={() => setView('prompts')} isActive={view === 'prompts'} isCollapsed={isSidebarCollapsed} />
+                    <NavItem icon="hub" label="Stitching" onClick={() => setView('stitching')} isActive={view === 'stitching'} isCollapsed={isSidebarCollapsed} />
                     
-                    <p className="text-[9px] font-black text-brand-navy/20 uppercase tracking-[0.3em] px-5 mt-10 mb-4">System</p>
-                    <NavItem icon="database" label="Metadata" onClick={() => setView('metadata')} isActive={view === 'metadata'} />
-                    <NavItem icon="delete_sweep" label="Cleanup" onClick={() => setView('storage')} isActive={view === 'storage'} />
-                    <NavItem icon="settings" label="Config" onClick={() => setView('settings')} isActive={view === 'settings'} />
+                    {!isSidebarCollapsed && <p className="text-[9px] font-black text-brand-navy/20 uppercase tracking-[0.3em] px-5 mt-8 mb-4">System</p>}
+                    {isSidebarCollapsed && <div className="h-px bg-brand-navy/5 my-3"></div>}
+                    <NavItem icon="database" label="Metadata" onClick={() => setView('metadata')} isActive={view === 'metadata'} isCollapsed={isSidebarCollapsed} />
+                    <NavItem icon="delete_sweep" label="Cleanup" onClick={() => setView('storage')} isActive={view === 'storage'} isCollapsed={isSidebarCollapsed} />
+                    <NavItem icon="settings" label="Config" onClick={() => setView('settings')} isActive={view === 'settings'} isCollapsed={isSidebarCollapsed} />
                 </nav>
 
-                <div className="pt-8 border-t border-brand-navy/5">
+                <div className="pt-6 border-t border-brand-navy/5">
                     <button 
                         onClick={onExit} 
-                        className="w-full py-4 rounded-2xl bg-brand-navy/5 text-brand-navy hover:bg-brand-navy hover:text-white transition-all text-[10px] uppercase font-black tracking-widest flex items-center justify-center gap-3 group"
+                        title="Exit Terminal"
+                        className={`w-full py-3.5 rounded-2xl bg-brand-navy/5 text-brand-navy hover:bg-brand-navy hover:text-white transition-all text-[10px] uppercase font-black tracking-widest flex items-center justify-center gap-3 group`}
                     >
                         <span className="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">logout</span>
-                        Exit Terminal
+                        {!isSidebarCollapsed && <span>Exit Terminal</span>}
                     </button>
                 </div>
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 p-8 md:p-14 space-y-12 overflow-y-auto max-h-screen no-scrollbar relative z-30">
+            <main className="flex-1 p-6 md:p-12 space-y-10 overflow-y-auto max-h-screen no-scrollbar relative z-30 transition-all duration-300">
                 <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-20">
                     <div className="space-y-2">
                         <div className="flex items-center gap-4">
+                           {isSidebarCollapsed && (
+                               <button
+                                   onClick={toggleSidebar}
+                                   className="w-12 h-12 rounded-2xl bg-white shadow-lg border border-brand-navy/10 text-brand-navy flex items-center justify-center hover:bg-brand-navy hover:text-white transition-all transform hover:scale-105"
+                                   title="Expand Sidebar"
+                               >
+                                   <span className="material-symbols-outlined text-2xl font-black">menu</span>
+                               </button>
+                           )}
                            <div className="w-12 h-12 rounded-2xl bg-brand-orange text-white flex items-center justify-center shadow-xl shadow-brand-orange/30 transform hover:rotate-12 transition-transform">
                               <span className="material-symbols-outlined text-2xl font-black">settings_input_component</span>
                            </div>
@@ -398,7 +447,9 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     // isLegacyMode / isResume → when true the EditorScreen auto-runs the pipeline live
     const [isLegacyMode, setIsLegacyMode] = useState(false);
     const [isResumeMode, setIsResumeMode] = useState(false);
-    const [activeTab, setActiveTab] = useState<'confirmed' | 'drafts'>('confirmed');
+    const [activeTab, setActiveTab] = useState<'confirmed' | 'drafts' | 'all'>('confirmed');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
     const [isExporting, setIsExporting] = useState<string | null>(null);
@@ -412,6 +463,57 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
         const sorted = [...orders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
         setAllOrders(sorted);
     }, [orders]);
+
+    const displayOrders = React.useMemo(() => {
+        return allOrders.filter(o => {
+            // 1. Tab filter
+            if (activeTab === 'confirmed' && o.status === 'Draft Intent') return false;
+            if (activeTab === 'drafts' && o.status !== 'Draft Intent') return false;
+
+            // 2. Status filter
+            if (statusFilter !== 'all') {
+                if (statusFilter === 'processing_group') {
+                    if (!['Processing', 'processing', 'story_generating', 'character_generating', 'illustrations_generating'].includes(o.status)) return false;
+                } else if (statusFilter === 'paid_group') {
+                    if (!['paid', 'paid_confirmed', 'queued', 'New Order'].includes(o.status)) return false;
+                } else if (statusFilter === 'ready_group') {
+                    if (!['story_ready', 'character_ready', 'illustrations_ready', 'softcopy_ready', 'awaiting_preview_approval'].includes(o.status)) return false;
+                } else if (statusFilter === 'fulfilled_group') {
+                    if (!['shipped', 'delivered', 'Completed'].includes(o.status)) return false;
+                } else if (o.status !== statusFilter) {
+                    return false;
+                }
+            }
+
+            // 3. Search query
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase().trim();
+                const orderNum = (o.orderNumber || '').toLowerCase();
+                const customerName = (o.customerName || '').toLowerCase();
+                const email = (o.shippingDetails?.email || o.storyData?.parentEmail || '').toLowerCase();
+                const phone = (o.shippingDetails?.phone || '').toLowerCase();
+                const city = (o.shippingDetails?.city || '').toLowerCase();
+                const country = (o.shippingDetails?.country || '').toLowerCase();
+                const title = (o.storyData?.title || '').toLowerCase();
+                const theme = (o.storyData?.theme || '').toLowerCase();
+                const childName = (o.storyData?.childName || '').toLowerCase();
+
+                const matches = orderNum.includes(q) ||
+                    customerName.includes(q) ||
+                    email.includes(q) ||
+                    phone.includes(q) ||
+                    city.includes(q) ||
+                    country.includes(q) ||
+                    title.includes(q) ||
+                    theme.includes(q) ||
+                    childName.includes(q);
+
+                if (!matches) return false;
+            }
+
+            return true;
+        });
+    }, [allOrders, activeTab, statusFilter, searchQuery]);
 
     const handleQuickNotifyPreview = async (orderNumber: string) => {
         setNotifyingPreviewId(orderNumber);
@@ -580,10 +682,6 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
         }
     };
 
-    const displayOrders = allOrders.filter(o =>
-        activeTab === 'confirmed' ? o.status !== 'Draft Intent' : o.status === 'Draft Intent'
-    );
-
     return (
         <div className="space-y-4 animate-enter-forward">
             {previewingOrder && <OrderPreviewModal order={previewingOrder} onClose={() => setPreviewingOrder(null)} onRefresh={refreshOrders} language={language} />}
@@ -674,50 +772,143 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                     />
                 </div>
             )}
-            
-            <div className="flex flex-col sm:flex-row justify-between items-center px-4 gap-6">
-                <div className="flex bg-white/40 backdrop-blur-xl p-2 rounded-2xl border border-white/50 shadow-inner">
-                    <button 
-                        onClick={() => setActiveTab('confirmed')} 
-                        className={`whitespace-nowrap px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'confirmed' ? 'bg-brand-navy text-white shadow-xl scale-[1.02]' : 'text-brand-navy/40 hover:text-brand-navy'}`}
-                    >
-                        Confirmed Orders
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('drafts')} 
-                        className={`whitespace-nowrap px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'drafts' ? 'bg-brand-navy text-white shadow-xl scale-[1.02]' : 'text-brand-navy/40 hover:text-brand-navy'}`}
-                    >
-                        Incomplete Drafts
-                    </button>
+
+            <div className="space-y-4 px-4">
+                {/* Top Actions & Filters Row */}
+                <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
+                    {/* Left: Tab Switcher */}
+                    <div className="flex bg-white/50 backdrop-blur-xl p-1.5 rounded-2xl border border-white/60 shadow-sm shrink-0">
+                        <button 
+                            onClick={() => setActiveTab('confirmed')} 
+                            className={`whitespace-nowrap px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${activeTab === 'confirmed' ? 'bg-brand-navy text-white shadow-md scale-[1.02]' : 'text-brand-navy/50 hover:text-brand-navy'}`}
+                        >
+                            Confirmed
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('drafts')} 
+                            className={`whitespace-nowrap px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${activeTab === 'drafts' ? 'bg-brand-navy text-white shadow-md scale-[1.02]' : 'text-brand-navy/50 hover:text-brand-navy'}`}
+                        >
+                            Drafts
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('all')} 
+                            className={`whitespace-nowrap px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${activeTab === 'all' ? 'bg-brand-navy text-white shadow-md scale-[1.02]' : 'text-brand-navy/50 hover:text-brand-navy'}`}
+                        >
+                            All ({allOrders.length})
+                        </button>
+                    </div>
+
+                    {/* Right: Quick Tool Actions */}
+                    <div className="flex flex-wrap items-center justify-end gap-2.5">
+                        <button 
+                            onClick={() => csvExport.exportOrdersToCsv(displayOrders)} 
+                            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md text-[9px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                            title="Export filtered orders to a clean CSV file"
+                        >
+                            <span className="material-symbols-outlined text-base">download</span>
+                            Export CSV ({displayOrders.length})
+                        </button>
+                        <button 
+                            onClick={() => setIsBulkShippingOpen(true)} 
+                            className="px-5 py-2.5 rounded-xl bg-brand-orange text-white shadow-md text-[9px] font-black uppercase tracking-[0.15em] hover:bg-brand-orange/90 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95"
+                        >
+                            <span className="material-symbols-outlined text-base">local_shipping</span>
+                            Bulk Shipping
+                        </button>
+                        <button 
+                            onClick={async () => {
+                                if (confirm("Sync all local orders to DB?")) {
+                                    const count = await adminService.syncLocalOrders();
+                                    alert(`Synced ${count} orders to Cloud.`);
+                                    refreshOrders();
+                                }
+                            }} 
+                            className="px-4 py-2.5 rounded-xl glass-panel border-white/40 text-[9px] font-black uppercase tracking-[0.15em] text-brand-orange hover:bg-brand-orange hover:text-white transition-all flex items-center gap-1.5"
+                        >
+                            <span className="material-symbols-outlined text-base">cloud_sync</span>
+                            Sync
+                        </button>
+                        <button 
+                            onClick={handleCreateTestOrder} 
+                            className="px-4 py-2.5 rounded-xl glass-panel border-white/40 text-[9px] font-black uppercase tracking-[0.15em] text-brand-navy/40 hover:bg-brand-navy hover:text-white transition-all flex items-center gap-1.5"
+                        >
+                            <span className="material-symbols-outlined text-base">add_circle</span>
+                            Test Order
+                        </button>
+                    </div>
                 </div>
-                <div className="flex flex-wrap justify-center sm:justify-end w-full sm:w-auto gap-3">
-                    <button 
-                        onClick={() => setIsBulkShippingOpen(true)} 
-                        className="px-6 py-3 rounded-xl bg-brand-orange text-white shadow-lg text-[9px] font-black uppercase tracking-[0.2em] hover:bg-brand-orange/90 transition-all flex items-center gap-2"
-                    >
-                        <span className="material-symbols-outlined text-sm">local_shipping</span>
-                        Bulk Shipping (Excel/CSV)
-                    </button>
-                    <button 
-                        onClick={async () => {
-                            if (confirm("Sync all local orders to DB?")) {
-                                const count = await adminService.syncLocalOrders();
-                                alert(`Synced ${count} orders to Cloud.`);
-                                refreshOrders();
-                            }
-                        }} 
-                        className="px-6 py-3 rounded-xl glass-panel border-white/40 text-[9px] font-black uppercase tracking-[0.2em] text-brand-orange hover:bg-brand-orange hover:text-white transition-all flex items-center gap-2"
-                    >
-                        <span className="material-symbols-outlined text-sm">cloud_sync</span>
-                        Cloud Sync
-                    </button>
-                    <button 
-                        onClick={handleCreateTestOrder} 
-                        className="px-6 py-3 rounded-xl glass-panel border-white/40 text-[9px] font-black uppercase tracking-[0.2em] text-brand-navy/40 hover:bg-brand-navy hover:text-white transition-all flex items-center gap-2"
-                    >
-                        <span className="material-symbols-outlined text-sm">add_circle</span>
-                        Generate Debug Order
-                    </button>
+
+                {/* Second Row: Search Bar & Status Filter Dropdown */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Real-time Search Input */}
+                    <div className="relative flex-1 group">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-brand-navy/30 group-focus-within:text-brand-orange transition-colors text-lg">
+                            search
+                        </span>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search by Order #, Customer, Email, Phone, Title, Theme, Child..."
+                            className="w-full pl-11 pr-10 py-3 bg-white/70 glass-panel border-white/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all text-xs font-bold text-brand-navy placeholder:text-brand-navy/30 shadow-sm"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs w-5 h-5 flex items-center justify-center rounded-full bg-gray-100"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Status Filter Dropdown */}
+                    <div className="relative sm:w-64 shrink-0">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="w-full appearance-none pl-4 pr-10 py-3 bg-white/70 glass-panel border-white/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all text-xs font-black uppercase tracking-wider text-brand-navy cursor-pointer shadow-sm"
+                        >
+                            <option value="all">⚡ All Statuses</option>
+                            <optgroup label="Status Groups">
+                                <option value="paid_group">💰 Paid & Queued</option>
+                                <option value="processing_group">⚙️ Generating / Processing</option>
+                                <option value="ready_group">✨ Ready / Softcopy</option>
+                                <option value="fulfilled_group">📦 Shipped & Completed</option>
+                            </optgroup>
+                            <optgroup label="Specific Pipeline Status">
+                                <option value="New Order">New Order</option>
+                                <option value="paid_confirmed">Paid (Confirmed)</option>
+                                <option value="paid">Paid</option>
+                                <option value="queued">Queued</option>
+                                <option value="Processing">Processing</option>
+                                <option value="story_generating">Story Generating</option>
+                                <option value="story_ready">Story Ready</option>
+                                <option value="character_generating">Character Generating</option>
+                                <option value="character_ready">Character Ready</option>
+                                <option value="illustrations_generating">Illustrations Generating</option>
+                                <option value="illustrations_ready">Illustrations Ready</option>
+                                <option value="book_compiling">Book Compiling</option>
+                                <option value="softcopy_ready">Softcopy Ready</option>
+                                <option value="awaiting_preview_approval">Book Ready (Customer Notified)</option>
+                                <option value="shipped">Shipped</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Draft Intent">Draft Intent</option>
+                                <option value="failed">Failed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </optgroup>
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-navy/30 pointer-events-none text-base">
+                            filter_list
+                        </span>
+                    </div>
+
+                    {/* Result count readout */}
+                    <div className="flex items-center gap-2 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-brand-navy/40 whitespace-nowrap bg-white/40 rounded-xl border border-white/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse" />
+                        <span>Showing {displayOrders.length} of {allOrders.length}</span>
+                    </div>
                 </div>
             </div>
 
@@ -925,6 +1116,7 @@ const ThemesView: React.FC<{ language: Language }> = ({ language }) => {
     const [themes, setThemes] = useState<StoryTheme[]>([]);
     const [editingTheme, setEditingTheme] = useState<StoryTheme | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [search, setSearch] = useState('');
 
     useEffect(() => { adminService.getThemes().then(setThemes); }, []);
 
@@ -933,20 +1125,59 @@ const ThemesView: React.FC<{ language: Language }> = ({ language }) => {
         adminService.getThemes().then(setThemes);
         setIsModalOpen(false);
     };
+
+    const filtered = themes.filter(t => {
+        if (!search.trim()) return true;
+        const q = search.toLowerCase();
+        const enTitle = (t.title?.en || '').toLowerCase();
+        const arTitle = (t.title?.ar || '').toLowerCase();
+        const id = (t.id || '').toLowerCase();
+        const cat = (t.category || '').toLowerCase();
+        return enTitle.includes(q) || arTitle.includes(q) || id.includes(q) || cat.includes(q);
+    });
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-end px-4">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end px-4 gap-4">
                 <div className="space-y-1">
                     <span className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.3em]">Content Architecture</span>
                     <h2 className="text-4xl font-black text-brand-navy uppercase tracking-tighter">Story Frameworks</h2>
                 </div>
-                <button 
-                    onClick={() => { setEditingTheme(null); setIsModalOpen(true); }} 
-                    className="px-8 py-4 bg-brand-orange text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-brand-orange/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
-                >
-                    <span className="material-symbols-outlined text-xl">architecture</span>
-                    Construct New Theme
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                    <button 
+                        onClick={() => csvExport.exportThemesToCsv(filtered)} 
+                        className="px-5 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg text-[9px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                        title="Export themes list to CSV"
+                    >
+                        <span className="material-symbols-outlined text-base">download</span>
+                        Export CSV ({filtered.length})
+                    </button>
+                    <div className="relative group flex-1 sm:w-64">
+                        <input 
+                            type="text" 
+                            placeholder="Search Themes..." 
+                            value={search} 
+                            onChange={e => setSearch(e.target.value)} 
+                            className="pl-11 pr-8 py-3.5 bg-white/40 glass-panel border-white/60 rounded-2xl outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all text-xs font-bold text-brand-navy placeholder:text-brand-navy/30 w-full"
+                        />
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-brand-navy/30 group-focus-within:text-brand-orange transition-colors text-lg">search</span>
+                        {search && (
+                            <button
+                                onClick={() => setSearch('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs w-5 h-5 flex items-center justify-center rounded-full bg-gray-100"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+                    <button 
+                        onClick={() => { setEditingTheme(null); setIsModalOpen(true); }} 
+                        className="px-6 py-3.5 bg-brand-orange text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] shadow-xl shadow-brand-orange/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                        <span className="material-symbols-outlined text-lg">architecture</span>
+                        New Theme
+                    </button>
+                </div>
             </div>
             
             {isModalOpen && <ThemeEditorModal theme={editingTheme} onSave={handleSave} onClose={() => setIsModalOpen(false)} />}
@@ -962,7 +1193,7 @@ const ThemesView: React.FC<{ language: Language }> = ({ language }) => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-brand-navy/5 bg-white/20">
-                        {themes.map(t => (
+                        {filtered.map(t => (
                             <tr key={t.id} className="group hover:bg-white/40 transition-colors">
                                 <td className="px-10 py-8">
                                     <div className="flex items-center gap-6">
@@ -1007,6 +1238,7 @@ const ProductsView: React.FC = () => {
     const [products, setProducts] = useState<ProductSize[]>([]);
     const [editingProduct, setEditingProduct] = useState<ProductSize | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [search, setSearch] = useState('');
 
     useEffect(() => { adminService.getProductSizes().then(setProducts); }, []);
 
@@ -1016,20 +1248,56 @@ const ProductsView: React.FC = () => {
         setIsModalOpen(false);
     };
 
+    const filtered = products.filter(p => {
+        if (!search.trim()) return true;
+        const q = search.toLowerCase();
+        const name = (p.name || '').toLowerCase();
+        const id = (p.id || '').toLowerCase();
+        return name.includes(q) || id.includes(q);
+    });
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-end px-4">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end px-4 gap-4">
                 <div className="space-y-1">
                     <span className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.3em]">Logistics Intelligence</span>
                     <h2 className="text-4xl font-black text-brand-navy uppercase tracking-tighter">Product Catalog</h2>
                 </div>
-                <button 
-                    onClick={() => { setEditingProduct(null); setIsModalOpen(true); }} 
-                    className="px-8 py-4 bg-brand-navy text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-brand-navy/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
-                >
-                    <span className="material-symbols-outlined text-xl">inventory_2</span>
-                    Register New SKU
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                    <button 
+                        onClick={() => csvExport.exportProductsToCsv(filtered)} 
+                        className="px-5 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg text-[9px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                        title="Export product catalog to CSV"
+                    >
+                        <span className="material-symbols-outlined text-base">download</span>
+                        Export CSV ({filtered.length})
+                    </button>
+                    <div className="relative group flex-1 sm:w-64">
+                        <input 
+                            type="text" 
+                            placeholder="Search Products..." 
+                            value={search} 
+                            onChange={e => setSearch(e.target.value)} 
+                            className="pl-11 pr-8 py-3.5 bg-white/40 glass-panel border-white/60 rounded-2xl outline-none focus:ring-4 focus:ring-brand-navy/10 focus:border-brand-navy transition-all text-xs font-bold text-brand-navy placeholder:text-brand-navy/30 w-full"
+                        />
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-brand-navy/30 group-focus-within:text-brand-navy transition-colors text-lg">search</span>
+                        {search && (
+                            <button
+                                onClick={() => setSearch('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs w-5 h-5 flex items-center justify-center rounded-full bg-gray-100"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+                    <button 
+                        onClick={() => { setEditingProduct(null); setIsModalOpen(true); }} 
+                        className="px-6 py-3.5 bg-brand-navy text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.15em] shadow-xl shadow-brand-navy/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                    >
+                        <span className="material-symbols-outlined text-lg">inventory_2</span>
+                        Register SKU
+                    </button>
+                </div>
             </div>
 
             {isModalOpen && <ProductEditorModal product={editingProduct} onSave={handleSave} onClose={() => setIsModalOpen(false)} />}
@@ -1045,7 +1313,7 @@ const ProductsView: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-brand-navy/5 bg-white/20">
-                        {products.map(p => (
+                        {filtered.map(p => (
                             <tr key={p.id} className="group hover:bg-white/40 transition-colors">
                                 <td className="px-10 py-8">
                                     <div className="flex items-center gap-6">
@@ -1067,7 +1335,7 @@ const ProductsView: React.FC = () => {
                                 <td className="px-10 py-8">
                                     <div className="flex items-center gap-3 text-brand-navy/60">
                                         <span className="material-symbols-outlined text-sm">square_foot</span>
-                                        <span className="text-xs font-bold">{p.page.widthCm} x {p.page.heightCm} cm</span>
+                                        <span className="text-xs font-bold">{p.page?.widthCm || 0} x {p.page?.heightCm || 0} cm</span>
                                     </div>
                                 </td>
                                 <td className="px-10 py-8">
@@ -1774,25 +2042,45 @@ const CustomersView: React.FC = () => {
     const filtered = customers.filter(c => 
         c.email?.toLowerCase().includes(search.toLowerCase()) || 
         c.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-        c.name?.toLowerCase().includes(search.toLowerCase())
+        c.name?.toLowerCase().includes(search.toLowerCase()) ||
+        c.phone?.toLowerCase().includes(search.toLowerCase()) ||
+        c.id?.toLowerCase().includes(search.toLowerCase())
     );
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-end px-4">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end px-4 gap-4">
                 <div className="space-y-1">
                     <span className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.3em]">Identity Hub</span>
                     <h2 className="text-4xl font-black text-brand-navy uppercase tracking-tighter">Customer Directory</h2>
                 </div>
-                <div className="relative group">
-                    <input 
-                        type="text" 
-                        placeholder="Search Identity..." 
-                        value={search} 
-                        onChange={e => setSearch(e.target.value)} 
-                        className="pl-12 pr-6 py-4 bg-white/40 glass-panel border-white/60 rounded-2xl outline-none focus:ring-4 focus:ring-brand-teal/10 focus:border-brand-teal transition-all text-sm font-black text-brand-navy placeholder:text-brand-navy/20 w-80"
-                    />
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-brand-navy/30 group-focus-within:text-brand-teal transition-colors">person_search</span>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => csvExport.exportCustomersToCsv(filtered)} 
+                        className="px-5 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg text-[9px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                        title="Export customer list to CSV"
+                    >
+                        <span className="material-symbols-outlined text-base">download</span>
+                        Export CSV ({filtered.length})
+                    </button>
+                    <div className="relative group flex-1 sm:w-80">
+                        <input 
+                            type="text" 
+                            placeholder="Search by Name, Email, Phone, ID..." 
+                            value={search} 
+                            onChange={e => setSearch(e.target.value)} 
+                            className="pl-12 pr-6 py-3.5 bg-white/40 glass-panel border-white/60 rounded-2xl outline-none focus:ring-4 focus:ring-brand-teal/10 focus:border-brand-teal transition-all text-xs font-bold text-brand-navy placeholder:text-brand-navy/30 w-full"
+                        />
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-brand-navy/30 group-focus-within:text-brand-teal transition-colors">person_search</span>
+                        {search && (
+                            <button
+                                onClick={() => setSearch('')}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs w-5 h-5 flex items-center justify-center rounded-full bg-gray-100"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -1861,16 +2149,27 @@ const CustomersView: React.FC = () => {
 const SubscriptionsView: React.FC = () => {
     const [subs, setSubs] = useState<any[]>([]);
     const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     useEffect(() => {
         adminService.getSubscriptions().then(setSubs);
     }, []);
 
-    const filtered = subs.filter(s => 
-        s.customerEmail?.toLowerCase().includes(search.toLowerCase()) || 
-        s.customer?.email?.toLowerCase().includes(search.toLowerCase()) ||
-        s.orderNumber?.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = subs.filter(s => {
+        if (statusFilter !== 'all' && s.status?.toLowerCase() !== statusFilter.toLowerCase()) {
+            return false;
+        }
+        if (search.trim()) {
+            const q = search.toLowerCase();
+            const email = (s.customerEmail || s.customer?.email || '').toLowerCase();
+            const orderNo = (s.orderNumber || '').toLowerCase();
+            const id = (s.id || '').toLowerCase();
+            const plan = (s.plan || '').toLowerCase();
+            const status = (s.status || '').toLowerCase();
+            return email.includes(q) || orderNo.includes(q) || id.includes(q) || plan.includes(q) || status.includes(q);
+        }
+        return true;
+    });
 
     const getStatusStyle = (status: string) => {
         switch (status?.toLowerCase()) {
@@ -1883,20 +2182,57 @@ const SubscriptionsView: React.FC = () => {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-end px-4">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-end px-4 gap-4">
                 <div className="space-y-1">
                     <span className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.3em]">Economic Layer</span>
                     <h2 className="text-4xl font-black text-brand-navy uppercase tracking-tighter">Subscription Registry</h2>
                 </div>
-                <div className="relative group">
-                    <input 
-                        type="text" 
-                        placeholder="Search Registry..." 
-                        value={search} 
-                        onChange={e => setSearch(e.target.value)} 
-                        className="pl-12 pr-6 py-4 bg-white/40 glass-panel border-white/60 rounded-2xl outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all text-sm font-black text-brand-navy placeholder:text-brand-navy/20 w-80"
-                    />
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-brand-navy/30 group-focus-within:text-brand-orange transition-colors">history_edu</span>
+                <div className="flex flex-wrap items-center gap-3">
+                    <button 
+                        onClick={() => csvExport.exportSubscriptionsToCsv(filtered)} 
+                        className="px-5 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg text-[9px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                        title="Export subscriptions list to CSV"
+                    >
+                        <span className="material-symbols-outlined text-base">download</span>
+                        Export CSV ({filtered.length})
+                    </button>
+                    
+                    {/* Status filter */}
+                    <div className="relative">
+                        <select
+                            value={statusFilter}
+                            onChange={e => setStatusFilter(e.target.value)}
+                            className="appearance-none pl-4 pr-10 py-3.5 bg-white/70 glass-panel border-white/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all text-xs font-black uppercase tracking-wider text-brand-navy cursor-pointer shadow-sm"
+                        >
+                            <option value="all">All States</option>
+                            <option value="active">Active</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="expired">Expired</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-brand-navy/30 pointer-events-none text-base">
+                            filter_list
+                        </span>
+                    </div>
+
+                    <div className="relative group flex-1 sm:w-72">
+                        <input 
+                            type="text" 
+                            placeholder="Search by Email, Order #, ID..." 
+                            value={search} 
+                            onChange={e => setSearch(e.target.value)} 
+                            className="pl-12 pr-6 py-3.5 bg-white/40 glass-panel border-white/60 rounded-2xl outline-none focus:ring-4 focus:ring-brand-orange/10 focus:border-brand-orange transition-all text-xs font-bold text-brand-navy placeholder:text-brand-navy/30 w-full"
+                        />
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-brand-navy/30 group-focus-within:text-brand-orange transition-colors">history_edu</span>
+                        {search && (
+                            <button
+                                onClick={() => setSearch('')}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs w-5 h-5 flex items-center justify-center rounded-full bg-gray-100"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 

@@ -569,12 +569,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             ctx.drawImage(img, finalX, finalY, scaledW, scaledH);
             
             // AI Aspect Ratio Padding: The AI will crop non-standard aspect ratios (like 2:1).
-            // To prevent this, we pad the canvas to 16:9 (for spreads) or 9:16 (for covers) before sending it.
-            const isSpread = index > 0;
-            const padW = isSpread ? 1600 : 800;
-            const padH = isSpread ? 900 : 1422;
-            const padOffsetX = (padW - targetW) / 2;
-            const padOffsetY = (padH - targetH) / 2;
+            // All spreads (including Spread 0 Cover wrap) are 2:1 horizontal panoramic spreads (400x200mm).
+            // We pad the canvas to 16:9 (1600x900) with white borders top/bottom so Gemini can naturally outpaint.
+            const padW = 1600;
+            const padH = 900;
+            const padOffsetX = (padW - targetW) / 2; // (1600 - 1600) / 2 = 0
+            const padOffsetY = (padH - targetH) / 2; // (900 - 800) / 2 = 50
 
             const padCanvas = document.createElement('canvas');
             padCanvas.width = padW;
@@ -583,7 +583,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             if (padCtx) {
                 padCtx.fillStyle = '#FFFFFF';
                 padCtx.fillRect(0, 0, padW, padH);
-                // Draw the original image exactly where it belongs within the padded 16:9 area
+                // Draw the scaled/panned image exactly where it belongs within the padded 16:9 area
                 padCtx.drawImage(img, finalX + padOffsetX, finalY + padOffsetY, scaledW, scaledH);
             }
 
@@ -597,16 +597,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             const borderBottom = Math.max(0, padH - (finalY + padOffsetY + scaledH));
             console.log(`[Outpaint] Padded 16:9 AI Input — L:${borderLeft.toFixed(0)}px R:${borderRight.toFixed(0)}px T:${borderTop.toFixed(0)}px B:${borderBottom.toFixed(0)}px`);
             
-            // DIAGNOSTIC DOWNLOAD: Force the browser to download the exact image being sent to the AI
-            try {
-                const a = document.createElement('a');
-                a.href = 'data:image/jpeg;base64,' + paddedBase64;
-                a.download = `DEBUG_SENT_TO_AI_SPREAD_${index}.jpg`;
-                a.click();
-            } catch (e) {
-                console.error("Failed to download debug image", e);
-            }
-
             // 4. Send to backend
             const response = await backendApi.outpaintSpreadImage({
                 imageBase64: paddedBase64,
@@ -616,8 +606,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             });
 
             if (response.imageBase64) {
-                // COMPOSITING: Place the original artwork exactly on top of the AI's new extended background.
-                // This preserves 100% of the original characters while utilizing the AI's filled borders.
                 try {
                     const aiImg = new Image();
                     aiImg.crossOrigin = 'anonymous';
@@ -626,15 +614,11 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     
                     ctx.clearRect(0, 0, targetW, targetH);
                     
-                    // Draw AI image stretched back to padW/padH to exactly reverse the spatial mapping,
-                    // and offset it negatively so the targetW/targetH center perfectly aligns.
+                    // Draw AI filled image stretched back to padW/padH and cropped to targetW/targetH (2:1)
                     ctx.drawImage(aiImg, -padOffsetX, -padOffsetY, padW, padH);
                     
-                    // Draw original unedited image on top at its exact coordinates
-                    ctx.drawImage(img, finalX, finalY, scaledW, scaledH);
-                    
                     response.imageBase64 = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
-                    console.log("[Outpaint] Successfully composited original artwork over AI background.");
+                    console.log("[Outpaint] Successfully filled empty space with AI background.");
                 } catch (compositeErr) {
                     console.error("[Outpaint] Compositing failed, falling back to pure AI image", compositeErr);
                 }
@@ -1876,6 +1860,11 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                          language={language}
                                          coverTextSide={localCoverTextSide}
                                          coverImageUrl={coverUrl}
+                                         textOffsetX={pageEdits[0]?.textOffsetX ?? spreads[0]?.textOffsetX}
+                                         textOffsetY={pageEdits[0]?.textOffsetY ?? spreads[0]?.textOffsetY}
+                                         imageOffsetX={pageEdits[0]?.imageOffsetX ?? spreads[0]?.imageOffsetX ?? 0}
+                                         imageOffsetY={pageEdits[0]?.imageOffsetY ?? spreads[0]?.imageOffsetY ?? 0}
+                                         imageScale={pageEdits[0]?.imageScale ?? spreads[0]?.imageScale ?? 100}
                                      />
 
                                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mt-2">Cover Art AI Prompt — edit freely, Paint Art uses this</label>

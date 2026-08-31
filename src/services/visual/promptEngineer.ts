@@ -494,10 +494,10 @@ function assembleEnglishPrompt(
     }
     const view = comp.composition_view || spread.compositionView || '';
     const viewText = view ? ` Framing: Use a ${view} composition.` : '';
-    let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. Keep the opposite ${textSide} side as clean, empty background space (negative space) for text placement.${viewText}`;
+    let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. Keep the opposite ${textSide} side as clean, open negative space with soft, unobtrusive background elements.${viewText}`;
 
     if (isCover) {
-        compositionText = `Composition: Use a wide-angle shot, showing the character zoomed out to leave space at the top. Place the character low in the frame (strictly in the lower 60% of the image), keeping the top 40% of the frame as clean background space (negative space) for the book title. The character's face, head, or hair must not come near the top 20% of the image.`;
+        compositionText = `Composition: Low camera framing with wide headroom. Place all characters strictly in the lower 60% of the frame. Keep the upper 40% of the frame as clean, open negative space consisting purely of sky or calm background atmosphere. Characters' heads and faces must not enter the upper 20% area.`;
     }
 
     // 7. Hard Constraints (No text/letters, horizontal 16:9)
@@ -618,10 +618,10 @@ function assembleEnglishPromptV7_1(
     }
     const view = comp.composition_view || spread.compositionView || '';
     const viewText = view ? ` Framing: Use a ${view} composition.` : '';
-    let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. Keep the opposite ${textSide} side as clean, empty background space (negative space) for text placement.${viewText}`;
+    let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. Keep the opposite ${textSide} side as clean, open negative space with soft, uncluttered background scenery.${viewText}`;
 
     if (isCover) {
-        compositionText = `Composition: Use a wide-angle shot, showing the character zoomed out to leave space at the top. Place the character low in the frame (strictly in the lower 60% of the image), keeping the top 40% of the frame as clean background space (negative space) for the book title. The character's face, head, or hair must not come near the top 20% of the image.`;
+        compositionText = `Composition: Low camera framing with wide headroom. Place all characters strictly in the lower 60% of the frame. Keep the upper 40% of the frame as clean, open negative space consisting purely of sky or calm background atmosphere. Characters' heads and faces must not enter the upper 20% area.`;
     }
 
     // 7. Hard Constraints (No text/letters, horizontal 16:9)
@@ -889,7 +889,7 @@ function assembleEnglishPromptV7_4(
     let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. The opposite ${quietSide} side must remain open, uncluttered negative space with simple, soft background scenery.${viewText}`;
 
     if (isCover) {
-        compositionText = `Composition: Full hardcover wrap layout. Place all main characters and the primary hero action strictly on the RIGHT side of the frame (within the lower 60% of the right half, which serves as the front cover). The upper 40% of the right side must remain open, uncluttered negative space with empty sky or soft background scenery for the story title. Characters' heads and faces must not enter the upper 20% area. The entire LEFT side of the frame (which serves as the back cover) must contain calm, peaceful background scenery without any character figures.`;
+        compositionText = `Composition: Full hardcover wrap layout. Place all main characters and the primary hero action strictly on the RIGHT side of the frame (within the lower 60% of the right half, which serves as the front cover). The upper 40% of the right side must remain calm, open negative space with empty sky or soft ambient background scenery. Characters' heads and faces must not enter the upper 20% area. The entire LEFT side of the frame (which serves as the back cover) must contain calm, peaceful background scenery without any character figures.`;
     }
 
     // 6. Hard Constraints (Disentangling action/pose from facial & outfit consistency)

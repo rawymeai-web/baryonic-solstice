@@ -11,6 +11,9 @@ interface TitlePreviewPanelProps {
     coverImageUrl?: string;
     textOffsetX?: number;
     textOffsetY?: number;
+    imageOffsetX?: number;
+    imageOffsetY?: number;
+    imageScale?: number;
 }
 
 /**
@@ -108,7 +111,10 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
     coverTextSide,
     coverImageUrl,
     textOffsetX,
-    textOffsetY
+    textOffsetY,
+    imageOffsetX = 0,
+    imageOffsetY = 0,
+    imageScale = 100,
 }) => {
     const [titleDataUrl, setTitleDataUrl] = useState<string>('');
     const [isRendering, setIsRendering] = useState(false);
@@ -278,6 +284,9 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
                         <img
                             src={coverImageUrl.startsWith('http') ? coverImageUrl : `data:image/jpeg;base64,${coverImageUrl}`}
                             className="w-full h-full object-cover opacity-80"
+                            style={{
+                                transform: `scale(${imageScale / 100}) translate(${imageOffsetX}%, ${imageOffsetY}%)`,
+                            }}
                             alt="Cover"
                         />
                         {/* Spine line */}

@@ -230,7 +230,7 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
                 )}
 
                 {/* Generative Fill Button */}
-                {imageScale < 100 && onGenerativeFill && (
+                {(imageScale !== 100 || imageOffsetX !== 0 || imageOffsetY !== 0) && onGenerativeFill && (
                     <button
                         onClick={onGenerativeFill}
                         disabled={isGeneratingFill}
