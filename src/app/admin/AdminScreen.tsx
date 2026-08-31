@@ -19,6 +19,7 @@ import { StitchingScreen } from '../../components/admin/StitchingScreen';
 import { PipelineExecutionTerminal } from '../../components/admin/PipelineExecutionTerminal';
 import EditorScreen from '../../components/editor/EditorScreen';
 import PreviewScreen from '../../components/editor/PreviewScreen';
+import { StylesManagementView } from '../../components/admin/StylesManagementView';
 
 interface AdminScreenProps {
     onExit: () => void;
@@ -26,7 +27,7 @@ interface AdminScreenProps {
     language: Language;
 }
 
-type AdminView = 'orders' | 'customers' | 'subscriptions' | 'products' | 'themes' | 'bible' | 'prompts' | 'settings' | 'themePreview' | 'stitching' | 'metadata' | 'storage';
+type AdminView = 'orders' | 'customers' | 'subscriptions' | 'products' | 'themes' | 'styles' | 'bible' | 'prompts' | 'settings' | 'themePreview' | 'stitching' | 'metadata' | 'storage';
 
 const StatCard: React.FC<{ title: string; value: string | number; icon: string; color?: string }> = ({ title, value, icon, color = 'text-brand-navy' }) => (
     <div className="glass-panel p-8 rounded-[2.5rem] flex items-center space-x-6 rtl:space-x-reverse transform transition-all hover:scale-[1.02] hover:shadow-2xl group relative overflow-hidden">
@@ -232,6 +233,7 @@ const AdminDashboard: React.FC<AdminScreenProps> = ({ onExit, onEditOrder, langu
             case 'subscriptions': return <SubscriptionsView />;
             case 'bible': return <GuidelinesView />;
             case 'themes': return <ThemesView language={language} />;
+            case 'styles': return <StylesManagementView />;
             case 'products': return <ProductsView />;
             case 'prompts': return <PromptsView />;
             case 'settings': return <SettingsView />;
@@ -280,6 +282,7 @@ const AdminDashboard: React.FC<AdminScreenProps> = ({ onExit, onEditOrder, langu
                     {isSidebarCollapsed && <div className="h-px bg-brand-navy/5 my-3"></div>}
                     <NavItem icon="menu_book" label="Guidelines" onClick={() => setView('bible')} isActive={view === 'bible'} isCollapsed={isSidebarCollapsed} />
                     <NavItem icon="palette" label="Themes" onClick={() => setView('themes')} isActive={view === 'themes'} isCollapsed={isSidebarCollapsed} />
+                    <NavItem icon="draw" label="Art Styles" onClick={() => setView('styles')} isActive={view === 'styles'} isCollapsed={isSidebarCollapsed} />
                     <NavItem icon="inventory_2" label="Products" onClick={() => setView('products')} isActive={view === 'products'} isCollapsed={isSidebarCollapsed} />
                     
                     {!isSidebarCollapsed && <p className="text-[9px] font-black text-brand-navy/20 uppercase tracking-[0.3em] px-5 mt-8 mb-4">Laboratory</p>}
@@ -347,6 +350,33 @@ const AdminDashboard: React.FC<AdminScreenProps> = ({ onExit, onEditOrder, langu
                         >
                             <span className="material-symbols-outlined font-black animate-pulse">bolt</span>
                             Wake Master Scheduler
+                        </button>
+
+                        <button
+                            onClick={async () => {
+                                const target = prompt("Enter email address to send live test order notification:", "rawy.me.ai@gmail.com");
+                                if (!target) return;
+                                try {
+                                    const res = await fetch('/api/admin/test-email', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ targetEmail: target })
+                                    });
+                                    const data = await res.json();
+                                    if (res.ok) {
+                                        alert(`✅ Live Test Email delivered to ${target} via Resend (noreply@rawytime.com)!`);
+                                    } else {
+                                        alert(`❌ Failed to send test email: ${data.error}`);
+                                    }
+                                } catch (e: any) {
+                                    alert(`❌ Error: ${e.message}`);
+                                }
+                            }}
+                            className="px-6 py-4 glass-panel border-brand-teal/30 text-brand-teal rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:bg-brand-teal hover:text-white transition-all flex items-center gap-2 shadow-sm"
+                            title="Test automated email notifications to admin and customer"
+                        >
+                            <span className="material-symbols-outlined text-base">mark_email_read</span>
+                            Test Emails
                         </button>
 
                         <button

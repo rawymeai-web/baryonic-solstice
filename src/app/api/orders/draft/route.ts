@@ -99,6 +99,16 @@ export async function POST(req: Request) {
         }
         console.log('Draft Created Successfully:', orderNumber);
 
+        // Auto-dispatch customer confirmation & admin order alert in background
+        try {
+            EmailService.sendNotification(orderNumber, 'order_received', { orderNumber })
+                .catch(err => console.warn('[EmailService] Customer order notice:', err));
+            EmailService.sendNotification(orderNumber, 'admin_new_order', { orderNumber, total })
+                .catch(err => console.warn('[EmailService] Admin order notice:', err));
+        } catch (emailErr) {
+            console.warn('[EmailService] Dispatch catch:', emailErr);
+        }
+
         return NextResponse.json({
             success: true,
             orderId: orderNumber,

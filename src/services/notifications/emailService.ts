@@ -166,6 +166,57 @@ export class EmailService {
                     `;
                     break;
 
+                case 'admin_new_order':
+                    const orderTotal = payload.total !== undefined ? `${payload.total} KWD` : `${order.total || 0} KWD`;
+                    subject = `🚨 New Order Received! #${order.order_number} (${orderTotal}) 💰`;
+                    html = `
+                        <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; background-color: #001A40; color: #FFFFFF; border-radius: 28px; direction: ltr; text-align: left;">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <span style="font-size: 40px;">🚨📦</span>
+                            </div>
+                            <h2 style="color: #ECC156; font-size: 22px; font-weight: 800; margin-bottom: 8px; text-align: center;">New Customer Order Placed!</h2>
+                            <p style="font-size: 14px; color: #A0AEC0; text-align: center; margin-bottom: 24px;">A new storybook adventure has been initiated on Rawy.</p>
+                            
+                            <div style="background-color: rgba(255, 255, 255, 0.08); padding: 22px; border-radius: 18px; margin: 20px 0; border: 1px solid rgba(255, 255, 255, 0.12);">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #FFFFFF;">
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                        <td style="padding: 8px 0; color: #A0AEC0;">Order ID:</td>
+                                        <td style="padding: 8px 0; font-weight: 800; color: #ECC156; text-align: right; font-family: monospace;">#${order.order_number}</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                        <td style="padding: 8px 0; color: #A0AEC0;">Total:</td>
+                                        <td style="padding: 8px 0; font-weight: 800; color: #38A169; text-align: right;">${orderTotal}</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                        <td style="padding: 8px 0; color: #A0AEC0;">Story Title:</td>
+                                        <td style="padding: 8px 0; font-weight: 700; text-align: right;">${storyTitle}</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                        <td style="padding: 8px 0; color: #A0AEC0;">Hero / Child:</td>
+                                        <td style="padding: 8px 0; font-weight: 700; text-align: right;">${childName}</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                        <td style="padding: 8px 0; color: #A0AEC0;">Customer Email:</td>
+                                        <td style="padding: 8px 0; font-weight: 700; color: #ECC156; text-align: right;">${order.shipping_details?.email || order.customer_id || 'N/A'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #A0AEC0;">Shipping Address:</td>
+                                        <td style="padding: 8px 0; font-weight: 500; text-align: right; font-size: 13px;">${order.shipping_details?.address || 'Digital Delivery'}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div style="text-align: center; margin: 28px 0;">
+                                <a href="https://rawytime.com/?story=${order.order_number}" style="background-color: #F78F50; color: white; padding: 14px 32px; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 14px; display: inline-block; box-shadow: 0 4px 14px rgba(247, 143, 80, 0.4);">
+                                    🔍 Open Story Details
+                                </a>
+                            </div>
+
+                            <p style="font-size: 11px; color: #718096; text-align: center; margin: 0;">Rawy Internal Order Processing Notification</p>
+                        </div>
+                    `;
+                    break;
+
                 case 'preview_ready':
                     const previewLink = payload.previewLink || `https://rawytime.com/?preview=${order.order_number}`;
                     subject = `Your Custom Storybook is Ready! 📚✨ (#${order.order_number})`;

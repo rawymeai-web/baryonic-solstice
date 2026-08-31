@@ -10,10 +10,11 @@ export async function GET() {
             .from('themes')
             .select('*');
 
-        // Try fetching styles from Supabase
+        // Try fetching active styles from Supabase art_styles table
         const { data: dbStyles, error: stylesError } = await supabase
-            .from('illustration_styles')
-            .select('*');
+            .from('art_styles')
+            .select('*')
+            .eq('is_active', true);
 
         // Merge themes: DB themes take precedence, remaining INITIAL_THEMES are appended
         const mergedThemes = [...(dbThemes || [])];
@@ -23,18 +24,37 @@ export async function GET() {
             }
         }
 
-        // Merge styles
-        const mergedStyles = [...(dbStyles || [])];
-        for (const is of ART_STYLE_OPTIONS) {
-            // is only has name, category, prompt, sampleUrl
-            if (!mergedStyles.find(s => s.name === is.name)) {
-                mergedStyles.push({ ...is, id: is.name } as any);
-            }
+        // Parse styles from DB or fallback to ART_STYLE_OPTIONS
+        let activeStyles = [];
+        if (dbStyles && dbStyles.length > 0) {
+            activeStyles = dbStyles.map((s: any) => {
+                let badge: string | null = null;
+                let cleanUrl = s.preview_url || '';
+                if (cleanUrl.includes('?badge=')) {
+                    const parts = cleanUrl.split('?badge=');
+                    cleanUrl = parts[0];
+                    badge = parts[1] || null;
+                }
+                return {
+                    id: s.id,
+                    name: s.name,
+                    prompt: s.prompt_template,
+                    sampleUrl: cleanUrl,
+                    is_active: s.is_active,
+                    badge: badge
+                };
+            });
+        } else {
+            activeStyles = ART_STYLE_OPTIONS.map(s => ({ ...s, id: s.name }));
         }
 
         return NextResponse.json({
             themes: mergedThemes,
-            styles: mergedStyles
+            styles: activeStyles
+        }, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300'
+            }
         });
     } catch (error) {
         console.error("Catalog API Error:", error);
