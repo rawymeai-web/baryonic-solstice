@@ -46,21 +46,46 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch orders', details: dbError.message }, { status: 500 });
     }
 
-    // 3. Map database orders to dashboard format
-    const orders = (dbOrders || []).map((order: any) => ({
-      orderNumber: order.order_number,
-      status: order.status,
-      orderDate: order.created_at,
-      total: order.total,
-      shippingDetails: order.shipping_details || {},
-      storyData: order.story_data || {}
-    }));
+    // 3. Map database orders to lightweight dashboard format (stripping redundant multi-MB raw logs)
+    const orders = (dbOrders || []).map((order: any) => {
+      const rawStory = order.story_data || {};
+      const cleanStoryData = {
+        title: rawStory.title || 'A Personalized Adventure',
+        childName: rawStory.childName || rawStory.mainCharacter?.name || '',
+        coverImageUrl: rawStory.coverImageUrl || rawStory.spreads?.[0]?.illustrationUrl || '',
+        coverSubtitle: rawStory.coverSubtitle || '',
+        coverTextSide: rawStory.coverTextSide || 'left',
+        isPhysicalPrint: rawStory.isPhysicalPrint || false,
+        language: rawStory.language || 'ar',
+        theme: rawStory.theme || '',
+        orderId: order.order_number,
+        audioUrl: rawStory.audioUrl || '',
+        spreads: (rawStory.spreads || []).map((s: any) => ({
+          spreadNumber: s.spreadNumber,
+          leftText: s.leftText,
+          rightText: s.rightText,
+          text: s.text,
+          illustrationUrl: s.illustrationUrl || s.imageUrl || '',
+          textOffsetX: s.textOffsetX,
+          textOffsetY: s.textOffsetY
+        }))
+      };
+
+      return {
+        orderNumber: order.order_number,
+        status: order.status,
+        orderDate: order.created_at,
+        total: order.total,
+        shippingDetails: order.shipping_details || {},
+        storyData: cleanStoryData
+      };
+    });
 
     // 4. Fetch subscription if any
     let subscription = null;
     const { data: dbSub } = await supabase
       .from('subscriptions')
-      .select('*')
+      .select('plan_type, next_billing_date')
       .eq('customer_id', id)
       .maybeSingle();
       
@@ -73,7 +98,7 @@ export async function GET(
       // Fallback check by email
       const { data: dbSubEmail } = await supabase
         .from('subscriptions')
-        .select('*')
+        .select('plan_type, next_billing_date')
         .eq('customer_id', email)
         .maybeSingle();
       if (dbSubEmail) {
@@ -87,6 +112,10 @@ export async function GET(
     return NextResponse.json({
       orders,
       subscription
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=15, stale-while-revalidate=60'
+      }
     });
 
   } catch (err: any) {
