@@ -80,7 +80,7 @@ export class EmailService {
             // Find order by order_number or customer_id
             const { data: order } = await supabase
                 .from('orders')
-                .select('customer_id, subscription_id, order_number, shipping_details, story_data')
+                .select('customer_id, subscription_id, order_number, shipping_details, story_data, total')
                 .or(`order_number.eq.${orderId},customer_id.eq.${orderId}`)
                 .limit(1)
                 .maybeSingle();
@@ -167,7 +167,7 @@ export class EmailService {
                     break;
 
                 case 'admin_new_order':
-                    const orderTotal = payload.total !== undefined ? `${payload.total} KWD` : `${order.total || 0} KWD`;
+                    const orderTotal = payload.total !== undefined ? `${payload.total} KWD` : `${(order as any)?.total || 0} KWD`;
                     subject = `🚨 New Order Received! #${order.order_number} (${orderTotal}) 💰`;
                     html = `
                         <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; background-color: #001A40; color: #FFFFFF; border-radius: 28px; direction: ltr; text-align: left;">
