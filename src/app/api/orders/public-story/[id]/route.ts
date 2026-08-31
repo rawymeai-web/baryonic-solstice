@@ -15,13 +15,12 @@ export async function GET(
       return NextResponse.json({ error: 'Missing story or order ID' }, { status: 400 });
     }
 
-    // Query order by order_number or id
-    let query = supabase
+    // Query order by order_number
+    const { data: orders, error } = await supabase
       .from('orders')
       .select('order_number, status, created_at, story_data')
-      .or(`order_number.eq.${cleanId},id.eq.${cleanId}`);
-
-    const { data: orders, error } = await query.limit(1);
+      .eq('order_number', cleanId)
+      .limit(1);
 
     if (error || !orders || orders.length === 0) {
       console.warn(`[API /api/orders/public-story] Story not found: ${cleanId}`);
