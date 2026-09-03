@@ -107,15 +107,15 @@ export class EmailService {
                 }
             }
 
-            if (!recipientEmail) {
-                ServerLogger.error('EMAIL_SEND_FAILED', new Error(`Customer email not found for Order: ${order.order_number}`));
-                return;
-            }
-
-            // Override recipient for admin notifications
+            // Override recipient for admin notifications (guaranteed delivery)
             if (eventType === 'admin_new_order') {
                 recipientEmail = process.env.ADMIN_EMAIL || 'rawy.me.ai@gmail.com';
                 recipientName = 'Rawy Admin';
+            }
+
+            if (!recipientEmail) {
+                ServerLogger.error('EMAIL_SEND_FAILED', new Error(`Customer email not found for Order: ${order.order_number}`));
+                return;
             }
 
             ServerLogger.log('EMAIL_SEND_ATTEMPT', { eventType, recipientEmail, orderNumber: order.order_number });

@@ -21,9 +21,14 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing storyData' }, { status: 400 });
         }
 
-        // 2. Generate Draft Order ID
-        const orderNumber = 'RWY-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        console.log('Generated Order Number:', orderNumber);
+        // 2. Generate Clean 5-character Order ID (Excludes confusing chars 0, O, 1, I, L)
+        const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+        let code = '';
+        for (let i = 0; i < 5; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        const orderNumber = `RWY-${code}`;
+        console.log('Generated Clean Order Number:', orderNumber);
 
         // 3. Ensure Customer Exists
         let finalCustomerId = 'guest-placeholder';
