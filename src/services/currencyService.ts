@@ -21,19 +21,28 @@ export const currencies: Currency[] = [
 export const convertPrice = (priceInKwd: number, targetCurrency: Currency): string => {
     if (!priceInKwd && priceInKwd !== 0) return `0 ${targetCurrency.symbol}`;
 
-    const convertedPrice = priceInKwd * targetCurrency.rateFromKwd;
-
-    let decimals = 2;
-    if (['KWD', 'BHD', 'OMR'].includes(targetCurrency.code)) {
-        decimals = 3;
-    } else if (['EGP'].includes(targetCurrency.code)) {
-        decimals = 0;
+    // For KWD: standard 3 decimal places (fils) e.g., 5.000 د.ك
+    if (targetCurrency.code === 'KWD') {
+        const formatter = new Intl.NumberFormat(undefined, {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3,
+        });
+        return `${formatter.format(priceInKwd)} ${targetCurrency.symbol}`;
     }
 
+    // For all other currencies: always round UP to nearest closed digits (whole integer, 0 decimals)
+    const convertedPrice = Math.ceil(priceInKwd * targetCurrency.rateFromKwd);
+
     const formatter = new Intl.NumberFormat(undefined, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
     });
 
-    return `\${formatter.format(convertedPrice)} \${targetCurrency.symbol}`;
+    return `${formatter.format(convertedPrice)} ${targetCurrency.symbol}`;
+};
+
+export const getConvertedPriceValue = (priceInKwd: number, targetCurrency: Currency): number => {
+    if (!priceInKwd) return 0;
+    if (targetCurrency.code === 'KWD') return priceInKwd;
+    return Math.ceil(priceInKwd * targetCurrency.rateFromKwd);
 };
