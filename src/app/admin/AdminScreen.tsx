@@ -20,6 +20,8 @@ import { PipelineExecutionTerminal } from '../../components/admin/PipelineExecut
 import EditorScreen from '../../components/editor/EditorScreen';
 import PreviewScreen from '../../components/editor/PreviewScreen';
 import { StylesManagementView } from '../../components/admin/StylesManagementView';
+import { JobTicketModal } from '../../components/admin/JobTicketModal';
+import { PromoManagerModal } from '../../components/admin/PromoManagerModal';
 
 interface AdminScreenProps {
     onExit: () => void;
@@ -487,6 +489,8 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     const [isBulkShippingOpen, setIsBulkShippingOpen] = useState(false);
     const [previewOrder, setPreviewOrder] = useState<AdminOrder | null>(null);
     const [notifyingPreviewId, setNotifyingPreviewId] = useState<string | null>(null);
+    const [jobTicketOrder, setJobTicketOrder] = useState<AdminOrder | null>(null);
+    const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
 
     useEffect(() => {
         // Ensure sorted by date descending globally
@@ -715,6 +719,22 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     return (
         <div className="space-y-4 animate-enter-forward">
             {previewingOrder && <OrderPreviewModal order={previewingOrder} onClose={() => setPreviewingOrder(null)} onRefresh={refreshOrders} language={language} />}
+            
+            {jobTicketOrder && (
+                <JobTicketModal 
+                    order={jobTicketOrder} 
+                    onClose={() => setJobTicketOrder(null)} 
+                    language={language} 
+                />
+            )}
+
+            {isPromoModalOpen && (
+                <PromoManagerModal 
+                    isOpen={isPromoModalOpen} 
+                    onClose={() => setIsPromoModalOpen(false)} 
+                    language={language} 
+                />
+            )}
             
             {isBulkShippingOpen && (
                 <ShippingModal 

@@ -583,4 +583,47 @@ export interface EventAuditLog {
   created_at?: string;
 }
 
+export interface PromoCode {
+  id?: string;
+  code: string;
+  discountType: 'percentage' | 'fixed_value';
+  discountValue: number;
+  appliesTo: 'all' | 'product' | 'shipping' | 'addons';
+  allowSubscriptions: boolean;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  startDate?: string;
+  expiryDate?: string;
+  maxUses?: number;
+  usedCount?: number;
+  isActive: boolean;
+  description?: { ar: string; en: string };
+}
+
+export interface DiscountDetails {
+  code: string;
+  discountType: 'percentage' | 'fixed_value';
+  discountValue: number;
+  discountAmount: number;
+  appliesTo: 'all' | 'product' | 'shipping' | 'addons';
+  description?: string;
+}
+
+export interface CartItem {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  storyData: StoryData;
+  planType: 'one_time' | 'monthly' | 'yearly';
+  isPhysicalPrint: boolean;
+  physicalCount: number;
+  isGiftWrapping?: boolean;
+  isGiftCard?: boolean;
+  giftMessage?: string;
+  unitPrice: number;
+  totalPrice: number;
+  status: 'draft' | 'ready_for_checkout' | 'completed';
+  thumbnailUrl?: string;
+}
+
 export * from './vision';

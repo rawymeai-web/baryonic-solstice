@@ -1,5 +1,5 @@
 import { supabase } from '../utils/supabaseClient';
-import type { AdminOrder, OrderStatus, StoryData, ShippingDetails, ProductSize, StoryTheme, AppSettings } from '@/types';
+import type { PromoCode, AdminOrder, OrderStatus, StoryData, ShippingDetails, ProductSize, StoryTheme, AppSettings } from '@/types';
 
 // --- DB Interfaces ---
 interface DBOrder {
@@ -587,4 +587,90 @@ export async function syncLocalOrders(): Promise<number> {
   // so this is a no-op that returns 0.
   console.log('[adminService] syncLocalOrders: no local orders to sync (all orders live in Supabase).');
   return 0;
+}
+
+// --- Promo Code Services ---
+
+export async function getPromoCodes(): Promise<PromoCode[]> {
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/admin/promo-codes');
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.promoCodes || [];
+    } catch (e) {
+      console.error('[adminService] getPromoCodes error:', e);
+      return [];
+    }
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('promo_codes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map((d: any) => ({
+      id: d.id,
+      code: d.code,
+      discountType: d.discount_type,
+      discountValue: Number(d.discount_value),
+      appliesTo: d.applies_to || 'all',
+      allowSubscriptions: d.allow_subscriptions ?? true,
+      minOrderAmount: d.min_order_amount ? Number(d.min_order_amount) : undefined,
+      maxDiscountAmount: d.max_discount_amount ? Number(d.max_discount_amount) : undefined,
+      startDate: d.start_date,
+      expiryDate: d.expiry_date,
+      maxUses: d.max_uses,
+      usedCount: d.used_count || 0,
+      isActive: d.is_active,
+      description: d.description
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+export async function savePromoCode(promo: Partial<PromoCode>): Promise<void> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/admin/promo-codes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(promo)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to save promo code');
+    }
+    return;
+  }
+}
+
+export async function togglePromoCodeStatus(idOrCode: string, isActive: boolean): Promise<void> {
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/admin/promo-codes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: idOrCode.startsWith('promo-') ? idOrCode : undefined, code: idOrCode, isActive })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to toggle promo code');
+    }
+    return;
+  }
+}
+
+export async function deletePromoCode(idOrCode: string): Promise<void> {
+  if (typeof window !== 'undefined') {
+    const query = idOrCode.startsWith('promo-') ? `id=${idOrCode}` : `code=${idOrCode}`;
+    const res = await fetch(`/api/admin/promo-codes?${query}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to delete promo code');
+    }
+    return;
+  }
 }
