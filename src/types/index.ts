@@ -152,6 +152,8 @@ export interface ShippingDetails {
   phone: string;
   email: string;
   isPhysicalDelivery?: boolean;
+  shippingMethod?: 'standard' | 'express';
+  shippingCost?: number;
   country?: string;
   countryName?: string;
   region?: 'kuwait' | 'gcc' | 'row' | string;
