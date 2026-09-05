@@ -28,7 +28,11 @@ export async function generateVisualPlan(
             - Selected Style Profile: ${JSON.stringify(styleProfile)}
     
             INSTRUCTIONS:
-            1. **DESIGN THE COVER (Spread 0):** This is the most critical art. Assign the characters to one side ("left" or "right"), and leave the other side explicitly as uncluttered negative space for the title. **CRITICAL STORYTELLING MANDATE:** The cover MUST tell a story. Do not just have the characters standing and posing. They must be actively engaged in an exciting, story-representative action. Ensure the cover uses a "medium shot" (characters in foreground, prominent, and close to the camera) so that [[HERO_1]]'s face and recognizable likeness are clearly visible and not too far from the camera.
+            1. **DESIGN THE COVER (Spread 0):** This is the most critical art. 
+               - The cover is a single panoramic seamless illustration across the entire 16:9 canvas.
+               - **RTL vs LTR Layout:** For Arabic books (RTL), place the hero and main action strictly on the **"left"** side (front cover) in the lower 60% with open headroom for the title, and keep the **"right"** side (back cover) as calm ambient background scenery without character figures. For English/LTR books, place the hero and action on the **"right"** side, and keep the **"left"** side as calm ambient background.
+               - **CRITICAL STORYTELLING MANDATE:** The cover MUST tell a story. Do not just have the characters standing and posing. They must be actively engaged in an exciting, story-representative action. Ensure the cover uses a "medium shot" (characters in foreground, prominent, and close to the camera) so that [[HERO_1]]'s face and recognizable likeness are clearly visible.
+               - **SEAM & BORDER BAN:** Never describe spine lines, creases, split panels, or physical book covers. It must be a single seamless artwork.
             2. **DESIGN THE SPREADS (1-${spreadCount}):** You MUST generate a spread for EVERY text segment in the script. Total spreads needed: ${spreadCount} + 1 (Cover).
             3. **HONOR THE STYLE PROFILE:** 
                 - The visual style is strictly defined by the Selected Style Profile above.
@@ -77,8 +81,10 @@ export async function generateVisualPlan(
             13. **FACE VISIBILITY MANDATE:**
                - Do not write actions where characters' hands, arms, or objects obscure their faces (e.g., no "covering face with hands").
 
-            14. **MILD EMOTIONS & GROUNDED ACTIONS:**
-               - Do not use extreme emotions like "terrified", "shocked", or "screaming". Use milder expressions: "worried", "confused", "pensive". Keep physical actions grounded.
+            14. **CHARMING, CUTE & ENDEARING EXPRESSIONS (MANDATORY CHILD APPEAL):**
+               - The child hero must ALWAYS look cute, lovable, and appealing to parents in every illustration.
+               - NEVER use negative, aggressive, or depressing expressions like "scowling", "angry frown", "crying", "miserable", "exhausted", "sulking", or "terrified".
+               - For challenges or lowest points, use charming childlike expressions: "cute thinking face", "curious wonder", "puzzled with a slight head tilt", "determined little hero face", "gentle thoughtful look". Keep physical actions grounded and endearing.
 
             OUTPUT JSON SCHEMA:
             {

@@ -53,7 +53,10 @@ export async function generateStoryDraft(
             7. **NATIVE LANGUAGE & CULTURAL TRANSLATION:** 
                - The final text MUST be in **${targetLang}**.
                - **NO TASHKEEL/HARAKAT:** If writing in Arabic, ABSOLUTELY DO NOT use any vowel marks or diacritics (Tashkeel). Write in plain, clean Arabic text only.
-               - **NATURAL FLOW:** Do not write choppy, disjointed, or "robotic" bullet-point sentences. Connect your thoughts beautifully using natural conjunctions (and, but, so, because) so the text flows like a real story.
+               - **NATURAL FLOW & LYRICAL CADENCE:** Do not write choppy, disjointed, or "robotic" bullet-point sentences. Connect your thoughts beautifully using natural conjunctions (و، فـ، ثم، لكن، لأن) so the text flows like a real bedtime story.
+               - **ARABIC CHILD APPEAL & VOCABULARY BAN:**
+                 - ❌ **STRICTLY BANNED PHRASES:** Never use adult fatigue, grim expressions, or heavy emotional words (e.g., NEVER write "زفر بتعب" [sighed with exhaustion], "أرهقه التفكير", "شعر بالعجز", "عقد حاجبيه بغضب").
+                 - ✅ **REQUIRED TONE:** Keep the tone warm, melodic, and joyful (نغمة هادئة، دافئة، ومحببة كأنشودة لطيفة). Use sweet, endearing expressions of childlike curiosity (e.g. "تساءل ${childName} بابتسامة لطيفة", "أمال رأسه بحيرة جميلة", "فكر قليلاً ثم رفرفت عيناه بالفرح").
                - Ensure natural phrasing and cultural appropriateness.
             
             **CRITICAL IDENTITY RULE:**

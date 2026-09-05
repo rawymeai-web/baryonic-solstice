@@ -143,6 +143,13 @@ export async function generateBlueprint(
             - Do not invent complex societal stakes, multiple concurrent problems, or over-complicated sequences (no "understanding animals and racing cheetahs" at the same time).
             - Keep the action grounded, direct, and focused strictly on the age group. The simpler, the better!
             - The conflict must be personal to the child and easily solvable within a ${spreadCount}-point physical progression.
+
+            ${Number(storyData.childAge) <= 3 ? `**AGE 1-3 TODDLER COGNITIVE BOUNDARIES (STRICT MANDATE):**
+            - For toddlers (Age 1-3), the plot MUST be concrete, sensory, and emotionally tender.
+            - ❌ **STRICTLY FORBIDDEN:** ABSOLUTELY NO complex multi-part machines, mechanical devices, dials, tubes, gadgets, or abstract contraptions (e.g. NEVER invent "dust collectors", "generators", "engines", "gearboxes", "scientific apparatus").
+            - ✅ **REQUIRED TODDLER THEMES:** Focus on cozy sensory discoveries, daily routines, and gentle wonder (e.g., catching a giggling star, putting a sleepy moon to sleep under a soft cloud blanket, jumping on bouncy soft craters, following a glowing butterfly, finding a lost little starlet).
+            - Actions must be physical and tangible: clapping hands, reaching, hugging, smiling, tip-toeing, laughing, tucking into bed.
+            ` : ''}
             
             **CHARACTER ROLE RULES:**
             - **Limit:** Max 1 Support Character introduced per spread.

@@ -106,9 +106,10 @@ export async function POST(req: Request) {
         }
 
         const heroes = buildHeroProfiles(frontendHeroes);
+        const language = body.language || blueprint?.foundation?.targetLanguage || 'en';
 
         // 1. Generate Raw Prompts using the new JSON Architecture Schema Compiler
-        const engineerResponse = await generatePrompts(plan, blueprint, styleProfile, heroes);
+        const engineerResponse = await generatePrompts(plan, blueprint, styleProfile, heroes, language);
 
         // 2. Illustrator Pass (Advanced QA)
         // Now running properly using the structured style profile and targeted prompt elements

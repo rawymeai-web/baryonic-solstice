@@ -30,9 +30,9 @@ const UNNAMED_CHARACTER_TERMS = [
 const FORBIDDEN_WORDS = [
     'photobook', 'photo book', "children's book", 'kids book',
     'double-page spread', 'double page spread', 'printed spread',
-    'crease', 'fold', 'book cover', 'story cover',
+    'crease', 'fold', 'book cover', 'story cover', 'hardcover', 'hard cover',
     'real photo', 'identity anchor', 'raw photo', 'photograph',
-    'fuse', 'fusion',
+    'fuse', 'fusion', 'spine', 'seam',
 ];
 
 const LOGO_BRANDS = ['NASA', 'Nike', 'Adidas', 'Apple', 'Disney'];
@@ -41,6 +41,27 @@ export interface PromptValidationResult {
     passed: boolean;
     errors: string[];
     warnings: string[];
+}
+
+export function sanitizeHeroExpression(expr: string): string {
+    if (!expr || typeof expr !== 'string') return 'charming, curious expression';
+    let clean = expr.trim();
+
+    const replacements: [RegExp, string][] = [
+        [/\b(frustrated|scowling|angry|furious|mad|irritated|grumpy|sullen|pouting|sulking)\b/gi, 'cute thinking face with focused concentration'],
+        [/\b(sad|crying|weeping|miserable|depressed|despairing|exhausted|tired|fatigued|gloomy)\b/gi, 'gentle, thoughtful expression with cute wonder and mild puzzle'],
+        [/\b(terrified|scared|horrified|panicked|fearful|frightened)\b/gi, 'wide-eyed surprised curiosity with playful awe'],
+        [/\b(annoyed|bored|displeased|upset)\b/gi, 'playful, intrigued curiosity'],
+        [/\b(worried|anxious|nervous|troubled)\b/gi, 'soft, thoughtful expression with curious interest'],
+        [/\b(confused|baffled|perplexed)\b/gi, 'cute puzzled face with slight head tilt and wondering eyes'],
+    ];
+
+    replacements.forEach(([pattern, rep]) => {
+        clean = clean.replace(pattern, rep);
+    });
+
+    clean = clean.replace(/^(a|an|the)\s+/i, '').replace(/\bexpression\b/gi, '').trim();
+    return clean || 'curious and joyful';
 }
 
 function validateAssembledPrompt(prompt: string): PromptValidationResult {
@@ -81,9 +102,9 @@ function sanitizeText(text: string): string {
     const safeForbidden = [
         'photobook', 'photo book', "children's book", 'kids book',
         'double-page spread', 'double page spread', 'printed spread',
-        'crease', 'fold', 'book cover', 'story cover',
+        'crease', 'fold', 'book cover', 'story cover', 'hardcover', 'hard cover',
         'real photo', 'identity anchor', 'raw photo', 'photograph',
-        'fuse', 'fusion',
+        'fuse', 'fusion', 'spine', 'seam',
     ];
     safeForbidden.forEach(word => {
         clean = clean.replace(new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), '');
@@ -767,16 +788,17 @@ function assembleEnglishPromptV7_2(
 }
 
 // ---------------------------------------------------------------------------
-// SECTION I.3 — UNIFIED PROMPT ASSEMBLER (v7.4)
+// SECTION I.3 — UNIFIED PROMPT ASSEMBLER (v7.4.1)
 // ---------------------------------------------------------------------------
 function assembleEnglishPromptV7_4(
     spread: any,
     styleProfile: StyleProfile,
     heroes: HeroProfile[],
-    isCover: boolean = false
+    isCover: boolean = false,
+    isRTL: boolean = false
 ): { prompt: string; validation: PromptValidationResult } {
 
-    const schemaStamp = `[v7.4-dna-unified]`;
+    const schemaStamp = `[v7.4.1-dna-unified]`;
 
     // 1. Clean Reference Mapping with Compact Age Identifier
     const legendParts = [`CHARACTER REFERENCES:`];
@@ -839,7 +861,7 @@ function assembleEnglishPromptV7_4(
         settingText = `Scene: A wide 16:9 children's book illustration scene.`;
     }
 
-    // 3. Actions & Expressions (Clean grammar flow & duplicate expression word cleanup)
+    // 3. Actions & Expressions (Clean grammar flow, expression sanitizer & cute appeal mandate)
     let actionsText = '';
     if (typeof spread.keyActions === 'string') {
         let actionStr = spread.keyActions;
@@ -847,7 +869,7 @@ function assembleEnglishPromptV7_4(
             const regex = new RegExp(`\\[Hero\\s*${idx + 1}\\]`, 'gi');
             actionStr = actionStr.replace(regex, h.token);
         });
-        actionsText = `Action: ${actionStr}`;
+        actionsText = `Action: ${actionStr}\nHero Expression: Ensure the hero's face is always charming, cute, and lovable with sweet, endearing childlike appeal.`;
     } else {
         const actionLines = (spread.hero_actions || [])
             .filter((a: any) => a.presence !== 'absent' && a.action)
@@ -855,15 +877,15 @@ function assembleEnglishPromptV7_4(
                 const token = a.token.replace(/\[\[hero_(\d+)\]\]/gi, (_: string, n: string) => `[[HERO_${n}]]`);
                 let actionStr = `Show ${token} ${sanitizeText(a.action)}`;
                 if (a.expression) {
-                    let expr = sanitizeText(a.expression).trim();
-                    expr = expr.replace(/^(a|an|the)\s+/i, '').replace(/\bexpression\b/gi, '').trim();
-                    if (expr) {
-                        actionStr += `, with a ${expr} expression`;
-                    }
+                    const sanitizedExpr = sanitizeHeroExpression(a.expression);
+                    actionStr += `, with a ${sanitizedExpr} expression`;
                 }
                 if (a.eye_line) actionStr += `, ${sanitizeText(a.eye_line)}`;
                 return actionStr.trim().replace(/\.+$/, '') + '.';
             });
+        if (actionLines.length > 0) {
+            actionLines.push(`Hero Expression: Ensure the hero's face is always charming, cute, and lovable with sweet, endearing childlike appeal.`);
+        }
         actionsText = actionLines.length > 0 
             ? `Action: ${actionLines.join(' ')}` 
             : '';
@@ -874,7 +896,7 @@ function assembleEnglishPromptV7_4(
         ? `Props to include: ${spread.scene_props.map((p: any) => p.name).join(', ')}.`
         : '';
 
-    // 5. Composition (Strict spatial side sanitizer — never 'none')
+    // 5. Composition (Strict spatial side sanitizer — RTL aware for cover and interior)
     const comp = spread.composition || {};
     let actionSide = (comp.action_zone_side || spread.mainContentSide || 'right').toLowerCase().trim();
     if (actionSide !== 'left' && actionSide !== 'right') {
@@ -889,7 +911,13 @@ function assembleEnglishPromptV7_4(
     let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. The opposite ${quietSide} side must remain open, uncluttered negative space with simple, soft background scenery.${viewText}`;
 
     if (isCover) {
-        compositionText = `Composition: Full hardcover wrap layout. Place all main characters and the primary hero action strictly on the RIGHT side of the frame (within the lower 60% of the right half, which serves as the front cover). The upper 40% of the right side must remain calm, open negative space with empty sky or soft ambient background scenery. Characters' heads and faces must not enter the upper 20% area. The entire LEFT side of the frame (which serves as the back cover) must contain calm, peaceful background scenery without any character figures.`;
+        if (isRTL) {
+            // Arabic / RTL: Front Cover is on the LEFT half, Back Cover is on the RIGHT half
+            compositionText = `Composition: Single panoramic seamless illustration spread across the wide canvas. Place all main characters and the primary hero action strictly on the LEFT side of the frame (within the lower 60% of the left half). The upper 40% of the left side must remain calm, open negative space with empty sky or soft ambient background scenery. Characters' heads and faces must not enter the upper 20% area. The entire RIGHT side of the frame must contain calm, peaceful ambient background scenery without any character figures. No vertical lines, creases, splits, borders, or text.`;
+        } else {
+            // English / LTR: Front Cover is on the RIGHT half, Back Cover is on the LEFT half
+            compositionText = `Composition: Single panoramic seamless illustration spread across the wide canvas. Place all main characters and the primary hero action strictly on the RIGHT side of the frame (within the lower 60% of the right half). The upper 40% of the right side must remain calm, open negative space with empty sky or soft ambient background scenery. Characters' heads and faces must not enter the upper 20% area. The entire LEFT side of the frame must contain calm, peaceful ambient background scenery without any character figures. No vertical lines, creases, splits, borders, or text.`;
+        }
     }
 
     // 6. Hard Constraints (Disentangling action/pose from facial & outfit consistency)
@@ -920,7 +948,8 @@ export async function generatePrompts(
     plan: SpreadDesignPlan,
     blueprint: StoryBlueprint | undefined,
     styleProfile: StyleProfile,
-    heroes: HeroProfile[]
+    heroes: HeroProfile[],
+    language?: string
 ): Promise<{
     result: { spreadNumber: number, imagePrompt: string, storyText: string, textSide?: string, mainContentSide?: string }[],
     log: WorkflowLog
@@ -934,22 +963,37 @@ export async function generatePrompts(
             throw new Error('Invalid plan structure.');
         }
 
+        const isRTL = language === 'ar' ||
+            (plan as any)?.language === 'ar' ||
+            (blueprint as any)?.language === 'ar' ||
+            /[\u0600-\u06FF]/.test(blueprint?.foundation?.title || '') ||
+            /[\u0600-\u06FF]/.test(blueprint?.foundation?.storyCore || '') ||
+            /[\u0600-\u06FF]/.test((plan as any)?.title || '');
+
         const prompts = plan.spreads.map((spread: any) => {
             const spreadIndex = typeof spread.spread_index === 'number' ? spread.spread_index : (typeof spread.spreadNumber === 'number' ? spread.spreadNumber : 0);
             const bpSpread = blueprint?.structure?.spreads?.find(s => s.spreadNumber === spreadIndex);
             const isCover = spreadIndex === 0;
 
-            const { prompt, validation } = assembleEnglishPromptV7_4(spread, styleProfile, heroes, isCover);
+            const spreadIsRTL = isRTL || /[\u0600-\u06FF]/.test(spread?.storyText || '') || /[\u0600-\u06FF]/.test(bpSpread?.narrative || '');
+
+            const { prompt, validation } = assembleEnglishPromptV7_4(spread, styleProfile, heroes, isCover, spreadIsRTL);
 
             if (!validation.passed) {
                 allValidationErrors.push(`Spread ${spreadIndex}: ${validation.errors.join('; ')}`);
             }
 
             const comp = spread.composition || {};
-            const actionSide = comp.action_zone_side || spread.mainContentSide || 'right';
+            let actionSide = comp.action_zone_side || spread.mainContentSide || (isCover ? (spreadIsRTL ? 'left' : 'right') : 'right');
             let txtSide = comp.text_zone_side || spread.textSide || '';
-            if (txtSide.toLowerCase() !== 'left' && txtSide.toLowerCase() !== 'right') {
-                txtSide = actionSide.toLowerCase() === 'left' ? 'right' : 'left';
+
+            if (isCover) {
+                actionSide = spreadIsRTL ? 'left' : 'right';
+                txtSide = spreadIsRTL ? 'left' : 'right';
+            } else {
+                if (txtSide.toLowerCase() !== 'left' && txtSide.toLowerCase() !== 'right') {
+                    txtSide = actionSide.toLowerCase() === 'left' ? 'right' : 'left';
+                }
             }
 
             return {
@@ -969,7 +1013,7 @@ export async function generatePrompts(
                 inputs: { planSize: plan.spreads.length, heroCount: heroes.length },
                 outputs: {
                     promptCount: prompts.length,
-                    method: 'DNA-Only Likeness Assembler v7.4-unified',
+                    method: 'DNA-Only Likeness Assembler v7.4.1-unified',
                     validationErrors: allValidationErrors.length > 0 ? allValidationErrors : 'none',
                 },
                 status: allValidationErrors.length > 0 ? 'Warning' : 'Success',

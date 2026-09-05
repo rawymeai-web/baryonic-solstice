@@ -759,7 +759,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                 <div className="fixed inset-0 z-50 bg-white overflow-hidden">
                     <EditorScreen
                         storyData={{ ...editorOrder.storyData, orderId: editorOrder.orderNumber } as any}
-                        language={editorOrder.storyData.language || language}
+                        language={language}
                         isGenerating={false}
                         generationProgress={isLegacyMode ? 0 : 100}
                         isLegacy={isLegacyMode}
@@ -812,7 +812,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                 <div className="fixed inset-0 z-50 bg-white overflow-auto">
                     <PreviewScreen
                         storyData={previewOrder.storyData as any}
-                        language={previewOrder.storyData.language || language}
+                        language={language}
                         onOrder={() => {}} // No-op in admin
                         onDownloadPreview={() => {}} // Not needed in admin
                         onRestart={() => {}} // Not needed in admin

@@ -208,7 +208,7 @@ export class StoryWorker {
 
       console.log(`[StoryWorker] Generating Prompts...`);
       const promptRes = await WorkerUtils.withTimeout(
-        generatePrompts(plan, blueprint, styleProfile, heroes)
+        generatePrompts(plan, blueprint, styleProfile, heroes, language)
       );
       const prompts = promptRes.result;
 
