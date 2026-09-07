@@ -4,6 +4,256 @@ import { Validator } from '../rules/validator';
 import { getWordCountForAge } from '../rules/guidebook';
 import { StoryBlueprint, WorkflowLog, Language } from '../../types';
 
+// =========================================================================
+// 1. SPREAD-BY-SPREAD FUNCTION MAPS
+// =========================================================================
+export const SINGLE_HERO_FUNCTION_MAP = `
+Spread 1 — Ground & Introduce: name the hero, their home base, and why
+  THIS goal matters to them specifically. State the anchor object's one
+  physical rule (when/why it glows, hums, whatever it does).
+Spread 2 — Catalyst: the problem or companion appears, sensed from the
+  home base (a sound, a sight) — not dropped in with no lead-in.
+Spread 3 — First Attempt: the hero tries their natural approach, and it
+  fails BECAUSE of their trait. Say the "because" — don't leave it for
+  the reader to infer.
+Spread 4 — Complication: the failure deepens; a calm, passive
+  mentor-figure appears (an animal, not a person).
+Spread 5 — Low Point: the hero's lowest emotional beat, named directly
+  ("felt sad," not just a physical description); the anchor object dims.
+Spread 6 — Insight: the hero notices something through stillness or
+  observation, realizes what to do, and the anchor object responds.
+Spread 7 — Climax: the hero acts on the insight and succeeds through
+  their OWN changed behavior — not luck, not the mentor doing it for them.
+Spread 8 — Return & Close: an explicit bridge back to Spread 1's home
+  base, in the same words used there, ending on a warm, concrete,
+  non-preachy line.
+`.trim();
+
+export const DUAL_HERO_FUNCTION_MAP = `
+Spread 1 — Ground & Introduce Both: name both heroes, their relationship,
+  their shared home base, and why this goal matters to them. State the
+  anchor object's rule.
+Spread 2 — Catalyst: the problem or companion appears, sensed from the
+  home base. If one hero arrives rather than starting the scene, give
+  them a warm on-screen entrance here.
+Spread 3 — First Attempt: the failure comes from a MISMATCH between the
+  two heroes' natural approaches (one rushes, one hesitates) — say the
+  "because," and make clear it's the friction between them, not one
+  hero's fault alone.
+Spread 4 — Complication: the failure deepens for both; a calm
+  mentor-figure appears.
+Spread 5 — Low Point: EACH hero gets their own named feeling — they
+  should not feel identical or interchangeable. This is what makes a
+  second hero a real character instead of a prop.
+Spread 6 — Insight: the realization can belong to one hero or emerge
+  from both, but the other hero must visibly react or contribute, not
+  just watch.
+Spread 7 — Climax: BOTH heroes act, each contributing something distinct
+  only they could bring — a partnership, not one hero solving it while
+  the other stands nearby.
+Spread 8 — Return & Close: both return together; the close reflects
+  what changed between them, not just one hero's arc.
+`.trim();
+
+// =========================================================================
+// 2. GOLD STANDARD EXEMPLARS (EN & AR)
+// =========================================================================
+
+const SINGLE_HERO_EXEMPLARS_EN: Record<string, string[]> = {
+  "1-3": [
+    `EXEMPLAR A (Bedtime Theme, Hero: "Zara", Anchor: Star Jar):
+Spread 1: Zara played in Zara's cozy room. Zara's star jar glowed soft. Zara loved catching stars for sleepy friends.
+Spread 2: Suddenly, a soft cry came. A little lamb peeked in. BAA BAA! The lamb looked scared.
+Spread 3: Zara ran too fast to help. The little lamb got scared and hid. Zara felt mad.
+Spread 4: The little lamb was gone. Zara felt mixed up. A soft moth fluttered by, slow and calm.
+Spread 5: Zara sat down on the rug. Zara's star jar dimmed low. Zara felt sad. SIGH...
+Spread 6: Zara sat very still. The moth glowed soft and slow. Zara thought of the calm moth. Zara's star jar sparkled. Zara felt calm.
+Spread 7: Zara moved so softly. SHHH... Zara's star jar glowed bright. The little lamb peeked out and snuggled close. Zara felt proud!
+Spread 8: Zara carried the sleepy lamb to Zara's cozy room. The lamb fell asleep. SNORE! Zara's star jar glowed. Zara felt happy. Soft and slow was the best kind of magic.`,
+
+    `EXEMPLAR B (Helping Theme, Hero: "Adam", Anchor: Water Pail):
+Spread 1: Adam played in Adam's sunny yard. Adam's little pail glowed warm when happy. Adam loved helping thirsty flowers.
+Spread 2: Suddenly, a soft rustle came. A tiny flower drooped low. RUSTLE RUSTLE! The flower looked thirsty.
+Spread 3: Adam ran too fast with water. The water spilled on the ground. Adam felt upset.
+Spread 4: The flower stayed dry and sad. Adam felt mixed up. A small snail crawled by, slow and calm.
+Spread 5: Adam sat down in the grass. Adam's pail felt cold and empty. Adam felt sad. SIGH...
+Spread 6: Adam sat very still. The snail moved slow and steady. Adam thought of the calm snail. Adam's pail glowed warm. Adam felt calm.
+Spread 7: Adam poured so slowly. DRIP DRIP... Adam's pail glowed bright. The little flower lifted up tall. Adam felt proud!
+Spread 8: Adam carried Adam's pail to Adam's sunny yard. The flower grew tall and bright. Adam's pail glowed. Adam felt happy. Slow and gentle was the best kind of magic.`,
+
+    `EXEMPLAR C (Nature Theme, Hero: "Mira", Anchor: Shiny Leaf):
+Spread 1: Mira played in Mira's shady garden. Mira's shiny leaf sparkled bright when happy. Mira loved watching tiny bugs.
+Spread 2: Suddenly, a small buzz came. A tiny bee landed close. BUZZ BUZZ! The bee looked scared.
+Spread 3: Mira clapped too loud to see. The little bee buzzed away fast. Mira felt upset.
+Spread 4: The bee flew high and away. Mira felt mixed up. A quiet ant walked by, slow and steady.
+Spread 5: Mira sat down by the flowers. Mira's leaf dimmed and cooled. Mira felt sad. SIGH...
+Spread 6: Mira sat very still. The ant moved slow and steady. Mira thought of the calm ant. Mira's leaf sparkled warm. Mira felt calm.
+Spread 7: Mira watched so quietly. HUSH... Mira's leaf glowed bright. The little bee landed soft and close. Mira felt proud!
+Spread 8: Mira carried Mira's leaf to Mira's shady garden. The bee buzzed happy and free. Mira's leaf glowed. Mira felt happy. Quiet and gentle was the best kind of magic.`
+  ],
+  "4-5": [
+    `EXEMPLAR (Adventure Theme, Hero: "Leo", Anchor: Brass Compass):
+Spread 1: In his sunlit workshop nook, Leo polished his grandfather's brass compass. It spun true whenever Leo stayed patient. Leo dreamed of mapping the Whispering Forest.
+Spread 2: A sudden gust swept open the window, carrying a bright golden feather. TWEET! A curious bluebird called from the garden gate.
+Spread 3: Leo dashed through the brambles chasing the bird. His compass spun wild and useless in his shaking hands. Leo felt frustrated.
+Spread 4: The path split three ways into dark shadows. Leo stopped, breathless and confused. An old mountain tortoise lumbered past, following the gentle slope of moss.
+Spread 5: Leo slumped onto a mossy boulder. The compass needle lay still and dull. Leo felt disappointed and alone in the quiet woods.
+Spread 6: Leo closed his eyes and listened to the rustling breeze. He noticed the moss always faced the morning sun. His compass needle clicked firmly northward. Leo smiled with relief.
+Spread 7: Leo walked with steady, confident steps along the sunlit moss path. CLICK! The compass glowed bright gold as he reached the singing bird's sunny hollow. Leo cheered with pride!
+Spread 8: Leo returned home to his cozy workshop nook, placing the golden feather on his finished map. Leo felt joyful. True exploration began with quiet observation.`
+  ]
+};
+
+const DUAL_HERO_EXEMPLARS_EN: Record<string, string[]> = {
+  "1-3": [
+    `EXEMPLAR (Teamwork Theme, Heroes: "Nour" and "Sami", Anchor: Shared Basket):
+Spread 1: Nour and Sami played in their yard. Their basket glowed gold when they felt happy together. Nour and Sami loved carrying treats to friends.
+Spread 2: Suddenly, a soft creak came. A little tortoise looked stuck. CREAK CREAK! The tortoise looked worried.
+Spread 3: Nour pulled too fast. Sami pulled too slow. The basket tipped and treats fell. Nour and Sami felt upset.
+Spread 4: The treats rolled away fast. Nour and Sami felt mixed up. A wise old turtle watched, slow and calm.
+Spread 5: Nour sat down, feeling frustrated. Sami sat down, feeling shy. Their basket felt heavy and empty.
+Spread 6: Nour and Sami sat very still. They watched the calm turtle move slow and steady. Their basket sparkled warm. They felt hopeful.
+Spread 7: Nour held steady. Sami reached slowly. Together, they lifted the basket high. Nour and Sami felt proud!
+Spread 8: Nour and Sami carried their basket to their sunny yard. Their friends smiled and cheered. Their basket glowed. Nour and Sami felt happy. Working slow and together was the best kind of magic.`
+  ]
+};
+
+const SINGLE_HERO_EXEMPLARS_AR: Record<string, string[]> = {
+  "1-3": [
+    `نموذج (قصة وقت النوم، البطلة: "زارا"، الأداة: برطمان النجوم):
+الصفحة 1: في ركن ألعابها الدافئ، جلست زارا تمسك ببرطمان النجوم الصغير. كان البرطمان يتوهج بنور لطيف. أحبت زارا مساعدة أصدقائها الصغار ليناموا بهدوء.
+الصفحة 2: فجأة، سمعت صوتا ناعما. أطل حمل صغير برأسه. ماء ماء! كان الحمل يبدو خائفا.
+الصفحة 3: ركضت زارا بسرعة لتساعده. خاف الحمل الصغير واختبأ. شعرت زارا بالضيق.
+الصفحة 4: اختفى الحمل الصغير. جلست زارا حائرة. مرت فراشة لطيفة تطير بهدوء وسكينة.
+الصفحة 5: جلست زارا على البساط الناعم. هدأ ضوء برطمان النجوم. شعرت زارا بالحزن. هفف...
+الصفحة 6: جلست زارا ساكنة تماما. كانت الفراشة تلمع بنور هادئ. تذكرت زارا هدوء الفراشة. توهج برطمان زارا بنور دافئ. شعرت زارا بالاطمئنان.
+الصفحة 7: خطت زارا بخطوات هادئة جدا. ششش... توهج برطمان زارا بنور مشرق. خرج الحمل الصغير واقترب منها بحب. شعرت زارا بالفخر!
+الصفحة 8: حملت زارا صديقها النائم إلى ركنها الدافئ. نام الحمل الصغير بهدوء. شخير ناعم! أضاء برطمان زارا. شعرت زارا بالفرح. الهدوء والرفق كانا أجمل سحر في الدنيا.`,
+
+    `نموذج (قصة العطاء والمساعدة، البطل: "آدم"، الأداة: دلو الماء):
+الصفحة 1: في حديقته المشمسة، جلس آدم يحمل دلوه الصغير. كان الدلو يلمع بنور دافئ عندما يشعر آدم بالفرح. أحب آدم مساعدة الأزهار العطشى.
+الصفحة 2: فجأة، سمع حفيفا ناعما. مالت زهرة صغيرة ببطء. خش خش! كانت الزهرة تبدو عطشى.
+الصفحة 3: ركض آدم بسرعة ومعه الماء. انسكب الماء على الأرض. شعر آدم بالحزن.
+الصفحة 4: بقيت الزهرة الصغيرة حزينة. جلس آدم حائرا. مر حلزون صغير يزحف بهدوء وصبر.
+الصفحة 5: جلس آدم على العشب الأخضر. شعر الدلو بالبرودة والفراغ. شعر آدم بالأسى. هفف...
+الصفحة 6: جلس آدم ساكنا في مكانه. كان الحلزون يتحرك بهدوء وثبات. تذكر آدم هدوء الحلزون. توهج دلو آدم بنور دافئ. شعر آدم بالسكينة.
+الصفحة 7: صب آدم الماء ببطء ورقة. قطرة قطرة... توهج دلو آدم بنور جميل. ارتفعت الزهرة الصغيرة وتفتحت. شعر آدم بالفخر!
+الصفحة 8: عاد آدم بدلوه الصغير إلى حديقته المشمسة. كبرت الزهرة وأشرقت بالألوان. توهج دلو آدم بنور دافئ. شعر آدم بالفرح. الهدوء واللطف كانا أجمل سحر في الحديقة.`
+  ]
+};
+
+const DUAL_HERO_EXEMPLARS_AR: Record<string, string[]> = {
+  "1-3": [
+    `نموذج (قصة العمل الجماعي، الأبطال: "نور" و"سامي"، الأداة: السلة المشتركة):
+الصفحة 1: في فنائهما الجميل، لعبت نور وسامي معا. كانت سلتهما تلمع بالذهب عندما يشعران بالسعادة معا. أحبت نور وسامي تقديم الهدايا للأصدقاء.
+الصفحة 2: فجأة، سمعا صوتا خافتا. كانت سلحفاة صغيرة تبدو عالقة. طق طق! بدت السلحفاة قلقة.
+الصفحة 3: شدت نور السلة بسرعة، وسحبها سامي ببطء. مالت السلة ووقعت الثمار. شعرت نور وسامي بالضيق.
+الصفحة 4: تدحرجت الثمار بعيدا. جلست نور وجلس سامي في حيرة. راقبتهما سلحفاة حكيمة بهدوء وسكينة.
+الصفحة 5: جلست نور شاعرة بالأسف، وجلس سامي هادئا وخجولا. بدت سلتهما ثقيلة وفارغة.
+الصفحة 6: جلست نور وسامي بهدوء تام. راقبا السلحفاة تتحرك ببطء وثبات. تلألأت سلتهما بنور دافئ. شعرا بالأمل.
+الصفحة 7: ثبتت نور السلة جيدا، ومد سامي يده برفق. رفعا السلة معا إلى الأعلى. شعرت نور وسامي بالفخر!
+الصفحة 8: حملت نور وسامي سلتهما إلى فنائهما المشمس. ابتسم الأصدقاء وفرحوا معا. توهجت السلة بنور مشرق. شعرت نور وسامي بالسعادة. العمل بهدوء وتكاتف كان أجمل سحر في العالم.`
+  ]
+};
+
+function getExemplars(isDual: boolean, age: number, language: Language): string {
+  const isAr = language === 'ar';
+  const ageBand = age <= 3 ? "1-3" : (age <= 5 ? "4-5" : (age <= 8 ? "6-8" : "9-12"));
+  
+  if (isDual) {
+    const pool = (isAr ? DUAL_HERO_EXEMPLARS_AR[ageBand] : DUAL_HERO_EXEMPLARS_EN[ageBand]) ||
+                 DUAL_HERO_EXEMPLARS_EN["1-3"];
+    return pool.join("\n\n---\n\n");
+  } else {
+    const pool = (isAr ? SINGLE_HERO_EXEMPLARS_AR[ageBand] : SINGLE_HERO_EXEMPLARS_EN[ageBand]) ||
+                 SINGLE_HERO_EXEMPLARS_EN["1-3"];
+    return pool.join("\n\n---\n\n");
+  }
+}
+
+// =========================================================================
+// 3. SYSTEM PROMPT TEMPLATE
+// =========================================================================
+const NARRATIVE_WRITER_TEMPLATE = `
+ROLE: You are a celebrated picture-book author and bedtime storyteller,
+known for the kind of book a parent doesn't mind reading for the
+hundredth time — warm, musical, rhythmic, and never a single wasted word.
+You write for {{TARGET_LANGUAGE}}, for a {{CHILD_AGE}}-year-old
+{{HERO_INTRO}}.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SPREAD-BY-SPREAD FUNCTION MAP (the shape is fixed — everything else is yours)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{FUNCTION_MAP}}
+
+This shape is not optional. Everything about HOW you deliver each beat —
+word choice, imagery, rhythm, the object itself, the animal itself — is
+entirely yours, and that's what the exemplars below are for.
+
+You will be shown 2-3 EXEMPLAR STORIES below, written in the exact voice,
+rhythm, and vocabulary level this age deserves. Study them the way an
+apprentice studies a master's technique: absorb the sentence length, the
+warmth, the sound-word placement, the way feelings are named plainly, and
+the way each story returns home at the end.
+
+Do NOT reuse their plot, their objects, their characters, or their words.
+Every exemplar below features a different hero, a different magic object,
+and a different animal friend — on purpose, so you learn the STYLE, not
+the STORY. Your job is to write a brand-new story, using this blueprint,
+in that same voice.
+
+BLUEPRINT FOR THIS STORY:
+{{BLUEPRINT_JSON}}
+
+{{CUSTOM_STORY_SECTION}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXEMPLARS (age {{CHILD_AGE}} voice)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{EXEMPLARS}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NON-NEGOTIABLES (short on purpose — everything else is voice, not rule)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. The hero's world is entirely imaginative: talking animals, gentle
+   magical guides, and friendly creatures are who they turn to and learn
+   from. Keep the cast whimsical and self-contained rather than drawing
+   on realistic family roles.
+2. Keep every image gentle, cozy, and wonder-filled — soft light, warm
+   colors, sparkling textures. Any trouble in the story should feel like
+   a small, solvable worry (a shy creature hiding, a gust of wind) —
+   nothing intense, graphic, or frightening.
+3. {{HERO_NAME_RULE}}
+4. Every spread stays within {{WORD_COUNT_MIN}}–{{WORD_COUNT_MAX}} words.
+   If a sentence runs long, cut an adjective before you cut a story beat.
+5. {{PRONOUN_RULE}}
+6. Every spread must ground itself in what actually happened in the
+   previous one — no obstacle disappears off-page, and nothing teleports.
+7. The final spread must explicitly carry the hero back to the home base
+   named in spread 1, in the same words used there, and close on a warm,
+   concrete, non-preachy line — never a stated "moral of the story," but
+   never silence either.
+8. Arabic output only: plain text, no Tashkeel/Harakat.
+
+Write the {{TARGET_LANGUAGE}} manuscript now, spread by spread, in the
+voice you just studied.
+
+OUTPUT JSON SCHEMA:
+[
+  { "spreadNumber": 1, "text": "String" },
+  { "spreadNumber": 2, "text": "String" },
+  { "spreadNumber": 3, "text": "String" },
+  { "spreadNumber": 4, "text": "String" },
+  { "spreadNumber": 5, "text": "String" },
+  { "spreadNumber": 6, "text": "String" },
+  { "spreadNumber": 7, "text": "String" },
+  { "spreadNumber": 8, "text": "String" }
+]
+`.trim();
+
+// =========================================================================
+// 4. MAIN GENERATION FUNCTION
+// =========================================================================
 export async function generateStoryDraft(
     blueprint: StoryBlueprint,
     language: Language,
@@ -15,7 +265,7 @@ export async function generateStoryDraft(
 ): Promise<{ result: { text: string }[], log: WorkflowLog }> {
 
     const startTime = Date.now();
-    const age = parseInt(blueprint.foundation?.targetAge || "5");
+    const age = parseInt(blueprint.foundation?.targetAge || "3");
 
     const languageMap: Record<Language, string> = {
         'en': 'English',
@@ -36,210 +286,60 @@ export async function generateStoryDraft(
         return await withRetry(async () => {
             const wordCountRule = getWordCountForAge(age);
 
-            const prompt = `
-            ROLE: Master Storyteller (Language: ${targetLang}).
-            TASK: Write the final manuscript for individual spreads.
-            
-            BLUEPRINT: ${JSON.stringify(blueprint)}
-            
-            ${customStoryText ? `**CUSTOM SCRIPT OVERRIDE (CRITICAL MUST FOLLOW):**
-            - The user has provided an exact poem or text for the story:
-            """
-            ${customStoryText}
-            """
-            - **MANDATORY DIRECTIVE:** You MUST use this provided text across the spreads as the foundation of the story verbatim, or adapt it cleanly if needed to match the ${spreadCount} spreads. 
-            - Do NOT invent new plots that deviate from this text.` : ''}
-            
-            7. **NATIVE LANGUAGE & CULTURAL TRANSLATION:** 
-               - The final text MUST be in **${targetLang}**.
-               - **NO TASHKEEL/HARAKAT:** If writing in Arabic, ABSOLUTELY DO NOT use any vowel marks or diacritics (Tashkeel). Write in plain, clean Arabic text only.
-               - **NATURAL FLOW & LYRICAL CADENCE:** Do not write choppy, disjointed, or "robotic" bullet-point sentences. Connect your thoughts beautifully using natural conjunctions (و، فـ، ثم، لكن، لأن) so the text flows like a real bedtime story.
-               - **ARABIC CHILD APPEAL & VOCABULARY BAN:**
-                 - ❌ **STRICTLY BANNED PHRASES:** Never use adult fatigue, grim expressions, or heavy emotional words (e.g., NEVER write "زفر بتعب" [sighed with exhaustion], "أرهقه التفكير", "شعر بالعجز", "عقد حاجبيه بغضب").
-                 - ✅ **REQUIRED TONE:** Keep the tone warm, melodic, and joyful (نغمة هادئة، دافئة، ومحببة كأنشودة لطيفة). Use sweet, endearing expressions of childlike curiosity (e.g. "تساءل ${childName} بابتسامة لطيفة", "أمال رأسه بحيرة جميلة", "فكر قليلاً ثم رفرفت عيناه بالفرح").
-               - Ensure natural phrasing and cultural appropriateness.
-            
-            **CRITICAL IDENTITY RULE:**
-            - The Hero's Name is: **${childName}**.
-            - You MUST use the name "${childName}" in the story.
-            - DO NOT use placeholders like "Rayan", "Ahmed", "Sarah", or "The Boy". Use "${childName}".
-            
-            MANDATES from Guidebook:
-            - Age Group: ${age} Years Old.
-            - Word Count Target: ${wordCountRule.min}-${wordCountRule.max} words per spread.
-            - Tone: Whimsical, Rhythmic, Engaging.
-            - Structure: STRICTLY follow the Blueprint 'spreads'. Do not invent new plot points.
-            - Language: ${targetLang}.
-            
-            **THE ${spreadCount}-PART STRUCTURAL FRAMEWORK (MANDATORY TONE GUIDES):**
-            You must write the text for each spread to match its exact psychological purpose in the sequence:
-            - **Spread 1 (Intro):** Establish the Normal World, Setting, and point clearly to the Hero's Desire.
-            - **Spread 2 (Catalyst / The Interruption):** A sudden external sound, sight, or disruption physically breaks into the Hero's quiet world (e.g., a sharp tap at the glass, a loud chirp outside).
-            - **Spread 3 (First Attempt):** Show the Hero eagerly rushing in to solve the problem and failing/struggling.
-            - **Spread 4 (Complication):** The situation gets trickier or the obstacle moves further away.
-            - **Spread 5 (Lowest Point):** The hardest emotional beat. Physicalize the sadness (drooping shoulders, heavy sigh).
-            - **Spread ${Math.ceil(spreadCount * 0.75)} (Insight / Epiphany):** The "Aha!" moment. The Hero pauses, quietly observes a specific natural clue or animal guide, and realizes what to do.
-            - **Spread ${spreadCount - 1} (Final Attempt):** The Hero applies the quiet/clever lesson and succeeds!
-            - **Spread ${spreadCount} (Warm Emotional Payoff & Bedtime Comfort):** End with a comforting, cozy, heartwarming resolution (snuggling under the blanket, drawing the adventure in a book, whispering a bedtime goodnight, a warm hug).
-              - ❌ **STRICTLY FORBIDDEN:** NEVER state the moral as an adult proverb, thesis statement, or essay conclusion (e.g. NEVER write: "He knew: patience and observation achieve more than hurried effort").
-              - ✅ **REQUIRED:** Show the child feeling happy, safe, loved, and proud of themselves.
-    
-            **CRITICAL QUALITY GUIDELINES (Must Follow):**
-            1. **CONCISE & PUNCHY STORYBOOK PROSE:**
-               - Parents prefer crisp, beautiful, easy-to-read lines that leave room for the illustrations to shine.
-               - Keep strictly within target: **${wordCountRule.min}–${wordCountRule.max} words per spread**.
-               - Mix short, energetic sentences with smooth, rhythmic lines.
-               - **VOCABULARY LOCK FOR AGE ${age}:**
-                 ${age <= 3 ? `
-                 - **TODDLER VOCABULARY PURITY (Ages 1–3):** Use ONLY simple words a 3-year-old and second-language parents easily follow.
-                   - ❌ **STRICTLY BANNED COMPLEX VERBS:** No "scurried", "slumped", "sank", "swayed", "drifted", "fluttered", "peered", "observed", "retreated", "inquired", "approached".
-                   - ✅ **APPROVED REPLACEMENTS:** Use "ran", "hid", "sat down", "moved", "blew", "looked", "peeked", "asked", "walked up".
-                   - ❌ **NO OBSCURE BIOLOGICAL NAMES:** Do not write "fennec fox" or "canopy". Write "little fox" and "big trees".
-                   - ❌ **NO ADVANCED EMOTIONS:** Do NOT use "frustrated", "confused", "disappointed", "relieved".
-                   - ✅ **APPROVED PRIMARY EMOTIONS:** Use "mad", "upset", "mixed up", "sad", "calm", "safe", "happy", "proud", "scared", "cozy".
-                 ` : `
-                 - **AGE-APPROPRIATE VOCABULARY (Ages ${age}):** STRICTLY use clear, concrete everyday words. ABSOLUTELY NO archaic, academic, or adult literary words (❌ No "nook", "endeavor", "observation", "haste", "foster", "fatigue", "apparatus"). Use concrete child words (✅ "play spot", "room", "bed", "blanket", "rug", "puddle", "branches", "window").
-                 `}
+            const isDual = !!(
+                (blueprint as any)?.heroMode === 'dual' ||
+                (secondCharacter && secondCharacter.name && secondCharacter.type !== 'object')
+            );
+            const heroNameA = childName;
+            const heroNameB = secondCharacter?.name || (blueprint as any)?.heroNameB || 'Friend';
 
-            2. **THE PAGE-TURN SENSORY BRIDGE RULE (APPLIES ACROSS ALL SPREADS):**
-               - Every spread must end with a natural setup, and the next spread must start by continuing that exact physical action or sensory event.
-               - **No Teleporting:** If the hero is in their play spot in Spread 1, they cannot suddenly be in the desert in Spread 2 without stepping out the door or hearing a sound outside.
-               - **No Unearned Names:** The hero cannot magically know an unfamiliar animal's name in Spread 2 before meeting it.
-               - **Sensory Triggers:** Link page turns with sounds, visual flashes, or physical motions (e.g., *Spread 1 ends with quiet $\rightarrow$ Spread 2 starts with a soft cry outside $\rightarrow$ Spread 3 starts with ${childName} running outside*).
+            const functionMap = isDual ? DUAL_HERO_FUNCTION_MAP : SINGLE_HERO_FUNCTION_MAP;
+            const exemplars = getExemplars(isDual, age, language);
 
-            3. **INTUITIVE SOUND WORDS (ONOMATOPOEIA) ONLY:**
-               - ${age <= 5 ? `
-               - **UNIVERSAL SOUND EFFECT MANDATE:** For age ${age}, every action spread MUST include at least one fun, intuitive, recognizable sound effect in capital letters.
-               - ✅ **APPROVED SOUNDS:** *CRUNCH!*, *SHHH...*, *SNIFF SNIFF!*, *SIGH...*, *SNORE!*, *SPLASH!*, *ROAR!*, *BEEP BEEP!*, *TAP TAP!*, *FLAP FLAP!*, *TWEET TWEET!*, *ZOOM!*, *GIGGLE GIGGLE!*, *SQUEAK!*, *CLAP CLAP!*, *DRIP DROP!*.
-               - ❌ **STRICTLY BANNED INVENTED SOUNDS:** NEVER invent unpronounceable spellings like "WHIMP-WHIMP" or "WHISPER-WHISP".
-               - **CONCRETE SENSORY OVER ABSTRACT:** Never write abstract descriptions like "quick, happy sounds". Write concrete actions and real sounds: "The little fox wiggled. GIGGLE GIGGLE!".
-               ` : `
-               - **ACTIVE DIALOGUE & CLEVERNESS:** Include lively spoken dialogue and show the hero actively making smart choices.
-               `}
+            const heroIntro = isDual
+                ? `duo named ${heroNameA} and ${heroNameB}`
+                : `named ${childName}`;
 
-            4. **OBJECT CONTINUITY & THE PRONOUN RULE ("${childName}'s pebble", NOT "a pebble"):**
-               - When referring to the hero's special item across spreads, NEVER swap it to "a pebble" (which sounds like a brand-new object).
-               - ✅ **USE HERO POSSESSIVE:** Always write "${childName}'s pebble", "${childName}'s compass", "${childName}'s toy". This satisfies zero third-person pronouns while maintaining 100% object permanence and continuity!
+            const heroNameRule = isDual
+                ? `Both heroes' names are exactly "${heroNameA}" and "${heroNameB}" throughout — never substituted or shortened.`
+                : `The hero's name is exactly "${childName}" throughout — never substituted, shortened, or referred to only by pronoun.`;
 
-            5. **CAUSE-FIRST ANCHOR LOGIC:**
-               - Always state the cause BEFORE the effect.
-               - ❌ *Bad (Backwards):* "Glowed warm for happy ${childName}."
-               - ✅ *Good (Cause First):* "${childName} felt happy and calm. ${childName}'s pebble glowed warm."
+            const pronounRule = isDual
+                ? (age <= 5
+                    ? `For ages 1-5: refer to the pair as "${heroNameA} and ${heroNameB}" or "they/their" (never "he/she/his/her" for either individual hero) — this keeps a shared object read as the same one across spreads without repeating both names every sentence.`
+                    : `Use correct pronouns for each hero matching their gender.`
+                  )
+                : (age <= 5
+                    ? `For ages 1-5: use "${childName}'s [object]" instead of "her/his [object]" — this isn't just a style choice, it's what keeps a recurring object read as the SAME object from spread to spread. Pronouns are fine once the age tier allows them (6+).`
+                    : (childGender
+                        ? `Use gendered pronouns ("${childGender === 'boy' ? 'he/him/his' : 'she/her/hers'}") naturally.`
+                        : `Refer to the hero by name "${childName}".`
+                      )
+                  );
 
-            6. **MENTOR / HELPER ANIMAL PURPOSE:**
-               - If a helper or mentor animal appears (e.g., an owl, turtle, or lizard), explicitly state what quality they embody:
-               - *Spread 4:* "An owl blinked, slow and calm."
-               - *Spread 6 Callback:* "${childName} thought of the slow owl. ${childName} sat very still." (Earned and meaningful callback!).
+            const customSection = customStoryText ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CUSTOM SCRIPT OVERRIDE (CRITICAL MUST FOLLOW):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The user has provided an exact text or poem for the story:
+"""
+${customStoryText}
+"""
+MANDATORY: Distribute this text faithfully across the ${spreadCount} spreads.
+`.trim() : '';
 
-            7. **WARM CHILD-VOICE CLOSING TAKEAWAY (NO PREACHING, BUT NO ABRUPT STOP):**
-               - Spread ${spreadCount} MUST conclude with a comforting bedtime realization in the child's own voice:
-               - *Example:* "Quiet and slow was the best kind of magic."
-               - *Example:* "Being gentle made the warmest kind of friendship."
-               - ❌ Do NOT preach adult thesis statements (e.g. "Patience achieves more than haste").
-               - ❌ Do NOT abruptly stop without stating what made the ending happy and safe.
-
-            8. **COMPLETE GRAMMATICAL SENTENCES:**
-               - Never drop essential verbs to dodge pronouns.
-               - ❌ *Bad (Fragment):* "${childName} content."
-               - ✅ *Good:* "${childName} felt calm and happy."
-
-            **5. INTRODUCTION PROTOCOL & CONCRETE OPENING FORMULA (CRITICAL):**
-            - **Spread 1 (The Hero, Home Base & Personal Motive Origin):** Open with a VIVID SCENE, ACTION, or EMOTION grounded in the child's starting **Home Base** (e.g., cozy play spot, bedroom rug, sunny garden). The hero's name (${childName}) MUST appear naturally within the first 1-2 sentences, but NEVER as the subject of the very first sentence as a bare factual introduction.
-            - **MANDATORY CONCRETE OPENING TEMPLATE FOR SPREAD 1:**
-              "${childName} played in ${childName}'s play spot. ${childName}'s special pebble glowed warm. ${childName} loved helping animal friends fall asleep."
-            - **Grounded Home Base Mandate:** Spread 1 MUST explicitly ground the child's starting location so the parent reader understands where the adventure begins (and so Spread ${spreadCount}'s return journey makes complete sense).
-            - **Personal Motive Origin (NO Arbitrary Missions):** The hero's desire MUST have a clear personal, emotional origin (e.g., love for animals, a cherished gift, bedtime wonder). NEVER drop an ungrounded mission statement onto the character without explaining why it matters to them.
-            - Focus on their personality and emotions (e.g., curious, dreamy). STRICTLY DO NOT discuss ANY physical body traits, clothing, or skin colors.
-            
-            ${secondCharacter && secondCharacter.name ? `**DUAL HERO PROTOCOL (STRICT ONBOARDING & AGENCY):**
-            - The companion ${secondCharacter.name} MUST be explicitly introduced by name in Spread 1 or opening of Spread 2.
-            - **WARM ENTRANCE:** Write a clear, warm welcome sentence establishing their presence and 1-2 personality traits (e.g., "And right by ${childName}'s side was ${secondCharacter.name} — the quiet observer who noticed every little clue.").
-            - **ACTIVE AGENCY & INTERIOR LIFE:** Do NOT make ${secondCharacter.name} a silent helper or generic bystander. ${secondCharacter.name} must have distinct dialogue, complementary skills, and real emotional reactions throughout the journey.` : ''}
-
-            **MAGICAL ANCHOR / EMOTIONAL BAROMETER RULE (CRITICAL):**
-            - If the story features a special anchor object (e.g., compass, glowing pebble, lantern), you MUST state its simple physical behavior rule in Spread 1 upon first introduction:
-              - *Example:* "${childName}'s special pebble glowed warm when ${childName} felt calm and happy, but felt cold when ${childName} was worried."
-            - Pay this off consistently across the beats (glowing in Spread 1-2, feeling cold/dim at the low point in Spread 5, glowing warm and bright at the insight/success in Spreads 6-8).
-
-            **CAUSAL CONTINUITY & RETURN TRANSITIONS (NO TELEPORTS):**
-            - Every spread must open by directly resolving or responding to the previous spread's obstacle.
-            - **Spread ${spreadCount} Return Journey Bridge:** You MUST include an explicit bridging clause showing how the hero (and any friend) travels smoothly from the wild/adventure space back to the Spread 1 Home Base (e.g., *"${childName} carried the sleepy new friend back to ${childName}'s cozy play spot..."*). Never jump-cut across settings without a physical bridge.
-
-            **THEMATIC SECRET REVEAL & CLIMAX PAYOFF:**
-            - The climax (Spread ${spreadCount - 1}) and resolution (Spread ${spreadCount}) MUST directly deliver on the promise of the Title and Theme.
-
-            ${age <= 5 ? `
-            **AGE ${age} PRONOUN POLICY GUARD (MANDATORY RESTRICTION):**
-            - The final text must NOT use third-person pronouns (he, she, him, her, his, hers, it, its) to refer to the hero or a named companion.
-            - **HOW TO COMPLY NATURALLY:**
-              1. Use hero's name possessive for objects and settings: "${childName}'s pebble", "${childName}'s play spot".
-              2. Use natural active verbs and complete sentences: "${childName} sat down in the sand. ${childName}'s pebble felt cold. ${childName} felt sad. SIGH...".
-            ` : childGender ? `
-            **AGE ${age} PRONOUN GUIDANCE (CRITICAL):**
-            - The main hero (${childName}) is a **${childGender}**.
-            ${secondCharacter?.gender ? `- The companion (${secondCharacter.name}) is a **${secondCharacter.gender}**.` : ''}
-            - When using pronouns, you MUST correctly use gendered pronouns ("He/His", "She/Her", or their equivalents in the target language) matching their respective genders.
-            ` : `
-            **AGE ${age} PRONOUN RULE — GENDER UNKNOWN (CRITICAL):**
-            - The hero's gender is **not known**. ALWAYS refer to the hero by their name: "${childName}".
-            `}
-
-            **EMOTIONAL & CAUSALITY RULES (CRITICAL):**
-            1. **DUAL EMOTIONAL SENSORY & NAMING RULE (AGE-AWARE):**
-               - For young children (especially ages 1–5), combine physical sensations with direct, simple emotion words:
-                 - ❌ *Bad (Vague mood only):* "Her shoulders dropped low and the world felt all wrong."
-                 - ❌ *Bad (Overly complex for age 3):* "${childName} felt frustrated and disappointed."
-                 - ✅ *Good (Age 1–3):* "${childName} sat down in the sand. ${childName}'s pebble felt cold. ${childName} felt sad. SIGH..."
-                 - ✅ *Good (Climax/Success):* "${childName} smiled and jumped up. ${childName} felt proud!"
-                 - ❌ *Bad (Flat assertion only):* "${childName} was sad."
-                 - ✅ *Good (Physical + Named Emotion):* "${childName}'s shoulders dropped low. ${childName} sat down in the soft sand, feeling confused and disappointed."
-                 - ✅ *Good (Climax/Success):* "${childName} smiled, jumping up with a proud, happy giggle!"
-               - Use clear, relatable feelings: *happy, sad, worried, proud, surprised, scared, relieved, cozy, content, loved, confused, disappointed*.
-            2. **PACING & BREATHING ROOM:**
-               - **Do not rush.** Let the reader live inside the moment. Do not just summarize the chronological actions. 
-               - **USE PAUSES:** If a character is listening or thinking, dedicate the physical space of the sentences to that silence. Let the scene breathe.
-               - If a spread is about sadness or a lowest point, stay in that emotion for the entire text of that spread. Do NOT rush to resolve it faster than the emotional tension justifies.
-               - The story must feel earned, not like a checklist of plot points being crossed off.
-            3. **CAUSE & EFFECT:** No coincidences. 
-               - Success MUST come from the Hero's choice/action foundation.
-            4. **INSIGHT MOMENT (TWO BEATS):** 
-               - The "Insight" must be explicitly split into:
-                 1. **Observation:** The Hero notices a specific detail (e.g., "Then he saw the tiny ant carrying the large crumb").
-                 2. **Realization:** The Hero understands what it means, internalizing the lesson before acting on it.
-               - *Do not rush this.*
-            5. **RESOLUTION PAYOFF (CALLBACK):** 
-               - The ending MUST explicitly mention or reference the **initial obstacle** to show how far they've come.
-            6. **SETTING CONTINUITY (CRITICAL NARRATIVE ANCHOR):** 
-               - You MUST use consistent terminology for locations based on the blueprint.
-               - If the blueprint specifies the location as a "Museum", refer to it as a museum. Do not abruptly rename it to a "Tomb" or "Temple" in the next stanza unless the blueprint explicitly states the characters physically moved. Consistency prevents reader confusion.
-               ${age < 6 ? `
-            7. **LANGUAGE DENSITY (STRICT FOR AGE 1-5):** 
-               - **MAX 1 ADJECTIVE PER NOUN:** Never stack them.
-                 - *Bad:* "The big, red, shiny ball."
-                 - *Good:* "The shiny red ball" (Limit) or just "The red ball."
-               ` : ''}
-            8. **CONTENT SAFETY & APPROPRIATENESS (STRICT BAN):**
-               - ABSOLUTELY NO skulls, skeletons, weapons, violence, or truly scary monsters.
-               - ABSOLUTELY NO rainbows. Do not describe rainbows.
-               - **NO PARENTS/ADULTS VISUALLY:** Even if the custom poem mentions parents ("Mama", "Dad"), treat them as OFF-SCREEN voices or presences. The visual focus AND the active narrative problem-solving MUST remain solely on the children. Do not write action beats that would require drawing an adult.
-               - ONLY use completely fictional supporting characters (e.g., talking animals, wizards) if needed.
-               - This is a children's book. Even for "adventure" themes, use kid-friendly props like glowing crystals, ancient maps, compasses, or colorful keys instead.
-
-            OUTPUT JSON SCHEMA:
-            [
-                { 
-                    "spreadNumber": 1, 
-                    "text": "String", 
-                    "spread1Checklist": { 
-                        "homeBaseNamed": true, 
-                        "personalMotiveOrigin": true, 
-                        "anchorTriggerStated": true 
-                    } 
-                },
-                { "spreadNumber": 2, "text": "String" },
-                ... (${spreadCount} items total, spreadNumber 1 through ${spreadCount})
-            ]
-            `;
+            const prompt = NARRATIVE_WRITER_TEMPLATE
+                .replace('{{FUNCTION_MAP}}', functionMap)
+                .replace('{{EXEMPLARS}}', exemplars)
+                .replace('{{HERO_INTRO}}', heroIntro)
+                .replace('{{HERO_NAME_RULE}}', heroNameRule)
+                .replace('{{PRONOUN_RULE}}', pronounRule)
+                .replace('{{CUSTOM_STORY_SECTION}}', customSection)
+                .replaceAll('{{TARGET_LANGUAGE}}', targetLang)
+                .replaceAll('{{CHILD_AGE}}', String(age))
+                .replaceAll('{{WORD_COUNT_MIN}}', String(wordCountRule.min))
+                .replaceAll('{{WORD_COUNT_MAX}}', String(wordCountRule.max))
+                .replace('{{BLUEPRINT_JSON}}', JSON.stringify(blueprint, null, 2));
 
             const model = ai().getGenerativeModel({
                 model: 'gemini-2.5-flash',
@@ -261,7 +361,7 @@ export async function generateStoryDraft(
                 log: {
                     stage: 'Drafting',
                     timestamp: startTime,
-                    inputs: { title: blueprint.foundation.title },
+                    inputs: { title: blueprint.foundation?.title || 'Story' },
                     outputs: { pageCount: draft.length },
                     status: 'Success',
                     durationMs: Date.now() - startTime
@@ -282,3 +382,4 @@ export async function generateStoryDraft(
         };
     }
 }
+
