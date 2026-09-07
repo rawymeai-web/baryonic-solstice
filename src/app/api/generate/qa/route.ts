@@ -123,13 +123,15 @@ export async function POST(req: Request) {
         const responsePayload = {
             ...(savedData || {}),
             ...qaResult,
-            overallDecision: qaResult.overall_decision || qaResult.overallDecision,
-            recommendedTextSide: qaResult.recommended_text_side || qaResult.recommendedTextSide,
-            characterConsistencyStatus: qaResult.character_consistency_status || qaResult.characterConsistencyStatus,
-            styleConsistencyStatus: qaResult.style_consistency_status || qaResult.styleConsistencyStatus,
-            textClearanceStatus: qaResult.text_clearance_status || qaResult.textClearanceStatus,
+            overallDecision: qaResult.overall_decision,
+            recommendedTextSide: qaResult.recommended_text_side,
+            characterConsistencyStatus: qaResult.character_consistency_status,
+            wardrobeConsistencyStatus: qaResult.wardrobe_consistency_status,
+            styleConsistencyStatus: qaResult.style_consistency_status,
+            textClearanceStatus: qaResult.text_clearance_status,
             characterReasoning: finalCharacterReasoning,
-            styleReasoning: qaResult.style_reasoning || qaResult.styleReasoning,
+            wardrobeReasoning: qaResult.wardrobe_reasoning || "",
+            styleReasoning: qaResult.style_reasoning,
             textReasoning: finalTextReasoning,
             
             // New active regeneration & offset recommendations

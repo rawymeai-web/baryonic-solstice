@@ -317,15 +317,15 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         return stylePrompt;
     };
 
-    // Extract schema version from either the new v5.0 English stamp or the legacy v4 JSON meta block
+    // Extract schema version from either the new v5.0+ English stamp or the legacy v4 JSON meta block
     const extractPromptMeta = (promptText: string) => {
         try {
             if (!promptText || typeof promptText !== 'string') return { version: null, generatedAt: null };
 
-            // NEW: v5.x/v6.x DNA-first English prompt stamps
-            const v5Match = promptText.match(/\[v(\d+\.\d+[-\w]*)\]/);
-            if (v5Match) {
-                return { version: `v${v5Match[1]}`, generatedAt: null };
+            // NEW: v5.x/v6.x/v7.x DNA-first English prompt stamps (e.g. [v7.5-wardrobe-unified], [v7.4.1-dna-unified])
+            const vMatch = promptText.match(/\[(v[\w\.\-]+)\]/i);
+            if (vMatch) {
+                return { version: vMatch[1], generatedAt: null };
             }
 
             // LEGACY: v4/v4.1 JSON meta block
@@ -351,19 +351,19 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
     const PromptVersionBadge: React.FC<{ promptText: any }> = ({ promptText }) => {
         const { version, generatedAt } = extractPromptMeta(promptText);
-        const isNew = version && (
-            version.toLowerCase().includes('v2') || 
-            version.toLowerCase().includes('v3') || 
-            version.toLowerCase().includes('v4') || 
+        const isNew = !!version && (
+            /^v[56789]|\bv\d+/i.test(version) ||
             version.toLowerCase().includes('v5') || 
-            version.toLowerCase().includes('v6')
+            version.toLowerCase().includes('v6') || 
+            version.toLowerCase().includes('v7') ||
+            version.toLowerCase().includes('v8')
         );
         const dateLabel = generatedAt ? new Date(generatedAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
         return (
             <div className="flex items-center gap-2 px-1 mb-1">
                 {isNew ? (
                     <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-0.5">
-                        ✅ {version}
+                        ✅ [{version}]
                     </span>
                 ) : (
                     <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-red-100 text-red-600 border border-red-200 rounded-full px-2.5 py-0.5">
@@ -462,11 +462,26 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     };
 
     const handleTextSideChange = (index: number, newSide: 'left' | 'right') => {
-        setPageEdits(prev => ({
-            ...prev,
-            [index]: { ...(prev[index] || { text: getSpreadText(spreads[index], index), prompt: getPromptForIndex(index, spreads[index]) }), textSide: newSide }
+        setPageEdits(prev => {
+            const currentSpread = spreads[index] || {};
+            const existingOffsetX = prev[index]?.textOffsetX !== undefined ? prev[index].textOffsetX : currentSpread.textOffsetX;
+            let nextOffsetX = existingOffsetX;
+            // If switching to right, clear any left-half offset (< 200)
+            if (newSide === 'right' && existingOffsetX !== undefined && existingOffsetX < 200) {
+                nextOffsetX = undefined;
+            } else if (newSide === 'left' && existingOffsetX !== undefined && existingOffsetX >= 200) {
+                nextOffsetX = undefined;
+            }
 
-        }));
+            return {
+                ...prev,
+                [index]: {
+                    ...(prev[index] || { text: getSpreadText(currentSpread, index), prompt: getPromptForIndex(index, currentSpread) }),
+                    textSide: newSide,
+                    textOffsetX: nextOffsetX
+                }
+            };
+        });
         // We trigger an immediate save for UX snappiness (debounced)
         debouncedSave(100);
     };
@@ -714,6 +729,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             safePromptToUse = safePromptToUse.replace(/Image 2 defines the character for \[\[HERO_1\]\]/g, "Image 1 defines the character for [[HERO_1]]");
             safePromptToUse = safePromptToUse.replace(/Image 4 defines the character for \[\[HERO_2\]\]/g, "Image 2 defines the character for [[HERO_2]]");
 
+            const promptRequiresHero2 = safePromptToUse.includes('[[HERO_2]]') || safePromptToUse.includes('Image 2');
+            const effectiveHeroB = promptRequiresHero2 ? compressedHeroB : undefined;
+
             // --- GENERATION AUDIT: capture exactly what will be sent ---
             const auditSnapshot = {
                 spreadIndex: index,
@@ -722,13 +740,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         ? compressedHeroA
                         : `data:image/jpeg;base64,${compressedHeroA.replace(/^data:image\/\w+;base64,/, '')}`)
                     : null,
-                heroBUrl: compressedHeroB
-                    ? (compressedHeroB.startsWith('http')
-                        ? compressedHeroB
-                        : `data:image/jpeg;base64,${compressedHeroB.replace(/^data:image\/\w+;base64,/, '')}`)
+                heroBUrl: effectiveHeroB
+                    ? (effectiveHeroB.startsWith('http')
+                        ? effectiveHeroB
+                        : `data:image/jpeg;base64,${effectiveHeroB.replace(/^data:image\/\w+;base64,/, '')}`)
                     : null,
                 heroACount: compressedHeroA ? 1 : 0,
-                heroBCount: compressedHeroB ? 1 : 0,
+                heroBCount: effectiveHeroB ? 1 : 0,
                 promptSent: safePromptToUse,
                 dnaSource,
             };
@@ -739,12 +757,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 index,
                 mode: 'DNA-Only v6.0',
                 heroA_has: !!compressedHeroA,
-                heroB_has: !!compressedHeroB,
+                heroB_has: !!effectiveHeroB,
                 promptLength: auditSnapshot.promptSent.length,
             });
 
             console.group(`%c 🧬 DNA AUDIT [Spread ${index}] `, 'background: #222; color: #bada55; font-size: 12px; font-weight: bold;');
-            console.log('[v6.0 DNA-Only] Images sent:', { heroA: !!compressedHeroA, heroB: !!compressedHeroB });
+            console.log('[v6.0 DNA-Only] Images sent:', { heroA: !!compressedHeroA, heroB: !!effectiveHeroB });
             console.log('Prompt (first 300 chars):', auditSnapshot.promptSent.substring(0, 300));
             console.groupEnd();
 
@@ -752,7 +770,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 prompt: auditSnapshot.promptSent,
                 stylePrompt: typeof visualDNA === 'string' ? visualDNA : String(visualDNA || ''),
                 heroDNABase64: compressedHeroA,
-                secondDNABase64: compressedHeroB,
+                secondDNABase64: effectiveHeroB,
                 characterDescription: storyData.mainCharacter?.description || '',
                 age: storyData.childAge,
                 secondCharacterDescription: storyData.secondCharacter?.description,
@@ -967,6 +985,93 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         document.body.removeChild(link);
     };
 
+    const [isRewritingStory, setIsRewritingStory] = useState(false);
+
+    const handleRewriteAllStoryText = async () => {
+        if (!window.confirm("Rewrite story narrative text using the latest v3.3 Story Engine? (All illustrations and artwork layouts will remain completely intact)")) {
+            return;
+        }
+
+        setIsRewritingStory(true);
+        try {
+            const cleanStory = {
+                ...storyData,
+                mainCharacter: storyData.mainCharacter ? { ...storyData.mainCharacter, imageBases64: [], imageDNA: [], images: [] } : undefined,
+                secondCharacter: storyData.secondCharacter ? { ...storyData.secondCharacter, imageBases64: [], imageDNA: [], images: [] } : undefined,
+                styleReferenceImageBase64: undefined,
+                mainCharacterImageBase64: undefined,
+                secondCharacterImageBase64: undefined,
+                styleReferenceImageUrl: undefined,
+                coverImageUrl: undefined,
+                pages: undefined,
+                spreads: undefined,
+                coverDebugImages: undefined
+            };
+
+            const lang = storyData.language || language || 'en';
+            const res: any = await backendApi.generateStory({
+                storyData: cleanStory,
+                language: lang,
+                blueprint: storyData.blueprint,
+                spreadCount: storyData.spreadCount || (spreads ? spreads.length - 1 : 8)
+            });
+
+            if (res.error) throw new Error(res.error);
+            const newScript = res.script || res.rawScript;
+            if (!Array.isArray(newScript)) throw new Error("Invalid script received from Story Engine");
+
+            // Update spreads with new text while strictly keeping existing illustrations
+            const updatedSpreads = [...spreads];
+            newScript.forEach((item: any, idx: number) => {
+                const spreadIdx = idx + 1;
+                if (updatedSpreads[spreadIdx]) {
+                    const newText = typeof item === 'string' ? item : (item.text || '');
+                    const isRight = updatedSpreads[spreadIdx].textSide === 'right';
+                    updatedSpreads[spreadIdx] = {
+                        ...updatedSpreads[spreadIdx],
+                        text: newText,
+                        leftText: isRight ? '' : newText,
+                        rightText: isRight ? newText : ''
+                    };
+                }
+            });
+
+            // Sync pages array
+            const updatedPages = storyData.pages ? [...storyData.pages] : [];
+            newScript.forEach((item: any, idx: number) => {
+                const pageIdx = idx * 2;
+                const newText = typeof item === 'string' ? item : (item.text || '');
+                if (updatedPages[pageIdx]) {
+                    updatedPages[pageIdx] = { ...updatedPages[pageIdx], text: newText };
+                }
+                if (updatedPages[pageIdx + 1]) {
+                    updatedPages[pageIdx + 1] = { ...updatedPages[pageIdx + 1], text: newText };
+                }
+            });
+
+            const updatedStoryData = {
+                ...storyData,
+                script: newScript,
+                spreads: updatedSpreads,
+                pages: updatedPages
+            };
+
+            onUpdateStory(updatedStoryData);
+            setPageEdits({});
+
+            if (storyData.orderId) {
+                await adminService.saveOrder(storyData.orderId, updatedStoryData, shippingDetails || {}, total);
+            }
+
+            alert("✅ Story narrative text rewritten and polished with v3.3 Engine! All artworks and layouts were preserved.");
+        } catch (err: any) {
+            console.error("Failed to rewrite story text:", err);
+            alert(`❌ Failed to rewrite story text: ${err.message}`);
+        } finally {
+            setIsRewritingStory(false);
+        }
+    };
+
     const [isFinalizing, setIsFinalizing] = useState(false);
 
     // ── Global AI Edit state ──
@@ -1006,6 +1111,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 setGlobalEditStatus(`Painting Spread ${i} of ${totalSpreads}...`);
                 const basePrompt = pageEdits[i]?.prompt || getPromptForIndex(i, spreads[i]) || '';
                 const combinedPrompt = `GLOBAL OVERRIDE INSTRUCTION: ${globalEditInstruction.trim()}\n\n${basePrompt}`;
+                const promptRequiresHero2 = combinedPrompt.includes('[[HERO_2]]') || combinedPrompt.includes('Image 2');
+                const effectiveHeroB = promptRequiresHero2 ? compressedSecond : undefined;
                 try {
                     const imgRes: any = await backendApi.generateImage({
                         prompt: combinedPrompt,
@@ -1013,7 +1120,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         referenceBase64: compressedMaster,
                         characterDescription: storyData.mainCharacter?.description || '',
                         age: storyData.childAge,
-                        secondReferenceBase64: compressedSecond
+                        secondReferenceBase64: effectiveHeroB
                     });
                     if (imgRes.imageBase64) {
                         newSpreads[i] = { 
@@ -1070,6 +1177,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 }
                 if (pageEdits[i]?.textOffsetX !== undefined) {
                     finalSpreads[i] = { ...finalSpreads[i], textOffsetX: pageEdits[i].textOffsetX };
+                } else if (pageEdits[i]?.textSide !== undefined) {
+                    delete (finalSpreads[i] as any).textOffsetX;
                 }
                 if (pageEdits[i]?.textOffsetY !== undefined) {
                     finalSpreads[i] = { ...finalSpreads[i], textOffsetY: pageEdits[i].textOffsetY };
@@ -1127,6 +1236,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             }
             if (pageEdits[i]?.textOffsetX !== undefined) {
                 finalSpreads[i] = { ...finalSpreads[i], textOffsetX: pageEdits[i].textOffsetX };
+            } else if (pageEdits[i]?.textSide !== undefined) {
+                delete (finalSpreads[i] as any).textOffsetX;
             }
             if (pageEdits[i]?.textOffsetY !== undefined) {
                 finalSpreads[i] = { ...finalSpreads[i], textOffsetY: pageEdits[i].textOffsetY };
@@ -1483,7 +1594,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
                 {/* 3. STORY BLUEPRINT BLOCK */}
                 <div className="flex justify-between items-center mb-4 mt-2">
-                    <h2 className="text-xl font-bold text-brand-navy uppercase tracking-tighter">{t('مخطط القصة', 'Story Blueprint')}</h2>
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-bold text-brand-navy uppercase tracking-tighter">{t('مخطط القصة', 'Story Blueprint')}</h2>
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-purple-100 text-purple-700 border border-purple-200 rounded-full px-2 py-0.5">
+                            📖 Writer V5
+                        </span>
+                    </div>
                     <Button onClick={handleDownloadBlueprint} variant="outline" className="text-[10px] py-1 px-3 shadow-none border-gray-200">
                         JSON
                     </Button>
@@ -1543,6 +1659,16 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         </Button>
                         <Button onClick={handleDownloadText} variant="outline" className="shrink-0 snap-start !py-2 !px-4 border-2 border-gray-200 text-gray-500 hover:border-brand-navy hover:text-brand-navy text-xs">
                             Export Script
+                        </Button>
+                        <Button 
+                            onClick={handleRewriteAllStoryText} 
+                            disabled={isAnyGenerating || isRewritingStory} 
+                            variant="secondary" 
+                            className="shrink-0 snap-start !py-2 !px-4 border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all font-black uppercase text-xs flex items-center justify-center gap-1.5 shadow-sm"
+                            title="Regenerate all story text using v3.3 Story Engine without touching artwork"
+                        >
+                            {isRewritingStory ? <Spinner size="sm" color="text-indigo-600" /> : '✨'}
+                            {isRewritingStory ? t('جاري كتابة النص...', 'Rewriting Text...') : t('إعادة كتابة النص (v3.3)', 'Rewrite Story Text (v3.3)')}
                         </Button>
                         <Button onClick={() => runPipeline(false)} disabled={isAnyGenerating} variant="secondary" className="shrink-0 snap-start !py-2 !px-4 border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-white transition-all font-black uppercase text-xs">
                             {t('إعادة المعالجة', 'Restart Pipeline')}
@@ -2060,7 +2186,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         <SpreadLayoutPanel
                                             spreadIndex={i}
                                             illustrationUrl={spreads[i]?.illustrationUrl}
-                                            textSide={pageEdits[i]?.textSide || spreads[i]?.textSide || (language === 'ar' ? 'right' : 'left')}
+                                            textSide={pageEdits[i]?.textSide || spreads[i]?.textSide || (spreads[i]?.mainContentSide === 'left' ? 'right' : 'left')}
                                             language={language}
                                             textOffsetX={pageEdits[i]?.textOffsetX ?? spreads[i]?.textOffsetX}
                                             textOffsetY={pageEdits[i]?.textOffsetY ?? spreads[i]?.textOffsetY}
@@ -2094,13 +2220,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                     <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
                                                         <button 
                                                             onClick={() => handleTextSideChange(i, 'left')} 
-                                                            className={`px-3 py-1 rounded-md text-[10px] font-black uppercase transition-all ${((pageEdits[i]?.textSide || spreads[i]?.textSide) === 'left' || !(pageEdits[i]?.textSide || spreads[i]?.textSide)) ? 'bg-white shadow text-brand-navy' : 'text-gray-400 hover:text-gray-600'}`}
+                                                            className={`px-3 py-1 rounded-md text-[10px] font-black uppercase transition-all ${(pageEdits[i]?.textSide || spreads[i]?.textSide || (spreads[i]?.mainContentSide === 'left' ? 'right' : 'left')) === 'left' ? 'bg-white shadow text-brand-navy' : 'text-gray-400 hover:text-gray-600'}`}
                                                         >
                                                             Left
                                                         </button>
                                                         <button 
                                                             onClick={() => handleTextSideChange(i, 'right')} 
-                                                            className={`px-3 py-1 rounded-md text-[10px] font-black uppercase transition-all ${(pageEdits[i]?.textSide || spreads[i]?.textSide) === 'right' ? 'bg-white shadow text-brand-navy' : 'text-gray-400 hover:text-gray-600'}`}
+                                                            className={`px-3 py-1 rounded-md text-[10px] font-black uppercase transition-all ${(pageEdits[i]?.textSide || spreads[i]?.textSide || (spreads[i]?.mainContentSide === 'left' ? 'right' : 'left')) === 'right' ? 'bg-white shadow text-brand-navy' : 'text-gray-400 hover:text-gray-600'}`}
                                                         >
                                                             Right
                                                         </button>

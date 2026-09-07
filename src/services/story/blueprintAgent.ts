@@ -2,6 +2,7 @@
 import { ai, cleanJsonString, withRetry } from '../generation/modelGateway';
 import { Validator } from '../rules/validator';
 import { StoryData, StoryBlueprint, WorkflowLog } from '../../types';
+import { getGuidelineComponentsForTheme } from '../storyGuidelines';
 
 export async function generateBlueprint(
     storyData: StoryData,
@@ -121,26 +122,54 @@ export async function generateBlueprint(
             - Example: Hero is afraid to ask for help → Obstacle can only be solved with help → Moral is about courage to ask.
             - DO NOT invent a conflict unrelated to who the hero IS internally.
 
-            **NARRATIVE ARC REQUIREMENTS (${spreadCount} SPREADS — STRICT SKELETON):**
+            **NARRATIVE ARC REQUIREMENTS (${spreadCount} SPREADS — MASTER STORY ARCHITECTURE):**
             - You MUST generate EXACTLY ${spreadCount} spread objects.
             - Do NOT produce fewer or more than ${spreadCount}.
-            1. **Spread 1 (Normal World):** Establish the hero's name, their ONE key internal trait, and a specific desire. MUST show the hero in their most comfortable, familiar setting. Set a clear physical ANCHOR IMAGE (location + object) — this will be echoed in Spread ${spreadCount}.
-            2. **Spread 2 (Catalyst):** The problem/obstacle appears and directly targets the hero's flaw. The hero's desire is now blocked.
-            3. **Spread 3 (First Attempt):** Hero tries their default approach. It fails or makes things worse BECAUSE of their internal flaw.
-            4. **Spread 4 (Complication):** The situation escalates. A supporting character may appear. Things get harder, not easier.
-            5. **Spread 5 (Near-Quit Beat — CRITICAL):** The hero's lowest emotional point. They MUST explicitly consider giving up. This beat must be written as: (a) the physical result of the failure, and (b) a quiet moment where the hero sits/stops and nearly decides to quit. The solution MUST NOT appear here.
-            6. **Spread ${Math.ceil(spreadCount * 0.75)} (Insight):** The "Aha!" moment. Something small the hero NOTICES (not something told to them) triggers a realization. This must be a direct logical response to the flaw revealed in Spread 3.
-            7. **Spread ${spreadCount - 1} (Final Attempt):** Hero uses their new approach/insight. They succeed through their own effort. The supporting character may assist but CANNOT be the one who solves it.
-            8. **Spread ${spreadCount} (Resolution + Echo):** MUST return to the EXACT same location/setting as Spread 1 (the anchor image), but SHOW THE CHANGE through the hero's body language and environment. Explicitly state the moral in a simple, earned final sentence.
+            1. **Spread 1 (Normal World, Home Base Framing & Personal Motive Origin):** 
+               - Establish the hero's name, their ONE key internal trait, and their starting **Home Base** (e.g., sunny play nook, bedroom rug, cozy garden porch).
+               - **World Framing Bridge:** Always ground the child's home base so the story has a clear starting reality before any magical or outdoor exploration begins.
+               - **Personal Motive Origin (NO Arbitrary Missions):** The hero's desire MUST spring from a warm, personal origin—a favorite activity, a deep love for animals/stars, a cherished gift, or gentle curiosity. NEVER drop an ungrounded mission statement (e.g., *"dreaming of helping desert friends sleep"* without explaining why this matters to the child).
+               - **Magical / Emotional Anchor Rule Planted Early:** If a recurring anchor prop (pebble, compass, lantern, crystal) is used, state its simple physical trigger in 1 clear sentence (e.g., *"The pebble glowed warm and bright whenever she felt calm and happy, but felt cool when she worried"*), making it an intuitive emotional barometer.
+               - Set a clear physical ANCHOR IMAGE (location + object) — this will be returned to and echoed in Spread ${spreadCount}.
+            2. **Spread 2 (Catalyst & Co-Hero Intentional Onboarding):** 
+               - The problem/obstacle appears and directly targets the hero's flaw. The hero's desire is now blocked.
+               - **Sensory Bridge into Adventure:** Show the physical trigger (sound, movement, doorway) leading from the Spread 1 Home Base into the adventure space.
+               - ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `**DUAL-HERO ONBOARDING:** Give the companion (${storyData.secondCharacter.name}) a deliberate, warm on-screen entrance here if not in Spread 1. Establish their distinct personality, complementary skill (e.g., quiet observer vs eager explorer), and their own agency/motive.` : ''}
+               - If an environment or entity is personified as a testing force (e.g. *"The pyramid loved tricky games"*), establish it as an active presence that will be paid off later.
+            3. **Spread 3 (First Attempt & Causal Action):** 
+               - Hero tries their default approach. It fails or makes things worse BECAUSE of their internal flaw.
+               - **Strict Causal Continuity:** The hero's opening action must directly respond to the obstacle from Spread 2 (no teleporting or solving problems off-screen).
+               - **Named Emotional Beat:** Name the child's exact feeling (e.g., "Frustrated", "Surprised") alongside the physical action.
+            4. **Spread 4 (Complication & Dynamic Duo Interaction):** 
+               - The situation escalates. ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `The co-hero actively contributes their perspective/skills.` : `A supporting character or natural sign may appear.`} Things get harder, not easier.
+               - **Named Emotional Beat:** Name the emotional state (e.g., "Confused", "Puzzled").
+            5. **Spread 5 (Near-Quit Beat — CRITICAL):** 
+               - The hero's lowest emotional point. They MUST explicitly consider giving up. This beat must be written as: (a) the physical result of the failure (drooping shoulders, sitting down), (b) a quiet moment where the hero sits/stops and nearly decides to quit, and (c) the explicit named emotion ("Sad", "Disappointed"). The anchor prop mirrors this state (e.g., going dim or cold). The solution MUST NOT appear here.
+            6. **Spread ${Math.ceil(spreadCount * 0.75)} (Insight & Observation):** 
+               - The "Aha!" moment. Something small the hero NOTICES (not something told to them) triggers a realization. This must be a direct logical response to the flaw revealed in Spread 3.
+               - **Theme–Premise Dramatization:** If the theme involves communicating with animals or nature, explicitly show the hero interpreting animal sounds, postures, or silence as a meaningful message (e.g., realizing a soft whimper is asking for quiet stillness). The magical anchor reflects the turn (e.g. glowing warm again).
+               - **Named Emotional Beat:** Name the shift ("Relieved", "Hopeful").
+            7. **Spread ${spreadCount - 1} (Climax, Success & Title Secret Reveal):** 
+               - Hero uses their new approach/insight. They succeed through their own effort (and teamwork).
+               - **Deliver the Title's Promise & Theme:** If the title or theme promises a secret, treasure, or language, reveal the actual secret or artifact here.
+               - **Named Emotional Beat:** Name the triumph ("Proud", "Delighted").
+            8. **Spread ${spreadCount} (Seamless Return Journey + Home Base Payoff):** 
+               - **Return Journey Bridge (NO Teleporting):** Include an explicit bridging clause describing how the hero transitions smoothly from the adventure space back to the Spread 1 Home Base (e.g., *"Lana gently carried her sleepy new friend home, back to her cozy play nook..."*).
+               - Echo the familiar setting/anchor from Spread 1, showing the transformation through the hero's proud, happy body language and the warm glowing anchor. Explicitly state the earned emotional realization ("Content", "Safe", "Loved") in a simple, child-friendly closing line.
 
-            **HERO DESIRE CONSISTENCY (REQUIRED):**
-            - The hero's desire from Spread 1 MUST be the thing resolved in Spread ${spreadCount - 1} or ${spreadCount}.
+            **HERO DESIRE & MOTIVE CONSISTENCY (REQUIRED):**
+            - The hero's desire and inciting motive from Spread 1 MUST be the exact thing resolved in Spread ${spreadCount - 1} or ${spreadCount}.
             - Do NOT change the hero's core goal mid-story. The "Moral" is what they LEARN; the "Desire" is what they WANT.
             - The moral MUST be the direct answer to the hero's internal flaw, not a generic life lesson.
 
+            **CAUSAL CHAIN & NO OFF-SCREEN TELEPORTS (STRICT):**
+            - Every obstacle introduced in Spread N must have a physical, causal resolution or navigation action in Spread N+1 before moving to the next challenge.
+            - Characters must make a deliberate choice or action to overcome an obstacle rather than teleporting to the next set piece.
+            - Returning home in Spread ${spreadCount} MUST have an explicit physical transition sentence bridging the adventure realm back to the home base.
+
             **RHYTHMIC SIMPLICITY & PLOT AMBITION (CRITICAL FIX):**
             - The plot MUST be EXTREMELY SIMPLE and physically localized to ONE core action.
-            - Do not invent complex societal stakes, multiple concurrent problems, or over-complicated sequences (no "understanding animals and racing cheetahs" at the same time).
+            - Do not invent complex societal stakes, multiple concurrent problems, or over-complicated sequences.
             - Keep the action grounded, direct, and focused strictly on the age group. The simpler, the better!
             - The conflict must be personal to the child and easily solvable within a ${spreadCount}-point physical progression.
 
@@ -246,7 +275,8 @@ export async function generateBlueprint(
                     "storyCore": "[MUST BE IN ${targetLang}]",
                     "heroDesire": "[MUST BE IN ${targetLang}]",
                     "mainChallenge": "[MUST BE IN ${targetLang}]",
-                    "primaryVisualAnchor": "The object that stays with hero (e.g. Red Scarf)",
+                    "primaryVisualAnchor": "The object that stays with hero (e.g. A smooth glowing blue pebble)",
+                    "anchorTriggerRule": "MANDATORY NON-EMPTY: Simple physical trigger rule (e.g. 'glows warm and bright when calm and happy, cools when worried')",
                     "moral": "[MUST BE IN ${targetLang}]",
                     "failedAttemptSpread": 3,
                     "insightSpread": 6,

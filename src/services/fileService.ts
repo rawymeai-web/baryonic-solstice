@@ -151,19 +151,19 @@ async function renderTextBlobToImage(
     container.dir = isAr ? 'rtl' : 'ltr';
 
     // HIGHLIGHTING LOGIC
-    let finalHtml = text.split('\n\n').map(p => `<p style="margin-bottom: 24px; line-height: 1.6;">${p.trim()}</p>`).join('');
+    let finalHtml = text.split('\n\n').map(p => `<p style="margin-bottom: 18px; line-height: 1.55;">${p.trim()}</p>`).join('');
 
     if (childName) {
         const childFirstName = childName.trim().split(/\s+/)[0];
         const escapedName = childFirstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const nameRegex = new RegExp(`\\b(${escapedName})\\b`, 'gi');
-        finalHtml = finalHtml.replace(nameRegex, `<span style="font-weight: 900; color: ${style === 'clean' && !isAr ? 'white' : 'black'}; font-size: 1.1em;">$1</span>`);
+        finalHtml = finalHtml.replace(nameRegex, `<span style="font-weight: 900; color: #F78F50; font-size: 1.05em;">$1</span>`);
     }
 
     // BASE CSS
     let css = `
         width: ${widthPx}px;
-        min-height: 200px;
+        min-height: 160px;
         font-family: ${isAr ? 'Tajawal, sans-serif' : 'Nunito, sans-serif'};
         font-weight: 700;
         font-size: ${fontSize}px;
@@ -171,25 +171,25 @@ async function renderTextBlobToImage(
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        text-align: ${style === 'clean' ? (isAr ? 'right' : 'left') : 'center'};
+        text-align: ${isAr ? 'right' : 'left'};
         box-sizing: border-box;
-        padding: 40px;
+        padding: 36px 42px;
     `;
 
     // STYLE SPECIFIC CSS
     if (style === 'box') {
         css += `
-            background-color: rgba(255, 255, 255, 0.6);
-            border-radius: 50px;
-            color: #000000;
-            border: 4px solid rgba(255,255,255,0.8);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1); 
+            background-color: rgba(255, 255, 255, 0.88);
+            border-radius: 36px;
+            color: #001A40;
+            border: 2px solid rgba(255, 255, 255, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 26, 64, 0.08); 
         `;
     } else {
         // CLEAN STYLE
         css += `
             background-color: transparent;
-            color: ${isAr ? '#000000' : '#FFFFFF'};
+            color: ${isAr ? '#001A40' : '#FFFFFF'};
             text-shadow: ${isAr ? 'none' : '2px 2px 4px rgba(0,0,0,0.8)'};
         `;
     }
@@ -464,9 +464,9 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
                 else if (leftEmptyMatch) textOnLeft = true;
                 else textOnLeft = true;
             }
-            // Apply per-spread X/Y overrides from the editor, fall back to auto calculations
+            // Apply per-spread X/Y overrides from the editor, fall back to auto calculations (Top 12% default)
             const defaultRectX = textOnLeft ? pdfW * 0.05 : pdfW * 0.55;
-            const defaultRectY = (pdfH / 2) - (rectH / 2);
+            const defaultRectY = pdfH * 0.12;
             const rectX = spread.textOffsetX !== undefined ? spread.textOffsetX : defaultRectX;
             const rectY = spread.textOffsetY !== undefined ? spread.textOffsetY : defaultRectY;
 
@@ -658,26 +658,22 @@ export const generateStitchedPdf = async (
                 'box' // CHANGED: 'clean' -> 'box' for black text on white box
             );
 
-            // Positioning (Same as before)
-            const txtW = pdfW * 0.35;
+            // Positioning (Synchronized with Preview & Preview PDF)
+            const txtW = pdfW * 0.40;
             const ratio = blobImg.width / blobImg.height;
             const txtH = txtW / ratio;
             const marginX = pdfW * 0.05;
-            const marginY = pdfH * 0.08;
             let isLeft: boolean;
             if (pages[i] && (pages[i] as any).textSide === 'left') {
                 isLeft = true;
             } else if (pages[i] && (pages[i] as any).textSide === 'right') {
                 isLeft = false;
             } else {
-                // Default fallback: text goes on the left side.
-                // The prompt convention keeps the RIGHT side empty for text overlay (hero is on left).
-                // So for inner spread pages without an explicit textSide, text always goes left.
                 isLeft = true;
             }
 
-            const txtX = isLeft ? marginX : (pdfW - txtW - marginX);
-            const txtY = pdfH - txtH - marginY;
+            const txtX = isLeft ? marginX : (pdfW * 0.55);
+            const txtY = pdfH * 0.12;
 
             const cleanData = blobImg.dataUrl.includes(',') ? blobImg.dataUrl.split(',')[1] : blobImg.dataUrl;
             try {

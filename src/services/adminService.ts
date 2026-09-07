@@ -358,15 +358,32 @@ export async function saveOrder(orderNumber: string, storyData: StoryData, shipp
 }
 
 export async function getQualityLogs(orderId: string, spreadNumber: number) {
-  const { data, error } = await supabase
-    .from('generation_quality_logs')
-    .select('*')
-    .eq('order_id', orderId)
-    .eq('spread_number', spreadNumber)
-    .order('iteration_number', { ascending: true });
+  if (!orderId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('generation_quality_logs')
+      .select('*')
+      .eq('order_id', orderId)
+      .eq('spread_number', spreadNumber)
+      .order('iteration_number', { ascending: true });
 
-  if (error) return [];
-  return data;
+    if (!error && data && data.length > 0) return data;
+
+    // Fallback: If querying index 0 (Cover) and no logs, check if stored under index 1
+    if (spreadNumber === 0) {
+      const { data: legacyCoverData } = await supabase
+        .from('generation_quality_logs')
+        .select('*')
+        .eq('order_id', orderId)
+        .eq('spread_number', 1)
+        .order('iteration_number', { ascending: true });
+      if (legacyCoverData && legacyCoverData.length > 0) return legacyCoverData;
+    }
+    return data || [];
+  } catch (err) {
+    console.error('Error fetching quality logs:', err);
+    return [];
+  }
 }
 
 // --- DNA Records ---

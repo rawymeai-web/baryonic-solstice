@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Logo } from '../../components/ui/Logo';
 import { Spinner } from '../../components/ui/Spinner';
 import * as adminService from '../../services/adminService';
+import { backendApi } from '../../services/backendApi';
 import * as promptService from '../../services/promptService';
 import * as fileService from '../../services/fileService';
 import * as imageStore from '../../services/imageStore';
@@ -491,6 +491,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     const [notifyingPreviewId, setNotifyingPreviewId] = useState<string | null>(null);
     const [jobTicketOrder, setJobTicketOrder] = useState<AdminOrder | null>(null);
     const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
+    const [rewritingOrderId, setRewritingOrderId] = useState<string | null>(null);
 
     useEffect(() => {
         // Ensure sorted by date descending globally
@@ -674,7 +675,6 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
             setLoadingAction(null);
         }
     };
-
     const handleOpenTerminal = async (order: AdminOrder) => {
         try {
             setLoadingOrderId(order.orderNumber);
@@ -694,13 +694,98 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
         }
     };
 
+    const handleRewriteOrderStoryText = async (order: AdminOrder) => {
+        if (!window.confirm(`Rewrite narrative story text for Order #${order.orderNumber} using the latest v3.3 Story Engine?\n\n(All artworks, illustrations, and image layouts will remain completely intact)`)) {
+            return;
+        }
+
+        setRewritingOrderId(order.orderNumber);
+        try {
+            const fullOrder = await adminService.getOrderById(order.orderNumber);
+            if (!fullOrder || !fullOrder.storyData) {
+                throw new Error("Could not load full order details.");
+            }
+
+            const storyData = fullOrder.storyData;
+            const cleanPayload = {
+                ...storyData,
+                mainCharacter: storyData.mainCharacter ? { ...storyData.mainCharacter, imageBases64: [], imageDNA: [], images: [] } : undefined,
+                secondCharacter: storyData.secondCharacter ? { ...storyData.secondCharacter, imageBases64: [], imageDNA: [], images: [] } : undefined,
+                styleReferenceImageBase64: undefined,
+                mainCharacterImageBase64: undefined,
+                secondCharacterImageBase64: undefined,
+                styleReferenceImageUrl: undefined,
+                coverImageUrl: undefined,
+                pages: undefined,
+                spreads: undefined,
+                coverDebugImages: undefined
+            };
+
+            const lang = storyData.language || language || 'en';
+            const storyRes: any = await backendApi.generateStory({
+                storyData: cleanPayload,
+                language: lang,
+                blueprint: storyData.blueprint,
+                spreadCount: storyData.spreadCount || (storyData.spreads ? storyData.spreads.length - 1 : 8)
+            });
+
+            if (storyRes.error) throw new Error(storyRes.error);
+            const newScript = storyRes.script || storyRes.rawScript;
+            if (!Array.isArray(newScript)) throw new Error("Invalid script received from Story Engine");
+
+            // Map revised text into spreads without touching artwork
+            const updatedSpreads = storyData.spreads ? [...storyData.spreads] : [];
+            newScript.forEach((item: any, idx: number) => {
+                const spreadIdx = idx + 1;
+                if (updatedSpreads[spreadIdx]) {
+                    const newText = typeof item === 'string' ? item : (item.text || '');
+                    const isRight = updatedSpreads[spreadIdx].textSide === 'right';
+                    updatedSpreads[spreadIdx] = {
+                        ...updatedSpreads[spreadIdx],
+                        text: newText,
+                        leftText: isRight ? '' : newText,
+                        rightText: isRight ? newText : ''
+                    };
+                }
+            });
+
+            // Sync pages array
+            const updatedPages = storyData.pages ? [...storyData.pages] : [];
+            newScript.forEach((item: any, idx: number) => {
+                const pageIdx = idx * 2;
+                const newText = typeof item === 'string' ? item : (item.text || '');
+                if (updatedPages[pageIdx]) {
+                    updatedPages[pageIdx] = { ...updatedPages[pageIdx], text: newText };
+                }
+                if (updatedPages[pageIdx + 1]) {
+                    updatedPages[pageIdx + 1] = { ...updatedPages[pageIdx + 1], text: newText };
+                }
+            });
+
+            const updatedStoryData = {
+                ...storyData,
+                script: newScript,
+                spreads: updatedSpreads,
+                pages: updatedPages
+            };
+
+            await adminService.saveOrder(order.orderNumber, updatedStoryData, fullOrder.shippingDetails, fullOrder.total);
+            alert(`✅ Order #${order.orderNumber} narrative text updated to v3.3 successfully! Artworks preserved.`);
+            refreshOrders();
+        } catch (err: any) {
+            console.error("Failed to rewrite story text:", err);
+            alert(`❌ Failed to rewrite story text: ${err.message}`);
+        } finally {
+            setRewritingOrderId(null);
+        }
+    };
+
     const handleCreateTestOrder = async () => {
         const confirm = window.confirm("Create a fake test order for debugging?");
         if (!confirm) return;
 
         const dummyId = `RWY-TEST-${Math.floor(Math.random() * 10000)}`;
         const dummyShipping = { name: "Debug User", email: "debug@rawy.com", phone: "12345678", address: "123 Test St", city: "Kuwait City" };
-        // Minimal valid story data structure
         const dummyStory: any = {
             childName: "Auto", childAge: "5", title: "The Test Adventure", theme: "Space",
             size: "A4", coverImageUrl: "", spreads: [], mainCharacter: { description: "Test" }
@@ -719,14 +804,6 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     return (
         <div className="space-y-4 animate-enter-forward">
             {previewingOrder && <OrderPreviewModal order={previewingOrder} onClose={() => setPreviewingOrder(null)} onRefresh={refreshOrders} language={language} />}
-            
-            {jobTicketOrder && (
-                <JobTicketModal 
-                    order={jobTicketOrder} 
-                    onClose={() => setJobTicketOrder(null)} 
-                    language={language} 
-                />
-            )}
 
             {isPromoModalOpen && (
                 <PromoManagerModal 
@@ -962,7 +1039,203 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                 </div>
             </div>
 
-            <div className="bg-white/80 rounded-[3rem] border border-brand-navy/5 shadow-2xl overflow-hidden relative group">
+            {/* Mobile View (< lg) */}
+            <div className="block lg:hidden space-y-4">
+                {displayOrders.length === 0 && (
+                    <div className="bg-white/80 rounded-3xl p-12 text-center border border-brand-navy/5 shadow-xl">
+                        <span className="material-symbols-outlined text-5xl text-brand-navy/10 mb-3 block">inbox</span>
+                        <span className="text-[10px] font-black text-brand-navy/30 uppercase tracking-widest">No matching orders detected</span>
+                    </div>
+                )}
+                {displayOrders.map(order => (
+                    <div key={order.orderNumber} className="bg-white/90 backdrop-blur-md rounded-3xl p-5 border border-brand-navy/5 shadow-lg space-y-4 transition-all hover:shadow-xl">
+                        {/* Header: Order ID & Date + Total */}
+                        <div className="flex items-center justify-between gap-3 border-b border-brand-navy/5 pb-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-brand-navy/5 flex items-center justify-center text-brand-navy shrink-0">
+                                    <span className="material-symbols-outlined text-lg">receipt_long</span>
+                                </div>
+                                <div>
+                                    <div className="font-black text-brand-navy tracking-tight text-sm">{order.orderNumber}</div>
+                                    <div className="text-[9px] text-brand-navy/40 font-bold uppercase tracking-wider">{new Date(order.orderDate).toLocaleString()}</div>
+                                </div>
+                            </div>
+                            <span className="text-xs font-black text-brand-teal bg-brand-teal/10 px-3 py-1.5 rounded-full whitespace-nowrap shadow-sm">
+                                {order.total.toFixed(3)} KWD
+                            </span>
+                        </div>
+
+                        {/* Customer & Story Details */}
+                        <div className="space-y-1 text-xs">
+                            <div className="flex items-center justify-between text-brand-navy font-bold">
+                                <span className="text-brand-navy/50 text-[10px] uppercase font-black tracking-wider">Customer:</span>
+                                <span>{order.customerName || 'Guest'}</span>
+                            </div>
+                            {order.shippingDetails?.email && (
+                                <div className="flex items-center justify-between text-[11px] text-brand-navy/60">
+                                    <span className="text-brand-navy/50 text-[10px] uppercase font-black tracking-wider">Email:</span>
+                                    <span className="font-mono text-[10px] truncate max-w-[200px]">{order.shippingDetails.email}</span>
+                                </div>
+                            )}
+                            {order.shippingDetails?.phone && (
+                                <div className="flex items-center justify-between text-[11px] text-brand-navy/60">
+                                    <span className="text-brand-navy/50 text-[10px] uppercase font-black tracking-wider">Phone:</span>
+                                    <span>{order.shippingDetails.phone}</span>
+                                </div>
+                            )}
+                            {order.storyData?.childName && (
+                                <div className="flex items-center justify-between text-[11px] text-brand-navy/70 pt-1 border-t border-brand-navy/5">
+                                    <span className="text-brand-navy/50 text-[10px] uppercase font-black tracking-wider">Story / Hero:</span>
+                                    <span className="font-bold text-brand-orange truncate max-w-[200px]">
+                                        🧒 {order.storyData.childName} {order.storyData.childAge ? `(${order.storyData.childAge}y)` : ''} {order.storyData.theme ? `• ${order.storyData.theme}` : ''}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Status Dropdown */}
+                        <div>
+                            <label className="block text-[9px] font-black text-brand-navy/40 uppercase tracking-widest mb-1.5">Pipeline Status</label>
+                            <div className="relative">
+                                <select 
+                                    value={order.status} 
+                                    onChange={(e) => handleStatusChange(order.orderNumber, e.target.value as OrderStatus)} 
+                                    className={`appearance-none p-3 pr-10 w-full rounded-2xl border text-[10px] font-black uppercase tracking-wider outline-none focus:ring-4 transition-all cursor-pointer shadow-sm
+                                        ${order.status === 'paid' || order.status === 'paid_confirmed' || order.status === 'queued' ? 'bg-blue-50 border-blue-200 text-blue-700 focus:border-blue-400 focus:ring-blue-100' : 
+                                          order.status.includes('generating') || order.status === 'Processing' || order.status === 'processing' ? 'bg-orange-50 border-orange-200 text-orange-700 focus:border-orange-400 focus:ring-orange-100' :
+                                          order.status.includes('ready') ? 'bg-brand-teal/10 border-brand-teal/20 text-brand-teal focus:border-brand-teal focus:ring-brand-teal/10' :
+                                          order.status === 'shipped' || order.status === 'delivered' || order.status === 'Completed' ? 'bg-green-50 border-green-200 text-green-700 focus:border-green-400 focus:ring-green-100' :
+                                          order.status === 'failed' || order.status === 'cancelled' ? 'bg-red-50 border-red-200 text-red-700 focus:border-red-400 focus:ring-red-100' :
+                                          'bg-white/50 border-white/60 text-brand-navy/60 focus:border-brand-orange focus:ring-brand-orange/10'}
+                                    `}
+                                >
+                                    <option value="New Order">New Order</option>
+                                    <option value="paid_confirmed">Paid (Confirmed)</option>
+                                    <option value="queued">Queued</option>
+                                    <option value="theme_assigned">Theme Assigned</option>
+                                    <option value="story_generating">Story Generating...</option>
+                                    <option value="story_ready">Story Ready</option>
+                                    <option value="character_generating">Character Generating...</option>
+                                    <option value="character_ready">Character Ready</option>
+                                    <option value="illustrations_generating">Illustrations Generating...</option>
+                                    <option value="illustrations_ready">Illustrations Ready</option>
+                                    <option value="book_compiling">Book Compiling</option>
+                                    <option value="softcopy_ready">Softcopy Ready</option>
+                                    <option value="awaiting_preview_approval">Book Ready (Customer Notified)</option>
+                                    <option value="sent_to_print">Sent to Print</option>
+                                    <option value="printing">Printing</option>
+                                    <option value="shipped">Shipped</option>
+                                    <option value="delivered">Delivered</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="on_hold">On Hold</option>
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-brand-navy/20 pointer-events-none text-lg">expand_more</span>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons Grid (Touch-friendly 2 columns) */}
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-brand-navy/5">
+                            <button 
+                                className="px-3 py-2.5 rounded-xl bg-white border border-brand-teal/20 text-brand-teal hover:bg-brand-teal/5 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                                onClick={async () => {
+                                    const full = await adminService.getOrderById(order.orderNumber);
+                                    if (full) setPreviewOrder(full);
+                                }}
+                            >
+                                <span className="material-symbols-outlined text-base">menu_book</span>
+                                View Book
+                            </button>
+
+                            <button 
+                                className="px-3 py-2.5 rounded-xl bg-white border border-brand-navy/15 text-brand-navy hover:bg-brand-navy/5 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" 
+                                onClick={() => handleOpenEditor(order)}
+                                disabled={loadingOrderId === order.orderNumber}
+                            >
+                                <span className="material-symbols-outlined text-base">edit_note</span>
+                                Editor
+                            </button>
+
+                            <button 
+                                className="px-3 py-2.5 rounded-xl bg-white border border-brand-teal/30 text-brand-teal hover:bg-brand-teal hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" 
+                                onClick={() => handleRunPipeline(order, true)}
+                                disabled={loadingOrderId === order.orderNumber}
+                            >
+                                <span className="material-symbols-outlined text-base animate-pulse">
+                                    {order.status === 'New Order' || order.status === 'paid_confirmed' ? 'play_arrow' : 'play_circle'}
+                                </span>
+                                {order.status === 'New Order' || order.status === 'paid_confirmed' ? 'Start' : 'Resume'}
+                            </button>
+
+                            <button 
+                                className="px-3 py-2.5 rounded-xl bg-white border border-brand-orange/30 text-brand-orange hover:bg-brand-orange hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" 
+                                onClick={() => handleRewriteOrderStoryText(order)}
+                                disabled={rewritingOrderId === order.orderNumber || loadingOrderId === order.orderNumber}
+                            >
+                                <span className="material-symbols-outlined text-base">
+                                    {rewritingOrderId === order.orderNumber ? 'sync' : 'auto_stories'}
+                                </span>
+                                {rewritingOrderId === order.orderNumber ? 'Rewriting...' : 'Rewrite v3.3'}
+                            </button>
+
+                            <button 
+                                className={`px-3 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all ${
+                                    order.status === 'awaiting_preview_approval' || order.status === 'softcopy_ready' || order.status === 'illustrations_ready'
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                                        : 'bg-white border-emerald-500/30 text-emerald-700 hover:bg-emerald-50'
+                                }`}
+                                onClick={() => handleQuickNotifyPreview(order.orderNumber)}
+                                disabled={notifyingPreviewId === order.orderNumber}
+                            >
+                                <span className="material-symbols-outlined text-base">
+                                    {notifyingPreviewId === order.orderNumber ? 'sync' : 'mark_email_read'}
+                                </span>
+                                {notifyingPreviewId === order.orderNumber ? 'Sending...' : 'Notify Ready'}
+                            </button>
+
+                            <button 
+                                className="px-3 py-2.5 rounded-xl bg-white border border-brand-navy/15 text-brand-navy/60 hover:bg-brand-navy hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" 
+                                onClick={() => handleInspect(order)}
+                                disabled={loadingOrderId === order.orderNumber}
+                            >
+                                <span className="material-symbols-outlined text-base">{loadingOrderId === order.orderNumber && loadingAction === 'inspect' ? 'sync' : 'database'}</span>
+                                Inspect
+                            </button>
+
+                            <button 
+                                className="px-3 py-2.5 rounded-xl bg-white border border-brand-teal/20 text-brand-teal/70 hover:bg-brand-teal hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" 
+                                onClick={() => handleOpenTerminal(order)}
+                                disabled={loadingOrderId === order.orderNumber}
+                            >
+                                <span className="material-symbols-outlined text-base">{loadingOrderId === order.orderNumber && loadingAction === 'terminal' ? 'sync' : 'terminal'}</span>
+                                Terminal
+                            </button>
+
+                            <button 
+                                className="px-3 py-2.5 rounded-xl bg-white border border-brand-navy/15 text-brand-navy/60 hover:bg-brand-navy hover:text-white text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" 
+                                onClick={() => handleDownloadZip(order)}
+                                disabled={isExporting === order.orderNumber || loadingOrderId === order.orderNumber}
+                            >
+                                <span className="material-symbols-outlined text-base">{isExporting === order.orderNumber ? 'downloading' : 'package_2'}</span>
+                                Download ZIP
+                            </button>
+
+                            <button 
+                                className="col-span-2 px-3 py-2 rounded-xl bg-white border border-red-500/20 text-red-500/70 hover:bg-red-50 hover:text-red-600 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" 
+                                onClick={() => handleHardReset(order)}
+                                disabled={loadingOrderId === order.orderNumber}
+                            >
+                                <span className="material-symbols-outlined text-base">{loadingOrderId === order.orderNumber && loadingAction === 'reset' ? 'sync' : 'refresh'}</span>
+                                Hard Reset
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Desktop Table (>= lg) */}
+            <div className="hidden lg:block bg-white/80 rounded-[3rem] border border-brand-navy/5 shadow-2xl overflow-hidden relative group">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-brand-orange/20 to-transparent"></div>
                 <div className="overflow-x-auto scroller-thin">
                     <table className="w-full text-xs text-left text-brand-navy min-w-[1000px]">
@@ -1054,7 +1327,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                         </div>
                                     </td>
                                     <td className="px-10 py-8">
-                                        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto max-w-[320px] pb-1 scroller-thin mx-auto">
+                                        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto max-w-[360px] pb-1 scroller-thin mx-auto">
                                             <button 
                                                 className="p-2 w-10 h-10 rounded-xl bg-white border border-brand-teal/20 text-brand-teal/45 hover:bg-brand-teal/5 hover:text-brand-teal hover:scale-110 transition-all group/btn relative" 
                                                 onClick={async () => {
@@ -1092,7 +1365,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                             </button>
 
                                             <button 
-                                                className="px-5 py-2.5 rounded-xl bg-white border border-brand-navy/15 text-[9px] font-black uppercase tracking-widest text-brand-navy hover:bg-brand-navy hover:text-white transition-all flex items-center gap-2 group/btn" 
+                                                className="px-4 py-2.5 rounded-xl bg-white border border-brand-navy/15 text-[9px] font-black uppercase tracking-widest text-brand-navy hover:bg-brand-navy hover:text-white transition-all flex items-center gap-1.5 group/btn shrink-0" 
                                                 onClick={() => handleOpenEditor(order)}
                                                 disabled={loadingOrderId === order.orderNumber}
                                             >
@@ -1101,14 +1374,26 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                             </button>
 
                                             <button 
-                                                className="px-5 py-2.5 rounded-xl bg-white border border-brand-teal/25 text-[9px] font-black uppercase tracking-widest text-brand-teal hover:bg-brand-teal hover:text-white transition-all flex items-center gap-2 group/btn" 
+                                                className="px-4 py-2.5 rounded-xl bg-white border border-brand-teal/25 text-[9px] font-black uppercase tracking-widest text-brand-teal hover:bg-brand-teal hover:text-white transition-all flex items-center gap-1.5 group/btn shrink-0" 
                                                 onClick={() => handleRunPipeline(order, true)}
                                                 disabled={loadingOrderId === order.orderNumber}
                                             >
                                                 <span className="material-symbols-outlined text-sm animate-pulse">
                                                     {order.status === 'New Order' || order.status === 'paid_confirmed' ? 'play_arrow' : 'play_circle'}
                                                 </span>
-                                                {order.status === 'New Order' || order.status === 'paid_confirmed' ? 'Start Production' : 'Resume Engine'}
+                                                {order.status === 'New Order' || order.status === 'paid_confirmed' ? 'Start' : 'Resume'}
+                                            </button>
+
+                                            <button 
+                                                className="px-3 py-2.5 rounded-xl bg-white border border-brand-orange/30 text-[9px] font-black uppercase tracking-widest text-brand-orange hover:bg-brand-orange hover:text-white transition-all flex items-center gap-1.5 shrink-0" 
+                                                onClick={() => handleRewriteOrderStoryText(order)}
+                                                disabled={rewritingOrderId === order.orderNumber || loadingOrderId === order.orderNumber}
+                                                title="Rewrite Narrative Story Text (v3.3 Engine) without altering artwork"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">
+                                                    {rewritingOrderId === order.orderNumber ? 'sync' : 'auto_stories'}
+                                                </span>
+                                                {rewritingOrderId === order.orderNumber ? 'Rewriting...' : 'Rewrite Text'}
                                             </button>
 
                                             <button 
@@ -1160,7 +1445,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
             </div>
         </div>
     );
-}
+};
 
 const ThemesView: React.FC<{ language: Language }> = ({ language }) => {
     const [themes, setThemes] = useState<StoryTheme[]>([]);

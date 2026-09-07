@@ -110,30 +110,57 @@ export async function generateStoryDraft(
 
             5. **ADJECTIVE BAN:** Do NOT use overly abstract adjectives (e.g. "magical", "wondrous"). Use Concrete Adjectives (Size, Color, Texture, Sound).
             
-            **5. INTRODUCTION PROTOCOL (CRITICAL):**
-            - **Spread 1 (The Hero & World):** Open with a VIVID SCENE, ACTION, or EMOTION that drops the reader right into the story world. The hero's name (${childName}) MUST appear naturally within the first 1-2 sentences, but NEVER as the subject of the very first sentence as a bare factual introduction.
+            **5. INTRODUCTION PROTOCOL & CONCRETE OPENING FORMULA (CRITICAL):**
+            - **Spread 1 (The Hero, Home Base & Personal Motive Origin):** Open with a VIVID SCENE, ACTION, or EMOTION grounded in the child's starting **Home Base** (e.g., cozy play spot, bedroom rug, sunny garden). The hero's name (${childName}) MUST appear naturally within the first 1-2 sentences, but NEVER as the subject of the very first sentence as a bare factual introduction.
+            - **MANDATORY CONCRETE OPENING TEMPLATE FOR SPREAD 1:**
+              "[Name], [trait/mood], [action] in [home base]. [Object/companion, with a felt reason it matters to them specifically + anchorTriggerRule stated]."
+              - *Example (Age 1–5)*: "Lana wiggled, happy, playing in a cozy play spot. Lana loved a glowing pebble and dreamed of helping every sleepy desert friend. The soft pebble glowed warm whenever Lana felt happy, but grew cool when worried."
+            - **Grounded Home Base Mandate:** Spread 1 MUST explicitly ground the child's starting location so the parent reader understands where the adventure begins (and so Spread ${spreadCount}'s return journey makes complete sense).
+            - **Personal Motive Origin (NO Arbitrary Missions):** The hero's desire MUST have a clear personal, emotional origin (e.g., love for animals, a cherished gift, bedtime wonder). NEVER drop an ungrounded mission statement onto the character without explaining why it matters to them.
+              - ❌ BAD: "${childName} held a pebble, dreaming of helping desert friends sleep." (Cold, ungrounded mission statement).
+              - ✅ GOOD: "In a sunny play spot, ${childName} sat holding a special glowing pebble. ${childName} loved little animals more than anything, and dreamed of helping every sleepy desert friend."
             - STRICTLY FORBIDDEN OPENING PATTERNS — NEVER write these:
               - ❌ BAD (English): "Her name is ${childName}. ${childName} likes watching ants..."
               - ❌ BAD (Arabic): "اسمها ${childName}. تحب ${childName} مراقبة النمل..."
               - ❌ BAD: Any sentence that starts with "اسمها/اسمه" or "Her name is / His name is".
             - REQUIRED OPENING PATTERNS — Use one of these approaches:
-              - ✅ GOOD: Open with the setting/world first, then the hero's name appears in it. (e.g., "Deep in the garden, where the grass grew tall and the beetles held secret meetings, ${childName} knelt down and pressed her ear to the earth.")
-              - ✅ GOOD (Arabic): "في أعماق الحديقة، حيث الأعشاب طويلة وصوت الحشرات لا يكاد يُسمع، كانت ${childName} تركع وتضع أذنها قرب التراب..."
-              - ✅ GOOD: Open with an action or emotion the hero is feeling at the start of the adventure, then introduce their name in the next sentence.
+              - ✅ GOOD: Open with the home base/setting first, then the hero's name and personal love/desire appear in it. (e.g., "In a cozy play spot, where the morning sun warmed the rugs, ${childName} held a smooth pebble close...")
+              - ✅ GOOD (Arabic): "في ركن ألعابها الدافئ، حيث تتسلل خيوط الشمس الذهبية، كانت ${childName} تمسك بحصاتها الناعمة بحب..."
             - Focus on their personality and emotions (e.g., curious, dreamy). STRICTLY DO NOT discuss ANY physical body traits, clothing, or skin colors.
             - **New Entry:** If a later spread introduces a new character (e.g. Zara, the Town Elder), you MUST introduce them explicitly before they act. STRICTLY DO NOT invent physical traits or clothing for them either.
             
-            ${secondCharacter && secondCharacter.name ? `**DUAL HERO PROTOCOL (STRICT):**
-            - The companion ${secondCharacter.name} MUST be explicitly introduced by name in Spread 1 or Spread 2 alongside the hero. You MUST write a clear, warm welcome sentence giving 1-2 personality traits (e.g., "And right by her side was her sister ${secondCharacter.name} — the one who always knew how to listen."). Do NOT have them silently appear mid-scene with just a comma clause.
-            - The companion MUST actively say or do something that directly helps solve the page's problem. They cannot be a passive bystander.` : ''}
+            ${secondCharacter && secondCharacter.name ? `**DUAL HERO PROTOCOL (STRICT ONBOARDING & AGENCY):**
+            - The companion ${secondCharacter.name} MUST be explicitly introduced by name in Spread 1 or opening of Spread 2.
+            - **WARM ENTRANCE:** Write a clear, warm welcome sentence establishing their presence and 1-2 personality traits (e.g., "And right by ${childName}'s side was ${secondCharacter.name} — the quiet observer who noticed every little clue.").
+            - **ACTIVE AGENCY & INTERIOR LIFE:** Do NOT make ${secondCharacter.name} a silent helper or generic bystander. ${secondCharacter.name} must have distinct dialogue, complementary skills, and real emotional reactions throughout the journey.` : ''}
+
+            **MAGICAL ANCHOR / EMOTIONAL BAROMETER RULE (CRITICAL):**
+            - If the story features a special anchor object (e.g., compass, glowing pebble, lantern), you MUST state its simple physical behavior rule in Spread 1 upon first introduction:
+              - *Example:* "The soft pebble glowed warm and bright whenever ${childName} felt happy and calm, but grew cool when worried."
+            - Pay this off consistently across the beats (glowing with hope in Spread 2, growing cool/dim at the low point in Spread 5, glowing warm and bright at the insight/success in Spreads 6-8).
+
+            **THEME–PREMISE DRAMATIZATION (ANIMAL & NATURE LANGUAGE):**
+            - If the story is about understanding animals or nature, the text MUST explicitly dramatize this communication. Reframe animal sounds, movements, or stillness as their quiet language:
+              - *Example (Spread 6):* "The kit's soft whimper was not asking ${childName} to run. It was asking ${childName} to sit very, very still."
+
+            **CAUSAL CONTINUITY & RETURN TRANSITIONS (NO TELEPORTS):**
+            - Every spread must open by directly resolving or responding to the previous spread's obstacle.
+            - **Spread ${spreadCount} Return Journey Bridge:** You MUST include an explicit bridging clause showing how the hero (and any friend) travels smoothly from the wild/adventure space back to the Spread 1 Home Base (e.g., *"${childName} gently carried the sleepy new friend home, back to the cozy play spot..."*). Never jump-cut across settings without a physical bridge.
+
+            **THEMATIC SECRET REVEAL & CLIMAX PAYOFF:**
+            - The climax (Spread ${spreadCount - 1}) and resolution (Spread ${spreadCount}) MUST directly deliver on the promise of the Title and Theme.
+            - If the title promises a "Secret" or "Treasure", reveal an actual meaningful discovery (e.g., an ancient carving or artifact proving that patience and teamwork are the true treasure).
+            - **SEAMLESS RETURN TRANSITION:** Do not jump-cut from finding the goal straight to the entrance. Show the joyful, harmonious journey back into the sunlight with the goal achieved.
 
             **OPENING SCENE RULES (CRITICAL):**
             - The very first sentence of Spread 1 MUST NOT be a generic statement of love, interest, or personality (e.g. "her name is Sarah. She loves animals very much!").
             - You MUST start the story in the middle of a specific, physical, and mundane action occurring right now in a specific location.
             - BAD: "Her name is Sarah. She loves animals very much! In her big room, she dreams of understanding what they say."
-            - GOOD: "Sarah sat quietly on the edge of the woven rug, holding her small wooden toy, watching a tiny bird tap against the glass window."
+            - GOOD: "Sarah sat quietly on the edge of the woven rug, holding a small wooden toy, watching a tiny bird tap against the glass window."
 
             **WORLD-INTRODUCTION RULES (CRITICAL — READ BEFORE WRITING SPREAD 1):**
+            - **WORLD FRAMING BRIDGE:** Provide an imaginative framing bridge (e.g., bedtime curiosity, grandfather's storybook, an enchanted doorway, pretend-play discovery) explaining why the child is embarking on this adventure.
+            - **INCITING INCIDENT & MOTIVE:** Establish a concrete, urgent reason to embark on this quest (e.g., a lost pet's faint call, a glowing map). The reader must understand *why* the hero cares and what is at stake.
             1. **NO STRANGER CHARACTERS IN SPREAD 1:** Every named non-hero character or mythical figure (e.g., "The Man in the Moon", "The Star Queen", "The Night Owl") MUST have a reason WHY this child already knows them. 
                - You MUST provide a maximum 5-word context bridge BEFORE the desire is stated.
                - Bad: "He wished he could meet the Man in the Moon." (Who is he? The reader has no context.)
@@ -156,9 +183,17 @@ export async function generateStoryDraft(
             8. **PRIMARY VISUAL ANCHOR:** The blueprint provides a "primaryVisualAnchor". You MUST mention and interact with this specific object multiple times throughout the story text as a recurring motif.
             
             ${age <= 5 ? `
-            **AGE ${age} SPECIAL CONSTRAINTS (STRICT):**
-            A. **NO PRONOUNS:** NEVER use "He" or "She" for the main hero. Always use the character's Name (e.g. "Zayn runs").
-               - *Reason:* Young kids get confused by pronouns.
+            **AGE ${age} PRONOUN POLICY GUARD (MANDATORY RESTRICTION):**
+            - The final text must NOT use third-person pronouns (he, she, him, her, his, hers, it, its) to refer to the hero or a named companion.
+            - **HOW TO COMPLY WITHOUT AWKWARD NAME REPETITION:**
+              1. Drop possessives by substituting articles ('a', 'the') or active verbs:
+                 - ❌ *Bad (Pronoun)*: "She held her soft pebble."
+                 - ❌ *Bad (Awkward Repetition)*: "Lana held Lana's soft pebble."
+                 - ✅ *Good (Restructured)*: "Lana wiggled, happy, holding a soft pebble."
+              2. Use participial or action clauses:
+                 - ❌ *Bad*: "He walked outside and he looked up."
+                 - ✅ *Good*: "Zayn stepped outside, looking up at the bright sky."
+              3. Use the character's name naturally when subject changes, but avoid repeating it multiple times in the same sentence.
             ` : childGender ? `
             **AGE ${age} PRONOUN GUIDANCE (CRITICAL):**
             - The main hero (${childName}) is a **${childGender}**.
@@ -174,10 +209,14 @@ export async function generateStoryDraft(
             `}
 
             **EMOTIONAL & CAUSALITY RULES (CRITICAL):**
-            1. **DRAMATIZE, DON'T STATE (SHOW PHYSICALITY):**
-               - Do NOT just name the emotion or state the lesson (e.g., "He was sad", "She learned that sharing is good").
-               - **DESCRIBE THE PHYSICAL SENSATION:** "His tummy flipped," "Her face felt hot," "His shoulders dropped," "A small, quiet tear slid down his cheek."
-               - Make the reader feel the internal logic of the change. The character must transform because of a felt, internal realization, not just because the plot requires it.
+            1. **DUAL EMOTIONAL SENSORY & NAMING RULE (AGE-AWARE):**
+               - For young children (especially ages 1–5), toddlers build emotional literacy when physical sensations are paired with simple, direct emotion words.
+               - Combine the physical sensation WITH the named feeling:
+                 - ❌ *Bad (Vague mood only):* "Her shoulders dropped low and the world felt all wrong."
+                 - ❌ *Bad (Flat assertion only):* "${childName} was sad."
+                 - ✅ *Good (Physical + Named Emotion):* "${childName}'s shoulders dropped low. ${childName} sat down in the soft sand, feeling confused and disappointed."
+                 - ✅ *Good (Climax/Success):* "${childName} smiled, jumping up with a proud, happy giggle!"
+               - Use clear, relatable feelings: *happy, sad, worried, proud, surprised, scared, relieved, cozy, content, loved, confused, disappointed*.
             2. **PACING & BREATHING ROOM:**
                - **Do not rush.** Let the reader live inside the moment. Do not just summarize the chronological actions. 
                - **USE PAUSES:** If a character is listening or thinking, dedicate the physical space of the sentences to that silence. Let the scene breathe.
@@ -210,7 +249,16 @@ export async function generateStoryDraft(
 
             OUTPUT JSON SCHEMA:
             [
-                { "spreadNumber": 1, "text": "String" },
+                { 
+                    "spreadNumber": 1, 
+                    "text": "String", 
+                    "spread1Checklist": { 
+                        "homeBaseNamed": true, 
+                        "personalMotiveOrigin": true, 
+                        "anchorTriggerStated": true 
+                    } 
+                },
+                { "spreadNumber": 2, "text": "String" },
                 ... (${spreadCount} items total, spreadNumber 1 through ${spreadCount})
             ]
             `;
@@ -221,7 +269,10 @@ export async function generateStoryDraft(
             });
 
             const response = await model.generateContent(prompt);
-            const draft = JSON.parse(cleanJsonString(response.response.text()));
+            const rawDraft = JSON.parse(cleanJsonString(response.response.text()));
+            const draft = Array.isArray(rawDraft) ? rawDraft.map(item => ({
+                text: typeof item === 'string' ? item : item.text || ''
+            })) : [];
 
             if (!Validator.validateDraft(draft)) {
                 throw new Error("Drafting generated insufficient pages.");

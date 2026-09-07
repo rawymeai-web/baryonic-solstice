@@ -32,27 +32,50 @@ const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex }) => {
         return () => clearInterval(intervalId);
     }, [orderId, spreadIndex]);
 
+    const latestLog = logs.length > 0 ? logs[logs.length - 1] : null;
+    const isLatestPass = latestLog?.overall_decision === 'pass';
+
     if (!isOpen) {
         return (
-            <button 
-                onClick={() => setIsOpen(true)}
-                className="text-[10px] font-black uppercase text-brand-navy border border-gray-200 hover:border-brand-navy rounded-lg px-3 py-1.5 transition-all mt-2 flex items-center gap-2"
-            >
-                <span>🔍</span> View QA Iterations
-            </button>
+            <div className="mt-2 flex items-center gap-2">
+                <button 
+                    onClick={() => setIsOpen(true)}
+                    className={`text-[10px] font-black uppercase rounded-lg px-3 py-1.5 transition-all flex items-center gap-2 border ${
+                        !latestLog 
+                            ? 'text-gray-600 border-gray-200 hover:border-brand-navy bg-white' 
+                            : isLatestPass 
+                                ? 'text-emerald-700 border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100/70' 
+                                : 'text-amber-700 border-amber-200 bg-amber-50/70 hover:bg-amber-100/70'
+                    }`}
+                >
+                    <span>{latestLog ? (isLatestPass ? '✅' : '⚠️') : '🔍'}</span>
+                    <span>
+                        {latestLog 
+                            ? `QA Report: ${latestLog.overall_decision?.toUpperCase()} (${logs.length} iter${logs.length > 1 ? 's' : ''})` 
+                            : 'View QA Report'}
+                    </span>
+                    <span className="text-[9px] text-gray-400">▼</span>
+                </button>
+                {latestLog?.character_consistency_status && (
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${latestLog.character_consistency_status === 'pass' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                        Face: {latestLog.character_consistency_status}
+                    </span>
+                )}
+            </div>
         );
     }
 
     return (
         <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl w-full">
             <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                <h4 className="text-xs font-black text-brand-navy uppercase tracking-widest flex items-center gap-2">
-                    <span>🔍</span> QA Agent Logs
-                </h4>
-                <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm">🔍</span>
+                    <h4 className="text-xs font-black text-brand-navy uppercase tracking-widest">
+                        QA Agent Audit Report (Spread #{spreadIndex === 0 ? 'Cover' : spreadIndex})
+                    </h4>
+                </div>
+                <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs font-bold px-2 py-1 bg-white border border-gray-200 rounded-lg">
+                    Hide ▲
                 </button>
             </div>
 

@@ -255,10 +255,11 @@ export const LegacyProcessModal: React.FC<LegacyProcessModalProps> = ({ order, o
                         logMsg(`Sending exact AI Prompt to Image API for Scene ${i+1}. This paints the actual image and may take 45-60+ seconds...`);
 
                         // Second hero dual references
-                        const secondHeroRaw = storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object'
+                        const promptRequiresHero2 = (typeof imagePrompt === 'string' ? imagePrompt : '').includes('[[HERO_2]]') || (typeof imagePrompt === 'string' ? imagePrompt : '').includes('Image 2');
+                        const secondHeroRaw = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object' && promptRequiresHero2)
                             ? (storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0])
                             : undefined;
-                        const secondHeroDNA = storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object'
+                        const secondHeroDNA = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object' && promptRequiresHero2)
                             ? (storyData.secondCharacter?.imageDNA?.[0] || secondHeroRaw)
                             : undefined;
 

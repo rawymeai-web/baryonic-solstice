@@ -100,10 +100,10 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
     // Default Height: Cover title is ~ 1000x200 aspect ratio. Interior is estimated as 60% of width.
     const TEXT_H_EST = isCover ? TEXT_W / (1000 / 200) : TEXT_W * 0.6;
 
-    // Default Y: Cover title is placed near the top. Interior is centered vertically.
+    // Default Y: Cover title is placed near the top (8%). Interior spreads place text at top 12% (24mm) for unified storybook design.
     const defaultY = isCover 
         ? PDF_H * 0.08 
-        : (PDF_H / 2) - (TEXT_H_EST / 2);
+        : PDF_H * 0.12;
 
     const activeX = textOffsetX !== undefined ? textOffsetX : defaultX;
     const activeY = textOffsetY !== undefined ? textOffsetY : defaultY;

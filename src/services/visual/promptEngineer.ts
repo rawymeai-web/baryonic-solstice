@@ -788,7 +788,7 @@ function assembleEnglishPromptV7_2(
 }
 
 // ---------------------------------------------------------------------------
-// SECTION I.3 — UNIFIED PROMPT ASSEMBLER (v7.4.1)
+// SECTION I.3 — UNIFIED ACTOR PLACEMENT PROMPT ASSEMBLER (v7.6)
 // ---------------------------------------------------------------------------
 function assembleEnglishPromptV7_4(
     spread: any,
@@ -798,35 +798,105 @@ function assembleEnglishPromptV7_4(
     isRTL: boolean = false
 ): { prompt: string; validation: PromptValidationResult } {
 
-    const schemaStamp = `[v7.4.1-dna-unified]`;
+    const schemaStamp = `[v7.6-actor-placement]`;
 
-    // 1. Clean Reference Mapping with Compact Age Identifier
-    const legendParts = [`CHARACTER REFERENCES:`];
-    const likenessDirectives: string[] = [];
+    // 1. Dynamic Actor Casting & Reference Mapping (Single & Dual Hero)
+    // Filter heroes to only those who are actually present in this scene/spread
+    const activeHeroes = heroes.filter((h, idx) => {
+        if (isCover) return true; // Both heroes appear on the cover for dual hero books
+        const heroToken = `[[HERO_${idx + 1}]]`.toLowerCase();
+        if (spread.hero_actions && Array.isArray(spread.hero_actions)) {
+            const action = spread.hero_actions.find((a: any) => 
+                (a.token || '').toLowerCase() === heroToken || 
+                (a.hero_id || '').toLowerCase() === `hero_${idx + 1}`
+            );
+            if (action) {
+                return action.presence !== 'absent' && action.action !== 'absent' && !!action.action;
+            }
+        }
+        if (typeof spread.keyActions === 'string') {
+            return spread.keyActions.toLowerCase().includes(`hero ${idx + 1}`) || 
+                   spread.keyActions.toLowerCase().includes(`hero_${idx + 1}`) ||
+                   spread.keyActions.toLowerCase().includes(heroToken);
+        }
+        return true;
+    });
 
-    heroes.forEach((h, idx) => {
-        const dnaIdx = (h as any).stylized_dna_image_index || (idx + 1);
-        const name = h.name || (h as any).hero_id || `Hero ${idx + 1}`;
+    const isSoloSceneInDualBook = heroes.length > 1 && activeHeroes.length === 1;
+
+    const legendParts = [`CHARACTER CASTING & SOURCE REFERENCES:`];
+    const castingDirectives: string[] = [];
+    const wardrobeDirectives: string[] = [];
+
+    activeHeroes.forEach((h, activeIdx) => {
+        const originalIdx = heroes.indexOf(h);
+        const heroNum = originalIdx >= 0 ? originalIdx + 1 : activeIdx + 1;
+        const dnaIdx = (h as any).stylized_dna_image_index || heroNum;
+        const name = h.name || (h as any).hero_id || `Hero ${heroNum}`;
         const ageVal = (h as any).age || (h as any).childAge || '';
         const ageDesc = ageVal ? ` (a ${ageVal}-year-old child)` : '';
-        legendParts.push(`- Image ${dnaIdx}: Approved character reference for [[HERO_${idx + 1}]]${ageDesc}.`);
+        const heroToken = `[[HERO_${heroNum}]]`;
+        const isCoHero = activeHeroes.length > 1 && activeIdx > 0;
 
-        const clothing = h.clothing || (h as any).clothing_lock ? `, wearing ${h.clothing || (h as any).clothing_lock}` : '';
-        const features = h.distinctive_features || (h as any).accessory_lock ? `, with ${h.distinctive_features || (h as any).accessory_lock}` : '';
-        const hair = h.hair || (h as any).hair_lock ? `, ${h.hair || (h as any).hair_lock}` : '';
+        legendParts.push(`- Image ${dnaIdx}: Approved character reference image for ${heroToken} (${name}${ageDesc}).`);
 
-        likenessDirectives.push(`- [[HERO_${idx + 1}]] (${name}${ageDesc}): Transfer the exact recognizable face shape, skin tone, eye shape, and hairstyle directly from Image ${dnaIdx}${clothing}${features}. Keep their face structure and recognizable identity identical to Image ${dnaIdx}.`);
+        const roleText = isCoHero 
+            ? `The co-protagonist in this image is the EXACT child shown in Image ${dnaIdx}. Place this specific child into the same scene alongside [[HERO_1]].`
+            : `The protagonist in this image is the EXACT child shown in Image ${dnaIdx}. Place this specific child into the new scene and action described below.`;
+
+        const dualDistinction = isCoHero
+            ? ` Do NOT blend, swap, or mix facial features between [[HERO_1]] and [[HERO_2]].`
+            : '';
+
+        castingDirectives.push(`- ${heroToken} (${name}${ageDesc}): ${roleText}
+  * DYNAMIC ISOLATION RULE: Isolate ONLY the character figure from Image ${dnaIdx}. Completely discard and ignore all background scenery, surrounding environment, animals, objects, textures, and props visible in Image ${dnaIdx}.
+  * 1:1 IDENTITY PRESERVATION: Maintain exact 1:1 facial likeness from Image ${dnaIdx}: head and jaw shape, cheek structure, eye shape and color, eyebrow arch, nose and mouth geometry, skin tone, and exact hairstyle/hairline. Do NOT re-imagine, further stylize, or replace with a generic cartoon face.${dualDistinction}`);
+
+        // Resolve 3-part wardrobe (Top, Bottom, Footwear)
+        let outfitStr = '';
+        if (h.clothing || (h as any).clothing_lock) {
+            outfitStr = h.clothing || (h as any).clothing_lock;
+        } else if ((h as any).outfit) {
+            const o = (h as any).outfit;
+            if (typeof o === 'string') {
+                outfitStr = o;
+            } else if (typeof o === 'object') {
+                const parts = [o.top, o.bottom || o.canonical_bottom, o.footwear || o.canonical_footwear || o.shoes].filter(Boolean);
+                outfitStr = parts.join(', ');
+            }
+        } else if (h.description) {
+            try {
+                const parsed = typeof h.description === 'string' ? JSON.parse(h.description) : h.description;
+                if (parsed?.identity?.clothing) {
+                    const c = parsed.identity.clothing;
+                    const parts = [
+                        c.top || `signature shirt from Image ${dnaIdx}`,
+                        c.canonical_bottom || c.bottom || 'dark blue denim jeans',
+                        c.canonical_footwear || c.footwear || c.shoes || 'classic white sneakers'
+                    ];
+                    outfitStr = parts.join(', ');
+                }
+            } catch (e) {}
+        }
+
+        if (!outfitStr) {
+            outfitStr = `signature top/shirt from Image ${dnaIdx}, dark blue denim jeans, and classic sneakers`;
+        }
+
+        wardrobeDirectives.push(`- ${heroToken} (${name}): Must strictly wear: ${outfitStr}. Maintain this exact clothing and footwear across all full-body, standing, and seated poses. Solid clean colors only; do NOT add patterns, animal prints, or changes, and do NOT render the character barefoot unless explicitly required by a specific story action.`);
     });
+
     const legend = legendParts.length > 1 ? legendParts.join('\n') : '';
-    const likenessText = likenessDirectives.length > 0
-        ? `CHARACTER LIKENESS & ANATOMY:\n${likenessDirectives.join('\n')}`
+    const likenessText = castingDirectives.length > 0
+        ? `CHARACTER CASTING & SCENE PLACEMENT:\n${castingDirectives.join('\n')}`
+        : '';
+    const wardrobeText = wardrobeDirectives.length > 0
+        ? `WARDROBE & ATTIRE LOCK:\n${wardrobeDirectives.join('\n')}`
         : '';
 
-    // Style Matching Directive
-    const stylePrompt = styleProfile?.prompt || styleProfile?.description || styleProfile?.positive_style_lock || styleProfile?.style_name || '';
-    const styleText = stylePrompt
-        ? `ART STYLE MATCHING:\n- Render in the exact handcrafted art style and medium of the reference image(s): ${stylePrompt}. Do not simplify into flat anime or generic vector cartoon.`
-        : '';
+    // Style Matching Directive (Inherit from reference image rather than descriptive cartoon text)
+    const stylePrompt = styleProfile?.style_name || styleProfile?.prompt || '';
+    const styleText = `ART STYLE MATCHING:\n- Inherit the visual style, lighting quality, textures, and medium directly from the character reference image(s). Do not introduce contrasting art styles or simplify into flat cartoon vectors.`;
 
     // 2. Setting & Environment (Sanitizing conflicting medium terms)
     const s = spread.setting;
@@ -921,12 +991,26 @@ function assembleEnglishPromptV7_4(
     }
 
     // 6. Hard Constraints (Disentangling action/pose from facial & outfit consistency)
-    const constraintsText = `Constraints: Strictly no letters, numbers, signs, text, logos, or watermarks anywhere in the illustration. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while keeping each character's exact face, hairstyle, and outfit from their reference image.`;
+    let constraintsText = `Constraints: Strictly no letters, numbers, signs, text, logos, or watermarks anywhere in the illustration. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while strictly maintaining each character's exact face, hairstyle, and locked wardrobe from their reference and instructions.`;
+
+    if (isSoloSceneInDualBook) {
+        const absentHeroes = heroes.filter(h => !activeHeroes.includes(h));
+        if (absentHeroes.length > 0) {
+            const absentList = absentHeroes.map(h => {
+                const origIdx = heroes.indexOf(h);
+                const token = origIdx >= 0 ? `[[HERO_${origIdx + 1}]]` : 'the co-hero';
+                const name = h.name || (h as any).hero_id || '';
+                return `${token}${name ? ` (${name})` : ''}`;
+            }).join(', ');
+            constraintsText += ` Note: ${absentList} is ABSENT from this scene. Render ONLY the active hero [[HERO_1]]. Strictly do NOT draw any second child, companion, or bystander in this image.`;
+        }
+    }
 
     const sections = [
         schemaStamp,
         legend,
         likenessText,
+        wardrobeText,
         styleText,
         settingText,
         actionsText,
@@ -1013,7 +1097,7 @@ export async function generatePrompts(
                 inputs: { planSize: plan.spreads.length, heroCount: heroes.length },
                 outputs: {
                     promptCount: prompts.length,
-                    method: 'DNA-Only Likeness Assembler v7.4.1-unified',
+                    method: 'DNA Likeness & Wardrobe Assembler v7.5-wardrobe-unified',
                     validationErrors: allValidationErrors.length > 0 ? allValidationErrors : 'none',
                 },
                 status: allValidationErrors.length > 0 ? 'Warning' : 'Success',

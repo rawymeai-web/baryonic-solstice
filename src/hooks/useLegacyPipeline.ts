@@ -138,6 +138,11 @@ export const useLegacyPipeline = (
 
             if (!resume) {
                 // [PRE-FLIGHT] Auto-Wipe generated artifacts to start fresh, preserving only customer/DNA data
+                logMsg(`══════════════════════════════════════════════════════`);
+                logMsg(`🚀 PIPELINE RESTART — CLEAN INITIALIZATION`);
+                logMsg(`📖 Story Narrative Engine : Writer V5 (Master Narrative Architecture — Dual-Hero & Causal Flow)`);
+                logMsg(`🎨 Image Prompt Engine    : [v7.6-actor-placement]`);
+                logMsg(`══════════════════════════════════════════════════════`);
                 logMsg(`Pre-flight: Wiping old intermediate data for clean run...`);
                 storyData.blueprint = undefined;
                 storyData.script = [];
@@ -162,6 +167,11 @@ export const useLegacyPipeline = (
                 } as any);
                 await adminService.saveOrder(orderNumber, storyData, initialShippingDetails || {}, total);
             } else {
+                logMsg(`══════════════════════════════════════════════════════`);
+                logMsg(`🚀 RESUMING PIPELINE`);
+                logMsg(`📖 Story Narrative Engine : Writer V5 (Master Narrative Architecture)`);
+                logMsg(`🎨 Image Prompt Engine    : [v7.6-actor-placement]`);
+                logMsg(`══════════════════════════════════════════════════════`);
                 logMsg(`Resuming pipeline. Skipping pre-flight wipe and jumping to first missing artifact...`);
                 
                 // Synchronize pages array with existing spreads
@@ -172,11 +182,11 @@ export const useLegacyPipeline = (
                     if (spreadNum > 0 && spread.illustrationUrl) {
                         const pageIndex = (spreadNum - 1) * 2;
                         if (!pages[pageIndex]) {
-                            pages[pageIndex] = { pageNumber: pageIndex + 1, text: spread.leftText || '', textSide: spread.textSide || 'right', illustrationUrl: '' };
+                            pages[pageIndex] = { pageNumber: pageIndex + 1, text: spread.leftText || '', textSide: spread.textSide || 'left', illustrationUrl: '' };
                             modified = true;
                         }
                         if (!pages[pageIndex + 1]) {
-                            pages[pageIndex + 1] = { pageNumber: pageIndex + 2, text: spread.rightText || '', textSide: spread.textSide || 'right', illustrationUrl: '' };
+                            pages[pageIndex + 1] = { pageNumber: pageIndex + 2, text: spread.rightText || '', textSide: spread.textSide || 'left', illustrationUrl: '' };
                             modified = true;
                         }
                         if (pages[pageIndex].illustrationUrl !== spread.illustrationUrl) {
@@ -337,7 +347,7 @@ export const useLegacyPipeline = (
             // Step 2A: Story Blueprint (Architect AI)
             setStatus(t('تصميم المخطط...', 'Architecting the Story...'));
             if (!storyData.blueprint) {
-                logMsg(`Calling Architect AI API with Theme: ${ensureSafeString(storyData.theme, 'Birthday')}...`);
+                logMsg(`Phase 2A: Calling Architect AI (Writer V5 Blueprint Engine) with Theme: ${ensureSafeString(storyData.theme, 'Birthday')}...`);
                 // Use stripped storyData to avoid Vercel 4.5MB payload limit crashing the text API
                 const blueprintPayload = getCleanStoryDataForTextApi(storyData);
                 const blueprintRes = await retryStep('Architect AI Blueprint', () => backendApi.generateBlueprint({ storyData: blueprintPayload, language: lang, spreadCount: storyData.spreadCount || 8 })) as any;
@@ -363,8 +373,8 @@ export const useLegacyPipeline = (
             setStatus(t('كتابة القصة ومراجعتها...', 'Drafting & Polishing Script (Writer AI)...'));
             const isScriptEmpty = !storyData.script || (Array.isArray(storyData.script) && storyData.script.every((s:any) => !s.text || s.text.length < 5));
             if (isScriptEmpty) {
-                logMsg(`Phase 2B: Drafting initial native-language narrative...`);
-                logMsg(`Phase 3: Senior Writer Agent reviewing for grammatical perfection & logic...`);
+                logMsg(`Phase 2B: Drafting narrative via Storyteller AI (Writer V5 Master Architecture)...`);
+                logMsg(`Phase 2C: Running 3-Pass Editorial Review via Story Doctor AI (Writer V5)...`);
                 const storyPayload = getCleanStoryDataForTextApi(storyData);
                 const storyRes = await retryStep('Writer AI Script', () => backendApi.generateStory({ storyData: storyPayload, language: lang, blueprint: storyData.blueprint, spreadCount: storyData.spreadCount || 8 })) as any;
                 if (storyRes.error) throw new Error(storyRes.error);
@@ -373,7 +383,7 @@ export const useLegacyPipeline = (
                 storyDataRef.current = storyData;
                 onUpdateStory(storyData);
                 await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
-                logMsg(`✓ Story script written successfully.`);
+                logMsg(`✓ Story script written and polished successfully (Writer V5).`);
             } else {
                 logMsg(`Story details already exist, skipping Phase 2B.`);
             }
@@ -417,16 +427,15 @@ export const useLegacyPipeline = (
             };
             checkAborted();
             // Step 4: Engineering Prompts & Phase 5: Illustrator AI Pass
-            logMsg(`Starting Phase 4: AI Prompt Engineering`);
+            logMsg(`Starting Phase 4: AI Prompt Engineering ([v7.6-actor-placement])`);
             setStatus(t('هندسة وتدقيق الأوامر...', 'Engineering & Auditing Prompts...'));
 
-            // Helper: check if a prompt contains a v3.2+ schema stamp.
-            // v3.1 prompts are missing: anti-photorealism rules, logo block, zone guard.
+            // Helper: check if a prompt contains a modern schema stamp.
             const hasV3Stamp = (p: any): boolean => {
                 try {
                     const str = typeof p === 'string' ? p : JSON.stringify(p || '');
-                    // Force upgrade if it's older than v7.4-dna-unified
-                    return str.includes('v7.4');
+                    // Force upgrade if it's older than v7.6-actor-placement
+                    return str.includes('v7.6') || str.includes('v7.5');
                 } catch { return false; }
             };
 
@@ -436,9 +445,7 @@ export const useLegacyPipeline = (
                 return true;
             }));
 
-            // Version gate: prompts older than v3.2 are missing: logo block, zone guard, HERO_B fix.
-            // CRITICAL: Use .every() not .some() — ALL prompts must be v3.2.
-            // .some() caused a single regenerated spread to mask all remaining stale ones.
+            // Version gate: prompts older than v7.5/v7.6
             const hasLegacyPrompts = !isPromptsEmpty && Array.isArray(storyData.finalPrompts) &&
                 !storyData.finalPrompts.every(hasV3Stamp);
 
@@ -537,7 +544,7 @@ export const useLegacyPipeline = (
             // Step 5: Iterative Image Generation
             const settings = await adminService.getSettings();
             const spreadCount = storyData.spreadCount || settings.defaultSpreadCount || 8;
-            const delayBetweenScenes = Math.max(25000, (settings.generationDelay || 0) * 1000);
+            const delayBetweenScenes = Math.max(2000, (settings.generationDelay ?? 2) * 1000);
             
             logMsg(`Starting Phase 5: Image Generation Pipeline (Cover + ${spreadCount} Spreads)`);
 
@@ -606,8 +613,8 @@ export const useLegacyPipeline = (
                     } else if (leftEmptyMatch) {
                         textSide = 'left';
                     } else {
-                        // Ultimate fallback: text goes right
-                        textSide = 'right';
+                        // Ultimate fallback: text goes left (opposite default right-side character action)
+                        textSide = 'left';
                     }
                 }
 
@@ -644,7 +651,7 @@ export const useLegacyPipeline = (
                     pages[pageIndex] = {
                         pageNumber: pageIndex + 1,
                         text: spreads[spreadNum].leftText || '',
-                        textSide: spreads[spreadNum].textSide || 'right',
+                        textSide: spreads[spreadNum].textSide || 'left',
                         illustrationUrl: '',
                         actualPrompt: imagePrompt
                     };
@@ -657,7 +664,7 @@ export const useLegacyPipeline = (
                     pages[pageIndex + 1] = {
                         pageNumber: pageIndex + 2,
                         text: spreads[spreadNum].rightText || '',
-                        textSide: spreads[spreadNum].textSide || 'right',
+                        textSide: spreads[spreadNum].textSide || 'left',
                         illustrationUrl: '',
                         actualPrompt: imagePrompt
                     };
@@ -747,10 +754,10 @@ export const useLegacyPipeline = (
                     let pages = storyData.pages || [];
                     const pageIndex = (spreadNum - 1) * 2;
                     if (!pages[pageIndex]) {
-                        pages[pageIndex] = { pageNumber: pageIndex + 1, text: spreads[spreadNum].leftText || '', textSide: spreads[spreadNum].textSide || 'right', illustrationUrl: '' };
+                        pages[pageIndex] = { pageNumber: pageIndex + 1, text: spreads[spreadNum].leftText || '', textSide: spreads[spreadNum].textSide || 'left', illustrationUrl: '' };
                     }
                     if (!pages[pageIndex + 1]) {
-                        pages[pageIndex + 1] = { pageNumber: pageIndex + 2, text: spreads[spreadNum].rightText || '', textSide: spreads[spreadNum].textSide || 'right', illustrationUrl: '' };
+                        pages[pageIndex + 1] = { pageNumber: pageIndex + 2, text: spreads[spreadNum].rightText || '', textSide: spreads[spreadNum].textSide || 'left', illustrationUrl: '' };
                     }
                     pages[pageIndex].illustrationUrl = url;
                     pages[pageIndex + 1].illustrationUrl = url;
@@ -781,12 +788,15 @@ export const useLegacyPipeline = (
                 setStatus(t('رسم الغلاف...', 'Painting Cover...'));
                 const rawCover = storyDataPropRef.current.finalPrompts?.[0] || resolvedCoverPrompt;
                 const coverImagePrompt = typeof rawCover === 'string' ? rawCover : (rawCover?.imagePrompt || rawCover?.prompt);
+                const requiresHero2Cover = (typeof coverImagePrompt === 'string' ? coverImagePrompt : '').includes('[[HERO_2]]') || (typeof coverImagePrompt === 'string' ? coverImagePrompt : '').includes('Image 2');
+                const effectiveSecondDNACover = (storyData.useSecondCharacter && requiresHero2Cover) ? secondDNAResolved : undefined;
+
                 logMsg(`--> Painting Cover...`);
                 await sleep(delayBetweenScenes);
                 const coverRes = await retryStep('Painting Cover', () => backendApi.generateImage({
                     prompt: coverImagePrompt, stylePrompt: visualStylePrompt,
                     referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
-                    age: storyData.childAge || '5', secondReferenceBase64: secondDNAResolved,
+                    age: storyData.childAge || '5', secondReferenceBase64: effectiveSecondDNACover,
                     secondCharacterDescription: storyData.secondCharacter?.description
                 })) as any;
                 if (coverRes.imageBase64 || coverRes.data?.imageBase64) {
@@ -805,7 +815,7 @@ export const useLegacyPipeline = (
                             const retryRes = await retryStep('Painting Cover', () => backendApi.generateImage({
                                 prompt: retryPrompt, stylePrompt: visualStylePrompt,
                                 referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
-                                age: storyData.childAge || '5', secondReferenceBase64: secondDNAResolved,
+                                age: storyData.childAge || '5', secondReferenceBase64: effectiveSecondDNACover,
                                 secondCharacterDescription: storyData.secondCharacter?.description
                             })) as any;
                             if (retryRes.imageBase64 || retryRes.data?.imageBase64) {
@@ -819,9 +829,9 @@ export const useLegacyPipeline = (
                                 generatedImageBase64: b64,
                                 heroDNABase64: mainDNAResolved,
                                 pageType: "Cover",
-                                currentTextSide: "right",
+                                currentTextSide: storyData.coverTextSide || (storyData.language === 'ar' ? 'left' : 'right'),
                                 targetPrompt: coverImagePrompt,
-                                secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
+                                secondDNABase64: effectiveSecondDNACover,
                                 orderId: orderNumber,
                                 spreadIndex: 0,
                                 spreadText: `Title: ${storyData.title || ''}. Subtitle: ${storyData.coverSubtitle || ''}`,
@@ -931,10 +941,13 @@ export const useLegacyPipeline = (
                     await sleep(delayBetweenScenes);
                     checkAborted();
 
+                    const requiresHero2 = (typeof imagePrompt === 'string' ? imagePrompt : '').includes('[[HERO_2]]') || (typeof imagePrompt === 'string' ? imagePrompt : '').includes('Image 2');
+                    const effectiveSecondDNA = (storyData.useSecondCharacter && requiresHero2) ? secondDNAResolved : undefined;
+
                     const imgRes = await retryStep(`Painting Spread ${spreadNum}`, () => backendApi.generateImage({
                         prompt: imagePrompt, stylePrompt: visualStylePrompt,
                         referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
-                        age: storyData.childAge || '5', secondReferenceBase64: secondDNAResolved,
+                        age: storyData.childAge || '5', secondReferenceBase64: effectiveSecondDNA,
                         secondCharacterDescription: storyData.secondCharacter?.description
                     })) as any;
 
@@ -957,7 +970,7 @@ export const useLegacyPipeline = (
                                 const imgRetryRes = await retryStep(`Painting Spread ${spreadNum}`, () => backendApi.generateImage({
                                     prompt: retryPrompt, stylePrompt: visualStylePrompt,
                                     referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
-                                    age: storyData.childAge || '5', secondReferenceBase64: secondDNAResolved,
+                                    age: storyData.childAge || '5', secondReferenceBase64: effectiveSecondDNA,
                                     secondCharacterDescription: storyData.secondCharacter?.description
                                 })) as any;
                                 if (imgRetryRes.imageBase64 || imgRetryRes.data?.imageBase64) {
@@ -974,7 +987,7 @@ export const useLegacyPipeline = (
                                     pageType: "Spread",
                                     currentTextSide: spreads[spreadNum].textSide || "right",
                                     targetPrompt: imagePrompt,
-                                    secondDNABase64: storyData.useSecondCharacter ? secondDNAResolved : undefined,
+                                    secondDNABase64: effectiveSecondDNA,
                                     orderId: orderNumber,
                                     spreadIndex: spreadNum,
                                     spreadText: [spreads[spreadNum]?.leftText, spreads[spreadNum]?.rightText].filter(Boolean).join(' ') || (spreads[spreadNum] as any)?.text || "",

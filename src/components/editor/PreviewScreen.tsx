@@ -102,7 +102,6 @@ const CoverView: React.FC<{ storyData: StoryData, language: Language, isPurchase
                     left: `${(tx / PDF_W) * 100}%`,
                     top: `${(ty / PDF_H) * 100}%`,
                     width: `${(tw / PDF_W) * 100}%`,
-                    background: 'rgba(0,0,0,0.35)',
                     borderRadius: '1.2cqw',
                     padding: '1.2cqw 1.8cqw',
                 }}
@@ -221,9 +220,18 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
     const defaultX = textOnLeft ? (PDF_W * 0.05) : (PDF_W * 0.55); // 20mm or 220mm
     const defaultY = PDF_H * 0.12; // 24mm from top
 
-    const activeX = spread.textOffsetX !== undefined && spread.textOffsetX !== null
-        ? spread.textOffsetX
-        : defaultX;
+    let activeX = defaultX;
+    if (spread.textOffsetX !== undefined && spread.textOffsetX !== null) {
+        // Guard against coordinate/side mismatch (e.g. text moved to Right, but old Left offset persisted)
+        if (textOnLeft && spread.textOffsetX < (PDF_W * 0.5)) {
+            activeX = spread.textOffsetX;
+        } else if (!textOnLeft && spread.textOffsetX >= (PDF_W * 0.5)) {
+            activeX = spread.textOffsetX;
+        } else {
+            activeX = defaultX;
+        }
+    }
+
     const activeY = spread.textOffsetY !== undefined && spread.textOffsetY !== null
         ? spread.textOffsetY
         : defaultY;
@@ -264,12 +272,18 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
                         width: `${widthPercent}%`,
                     }}
                 >
-                    <div className="glass-panel p-[1.8cqw] rounded-[1.6cqw] shadow-xl border-white/60 text-brand-navy max-w-full">
+                    <div 
+                        className="bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgba(0,26,64,0.08)] rounded-[1.6cqw] p-[1.8cqw] text-brand-navy max-w-full"
+                        style={{
+                            boxShadow: '0 8px 30px rgba(0, 26, 64, 0.08), 0 1px 3px rgba(0,0,0,0.05)',
+                        }}
+                    >
                         <div
                             style={{
-                                fontSize: '1.45cqw',
-                                lineHeight: '1.5',
+                                fontSize: 'clamp(11px, 1.55cqw, 18px)',
+                                lineHeight: 1.55,
                                 fontFamily: isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif",
+                                color: '#001A40',
                             }}
                             className={`font-bold ${isAr ? 'text-right' : 'text-left'}`}
                             dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(narrativeText, storyData.childName) }}

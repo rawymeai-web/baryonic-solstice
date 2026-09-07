@@ -43,6 +43,7 @@ export interface StoryBlueprint {
     heroDesire: string;
     mainChallenge: string;
     primaryVisualAnchor: string; // NEW
+    anchorTriggerRule?: string; // v3.3: Structured physical trigger rule (e.g. 'glows warm when calm, cools when worried')
     moral: string;
     failedAttemptSpread?: number; // NEW
     insightSpread?: number; // NEW
@@ -455,11 +456,14 @@ export interface Spread {
   qcOriginalUrl?: string;
   spreadNumber: number;       // 0 = cover, 1–N = inner spreads
   illustrationUrl: string;    // Supabase Storage public URL (or temp base64 during generation)
+  text?: string;              // Narrative text helper
   leftText: string;           // Story text displayed on the left half
   rightText: string;          // Story text displayed on the right half
   actualPrompt?: string;      // The exact image prompt used (user-editable seed)
   lastGeminiPrompt?: string;  // The final prompt actually sent to Gemini (audit trail)
-  textSide?: 'left' | 'right'; // Which side the subject occupies (drives layout)
+  textSide?: 'left' | 'right'; // Which side the text occupies
+  mainContentSide?: 'left' | 'right'; // Which side the hero/action occupies
+  actionSide?: 'left' | 'right';
   generationModel?: string;   // The AI model used to generate this image
   // Layout overrides (set in EditorScreen, applied in fileService PDF rendering)
   textOffsetX?: number;       // PDF mm — left edge of text box (overrides auto calculation)

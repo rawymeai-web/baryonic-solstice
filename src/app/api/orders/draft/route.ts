@@ -67,12 +67,30 @@ export async function POST(req: Request) {
             }
         }
 
-        // Ensure we strip out any accidentally carried-over generative artifacts from previous orders
+        // OFF-LOAD SECOND DNA IMAGE IF PRESENT
+        if (storyData.secondCharacterImageBase64 && storyData.secondCharacterImageBase64.length > 500) {
+            try {
+                const imageUrl = await uploadBase64Image(orderNumber, storyData.secondCharacterImageBase64, 'second_dna_reference.jpg');
+                storyData.secondCharacterImageUrl = imageUrl;
+                delete storyData.secondCharacterImageBase64;
+                console.log('Second DNA Image Offloaded to Storage:', imageUrl);
+            } catch (e) {
+                console.error('Failed to offload Second DNA Image:', e);
+            }
+        }
+
+        // Ensure we strip out any accidentally carried-over generative artifacts or UI preview caches
+        delete storyData.cachedPreviews;
+        delete storyData.previewImages;
+        delete storyData.styleVariants;
+        delete storyData.coverDebugImages;
         delete storyData.blueprint;
         delete storyData.rawScript;
         delete storyData.script;
         delete storyData.visualPlan;
         delete storyData.prompts;
+        delete storyData.finalPrompts;
+        delete storyData.workflowLogs;
 
         const orderData: any = {
             order_number: orderNumber,

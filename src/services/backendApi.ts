@@ -161,15 +161,37 @@ export const backendApi = {
     }),
 
     // Drafts / Orders V2
-    createDraftOrder: (payload: { storyData: any, customerEmail?: string, userId?: string, customerName?: string, total?: number }) => fetchBackend<{ success: boolean; orderId: string; message: string }>('/orders/draft', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-    }),
+    createDraftOrder: (payload: { storyData: any, customerEmail?: string, userId?: string, customerName?: string, total?: number }) => {
+        let cleanStory = payload.storyData;
+        if (cleanStory && typeof cleanStory === 'object') {
+            cleanStory = { ...cleanStory };
+            delete cleanStory.cachedPreviews;
+            delete cleanStory.previewImages;
+            delete cleanStory.styleVariants;
+            delete cleanStory.coverDebugImages;
+            delete cleanStory.workflowLogs;
+        }
+        return fetchBackend<{ success: boolean; orderId: string; message: string }>('/orders/draft', {
+            method: 'POST',
+            body: JSON.stringify({ ...payload, storyData: cleanStory })
+        });
+    },
 
-    updateDraftOrder: (payload: { orderId: string, storyData?: any, stepProgress?: number, status?: string, shippingDetails?: any }) => fetchBackend<{ success: boolean; message: string }>('/orders/draft', {
-        method: 'PUT',
-        body: JSON.stringify(payload)
-    }),
+    updateDraftOrder: (payload: { orderId: string, storyData?: any, stepProgress?: number, status?: string, shippingDetails?: any }) => {
+        let cleanStory = payload.storyData;
+        if (cleanStory && typeof cleanStory === 'object') {
+            cleanStory = { ...cleanStory };
+            delete cleanStory.cachedPreviews;
+            delete cleanStory.previewImages;
+            delete cleanStory.styleVariants;
+            delete cleanStory.coverDebugImages;
+            delete cleanStory.workflowLogs;
+        }
+        return fetchBackend<{ success: boolean; message: string }>('/orders/draft', {
+            method: 'PUT',
+            body: JSON.stringify({ ...payload, storyData: cleanStory })
+        });
+    },
 
     // Customer Tools
     getCustomerDashboard: (userId: string) => fetchBackend<{ orders: any[], subscription: any }>(`/orders/customer/${userId}`),

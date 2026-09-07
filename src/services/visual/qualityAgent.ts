@@ -68,30 +68,30 @@ Your job is to evaluate the GENERATED IMAGE (Image 1) against the provided refer
 **STORY NARRATIVE:** ${storyText || 'N/A'}
 
 **EVALUATION CRITERIA:**
-1. **Character Consistency:** Does the character(s) in Image 1 perfectly match the bone structure, facial geometry, and identity of the RAW PHOTO(s)? (Ignore style, focus on identity).
-2. **Style Consistency:** Does Image 1 match the art style shown in the DNA STYLE REFERENCE image(s)? 
-3. **Text Clearance:** A large text box will be placed on the ${currentTextSide || 'Right'} side of the image. 
-   - Is there enough empty "negative space" on the ${currentTextSide || 'Right'} side for text?
-   - Will the text box cover the character's face or the main action? 
-   - If the current side is bad, would the other side be better?
-4. **Narrative Adherence:** Does the generated image (Image 1) accurately depict the story action, settings, and main characters described in the STORY NARRATIVE?
+1. **Character Consistency:** Compare facial features (jaw/cheek fullness, eye shape, nose width, hair color/texture). Mark characterConsistencyStatus as "fail" ONLY if the character clearly lost the child's identity or is an entirely different person. Reasonable variations due to 2D stylized artistic interpretation or action poses should PASS.
+2. **Wardrobe & Attire Consistency:** Does the character's clothing and shoes generally match the reference? Fail only if there is an unexplained major contradiction.
+3. **Style Consistency:** Does Image 1 match the painterly/storybook art style of the DNA REFERENCE? Fail only if it renders as flat clip-art, raw photo, or plastic 3D.
+4. **Text Clearance:** A text box is placed on the ${currentTextSide || 'Right'} side of the image. 
+   - If the character or primary action is on that side, recommend the opposite side in recommendedTextSide.
+   - Text clearance alone should NOT trigger an overall image failure if simply moving the text to the other side resolves it.
+5. **Narrative Adherence:** Does the generated image generally reflect the story action and scene?
 
 **MANDATE:** Output your evaluation strictly as a JSON object following this exact schema:
 {
-  "visualDescription": "Write a highly detailed 2-sentence description of exactly what you see in Image 1 (characters, actions, background, style).",
+  "visualDescription": "Write a concise 2-sentence description of what is depicted in Image 1.",
   "characterConsistencyStatus": "pass" | "fail",
   "characterReasoning": "Why it passes or fails...",
   "styleConsistencyStatus": "pass" | "fail",
   "styleReasoning": "Why it passes or fails...",
   "textClearanceStatus": "pass" | "fail",
-  "textReasoning": "Explain if the text box will cover important elements...",
+  "textReasoning": "Explain if the text box has clearance or needs side change...",
   "recommendedTextSide": "Right" | "Left",
   "narrativeAdherenceStatus": "pass" | "fail",
   "narrativeAdherenceReasoning": "Detailed reason why it passes or fails the narrative check.",
   "overallDecision": "pass" | "fail"
 }
 
-- For \`overallDecision\`, if any of the four statuses are "fail", the overall decision MUST be "fail".
+- For overallDecision, mark "fail" only if character likeness or style has a severe defect requiring complete image regeneration. If only text placement needs adjusting, mark "pass" with the corrected recommendedTextSide.
 - Output ONLY valid JSON. No markdown formatting.
 `;
 

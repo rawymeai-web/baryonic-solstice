@@ -159,6 +159,12 @@ Return valid JSON only using this structure:
       "base_tone_hex": "",
       "undertone": ""
     },
+    "clothing": {
+      "top": "Detailed description of shirt, top, collar, dress or outerwear visible in the photo (e.g. 'Red collared polo shirt with small button placket')",
+      "top_color": "Primary color of top (e.g. 'Red')",
+      "canonical_bottom": "A matching, storybook adventure-ready bottom garment (e.g. 'Dark blue denim jeans' or 'Khaki twill trousers')",
+      "canonical_footwear": "Matching footwear (e.g. 'Classic white sneakers with brown rubber soles' or 'Brown leather boots')"
+    },
     "body_proportions": "",
     "stable_identifiers": []
   },
@@ -555,9 +561,13 @@ export async function generateMethod4Image(
             if (match) eyeColorStr = match[1];
         }
 
-        const isV71 = finalPromptText.includes('[v7.1-dna-clean]');
+        const isSelfContainedPrompt = 
+            finalPromptText.includes('[v7.1-dna-clean]') ||
+            finalPromptText.includes('[v7.4') ||
+            finalPromptText.includes('[v7.5') ||
+            finalPromptText.includes('[v7.6');
 
-        if (!isV71) {
+        if (!isSelfContainedPrompt) {
             let ageAndDescBlock = `\n\n**CHARACTER IDENTITY & LIKENESS:**
 - **[[HERO_1]] IDENTITY:** Replicate the exact facial features, hairstyle, and clothing of [[HERO_1]] shown in their reference image (Image 1). The character must look identical to the person in Image 1. Do not alter their recognizable features.
 - [[HERO_1]] is a ${age}-year-old child. ${ageInstructions}
@@ -571,7 +581,7 @@ export async function generateMethod4Image(
             finalPromptText = finalPromptText + ageAndDescBlock;
         }
 
-        if (cleanStylePrompt && !finalPromptText.includes('ART STYLE REQUIREMENT')) {
+        if (!isSelfContainedPrompt && cleanStylePrompt && !finalPromptText.includes('ART STYLE REQUIREMENT')) {
             finalPromptText += `\n\n**ART STYLE REQUIREMENT:**
 - **STYLE:** Render this illustration in the following style: ${cleanStylePrompt}. Make sure the colors, lighting, rendering technique, brushwork, and background style align perfectly with this description.`;
         }
