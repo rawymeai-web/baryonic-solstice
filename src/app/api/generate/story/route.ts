@@ -38,6 +38,7 @@ export async function POST(req: Request) {
             language,
             storyData.childName,
             storyData.childAge,
+            storyData.secondCharacter,
             storyData.customStoryText
         );
 

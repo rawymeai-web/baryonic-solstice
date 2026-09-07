@@ -92,7 +92,7 @@ export class StoryWorker {
 
       console.log(`[StoryWorker] Running Editor Pass...`);
       const edRes = await WorkerUtils.withTimeout(
-        runEditorPass(narRes.result, blueprint, language, childName, childAge),
+        runEditorPass(narRes.result, blueprint, language, childName, childAge, secondCharacter),
       );
       const script = edRes.result;
 

@@ -9,10 +9,18 @@ export async function runEditorPass(
     language: Language,
     childName: string,
     childAge: number,
+    secondCharacter?: any,
     customStoryText?: string
 ): Promise<{ result: { text: string }[], log: WorkflowLog }> {
 
     const startTime = Date.now();
+
+    const isDual = !!(
+        (blueprint as any)?.heroMode === 'dual' ||
+        (secondCharacter && secondCharacter.name && secondCharacter.type !== 'object')
+    );
+    const heroNameA = childName;
+    const heroNameB = secondCharacter?.name || (blueprint as any)?.heroNameB || 'Friend';
 
     const languageMap: Record<Language, string> = {
         'en': 'English',
@@ -37,6 +45,7 @@ export async function runEditorPass(
             ROLE: Senior Children's Book Editor — brutally honest literary critic and skilled rewriter.
             LANGUAGE: ${targetLang}
             AGE GROUP: ${childAge} years old
+            ${isDual ? `HEROES: Dual-Hero story featuring "${heroNameA}" and "${heroNameB}". Both heroes are co-protagonists.` : `HERO: Single-Hero story featuring "${childName}".`}
             
             You will receive a rough draft of a children's book. Your job is to apply a strict, professional three-pass editorial review and return a polished, coherent manuscript.
             You are NOT a proofreader. You are a STORY DOCTOR. You have FULL PERMISSION to rewrite entire spreads if they are broken.
@@ -47,16 +56,16 @@ export async function runEditorPass(
             First, read the draft as a completely uninformed reader. You do NOT have the blueprint yet. Ask these questions spread by spread:
 
             A. **STANDALONE LOGIC & PERSONAL MOTIVE ORIGIN:** Does Spread 1 establish the child's starting **Home Base** (play spot, bedroom rug, garden) and a warm, personal reason for their desire? 
-               - ❌ **FLAG & FIX:** If Spread 1 drops a flat, ungrounded mission statement (e.g., *"dreaming of helping desert friends sleep"* without saying who ${childName} is or why she loves animals), REWRITE IT to give the desire a personal, warm origin.
-            B. **WORLD-LOGIC & HOME-BASE FRAME AUDIT:** Is the child's setting grounded in Spread 1 so that returning to it in Spread ${draft.length} ("back in ${childName}'s play spot / bedroom") makes complete sense to a parent reading aloud?
+               ${isDual ? `- **DUAL HERO GROUNDING:** Spread 1 MUST establish BOTH "${heroNameA}" and "${heroNameB}" in their shared starting location. DO NOT remove "${heroNameB}" from Spread 1!` : `- ❌ **FLAG & FIX:** If Spread 1 drops a flat, ungrounded mission statement without saying who ${childName} is, REWRITE IT to give the desire a personal, warm origin.`}
+            B. **WORLD-LOGIC & HOME-BASE FRAME AUDIT:** Is the setting grounded in Spread 1 so that returning to it in Spread ${draft.length} makes complete sense to a parent reading aloud?
             C. **MAGICAL ANCHOR CONTINUITY & CAUSE-FIRST LOGIC:** 
                - Is the anchor item established as special from first mention?
-               - Does the text maintain object continuity by writing "${childName}'s pebble" instead of "a pebble"?
-               - Is cause stated before effect? (❌ "Glowed warm for happy ${childName}" $\rightarrow$ ✅ "${childName} felt happy and calm. ${childName}'s pebble glowed warm.").
+               - Does the text maintain object continuity by writing "${isDual ? 'their [item]' : childName + '\'s [item]'}" instead of "a [item]"?
+               - Is cause stated before effect? (❌ "Glowed warm for happy ${childName}" $\rightarrow$ ✅ "${childName} felt happy and calm. The pebble glowed warm.").
             D. **SEAMLESS RETURN TRANSITION & WARM RESOLUTION TAKEAWAY (SPREAD ${draft.length}):**
-               - Is there an explicit bridging sentence explaining how ${childName} traveled back from the wild/adventure setting to the Spread 1 Home Base?
+               - Is there an explicit bridging sentence explaining how ${isDual ? `${heroNameA} and ${heroNameB}` : childName} traveled back from the adventure setting to the Spread 1 Home Base?
                - Does the final spread conclude with a warm, comforting takeaway in the child's own voice (e.g., *"Quiet and slow was the best kind of magic."*) instead of abruptly stopping?
-            E. **MENTOR / HELPER ANIMAL PURPOSE AUDIT:** If a helper animal appears (e.g., an owl, turtle, or lizard), is their presence given a clear quality (e.g., *"An owl blinked, slow and calm."*) so later callbacks (*"${childName} thought of the slow owl"*) make immediate sense?
+            E. **MENTOR / HELPER ANIMAL PURPOSE AUDIT:** If a helper animal appears (e.g., an owl, turtle, or lizard), is their presence given a clear quality (e.g., *"An owl blinked, slow and calm."*) so later callbacks make immediate sense?
             F. **AGE-TIERED VOCABULARY AUDIT (AGE ${childAge}):**
                ${childAge <= 3 ? `
                - **TODDLER VOCABULARY PURITY (Ages 1–3):**
@@ -81,7 +90,7 @@ export async function runEditorPass(
             **THE BLUEPRINT (Intended Story Structure):**
             ${JSON.stringify(blueprint)}
 
-            I. **THEME–PREMISE DRAMATIZATION:** Does the story actually dramatize the marketed theme? (e.g., if the theme is "Understanding animal language", does ${childName} explicitly learn to interpret the animal's quiet sounds or stillness as their message?).
+            I. **THEME–PREMISE DRAMATIZATION:** Does the story actually dramatize the marketed theme?
             J. **THEMATIC & TITLE PROMISE PAYOFF:** Does the climax reveal the secret, treasure, or language promised in the Title?
             K. **PERSONIFICATION PAYOFF:** If the setting was personified (e.g. "The pyramid loved tricky games"), did it pay off as a testing guide that rewards their patience?
             L. **WARM COZY ENDING (ANTI-PREACHY, BUT NEVER SILENT):** Does the final spread deliver an emotional, cozy resolution and child-voice takeaway (e.g. bedtime comfort, a warm realization)?
@@ -97,20 +106,17 @@ export async function runEditorPass(
 
             1. **REWRITE FREELY:** You are allowed and expected to rewrite entire paragraphs or spreads that fail. Do not just polish a broken structure.
             ${customStoryText ? `**CRITICAL EXCEPTION FOR CUSTOM POEM/TEXT:** The user has provided an exact poem/text: """${customStoryText}""". Under NO circumstances should you rewrite, "fix", or change the words of this provided poem. Your ONLY job in this rewrite phase is to distribute the provided words accurately across the spreads. Do not alter the rhythm or vocabulary of the provided text.` : ''}
-            2. **GROUND SPREAD 1 & RESOLVE SPREAD ${draft.length}:** Ensure Spread 1 grounds the Home Base and personal motive, and Spread ${draft.length} smoothly bridges the journey home with a warm child-voice takeaway.
-            3. **OBJECT CONTINUITY ("${childName}'s pebble"):** Use the hero's name possessive for special items to ensure continuous identity across pages.
+            2. **GROUND SPREAD 1 & RESOLVE SPREAD ${draft.length}:** Ensure Spread 1 grounds the Home Base and personal motive ${isDual ? `for BOTH "${heroNameA}" and "${heroNameB}"` : `for "${childName}"`}, and Spread ${draft.length} smoothly bridges the journey home with a warm child-voice takeaway.
+            3. **OBJECT CONTINUITY:** Use possessive for special items ("${childName}'s [item]" or "their [item]") to ensure continuous identity across pages.
             4. **APPLY AGE-TIERED VOCABULARY WHITELIST (Age ${childAge}):**
                ${childAge <= 3 ? `- Use ONLY simple verbs (ran, hid, sat down, moved, blew, looked), simple nouns (little fox, play spot), and primary emotions (happy, sad, mad, calm, proud, scared, mixed up, safe).` : `- Use clear, everyday concrete words.`}
             5. **UNIVERSAL INTUITIVE SOUNDS:** Use recognizable sounds (*CRUNCH*, *SHHH...*, *SNIFF SNIFF*, *SIGH...*, *SNORE!*, *GIGGLE GIGGLE*).
             6. **CAUSE-FIRST ANCHOR LOGIC:** State feelings/causes before magic reactions.
-            7. **INSIGHT STRUCTURE:** Spread 6 must have TWO beats:
-               - First: The hero **observes** a specific clue or animal communication.
-               - Then: The hero **internally realizes** what it means.
-               - Do not rush to the solution before the realization is felt.
+            7. **INSIGHT STRUCTURE:** Spread 6 must have TWO beats (observe clue $\rightarrow$ realize meaning).
             8. **RHYTHM, CONCISENESS AND VOCABULARY:**
                - Keep text punchy, crisp, and within target: **${wordCountRule.min}–${wordCountRule.max} words per spread**.
             9. **LANGUAGE:** All output text MUST be in ${targetLang}. Arabic MUST NOT contain Tashkeel (vowel diacritics).
-            10. **HERO NAME:** You MUST use the exact name "${childName}" throughout. Do NOT change it.
+            10. **HERO NAMES:** ${isDual ? `You MUST feature BOTH "${heroNameA}" and "${heroNameB}" throughout. Spread 3 must show mismatch friction, Spread 5 must give each hero their own named feeling, and Spread 7 must have both heroes act together.` : `You MUST use the exact name "${childName}" throughout. Do NOT change it.`}
             11. **PAGE BUDGET:** You MUST return EXACTLY ${draft.length} spreads. Do not add or remove pages.
             12. **WORD COUNT:** ${wordCountRule.min}-${wordCountRule.max} words per spread.
             13. **NO PHYSICAL DESCRIPTIONS:** Do NOT invent clothing, physical features, or skin color for the hero. Let the illustrations do that.
@@ -119,15 +125,15 @@ export async function runEditorPass(
             🔁 PASS 4 — VERIFICATION RE-READ (MANDATORY)
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             Before producing your final JSON output, re-audit your Pass 3 rewritten spreads against this mandatory checklist. If ANY check fails, fix that spread immediately:
-            - [ ] **Home Base Grounding:** Spread 1 explicitly grounds ${childName} in their Home Base (play spot, room, rug, garden) and establishes a personal emotional origin for their desire.
-            - [ ] **Object Continuity:** Special items use "${childName}'s [item]" rather than generic articles ("a [item]").
+            - [ ] **Home Base Grounding:** Spread 1 explicitly grounds ${isDual ? `BOTH ${heroNameA} and ${heroNameB}` : childName} in their Home Base and establishes a personal emotional origin for their desire.
+            - [ ] **Object Continuity:** Special items use possessives rather than generic articles ("a [item]").
             - [ ] **Anchor Item Rule:** Anchor item trigger is stated cause-first (happy $\rightarrow$ warm, worried $\rightarrow$ cold).
-            - [ ] **Return Journey Bridge & Warm Takeaway:** Spread ${draft.length} contains a smooth return bridge and ends with a warm child-voice takeaway (e.g. *"Quiet and slow was the best kind of magic."*).
+            - [ ] **Return Journey Bridge & Warm Takeaway:** Spread ${draft.length} contains a smooth return bridge and ends with a warm child-voice takeaway.
             - [ ] **Helper Animal Meaning:** Helper creatures are given a clear meaning on introduction so callbacks are earned.
-            - [ ] **Simple Vocabulary Whitelist (Age ${childAge}):** ${childAge <= 3 ? `Zero complex verbs (no scurried, slumped, swayed, drifted, peered) and zero adult emotions (no frustrated, confused, disappointed). Uses pure simple words (ran, sat down, mad, mixed up, sad, calm).` : `Zero academic/adult words.`}
+            - [ ] **Simple Vocabulary Whitelist (Age ${childAge}):** ${childAge <= 3 ? `Zero complex verbs and zero adult emotions. Pure simple words.` : `Zero academic/adult words.`}
             - [ ] **Intuitive Sounds:** Only recognizable onomatopoeia (*CRUNCH*, *SHHH...*, *SNIFF SNIFF*, *SIGH...*, *SNORE!*). Zero invented spellings.
-            - [ ] **Complete Sentences:** Zero grammatical fragments (e.g. "${childName} felt calm and happy", not "${childName} content").
-            - [ ] **Pronoun Policy Guard (Age ${childAge}):** ${childAge <= 5 ? `Strictly NO third-person pronouns (he/she/him/her/his/hers) refer to ${childName} or named companion.` : `Pronouns correctly match character genders.`}
+            - [ ] **Complete Sentences:** Zero grammatical fragments.
+            - [ ] **Pronoun Policy Guard (Age ${childAge}):** ${childAge <= 5 ? `For ages 1–5: avoid 3rd-person individual pronouns. Refer by name or "they/their" for the duo.` : `Pronouns correctly match character genders.`}
             - [ ] **Arabic Diacritics:** Zero Tashkeel if writing Arabic.
             - [ ] **Word Count:** Every spread is strictly within ${wordCountRule.min}–${wordCountRule.max} words.
 
