@@ -89,45 +89,67 @@ export async function generateStoryDraft(
                - Parents prefer crisp, beautiful, easy-to-read lines that leave room for the illustrations to shine.
                - Keep strictly within target: **${wordCountRule.min}–${wordCountRule.max} words per spread**.
                - Mix short, energetic sentences with smooth, rhythmic lines.
-               - **VOCABULARY LOCK FOR AGE ${age}:** STRICTLY use simple, concrete, everyday words understood by a ${age}-year-old. ABSOLUTELY NO archaic, academic, or adult literary words (❌ No "nook", "endeavor", "observation", "haste", "foster", "fatigue"). Use concrete child words (✅ "bed", "blanket", "rug", "puddle", "sneakers", "branches", "window").
+               - **VOCABULARY LOCK FOR AGE ${age}:**
+                 ${age <= 3 ? `
+                 - **TODDLER VOCABULARY PURITY (Ages 1–3):** Use ONLY simple words a 3-year-old and second-language parents easily follow.
+                   - ❌ **STRICTLY BANNED COMPLEX VERBS:** No "scurried", "slumped", "sank", "swayed", "drifted", "fluttered", "peered", "observed", "retreated", "inquired", "approached".
+                   - ✅ **APPROVED REPLACEMENTS:** Use "ran", "hid", "sat down", "moved", "blew", "looked", "peeked", "asked", "walked up".
+                   - ❌ **NO OBSCURE BIOLOGICAL NAMES:** Do not write "fennec fox" or "canopy". Write "little fox" and "big trees".
+                   - ❌ **NO ADVANCED EMOTIONS:** Do NOT use "frustrated", "confused", "disappointed", "relieved".
+                   - ✅ **APPROVED PRIMARY EMOTIONS:** Use "mad", "upset", "mixed up", "sad", "calm", "safe", "happy", "proud", "scared", "cozy".
+                 ` : `
+                 - **AGE-APPROPRIATE VOCABULARY (Ages ${age}):** STRICTLY use clear, concrete everyday words. ABSOLUTELY NO archaic, academic, or adult literary words (❌ No "nook", "endeavor", "observation", "haste", "foster", "fatigue", "apparatus"). Use concrete child words (✅ "play spot", "room", "bed", "blanket", "rug", "puddle", "branches", "window").
+                 `}
 
             2. **THE PAGE-TURN SENSORY BRIDGE RULE (APPLIES ACROSS ALL SPREADS):**
                - Every spread must end with a natural setup, and the next spread must start by continuing that exact physical action or sensory event.
-               - **No Teleporting:** If the hero is in their bedroom in Spread 1, they cannot suddenly be in the desert in Spread 2 without stepping out the door or peering out the window.
+               - **No Teleporting:** If the hero is in their play spot in Spread 1, they cannot suddenly be in the desert in Spread 2 without stepping out the door or hearing a sound outside.
                - **No Unearned Names:** The hero cannot magically know an unfamiliar animal's name in Spread 2 before meeting it.
-               - **Sensory Triggers:** Link page turns with sounds, visual flashes, or physical motions (e.g., *Spread 1 ends with quiet $\rightarrow$ Spread 2 starts with a sharp TWEET! at the window $\rightarrow$ Spread 3 starts with Zayn rushing out the door*).
+               - **Sensory Triggers:** Link page turns with sounds, visual flashes, or physical motions (e.g., *Spread 1 ends with quiet $\rightarrow$ Spread 2 starts with a soft cry outside $\rightarrow$ Spread 3 starts with ${childName} running outside*).
 
-            3. **AGE-TIERED SENSORY & ONOMATOPOEIA MANDATE:**
-               ${age <= 5 ? `
-               - **INTERACTIVE SOUND WORDS MANDATORY:** For children aged ${age}, every action spread MUST include at least one fun, expressive sound effect in capital letters (e.g. *CRUNCH-CRUNCH!*, *FLAP-FLAP!*, *TWEET!*, *SPLASH!*, *SHHH...*, *ZOOM!*).
-               - **PHYSICALIZED EMOTIONS:** Show feelings in the body (tummy fluttering, big smiles, heavy sighs, fast thumping hearts, tip-toeing feet).
+            3. **INTUITIVE SOUND WORDS (ONOMATOPOEIA) ONLY:**
+               - ${age <= 5 ? `
+               - **UNIVERSAL SOUND EFFECT MANDATE:** For age ${age}, every action spread MUST include at least one fun, intuitive, recognizable sound effect in capital letters.
+               - ✅ **APPROVED SOUNDS:** *CRUNCH!*, *SHHH...*, *SNIFF SNIFF!*, *SIGH...*, *SNORE!*, *SPLASH!*, *ROAR!*, *BEEP BEEP!*, *TAP TAP!*, *FLAP FLAP!*, *TWEET TWEET!*, *ZOOM!*, *GIGGLE GIGGLE!*, *SQUEAK!*, *CLAP CLAP!*, *DRIP DROP!*.
+               - ❌ **STRICTLY BANNED INVENTED SOUNDS:** NEVER invent unpronounceable spellings like "WHIMP-WHIMP" or "WHISPER-WHISP".
+               - **CONCRETE SENSORY OVER ABSTRACT:** Never write abstract descriptions like "quick, happy sounds". Write concrete actions and real sounds: "The little fox wiggled. GIGGLE GIGGLE!".
                ` : `
                - **ACTIVE DIALOGUE & CLEVERNESS:** Include lively spoken dialogue and show the hero actively making smart choices.
                `}
 
-            4. **STRICT ENTITY & MENTOR PERSISTENCE:**
-               - If a helper animal or guide is introduced in Spread 4 (e.g. a quiet lizard), the hero MUST learn the lesson from that EXACT same creature in Spread 6. Do NOT randomly switch creatures mid-story (e.g. from lizard to beetle).
+            4. **OBJECT CONTINUITY & THE PRONOUN RULE ("${childName}'s pebble", NOT "a pebble"):**
+               - When referring to the hero's special item across spreads, NEVER swap it to "a pebble" (which sounds like a brand-new object).
+               - ✅ **USE HERO POSSESSIVE:** Always write "${childName}'s pebble", "${childName}'s compass", "${childName}'s toy". This satisfies zero third-person pronouns while maintaining 100% object permanence and continuity!
 
-            5. **ADJECTIVE BAN:** Do NOT use overly abstract adjectives (e.g. "magical", "wondrous"). Use Concrete Adjectives (Size, Color, Texture, Sound).
-            
+            5. **CAUSE-FIRST ANCHOR LOGIC:**
+               - Always state the cause BEFORE the effect.
+               - ❌ *Bad (Backwards):* "Glowed warm for happy ${childName}."
+               - ✅ *Good (Cause First):* "${childName} felt happy and calm. ${childName}'s pebble glowed warm."
+
+            6. **MENTOR / HELPER ANIMAL PURPOSE:**
+               - If a helper or mentor animal appears (e.g., an owl, turtle, or lizard), explicitly state what quality they embody:
+               - *Spread 4:* "An owl blinked, slow and calm."
+               - *Spread 6 Callback:* "${childName} thought of the slow owl. ${childName} sat very still." (Earned and meaningful callback!).
+
+            7. **WARM CHILD-VOICE CLOSING TAKEAWAY (NO PREACHING, BUT NO ABRUPT STOP):**
+               - Spread ${spreadCount} MUST conclude with a comforting bedtime realization in the child's own voice:
+               - *Example:* "Quiet and slow was the best kind of magic."
+               - *Example:* "Being gentle made the warmest kind of friendship."
+               - ❌ Do NOT preach adult thesis statements (e.g. "Patience achieves more than haste").
+               - ❌ Do NOT abruptly stop without stating what made the ending happy and safe.
+
+            8. **COMPLETE GRAMMATICAL SENTENCES:**
+               - Never drop essential verbs to dodge pronouns.
+               - ❌ *Bad (Fragment):* "${childName} content."
+               - ✅ *Good:* "${childName} felt calm and happy."
+
             **5. INTRODUCTION PROTOCOL & CONCRETE OPENING FORMULA (CRITICAL):**
             - **Spread 1 (The Hero, Home Base & Personal Motive Origin):** Open with a VIVID SCENE, ACTION, or EMOTION grounded in the child's starting **Home Base** (e.g., cozy play spot, bedroom rug, sunny garden). The hero's name (${childName}) MUST appear naturally within the first 1-2 sentences, but NEVER as the subject of the very first sentence as a bare factual introduction.
             - **MANDATORY CONCRETE OPENING TEMPLATE FOR SPREAD 1:**
-              "[Name], [trait/mood], [action] in [home base]. [Object/companion, with a felt reason it matters to them specifically + anchorTriggerRule stated]."
-              - *Example (Age 1–5)*: "Lana wiggled, happy, playing in a cozy play spot. Lana loved a glowing pebble and dreamed of helping every sleepy desert friend. The soft pebble glowed warm whenever Lana felt happy, but grew cool when worried."
+              "${childName} played in ${childName}'s play spot. ${childName}'s special pebble glowed warm. ${childName} loved helping animal friends fall asleep."
             - **Grounded Home Base Mandate:** Spread 1 MUST explicitly ground the child's starting location so the parent reader understands where the adventure begins (and so Spread ${spreadCount}'s return journey makes complete sense).
             - **Personal Motive Origin (NO Arbitrary Missions):** The hero's desire MUST have a clear personal, emotional origin (e.g., love for animals, a cherished gift, bedtime wonder). NEVER drop an ungrounded mission statement onto the character without explaining why it matters to them.
-              - ❌ BAD: "${childName} held a pebble, dreaming of helping desert friends sleep." (Cold, ungrounded mission statement).
-              - ✅ GOOD: "In a sunny play spot, ${childName} sat holding a special glowing pebble. ${childName} loved little animals more than anything, and dreamed of helping every sleepy desert friend."
-            - STRICTLY FORBIDDEN OPENING PATTERNS — NEVER write these:
-              - ❌ BAD (English): "Her name is ${childName}. ${childName} likes watching ants..."
-              - ❌ BAD (Arabic): "اسمها ${childName}. تحب ${childName} مراقبة النمل..."
-              - ❌ BAD: Any sentence that starts with "اسمها/اسمه" or "Her name is / His name is".
-            - REQUIRED OPENING PATTERNS — Use one of these approaches:
-              - ✅ GOOD: Open with the home base/setting first, then the hero's name and personal love/desire appear in it. (e.g., "In a cozy play spot, where the morning sun warmed the rugs, ${childName} held a smooth pebble close...")
-              - ✅ GOOD (Arabic): "في ركن ألعابها الدافئ، حيث تتسلل خيوط الشمس الذهبية، كانت ${childName} تمسك بحصاتها الناعمة بحب..."
             - Focus on their personality and emotions (e.g., curious, dreamy). STRICTLY DO NOT discuss ANY physical body traits, clothing, or skin colors.
-            - **New Entry:** If a later spread introduces a new character (e.g. Zara, the Town Elder), you MUST introduce them explicitly before they act. STRICTLY DO NOT invent physical traits or clothing for them either.
             
             ${secondCharacter && secondCharacter.name ? `**DUAL HERO PROTOCOL (STRICT ONBOARDING & AGENCY):**
             - The companion ${secondCharacter.name} MUST be explicitly introduced by name in Spread 1 or opening of Spread 2.
@@ -136,64 +158,22 @@ export async function generateStoryDraft(
 
             **MAGICAL ANCHOR / EMOTIONAL BAROMETER RULE (CRITICAL):**
             - If the story features a special anchor object (e.g., compass, glowing pebble, lantern), you MUST state its simple physical behavior rule in Spread 1 upon first introduction:
-              - *Example:* "The soft pebble glowed warm and bright whenever ${childName} felt happy and calm, but grew cool when worried."
-            - Pay this off consistently across the beats (glowing with hope in Spread 2, growing cool/dim at the low point in Spread 5, glowing warm and bright at the insight/success in Spreads 6-8).
-
-            **THEME–PREMISE DRAMATIZATION (ANIMAL & NATURE LANGUAGE):**
-            - If the story is about understanding animals or nature, the text MUST explicitly dramatize this communication. Reframe animal sounds, movements, or stillness as their quiet language:
-              - *Example (Spread 6):* "The kit's soft whimper was not asking ${childName} to run. It was asking ${childName} to sit very, very still."
+              - *Example:* "${childName}'s special pebble glowed warm when ${childName} felt calm and happy, but felt cold when ${childName} was worried."
+            - Pay this off consistently across the beats (glowing in Spread 1-2, feeling cold/dim at the low point in Spread 5, glowing warm and bright at the insight/success in Spreads 6-8).
 
             **CAUSAL CONTINUITY & RETURN TRANSITIONS (NO TELEPORTS):**
             - Every spread must open by directly resolving or responding to the previous spread's obstacle.
-            - **Spread ${spreadCount} Return Journey Bridge:** You MUST include an explicit bridging clause showing how the hero (and any friend) travels smoothly from the wild/adventure space back to the Spread 1 Home Base (e.g., *"${childName} gently carried the sleepy new friend home, back to the cozy play spot..."*). Never jump-cut across settings without a physical bridge.
+            - **Spread ${spreadCount} Return Journey Bridge:** You MUST include an explicit bridging clause showing how the hero (and any friend) travels smoothly from the wild/adventure space back to the Spread 1 Home Base (e.g., *"${childName} carried the sleepy new friend back to ${childName}'s cozy play spot..."*). Never jump-cut across settings without a physical bridge.
 
             **THEMATIC SECRET REVEAL & CLIMAX PAYOFF:**
             - The climax (Spread ${spreadCount - 1}) and resolution (Spread ${spreadCount}) MUST directly deliver on the promise of the Title and Theme.
-            - If the title promises a "Secret" or "Treasure", reveal an actual meaningful discovery (e.g., an ancient carving or artifact proving that patience and teamwork are the true treasure).
-            - **SEAMLESS RETURN TRANSITION:** Do not jump-cut from finding the goal straight to the entrance. Show the joyful, harmonious journey back into the sunlight with the goal achieved.
 
-            **OPENING SCENE RULES (CRITICAL):**
-            - The very first sentence of Spread 1 MUST NOT be a generic statement of love, interest, or personality (e.g. "her name is Sarah. She loves animals very much!").
-            - You MUST start the story in the middle of a specific, physical, and mundane action occurring right now in a specific location.
-            - BAD: "Her name is Sarah. She loves animals very much! In her big room, she dreams of understanding what they say."
-            - GOOD: "Sarah sat quietly on the edge of the woven rug, holding a small wooden toy, watching a tiny bird tap against the glass window."
-
-            **WORLD-INTRODUCTION RULES (CRITICAL — READ BEFORE WRITING SPREAD 1):**
-            - **WORLD FRAMING BRIDGE:** Provide an imaginative framing bridge (e.g., bedtime curiosity, grandfather's storybook, an enchanted doorway, pretend-play discovery) explaining why the child is embarking on this adventure.
-            - **INCITING INCIDENT & MOTIVE:** Establish a concrete, urgent reason to embark on this quest (e.g., a lost pet's faint call, a glowing map). The reader must understand *why* the hero cares and what is at stake.
-            1. **NO STRANGER CHARACTERS IN SPREAD 1:** Every named non-hero character or mythical figure (e.g., "The Man in the Moon", "The Star Queen", "The Night Owl") MUST have a reason WHY this child already knows them. 
-               - You MUST provide a maximum 5-word context bridge BEFORE the desire is stated.
-               - Bad: "He wished he could meet the Man in the Moon." (Who is he? The reader has no context.)
-               - Good: "His grandmother always said the Man in the Moon watched over sleeping children. Tonight, Rayan wondered if he was lonely too." (Context first → desire second.)
-               - This rule applies to animals, magical figures, legends, ANY named entity that is not the main hero.
-            2. **CAUSAL DISCOVERY RULE — NO FREE-FLOATING SHIMMERS:**
-               - Every object that enters the story (a toy, a box, a glowing thing) MUST be discovered as the DIRECT RESULT of a physical action the hero takes.
-               - The hero's emotional state is NEVER a valid cause for an object appearing. An emotion can motivate an action — the action triggers the discovery.
-               - Structure: Hero feels X → Hero DOES something (specific physical action) → Hero discovers Y.
-               - Bad: "He felt sad. A shimmer caught his eye from the toy box." (Random coincidence.)
-               - Good: "He turned away from the window and picked through his old toys, looking for something to do. As he dug deeper into the box, his fingers touched something cold and smooth — a forgotten magnifying glass." (Action → Discovery.)
-
-            **WRITING ANTI-PATTERNS (STRICTLY FORBIDDEN):**
-            - **NO LITERAL TRANSLATION OF IDIOMS:** Do NOT translate English figures of speech or blueprint phrases literally into the target language. If the blueprint says "reach the end of the world", do NOT write "نهاية العالم" (apocalyptic). Instead, rephrase it as a child-friendly adventure goal (e.g., "discover the secret in the big old tree").
-            - **NO VAGUE SUB-CHARACTER DIALOGUE:** If a sub-character (e.g., an animal) speaks to the hero, their words MUST be specific and self-explanatory. The child reader must understand what is being asked or offered. NEVER write dialogue like "لغزٌ عندي!" (I have a riddle!) without immediately following with what the riddle actually is or at least what it's about.
-            - **NO ABRUPT CHARACTER APPEARANCES:** A new character must be given at least one full sentence of arrival before they speak or act. The reader must know who they are, why they are there, and their relationship to the hero before any plot action is taken by them.
-
-            6. **SHOW, DON'T TELL:** Do not explain the lesson. Show the character making a choice.
-            7. **LOGIC & TRANSITIONS (CRITICAL FIX):** Every spread MUST explain WHY the character moved to a new location or took a new action. Never abruptly cut to a new setting without an explicit text transition connecting the previous action to the new one (e.g. "To find the lost ball, he ran into the forest").
-            8. **PRIMARY VISUAL ANCHOR:** The blueprint provides a "primaryVisualAnchor". You MUST mention and interact with this specific object multiple times throughout the story text as a recurring motif.
-            
             ${age <= 5 ? `
             **AGE ${age} PRONOUN POLICY GUARD (MANDATORY RESTRICTION):**
             - The final text must NOT use third-person pronouns (he, she, him, her, his, hers, it, its) to refer to the hero or a named companion.
-            - **HOW TO COMPLY WITHOUT AWKWARD NAME REPETITION:**
-              1. Drop possessives by substituting articles ('a', 'the') or active verbs:
-                 - ❌ *Bad (Pronoun)*: "She held her soft pebble."
-                 - ❌ *Bad (Awkward Repetition)*: "Lana held Lana's soft pebble."
-                 - ✅ *Good (Restructured)*: "Lana wiggled, happy, holding a soft pebble."
-              2. Use participial or action clauses:
-                 - ❌ *Bad*: "He walked outside and he looked up."
-                 - ✅ *Good*: "Zayn stepped outside, looking up at the bright sky."
-              3. Use the character's name naturally when subject changes, but avoid repeating it multiple times in the same sentence.
+            - **HOW TO COMPLY NATURALLY:**
+              1. Use hero's name possessive for objects and settings: "${childName}'s pebble", "${childName}'s play spot".
+              2. Use natural active verbs and complete sentences: "${childName} sat down in the sand. ${childName}'s pebble felt cold. ${childName} felt sad. SIGH...".
             ` : childGender ? `
             **AGE ${age} PRONOUN GUIDANCE (CRITICAL):**
             - The main hero (${childName}) is a **${childGender}**.
@@ -201,18 +181,16 @@ export async function generateStoryDraft(
             - When using pronouns, you MUST correctly use gendered pronouns ("He/His", "She/Her", or their equivalents in the target language) matching their respective genders.
             ` : `
             **AGE ${age} PRONOUN RULE — GENDER UNKNOWN (CRITICAL):**
-            - The hero's gender is **not known**. You MUST NOT guess or assume.
-            - **NEVER use any gendered pronouns** for the main hero (no "He", "She", "Er", "Sie", "Il", "Elle", "Él", "Ella", or any equivalent in any language).
-            - **ALWAYS refer to the hero exclusively by their name: "${childName}".**
-            - This rule is absolute. Every single reference to the hero that would normally use a pronoun must instead repeat the name "${childName}".
-            - Example in German: Instead of "Er lief" → write "${childName} lief". Instead of "Sie fand" → write "${childName} fand".
+            - The hero's gender is **not known**. ALWAYS refer to the hero by their name: "${childName}".
             `}
 
             **EMOTIONAL & CAUSALITY RULES (CRITICAL):**
             1. **DUAL EMOTIONAL SENSORY & NAMING RULE (AGE-AWARE):**
-               - For young children (especially ages 1–5), toddlers build emotional literacy when physical sensations are paired with simple, direct emotion words.
-               - Combine the physical sensation WITH the named feeling:
+               - For young children (especially ages 1–5), combine physical sensations with direct, simple emotion words:
                  - ❌ *Bad (Vague mood only):* "Her shoulders dropped low and the world felt all wrong."
+                 - ❌ *Bad (Overly complex for age 3):* "${childName} felt frustrated and disappointed."
+                 - ✅ *Good (Age 1–3):* "${childName} sat down in the sand. ${childName}'s pebble felt cold. ${childName} felt sad. SIGH..."
+                 - ✅ *Good (Climax/Success):* "${childName} smiled and jumped up. ${childName} felt proud!"
                  - ❌ *Bad (Flat assertion only):* "${childName} was sad."
                  - ✅ *Good (Physical + Named Emotion):* "${childName}'s shoulders dropped low. ${childName} sat down in the soft sand, feeling confused and disappointed."
                  - ✅ *Good (Climax/Success):* "${childName} smiled, jumping up with a proud, happy giggle!"

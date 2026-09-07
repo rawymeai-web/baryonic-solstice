@@ -99,12 +99,13 @@ export const Validator = {
             'happy', 'glad', 'joy', 'sad', 'worried', 'scared', 'afraid',
             'proud', 'surprised', 'relieved', 'cozy', 'content', 'loved',
             'brave', 'excited', 'confused', 'disappointed', 'calm', 'shy',
+            'mad', 'upset', 'mixed up', 'puzzled', 'safe',
             'eager', 'curious', 'smile', 'smiled', 'giggle', 'giggled', 'laughed', 'sigh', 'sighed'
         ];
         const emotionWordsAr = [
             'سعيد', 'فرح', 'حزين', 'قلق', 'خائف', 'فخور', 'متفاجئ',
             'مرتاح', 'مطمئن', 'محبوب', 'شجاع', 'حائر', 'خائب', 'هادئ',
-            'خجول', 'متحمس', 'فضولي', 'ابتسم', 'ابتسامة', 'ضحك', 'تنهد'
+            'خجول', 'متحمس', 'فضولي', 'ابتسم', 'ابتسامة', 'ضحك', 'تنهد', 'غاضب', 'آمن'
         ];
         const emotionWords = isArabic ? emotionWordsAr : emotionWordsEn;
         const missingSpreads: number[] = [];
@@ -125,7 +126,75 @@ export const Validator = {
         };
     },
 
-    // 5 Deterministic Quality Checks for Story Engine v3.3
+    // 6. Toddler Simple Vocabulary Check (Ages 1–3)
+    checkSimpleVocabularyForAge: (spreads: string[], age: number = 3, language: string = 'en'): { pass: boolean, flaggedWords: { spread: number, word: string, suggestions: string[] }[] } => {
+        if (age > 3 || language === 'ar') return { pass: true, flaggedWords: [] };
+        const flagged: { spread: number, word: string, suggestions: string[] }[] = [];
+        
+        const complexWords: Record<string, string[]> = {
+            "scurried": ["ran", "dashed", "hid"],
+            "slumped": ["sat down", "sat"],
+            "sank": ["sat down", "rested"],
+            "swayed": ["moved", "danced"],
+            "drifted": ["blew", "flew", "floated"],
+            "fluttered": ["flapped", "flew"],
+            "peered": ["looked", "peeked"],
+            "observed": ["watched", "looked at"],
+            "frustrated": ["mad", "upset"],
+            "confused": ["mixed up", "puzzled"],
+            "disappointed": ["sad", "let down"],
+            "relieved": ["calm", "safe", "happy"],
+            "fennec": ["little fox", "small fox"],
+            "nook": ["cozy spot", "little corner", "play spot"],
+            "endeavor": ["try", "big try"],
+            "observation": ["watching", "looking closely"],
+            "haste": ["rushing", "hurrying"],
+            "foster": ["grow", "help"],
+            "fatigue": ["sleepy", "tired"]
+        };
+
+        spreads.forEach((spreadText, idx) => {
+            const lower = (spreadText || '').toLowerCase();
+            Object.keys(complexWords).forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'i');
+                if (regex.test(lower)) {
+                    flagged.push({
+                        spread: idx + 1,
+                        word,
+                        suggestions: complexWords[word]
+                    });
+                }
+            });
+        });
+
+        return {
+            pass: flagged.length === 0,
+            flaggedWords: flagged
+        };
+    },
+
+    // 7. Grammar Fragments Check (e.g. "Lana content", "Lana happy")
+    checkGrammarFragments: (spreads: string[]): { pass: boolean, fragments: { spread: number, text: string }[] } => {
+        const fragments: { spread: number, text: string }[] = [];
+        const pattern = /\b([A-Z][a-z]+)\s+(content|happy|calm|sad|mad|proud|brave)\b(?!\s+(?:and|or|was|is|felt|seemed|with))/g;
+        
+        spreads.forEach((spreadText, idx) => {
+            const matches = (spreadText || '').match(pattern) || [];
+            matches.forEach(m => {
+                // Ignore if preceded by felt/was/is (e.g. "felt Lana happy" - rare, but check)
+                if (!/\b(was|is|felt|felt\s+like)\s+$/i.test(m)) {
+                    fragments.push({ spread: idx + 1, text: m });
+                }
+            });
+        });
+
+        return {
+            pass: fragments.length === 0,
+            fragments
+        };
+    },
+
+    // Deterministic Quality Checks for Story Engine v3.3
     validateDraftQuality: (
         draft: { text?: string }[] | string[],
         options: {
@@ -172,7 +241,7 @@ export const Validator = {
             texts.forEach((text, idx) => {
                 const pronounCheck = Validator.checkPronounGuard(text, age, language);
                 if (!pronounCheck.pass) {
-                    warnings.push(`Pronoun Policy Guard (Spread ${idx + 1}): Found pronouns [${pronounCheck.matchedPronouns.join(', ')}]. For ages 1–5, avoid 3rd-person pronouns. Restructure sentences using articles ('a', 'the') or the hero's name.`);
+                    warnings.push(`Pronoun Policy Guard (Spread ${idx + 1}): Found pronouns [${pronounCheck.matchedPronouns.join(', ')}]. For ages 1–5, avoid 3rd-person pronouns. Use hero's name possessive ('${options.childName || 'Hero'}'s pebble') or active verbs.`);
                 }
             });
         }
@@ -181,6 +250,24 @@ export const Validator = {
         const emotionCheck = Validator.checkNamedEmotions(texts, age, language);
         if (!emotionCheck.pass) {
             warnings.push(`Named Emotion Check: Spreads [${emotionCheck.missingSpreads.join(', ')}] should pair physical actions with direct child-friendly emotion words for ages 1–5.`);
+        }
+
+        // Check 6: Simple Vocabulary Check (Ages 1–3)
+        if (age <= 3) {
+            const vocabCheck = Validator.checkSimpleVocabularyForAge(texts, age, language);
+            if (!vocabCheck.pass) {
+                vocabCheck.flaggedWords.forEach(f => {
+                    warnings.push(`Simple Vocabulary Guard (Spread ${f.spread}): '${f.word}' is too complex for age ${age}. Replace with: [${f.suggestions.join(', ')}].`);
+                });
+            }
+        }
+
+        // Check 7: Grammar Fragment Guard
+        const grammarCheck = Validator.checkGrammarFragments(texts);
+        if (!grammarCheck.pass) {
+            grammarCheck.fragments.forEach(f => {
+                warnings.push(`Grammar Fragment Guard (Spread ${f.spread}): Possible missing verb in '${f.text}' (use 'felt ${f.text.split(' ')[1]}' or '${f.text.split(' ')[0]} was ${f.text.split(' ')[1]}').`);
+            });
         }
 
         return {
