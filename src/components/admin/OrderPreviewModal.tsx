@@ -299,6 +299,10 @@ export const OrderPreviewModal: React.FC<OrderPreviewModalProps> = ({ order, onC
                     )}
                     <DetailItem label={t('أسلوب الرسم', 'Art Style')} value={(order.storyData as any).styleName || (order.storyData as any).styleProfile?.style_name || 'Custom'} />
                     <DetailItem label={t('لغة القصة', 'Language')} value={order.storyData.language?.toUpperCase() || 'AR'} />
+                    <DetailItem label={t('إصدار القصة', 'Story Version')} value={(order.storyData as any).story_version ? `v${(order.storyData as any).story_version} (${(order.storyData as any).story_engine || 'v2-master-writer'})` : 'v1 (Legacy)'} />
+                    {(order.storyData as any).story_generated_at && (
+                      <DetailItem label={t('تاريخ التوليد', 'Generated At')} value={new Date((order.storyData as any).story_generated_at).toLocaleString()} />
+                    )}
                   </div>
                 </DetailSection>
 

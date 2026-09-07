@@ -48,6 +48,8 @@ export async function POST(req: Request) {
         return NextResponse.json({
             rawScript: narrativeResponse.result,
             script: editorResponse.result,
+            story_engine: 'v2-master-writer',
+            story_generated_at: new Date().toISOString(),
             logs: [narrativeResponse.log, editorResponse.log]
         });
 

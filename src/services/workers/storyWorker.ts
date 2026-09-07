@@ -32,7 +32,7 @@ export class StoryWorker {
 
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .select("story_data, generation_snapshot, order_number")
+        .select("story_data, generation_snapshot, order_number, created_at")
         .eq("order_number", orderId)
         .single();
 
@@ -220,15 +220,35 @@ export class StoryWorker {
 
       // Reconstruct the deep merged story data object
       const legacyPrompts = order.story_data?.prompts || order.story_data?.finalPrompts || [];
+      const existingScriptHistory = order.story_data?.story_history || [];
+      const previousScript = order.story_data?.script || order.story_data?.pages?.map((p: any) => p.text);
+      if (previousScript && Array.isArray(previousScript) && previousScript.length > 0) {
+        existingScriptHistory.push({
+          version: existingScriptHistory.length + 1,
+          generated_at: order.story_data?.story_generated_at || order.created_at || new Date().toISOString(),
+          engine: order.story_data?.story_engine || "legacy",
+          script: previousScript
+        });
+      }
+
+      const currentVersion = existingScriptHistory.length + 1;
+      const nowIso = new Date().toISOString();
+
       const updatedStoryData = {
         ...order.story_data,
         legacy_prompts_archive: legacyPrompts.length > 0 ? legacyPrompts : order.story_data?.legacy_prompts_archive || [],
         blueprint: blueprint,
         rawScript: narRes.result,
         script: script,
+        story_version: currentVersion,
+        story_engine: "v2-master-writer",
+        story_generated_at: nowIso,
+        story_history: existingScriptHistory,
         pages: script.map((p: any, i: number) => ({
           pageNumber: i,
           text: p.text,
+          textVersion: currentVersion,
+          textUpdatedAt: nowIso
         })),
         finalPrompts: script.map(() => ""), // initialize empty prompts to match length
         actualCoverPrompt: prompts[0]?.imagePrompt || "", // Flush legacy cover prompt
