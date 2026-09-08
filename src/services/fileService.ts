@@ -146,6 +146,19 @@ async function renderTextBlobToImage(
     style: 'clean' | 'box' = 'box'
 ): Promise<{ dataUrl: string; width: number; height: number }> {
 
+    const clipper = document.createElement('div');
+    clipper.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 1px;
+        height: 1px;
+        overflow: visible;
+        z-index: -9999;
+        pointer-events: none;
+        opacity: 1;
+    `;
+
     const container = document.createElement('div');
     const isAr = language === 'ar';
     container.dir = isAr ? 'rtl' : 'ltr';
@@ -160,14 +173,14 @@ async function renderTextBlobToImage(
         finalHtml = finalHtml.replace(nameRegex, `<span style="font-weight: 900; color: #F78F50; font-size: 1.05em;">$1</span>`);
     }
 
-    // BASE CSS
+    // BASE CSS — Must be position: relative with top: 0, left: 0 so html-to-image captures from (0, 0)
     let css = `
-        position: fixed;
-        top: -9999px;
-        left: -9999px;
+        position: relative;
+        top: 0;
+        left: 0;
         width: ${widthPx}px;
         min-height: 160px;
-        font-family: ${isAr ? 'Tajawal, sans-serif' : 'Nunito, sans-serif'};
+        font-family: ${isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif"};
         font-weight: 700;
         font-size: ${fontSize}px;
         display: flex;
@@ -199,14 +212,30 @@ async function renderTextBlobToImage(
 
     container.style.cssText = css;
     container.innerHTML = finalHtml;
+    clipper.appendChild(container);
+    document.body.appendChild(clipper);
 
-    document.body.appendChild(container);
-    // Use html-to-image for native text shaping (fixes Arabic)
-    const dataUrl = await safeToPng(container, { pixelRatio: 3, backgroundColor: 'transparent' });
-    const canvasObj = new Image();
-    await new Promise(r => { canvasObj.onload = r; canvasObj.src = dataUrl; });
-    document.body.removeChild(container);
-    return { dataUrl, width: canvasObj.naturalWidth, height: canvasObj.naturalHeight };
+    try {
+        if (typeof document !== 'undefined' && document.fonts) {
+            try {
+                await document.fonts.ready;
+            } catch (e) { /* continue */ }
+        }
+
+        // Use html-to-image with pixelRatio: 2 for sharp crisp text without massive memory overhead
+        const dataUrl = await safeToPng(container, { pixelRatio: 2, backgroundColor: 'transparent' });
+        const canvasObj = new Image();
+        await new Promise((resolve, reject) => {
+            canvasObj.onload = resolve;
+            canvasObj.onerror = reject;
+            canvasObj.src = dataUrl;
+        });
+        return { dataUrl, width: canvasObj.naturalWidth, height: canvasObj.naturalHeight };
+    } finally {
+        if (document.body.contains(clipper)) {
+            document.body.removeChild(clipper);
+        }
+    }
 }
 
 export const generatePreviewPdf = async (storyData: StoryData, language: Language, highResImages?: imageStore.OrderImages, orderNumber?: string): Promise<Blob> => {
