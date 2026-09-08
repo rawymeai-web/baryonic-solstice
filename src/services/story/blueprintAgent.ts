@@ -1,4 +1,3 @@
-
 import { ai, cleanJsonString, withRetry } from '../generation/modelGateway';
 import { Validator } from '../rules/validator';
 import { StoryData, StoryBlueprint, WorkflowLog } from '../../types';
@@ -87,12 +86,11 @@ export async function generateBlueprint(
             - The story MUST be a Dual-Hero Buddy Adventure where ${storyData.childName} and ${storyData.secondCharacter.name} work together to overcome the obstacle.
             - Ensure ${storyData.secondCharacter.name} is included in the "supportingRoles" JSON array and appears consistently across the narrative.` : ''}
 
-            **PARENT & RELATIVE RESTRICTION (CRITICAL MUST FOLLOW):**
-            - ABSOLUTELY NO PARENTS OR REAL-LIFE FAMILY MEMBERS (mother, father, mama, dad, grandparents, aunts, uncles).
-            - Even if the user provided a "Custom Story Text / Poem" that explicitly mentions parents, you MUST keep them 100% OFF-SCREEN and out of the visuals.
-            - NON-RELATIVE ADULTS ARE ALLOWED: You MAY include non-relative fictional or narrative adults (e.g., wizards, teachers, bakers, friendly strangers) if the story requires them. BUT NO PARENTS!
-            - The children/heroes must solve the problem without their parents.
-            - ${(!storyData.useSecondCharacter || !storyData.secondCharacter || storyData.secondCharacter.type === 'object') ? `Do NOT invent siblings.` : `The ONLY allowed family member is the specifically named companion: ${storyData.secondCharacter.name}.`}
+            **CHILD-LED IMAGINATIVE WORLD (CRITICAL STORYTELLING PRINCIPLE):**
+            - The story centers entirely on the child's own agency, discovery, and imagination.
+            - Keep domestic family figures (parents, grandparents) off-screen so the child is the true hero who solves their own challenges.
+            - Friendly fictional or narrative adults and mentors are welcome (e.g., an ancient astronomer, a kind clockmaker, a gentle baker, or a forest sprite) to guide the child's discovery.
+            - ${(!storyData.useSecondCharacter || !storyData.secondCharacter || storyData.secondCharacter.type === 'object') ? `Keep the journey focused on the child and their friendly animal/storybook companions.` : `The journey centers on ${storyData.childName} and their trusted companion ${storyData.secondCharacter.name}.`}
 
             ${storyData.selectedStylePrompt === 'PORTALS_OF_WONDER_DYNAMIC' ? `**PORTALS OF WONDER THEME (CRITICAL NARRATIVE RULE):**
             - The plot MUST revolve around discovering and traveling through magical portals.
@@ -234,11 +232,11 @@ export async function generateBlueprint(
             - Use milder, quiet expressions for the low points: e.g., "worried", "sad", "confused", "pensive", or "disappointed".
             - You MUST NOT use weird or heavy physical situations like "carrying a person", "lifting heavy objects", "throwing", or extreme acrobatics. Keep physical actions grounded, gentle, and simple (e.g., "looking", "holding lightly", "pointing", "sitting").
 
-            **CONTENT SAFETY & APPROPRIATENESS BAN (STRICT):**
-            - ABSOLUTELY NO skulls, skeletons, weapons, violence, or truly scary monsters. 
-            - ABSOLUTELY NO rainbows. Do not write or prompt rainbows.
-            - ONLY USE FICTIONAL SUPPORTING CHARACTERS (e.g., wizards, talking animals, aliens). DO NOT use real-world grounded figures.
-            - If writing a mystery or adventure, use kid-friendly props like compasses, maps, glowing crystals, or keys.
+            **PICTURE-BOOK TONALITY & GENTLE IMAGERY:**
+            - Maintain an atmosphere of cozy wonder, warm colors, soft magical textures, and gentle curiosity.
+            - Any obstacles should be playful, child-scale worries (a shy creature hiding, a gust of wind scattering leaves, a puzzle to solve).
+            - Use whimsical, wonder-filled storybook props: glowing compasses, enchanted lanterns, starry jars, ancient maps, brass keys, or singing stones. Avoid overt rainbow clichés.
+            - Use fictional supporting characters (e.g., talking animals, gentle wizards, whimsical forest guides) rather than real-world modern authority figures.
 
             ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `**SECONDARY CHARACTER PACING (CRITICAL SCREEN-TIME RULE):**
             - This is a Dual-Hero book. You MUST officially introduce the companion (${storyData.secondCharacter.name}) no later than **Spread 2**.

@@ -61,7 +61,7 @@ export async function runEditorPass(
             C. **MAGICAL ANCHOR CONTINUITY & CAUSE-FIRST LOGIC:** 
                - Is the anchor item established as special from first mention?
                - Does the text maintain object continuity by writing "${isDual ? 'their [item]' : childName + '\'s [item]'}" instead of "a [item]"?
-               - Is cause stated before effect? (❌ "Glowed warm for happy ${childName}" $\rightarrow$ ✅ "${childName} felt happy and calm. The pebble glowed warm.").
+               - Is cause stated before effect? (❌ "Glowed warm for happy ${childName}" → ✅ "${childName} felt happy and calm. The pebble glowed warm.").
             D. **SEAMLESS RETURN TRANSITION & WARM RESOLUTION TAKEAWAY (SPREAD ${draft.length}):**
                - Is there an explicit bridging sentence explaining how ${isDual ? `${heroNameA} and ${heroNameB}` : childName} traveled back from the adventure setting to the Spread 1 Home Base?
                - Does the final spread conclude with a warm, comforting takeaway in the child's own voice (e.g., *"Quiet and slow was the best kind of magic."*) instead of abruptly stopping?
@@ -69,9 +69,9 @@ export async function runEditorPass(
             F. **AGE-TIERED VOCABULARY AUDIT (AGE ${childAge}):**
                ${childAge <= 3 ? `
                - **TODDLER VOCABULARY PURITY (Ages 1–3):**
-                 - ❌ **FLAG & FIX OVERLY COMPLEX VERBS:** "scurried" $\rightarrow$ "ran/hid", "slumped/sank" $\rightarrow$ "sat down", "swayed" $\rightarrow$ "moved", "drifted/fluttered" $\rightarrow$ "blew/flew", "peered/observed" $\rightarrow$ "looked/peeked".
-                 - ❌ **FLAG & FIX OBSCURE NOUNS:** "fennec fox" $\rightarrow$ "little fox", "canopy" $\rightarrow$ "big trees".
-                 - ❌ **FLAG & FIX ADVANCED EMOTIONS:** "frustrated" $\rightarrow$ "mad/upset", "confused" $\rightarrow$ "mixed up", "disappointed" $\rightarrow$ "sad", "relieved" $\rightarrow$ "calm/safe".
+                 - ❌ **FLAG & FIX OVERLY COMPLEX VERBS:** "scurried" → "ran/hid", "slumped/sank" → "sat down", "swayed" → "moved", "drifted/fluttered" → "blew/flew", "peered/observed" → "looked/peeked".
+                 - ❌ **FLAG & FIX OBSCURE NOUNS:** "fennec fox" → "little fox", "canopy" → "big trees".
+                 - ❌ **FLAG & FIX ADVANCED EMOTIONS:** "frustrated" → "mad/upset", "confused" → "mixed up", "disappointed" → "sad", "relieved" → "calm/safe".
                  - ✅ **APPROVED PRIMARY EMOTIONS:** "happy", "sad", "mad", "calm", "proud", "scared", "mixed up", "safe", "cozy".
                ` : `
                - **CLEAR EVERYDAY WORDS (Ages ${childAge}):** Ban academic/adult words ("nook", "endeavor", "observation", "haste", "foster", "fatigue", "apparatus"). Use concrete child words.
@@ -80,7 +80,7 @@ export async function runEditorPass(
                - Are sound words universally recognizable (*CRUNCH*, *SHHH...*, *SNIFF SNIFF*, *SIGH...*, *SNORE!*, *SPLASH!*, *ROAR!*, *BEEP BEEP*, *TAP TAP*, *FLAP FLAP*, *TWEET TWEET*, *ZOOM!*, *GIGGLE GIGGLE*, *SQUEAK!*)?
                - ❌ **FLAG & FIX INVENTED SPELLINGS:** If you see unreadable or bizarre sound spellings like "WHIMP-WHIMP" or "WHISPER-WHISP", replace them with intuitive sounds or concrete actions.
             H. **COMPLETE SENTENCES & GRAMMAR FRAGMENTS:**
-               - Ensure no verbs are dropped to dodge pronouns (❌ "${childName} content" $\rightarrow$ ✅ "${childName} felt calm and happy").
+               - Ensure no verbs are dropped to dodge pronouns (❌ "${childName} content" → ✅ "${childName} felt calm and happy").
 
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             📋 PASS 2 — BLUEPRINT & THEME VERIFICATION
@@ -112,7 +112,7 @@ export async function runEditorPass(
                ${childAge <= 3 ? `- Use ONLY simple verbs (ran, hid, sat down, moved, blew, looked), simple nouns (little fox, play spot), and primary emotions (happy, sad, mad, calm, proud, scared, mixed up, safe).` : `- Use clear, everyday concrete words.`}
             5. **UNIVERSAL INTUITIVE SOUNDS:** Use recognizable sounds (*CRUNCH*, *SHHH...*, *SNIFF SNIFF*, *SIGH...*, *SNORE!*, *GIGGLE GIGGLE*).
             6. **CAUSE-FIRST ANCHOR LOGIC:** State feelings/causes before magic reactions.
-            7. **INSIGHT STRUCTURE:** Spread 6 must have TWO beats (observe clue $\rightarrow$ realize meaning).
+            7. **INSIGHT STRUCTURE:** Spread 6 must have TWO beats (observe clue → realize meaning).
             8. **RHYTHM, CONCISENESS AND VOCABULARY:**
                - Keep text punchy, crisp, and within target: **${wordCountRule.min}–${wordCountRule.max} words per spread**.
             9. **LANGUAGE:** All output text MUST be in ${targetLang}. Arabic MUST NOT contain Tashkeel (vowel diacritics).
@@ -127,7 +127,7 @@ export async function runEditorPass(
             Before producing your final JSON output, re-audit your Pass 3 rewritten spreads against this mandatory checklist. If ANY check fails, fix that spread immediately:
             - [ ] **Home Base Grounding:** Spread 1 explicitly grounds ${isDual ? `BOTH ${heroNameA} and ${heroNameB}` : childName} in their Home Base and establishes a personal emotional origin for their desire.
             - [ ] **Object Continuity:** Special items use possessives rather than generic articles ("a [item]").
-            - [ ] **Anchor Item Rule:** Anchor item trigger is stated cause-first (happy $\rightarrow$ warm, worried $\rightarrow$ cold).
+            - [ ] **Anchor Item Rule:** Anchor item trigger is stated cause-first (happy → warm, worried → cold).
             - [ ] **Return Journey Bridge & Warm Takeaway:** Spread ${draft.length} contains a smooth return bridge and ends with a warm child-voice takeaway.
             - [ ] **Helper Animal Meaning:** Helper creatures are given a clear meaning on introduction so callbacks are earned.
             - [ ] **Simple Vocabulary Whitelist (Age ${childAge}):** ${childAge <= 3 ? `Zero complex verbs and zero adult emotions. Pure simple words.` : `Zero academic/adult words.`}

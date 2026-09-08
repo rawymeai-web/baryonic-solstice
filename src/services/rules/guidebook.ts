@@ -90,6 +90,9 @@ export const SIMPLE_WORD_REPLACEMENT_DICTIONARY: Record<string, string[]> = {
     "foster": ["grow", "help", "care for"],
     "fatigue": ["sleepy", "tired", "heavy eyes"],
     "apparatus": ["tool", "gadget", "toy"],
+    "whimsical": ["playful", "funny", "silly", "sweet"],
+    "enchanted": ["magical", "glowing", "sparkly", "special"],
+    "mysterious": ["secret", "hidden", "quiet", "puzzling"],
 
     // Overly Complex Verbs for Toddler Tier (1-3)
     "scurried": ["ran", "dashed", "hid", "zipped"],

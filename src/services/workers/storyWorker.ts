@@ -77,6 +77,9 @@ export class StoryWorker {
       }
       const blueprint = storyData.blueprint;
 
+      const spreadCount = storyData.spreadCount || (blueprint.structure?.spreads?.length) || 8;
+      const customStoryText = storyData.customStoryText;
+
       console.log(`[StoryWorker] Generating Narrative Draft...`);
       const narRes = await WorkerUtils.withTimeout(
         generateStoryDraft(
@@ -85,6 +88,8 @@ export class StoryWorker {
           childName,
           childGender,
           secondCharacter,
+          spreadCount,
+          customStoryText,
         ),
       );
       if (narRes.log.status === "Failed")
@@ -92,7 +97,7 @@ export class StoryWorker {
 
       console.log(`[StoryWorker] Running Editor Pass...`);
       const edRes = await WorkerUtils.withTimeout(
-        runEditorPass(narRes.result, blueprint, language, childName, childAge, secondCharacter),
+        runEditorPass(narRes.result, blueprint, language, childName, childAge, secondCharacter, customStoryText),
       );
       const script = edRes.result;
 

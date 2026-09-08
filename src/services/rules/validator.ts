@@ -1,6 +1,8 @@
 
 import { StoryBlueprint, SpreadDesignPlan } from '../../types';
 
+import { SIMPLE_WORD_REPLACEMENT_DICTIONARY } from './guidebook';
+
 export interface DraftValidationResult {
     valid: boolean;
     errors: string[];
@@ -83,7 +85,7 @@ export const Validator = {
         if (age > 5 || language === 'ar') {
             return { pass: true, matchedPronouns: [] };
         }
-        const pronounRegex = /\b(he|she|him|her|his|hers)\b/gi;
+        const pronounRegex = /\b(he|she|him|her|his|hers|it|its)\b/gi;
         const matches = text.match(pronounRegex) || [];
         return {
             pass: matches.length === 0,
@@ -131,37 +133,15 @@ export const Validator = {
         if (age > 3 || language === 'ar') return { pass: true, flaggedWords: [] };
         const flagged: { spread: number, word: string, suggestions: string[] }[] = [];
         
-        const complexWords: Record<string, string[]> = {
-            "scurried": ["ran", "dashed", "hid"],
-            "slumped": ["sat down", "sat"],
-            "sank": ["sat down", "rested"],
-            "swayed": ["moved", "danced"],
-            "drifted": ["blew", "flew", "floated"],
-            "fluttered": ["flapped", "flew"],
-            "peered": ["looked", "peeked"],
-            "observed": ["watched", "looked at"],
-            "frustrated": ["mad", "upset"],
-            "confused": ["mixed up", "puzzled"],
-            "disappointed": ["sad", "let down"],
-            "relieved": ["calm", "safe", "happy"],
-            "fennec": ["little fox", "small fox"],
-            "nook": ["cozy spot", "little corner", "play spot"],
-            "endeavor": ["try", "big try"],
-            "observation": ["watching", "looking closely"],
-            "haste": ["rushing", "hurrying"],
-            "foster": ["grow", "help"],
-            "fatigue": ["sleepy", "tired"]
-        };
-
         spreads.forEach((spreadText, idx) => {
             const lower = (spreadText || '').toLowerCase();
-            Object.keys(complexWords).forEach(word => {
+            Object.keys(SIMPLE_WORD_REPLACEMENT_DICTIONARY).forEach(word => {
                 const regex = new RegExp(`\\b${word}\\b`, 'i');
                 if (regex.test(lower)) {
                     flagged.push({
                         spread: idx + 1,
                         word,
-                        suggestions: complexWords[word]
+                        suggestions: SIMPLE_WORD_REPLACEMENT_DICTIONARY[word] || []
                     });
                 }
             });
