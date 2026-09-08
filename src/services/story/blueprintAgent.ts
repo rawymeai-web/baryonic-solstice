@@ -235,8 +235,8 @@ export async function generateBlueprint(
             **PICTURE-BOOK TONALITY & GENTLE IMAGERY:**
             - Maintain an atmosphere of cozy wonder, warm colors, soft magical textures, and gentle curiosity.
             - Any obstacles should be playful, child-scale worries (a shy creature hiding, a gust of wind scattering leaves, a puzzle to solve).
-            - Use whimsical, wonder-filled storybook props: glowing compasses, enchanted lanterns, starry jars, ancient maps, brass keys, or singing stones. Avoid overt rainbow clichés.
-            - Use fictional supporting characters (e.g., talking animals, gentle wizards, whimsical forest guides) rather than real-world modern authority figures.
+            - Use playful, wonder-filled storybook props: glowing compasses, magical lanterns, starry jars, old maps, brass keys, or singing stones. Avoid overt rainbow clichés.
+            - Use fictional supporting characters (e.g., talking animals, gentle wizards, friendly forest guides) rather than real-world modern authority figures.
 
             ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `**SECONDARY CHARACTER PACING (CRITICAL SCREEN-TIME RULE):**
             - This is a Dual-Hero book. You MUST officially introduce the companion (${storyData.secondCharacter.name}) no later than **Spread 2**.

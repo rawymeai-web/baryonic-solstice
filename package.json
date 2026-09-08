@@ -6,7 +6,9 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:rules": "node scripts/sync-rules.cjs",
+    "sync:rules": "node scripts/sync-rules.cjs --sync"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

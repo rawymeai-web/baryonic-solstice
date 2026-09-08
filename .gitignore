@@ -97,6 +97,7 @@ scripts/test_output/
 scripts/*.mjs
 scripts/*.js
 scripts/*.cjs
+!scripts/sync-rules.cjs
 scripts/*.ts
 get_dim.js
 last_gemini_payload_debug.json

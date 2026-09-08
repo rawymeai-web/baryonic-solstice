@@ -33,7 +33,7 @@ export async function POST(req: Request) {
             MANDATES from Guidebook:
             - Age Group: ${numAge} Years Old.
             - Word Count Target: ${wordCountRule.min}-${wordCountRule.max} words.
-            - Tone: Whimsical, Rhythmic, Engaging.
+            - Tone: Playful, Rhythmic, Engaging.
             
             CURRENT TEXT: "${currentText || ''}"
             
