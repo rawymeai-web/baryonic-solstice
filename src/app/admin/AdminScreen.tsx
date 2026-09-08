@@ -695,7 +695,7 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
     };
 
     const handleRewriteOrderStoryText = async (order: AdminOrder) => {
-        if (!window.confirm(`Rewrite narrative story text for Order #${order.orderNumber} using the latest v3.3 Story Engine?\n\n(All artworks, illustrations, and image layouts will remain completely intact)`)) {
+        if (!window.confirm(`Rewrite narrative story text for Order #${order.orderNumber} using the latest Narrative Master Writer v2 Engine?\n\n(All artworks, illustrations, and image layouts will remain completely intact)`)) {
             return;
         }
 
@@ -733,6 +733,18 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
             const newScript = storyRes.script || storyRes.rawScript;
             if (!Array.isArray(newScript)) throw new Error("Invalid script received from Story Engine");
 
+            const nowIso = new Date().toISOString();
+            const currentVersion = ((storyData as any).story_version || 1) + 1;
+            const existingScriptHistory = (storyData as any).story_history || [];
+            if (storyData.script && Array.isArray(storyData.script) && storyData.script.length > 0) {
+                existingScriptHistory.push({
+                    version: (storyData as any).story_version || 1,
+                    generated_at: (storyData as any).story_generated_at || nowIso,
+                    engine: (storyData as any).story_engine || "legacy",
+                    script: storyData.script
+                });
+            }
+
             // Map revised text into spreads without touching artwork
             const updatedSpreads = storyData.spreads ? [...storyData.spreads] : [];
             newScript.forEach((item: any, idx: number) => {
@@ -744,7 +756,10 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                         ...updatedSpreads[spreadIdx],
                         text: newText,
                         leftText: isRight ? '' : newText,
-                        rightText: isRight ? newText : ''
+                        rightText: isRight ? newText : '',
+                        textVersion: currentVersion,
+                        textEngine: "v2-master-writer",
+                        textUpdatedAt: nowIso
                     };
                 }
             });
@@ -755,22 +770,26 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                 const pageIdx = idx * 2;
                 const newText = typeof item === 'string' ? item : (item.text || '');
                 if (updatedPages[pageIdx]) {
-                    updatedPages[pageIdx] = { ...updatedPages[pageIdx], text: newText };
+                    updatedPages[pageIdx] = { ...updatedPages[pageIdx], text: newText, textVersion: currentVersion, textUpdatedAt: nowIso };
                 }
                 if (updatedPages[pageIdx + 1]) {
-                    updatedPages[pageIdx + 1] = { ...updatedPages[pageIdx + 1], text: newText };
+                    updatedPages[pageIdx + 1] = { ...updatedPages[pageIdx + 1], text: newText, textVersion: currentVersion, textUpdatedAt: nowIso };
                 }
             });
 
             const updatedStoryData = {
                 ...storyData,
                 script: newScript,
+                story_version: currentVersion,
+                story_engine: "v2-master-writer",
+                story_generated_at: nowIso,
+                story_history: existingScriptHistory,
                 spreads: updatedSpreads,
                 pages: updatedPages
             };
 
             await adminService.saveOrder(order.orderNumber, updatedStoryData, fullOrder.shippingDetails, fullOrder.total);
-            alert(`✅ Order #${order.orderNumber} narrative text updated to v3.3 successfully! Artworks preserved.`);
+            alert(`✅ Order #${order.orderNumber} narrative text updated to Master Writer v2 successfully! Artworks preserved.`);
             refreshOrders();
         } catch (err: any) {
             console.error("Failed to rewrite story text:", err);

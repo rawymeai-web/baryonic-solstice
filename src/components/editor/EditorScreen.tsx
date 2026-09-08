@@ -1684,8 +1684,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 <div className="flex justify-between items-center mb-4 mt-2">
                     <div className="flex items-center gap-2">
                         <h2 className="text-xl font-bold text-brand-navy uppercase tracking-tighter">{t('مخطط القصة', 'Story Blueprint')}</h2>
-                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-purple-100 text-purple-700 border border-purple-200 rounded-full px-2 py-0.5">
-                            📖 Writer V5
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full px-2 py-0.5">
+                            📖 Master Writer v2
                         </span>
                     </div>
                     <Button onClick={handleDownloadBlueprint} variant="outline" className="text-[10px] py-1 px-3 shadow-none border-gray-200">
@@ -1753,10 +1753,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             disabled={isAnyGenerating || isRewritingStory} 
                             variant="secondary" 
                             className="shrink-0 snap-start !py-2 !px-4 border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all font-black uppercase text-xs flex items-center justify-center gap-1.5 shadow-sm"
-                            title="Regenerate all story text using v3.3 Story Engine without touching artwork"
+                            title="Regenerate all story text using Narrative Master Writer v2 Engine without touching artwork"
                         >
                             {isRewritingStory ? <Spinner size="sm" color="text-indigo-600" /> : '✨'}
-                            {isRewritingStory ? t('جاري كتابة النص...', 'Rewriting Text...') : t('إعادة كتابة النص (v3.3)', 'Rewrite Story Text (v3.3)')}
+                            {isRewritingStory ? t('جاري كتابة النص...', 'Rewriting Text...') : t('إعادة كتابة النص (Master Writer v2)', 'Rewrite Story Text (Master Writer v2)')}
                         </Button>
                         <Button onClick={() => runPipeline(false)} disabled={isAnyGenerating} variant="secondary" className="shrink-0 snap-start !py-2 !px-4 border-2 border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-white transition-all font-black uppercase text-xs">
                             {t('إعادة المعالجة', 'Restart Pipeline')}
