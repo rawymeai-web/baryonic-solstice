@@ -37,9 +37,10 @@ export const Validator = {
         if (!spread1Text) return false;
         const isArabic = language === 'ar';
         const homeBaseKeywordsEn = [
-            'nook', 'room', 'bed', 'bedroom', 'rug', 'spot', 'corner', 'porch',
+            'cozy spot', 'play spot', 'little corner', 'play space', 'play area',
+            'room', 'bed', 'bedroom', 'rug', 'spot', 'corner', 'porch',
             'garden', 'tent', 'house', 'yard', 'kitchen', 'blanket', 'cushion',
-            'den', 'camp', 'balcony', 'play space', 'play area', 'play spot', 'home'
+            'den', 'camp', 'balcony', 'home'
         ];
         const homeBaseKeywordsAr = [
             'غرفة', 'سرير', 'ركن', 'زاوية', 'بيت', 'منزل', 'حديقة', 'بساط',
@@ -255,5 +256,38 @@ export const Validator = {
             errors,
             warnings
         };
+    },
+
+    // 8. Deterministic Vocabulary Sanitizer
+    sanitizeVocabulary: (text: string, age: number = 3, language: string = 'en'): string => {
+        if (age > 3 || language === 'ar' || !text) return text;
+        let sanitized = text;
+        Object.entries(SIMPLE_WORD_REPLACEMENT_DICTIONARY).forEach(([bannedWord, suggestions]) => {
+            if (suggestions && suggestions.length > 0) {
+                const replacement = suggestions[0];
+                const regex = new RegExp(`\\b${bannedWord}\\b`, 'gi');
+                sanitized = sanitized.replace(regex, (match) => {
+                    if (match[0] === match[0].toUpperCase()) {
+                        return replacement.charAt(0).toUpperCase() + replacement.slice(1);
+                    }
+                    return replacement;
+                });
+            }
+        });
+        return sanitized;
+    },
+
+    // 9. Batch Draft Sanitizer
+    sanitizeDraft: (
+        draft: { text?: string }[] | string[],
+        age: number = 3,
+        language: string = 'en'
+    ): { text: string }[] => {
+        if (!Array.isArray(draft)) return [];
+        return draft.map(item => {
+            const rawText = typeof item === 'string' ? item : item.text || '';
+            const sanitizedText = Validator.sanitizeVocabulary(rawText, age, language);
+            return { text: sanitizedText };
+        });
     }
 };

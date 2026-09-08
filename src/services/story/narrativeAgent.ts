@@ -334,6 +334,8 @@ in that same voice.
 BLUEPRINT FOR THIS STORY:
 {{BLUEPRINT_JSON}}
 
+{{HERO_DESIRE_SECTION}}
+
 {{ANCHOR_TRIGGER_SECTION}}
 
 {{CUSTOM_STORY_SECTION}}
@@ -450,13 +452,26 @@ export async function generateStoryDraft(
                       )
                   );
 
-            const anchorRuleSection = blueprint.foundation?.anchorTriggerRule ? `
+            const primaryAnchor = blueprint.foundation?.primaryVisualAnchor || 'Special Object';
+            const heroDesire = blueprint.foundation?.heroDesire || '';
+            const fallbackTrigger = `When ${isDual ? `${heroNameA} and ${heroNameB} act` : `${childName} acts`} with calm kindness and patience, the ${primaryAnchor} glows warm and bright. When rushed, worried, or loud, it dims and cools.`;
+            const activeAnchorRule = blueprint.foundation?.anchorTriggerRule || fallbackTrigger;
+
+            const anchorRuleSection = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ANCHOR OBJECT PHYSICAL TRIGGER RULE (CRITICAL MANDATORY):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Anchor Object: "${blueprint.foundation.primaryVisualAnchor || 'Special Object'}"
-Trigger Mechanics: "${blueprint.foundation.anchorTriggerRule}"
-Spread 1 must state this trigger clearly. Spread 5 must show the object dimming/cooling with failure, Spread 6 must show it responding to insight, and Spread 7 must show it shining with success.
+Anchor Object: "${primaryAnchor}"
+Trigger Mechanics: "${activeAnchorRule}"
+Spread 1 must state this trigger clearly. Spread 5 must show the object dimming/cooling with failure/worry, Spread 6 must show it responding to insight/calm, and Spread 7 must show it shining with success.
+`.trim();
+
+            const heroDesireSection = heroDesire ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HERO CORE DESIRE & SPREAD 1 MOTIVE (MANDATORY):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Desire/Goal: "${heroDesire}"
+Spread 1 MUST ground this desire in the child's home base and make it a personal, heartfelt wish.
 `.trim() : '';
 
             const customSection = customStoryText ? `
@@ -476,6 +491,7 @@ MANDATORY: Distribute this text faithfully across the ${spreadCount} spreads.
                 .replace('{{HERO_INTRO}}', heroIntro)
                 .replace('{{HERO_NAME_RULE}}', heroNameRule)
                 .replace('{{PRONOUN_RULE}}', pronounRule)
+                .replace('{{HERO_DESIRE_SECTION}}', heroDesireSection)
                 .replace('{{ANCHOR_TRIGGER_SECTION}}', anchorRuleSection)
                 .replace('{{CUSTOM_STORY_SECTION}}', customSection)
                 .replaceAll('{{TARGET_LANGUAGE}}', targetLang)
@@ -499,13 +515,25 @@ MANDATORY: Distribute this text faithfully across the ${spreadCount} spreads.
                 throw new Error("Drafting generated insufficient pages.");
             }
 
+            const qualityCheck = Validator.validateDraftQuality(draft, {
+                expectedLength: draft.length,
+                childAge: age,
+                childName,
+                language,
+                anchorTriggerRule: activeAnchorRule,
+                primaryVisualAnchor: primaryAnchor
+            });
+
             return {
                 result: draft,
                 log: {
                     stage: 'Drafting',
                     timestamp: startTime,
                     inputs: { title: blueprint.foundation?.title || 'Story' },
-                    outputs: { pageCount: draft.length },
+                    outputs: { 
+                        pageCount: draft.length,
+                        qualityWarnings: qualityCheck.warnings 
+                    },
                     status: 'Success',
                     durationMs: Date.now() - startTime
                 }

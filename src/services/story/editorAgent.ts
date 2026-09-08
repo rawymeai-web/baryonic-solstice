@@ -40,12 +40,19 @@ export async function runEditorPass(
     try {
         return await withRetry(async () => {
             const wordCountRule = getWordCountForAge(childAge);
+            const primaryAnchor = blueprint.foundation?.primaryVisualAnchor || 'Special Object';
+            const heroDesire = blueprint.foundation?.heroDesire || '';
+            const fallbackTrigger = `When ${isDual ? `${heroNameA} and ${heroNameB} act` : `${childName} acts`} with calm kindness and patience, the ${primaryAnchor} glows warm and bright. When rushed, worried, or loud, it dims and cools.`;
+            const activeAnchorRule = blueprint.foundation?.anchorTriggerRule || fallbackTrigger;
 
             const prompt = `
             ROLE: Senior Children's Book Editor — brutally honest literary critic and skilled rewriter.
             LANGUAGE: ${targetLang}
             AGE GROUP: ${childAge} years old
             ${isDual ? `HEROES: Dual-Hero story featuring "${heroNameA}" and "${heroNameB}". Both heroes are co-protagonists.` : `HERO: Single-Hero story featuring "${childName}".`}
+            
+            ${heroDesire ? `HERO CORE DESIRE: "${heroDesire}" (Spread 1 must ground this motive in the child's home base)` : ''}
+            ANCHOR OBJECT RULE: "${activeAnchorRule}"
             
             You will receive a rough draft of a children's book. Your job is to apply a strict, professional three-pass editorial review and return a polished, coherent manuscript.
             You are NOT a proofreader. You are a STORY DOCTOR. You have FULL PERMISSION to rewrite entire spreads if they are broken.
@@ -70,7 +77,7 @@ export async function runEditorPass(
                ${childAge <= 3 ? `
                - **TODDLER VOCABULARY PURITY (Ages 1–3):**
                  - ❌ **FLAG & FIX OVERLY COMPLEX VERBS:** "scurried" → "ran/hid", "slumped/sank" → "sat down", "swayed" → "moved", "drifted/fluttered" → "blew/flew", "peered/observed" → "looked/peeked".
-                 - ❌ **FLAG & FIX OBSCURE NOUNS:** "fennec fox" → "little fox", "canopy" → "big trees".
+                 - ❌ **FLAG & FIX OBSCURE NOUNS:** "nook" → "cozy spot" or "play spot", "fennec fox" → "little fox", "canopy" → "big trees".
                  - ❌ **FLAG & FIX ADVANCED EMOTIONS:** "frustrated" → "mad/upset", "confused" → "mixed up", "disappointed" → "sad", "relieved" → "calm/safe".
                  - ✅ **APPROVED PRIMARY EMOTIONS:** "happy", "sad", "mad", "calm", "proud", "scared", "mixed up", "safe", "cozy".
                ` : `
@@ -133,7 +140,7 @@ export async function runEditorPass(
             - [ ] **Simple Vocabulary Whitelist (Age ${childAge}):** ${childAge <= 3 ? `Zero complex verbs and zero adult emotions. Pure simple words.` : `Zero academic/adult words.`}
             - [ ] **Intuitive Sounds:** Only recognizable onomatopoeia (*CRUNCH*, *SHHH...*, *SNIFF SNIFF*, *SIGH...*, *SNORE!*). Zero invented spellings.
             - [ ] **Complete Sentences:** Zero grammatical fragments.
-            - [ ] **Pronoun Policy Guard (Age ${childAge}):** ${childAge <= 5 ? `For ages 1–5: avoid 3rd-person individual pronouns. Refer by name or "they/their" for the duo.` : `Pronouns correctly match character genders.`}
+            - [ ] **Pronoun Policy Guard (Age ${childAge}):** ${childAge <= 5 ? `For ages 1–5: avoid 3rd-person pronouns ("it", "its", "he", "she", "him", "her", "his"). Use the hero's name possessive ('${childName}'s [item]'), the animal's name ('The little fox'), or active verbs.` : `Pronouns correctly match character genders.`}
             - [ ] **Arabic Diacritics:** Zero Tashkeel if writing Arabic.
             - [ ] **Word Count:** Every spread is strictly within ${wordCountRule.min}–${wordCountRule.max} words.
 
@@ -170,13 +177,90 @@ export async function runEditorPass(
                 if (editedDraft.length < draft.length) throw new Error("Editor dropped pages.");
             }
 
+            // Step 1: Apply deterministic vocabulary sanitizer for young ages
+            let refinedDraft = Validator.sanitizeDraft(editedDraft, childAge, language);
+
+            // Step 2: Run deterministic quality validation
+            let validation = Validator.validateDraftQuality(refinedDraft, {
+                expectedLength: draft.length,
+                childAge,
+                childName,
+                language,
+                anchorTriggerRule: activeAnchorRule,
+                primaryVisualAnchor: primaryAnchor
+            });
+
+            // Step 3: Surgical repair for pronoun leaks or grammar fragments on young ages
+            if (!customStoryText && childAge <= 5 && language !== 'ar') {
+                const failingIndices: number[] = [];
+                refinedDraft.forEach((s, idx) => {
+                    const pCheck = Validator.checkPronounGuard(s.text, childAge, language);
+                    const gCheck = Validator.checkGrammarFragments([s.text]);
+                    if (!pCheck.pass || !gCheck.pass) {
+                        failingIndices.push(idx);
+                    }
+                });
+
+                if (failingIndices.length > 0) {
+                    try {
+                        const surgicalPrompt = `
+ROLE: Senior Picture-Book Editor (Surgical Fix).
+LANGUAGE: ${targetLang}
+AGE GROUP: ${childAge} years old
+HERO NAME: "${childName}"
+
+Fix ONLY the following specific spreads to eliminate 3rd-person pronouns ("it", "its", "he", "she", "him", "her", "his") or grammar fragments:
+${failingIndices.map(idx => `Spread ${idx + 1} Current Text: "${refinedDraft[idx].text}"`).join('\n')}
+
+MANDATORY RULES:
+1. AGE ${childAge} PRONOUN POLICY: Do NOT use "it", "its", "he", "she", "him", "her", "his". Replace them with:
+   - The animal's explicit name (e.g. "The little fox", "The owl")
+   - The hero's name / possessive ("${childName}'s pebble")
+   - Direct active verbs (e.g. "Ran and hid" instead of "It ran and hid")
+2. Complete sentences only (no missing verbs).
+3. Keep word count strictly within ${wordCountRule.min}–${wordCountRule.max} words.
+4. Output JSON array with ONLY the fixed spreads:
+[
+  ${failingIndices.map(idx => `{ "spreadNumber": ${idx + 1}, "text": "Fixed text..." }`).join(',\n  ')}
+]
+`;
+                        const fixResponse = await model.generateContent(surgicalPrompt);
+                        const fixJson = JSON.parse(cleanJsonString(fixResponse.response.text()));
+                        if (Array.isArray(fixJson)) {
+                            fixJson.forEach((item: any) => {
+                                const spNum = item.spreadNumber;
+                                if (typeof spNum === 'number' && spNum >= 1 && spNum <= refinedDraft.length && item.text) {
+                                    refinedDraft[spNum - 1] = { text: Validator.sanitizeVocabulary(item.text, childAge, language) };
+                                }
+                            });
+                        }
+
+                        // Re-validate after surgical repair
+                        validation = Validator.validateDraftQuality(refinedDraft, {
+                            expectedLength: draft.length,
+                            childAge,
+                            childName,
+                            language,
+                            anchorTriggerRule: activeAnchorRule,
+                            primaryVisualAnchor: primaryAnchor
+                        });
+                    } catch (repairErr) {
+                        console.warn("[EditorAgent] Surgical repair pass skipped:", repairErr);
+                    }
+                }
+            }
+
             return {
-                result: editedDraft,
+                result: refinedDraft,
                 log: {
                     stage: 'QA',
                     timestamp: startTime,
                     inputs: { draftLength: draft.length },
-                    outputs: { pageCount: editedDraft.length },
+                    outputs: { 
+                        pageCount: refinedDraft.length,
+                        validationValid: validation.valid,
+                        qualityWarnings: validation.warnings 
+                    },
                     status: 'Success',
                     durationMs: Date.now() - startTime
                 }
