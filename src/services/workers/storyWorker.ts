@@ -253,8 +253,33 @@ export class StoryWorker {
           pageNumber: i,
           text: p.text,
           textVersion: currentVersion,
+          textEngine: "v2-master-writer",
           textUpdatedAt: nowIso
         })),
+        spreads: (order.story_data?.spreads && order.story_data.spreads.length > 0)
+          ? order.story_data.spreads.map((s: any, idx: number) => {
+              if (idx === 0) return s;
+              const scriptItem = script[idx - 1];
+              const text = scriptItem ? (typeof scriptItem === 'string' ? scriptItem : (scriptItem.text || '')) : (s.text || s.leftText || s.rightText || '');
+              return {
+                ...s,
+                text,
+                leftText: s.textSide === 'right' ? '' : text,
+                rightText: s.textSide === 'right' ? text : '',
+                textVersion: currentVersion,
+                textEngine: "v2-master-writer",
+                textUpdatedAt: nowIso
+              };
+            })
+          : script.map((p: any, i: number) => ({
+              spreadNumber: i + 1,
+              text: p.text,
+              leftText: p.text,
+              rightText: '',
+              textVersion: currentVersion,
+              textEngine: "v2-master-writer",
+              textUpdatedAt: nowIso
+            })),
         finalPrompts: script.map(() => ""), // initialize empty prompts to match length
         actualCoverPrompt: prompts[0]?.imagePrompt || "", // Flush legacy cover prompt
         visualPlan: plan,

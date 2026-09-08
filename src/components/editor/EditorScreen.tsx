@@ -13,6 +13,7 @@ import QALogPanel from '@/components/editor/QALogPanel';
 import { DNAManagerModal } from '@/components/editor/DNAManagerModal';
 import { ShippingModal } from '@/components/admin/ShippingModal';
 import { ClientLogger } from '@/utils/clientLogger';
+import { getWordCountForAge } from '@/services/rules/guidebook';
 
 
 interface FinalizeArgs {
@@ -377,6 +378,62 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         );
     };
 
+    const StoryTextVersionBadge: React.FC<{ 
+        spreadIndex: number; 
+        currentText: string;
+        spreadData?: any;
+    }> = ({ spreadIndex, currentText, spreadData }) => {
+        const engine = spreadData?.textEngine || (storyData as any)?.story_engine || (storyData.script ? 'v2-master-writer' : null);
+        const version = spreadData?.textVersion || (storyData as any)?.story_version || (storyData.script ? 1 : null);
+        const generatedAt = spreadData?.textUpdatedAt || (storyData as any)?.story_generated_at;
+
+        const isMasterWriter = engine === 'v2-master-writer' || (storyData as any)?.story_engine === 'v2-master-writer';
+        const dateLabel = generatedAt ? new Date(generatedAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : null;
+
+        // Word count & age guide check
+        const words = (currentText || '').trim().split(/\s+/).filter(Boolean);
+        const wordCount = words.length;
+        const childAgeNum = typeof storyData.childAge === 'number' ? storyData.childAge : (parseInt(String(storyData.childAge || '5'), 10) || 5);
+        const targetWordCount = getWordCountForAge(childAgeNum);
+        const isWordCountInRange = wordCount >= targetWordCount.min && wordCount <= targetWordCount.max;
+
+        return (
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1 mb-1.5">
+                <div className="flex items-center gap-2">
+                    {isMasterWriter ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full px-2.5 py-0.5 shadow-xs">
+                            📖 [{engine || 'v2-master-writer'} • v{version || 1}]
+                        </span>
+                    ) : version ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-blue-100 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5">
+                            📝 [v{version}]
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-800 border border-amber-200 rounded-full px-2.5 py-0.5">
+                            ⚠️ Legacy Story Text (v1)
+                        </span>
+                    )}
+
+                    {dateLabel && (
+                        <span className="text-[9px] font-mono text-gray-400">
+                            Generated: {dateLabel}
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[9px] font-mono">
+                    <span className={`px-2 py-0.5 rounded-md font-bold ${
+                        isWordCountInRange
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                        {wordCount} words (Age {storyData.childAge || 5}: {targetWordCount.min}–{targetWordCount.max}w)
+                    </span>
+                </div>
+            </div>
+        );
+    };
+
 
     const cleanupPromptText = (text: any) => {
         if (text === undefined || text === null) return '';
@@ -684,7 +741,19 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 currentText,
                 age: storyData.childAge
             });
+            const nowIso = new Date().toISOString();
+            const currentSpreadVer = ((spreads[index]?.textVersion || (storyData as any).story_version || 1) + 1);
             handleTextChange(index, res.text);
+            const newSpreads = [...spreads];
+            if (newSpreads[index]) {
+                newSpreads[index] = {
+                    ...newSpreads[index],
+                    textVersion: currentSpreadVer,
+                    textEngine: "v2-master-writer",
+                    textUpdatedAt: nowIso
+                };
+                onUpdateStory({ spreads: newSpreads });
+            }
         } catch (e) {
             console.error("Failed to regenerate text", e);
             alert("Text regeneration failed.");
@@ -1020,6 +1089,18 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             const newScript = res.script || res.rawScript;
             if (!Array.isArray(newScript)) throw new Error("Invalid script received from Story Engine");
 
+            const nowIso = new Date().toISOString();
+            const currentVersion = ((storyData as any).story_version || 1) + 1;
+            const existingScriptHistory = (storyData as any).story_history || [];
+            if (storyData.script && Array.isArray(storyData.script) && storyData.script.length > 0) {
+                existingScriptHistory.push({
+                    version: (storyData as any).story_version || 1,
+                    generated_at: (storyData as any).story_generated_at || nowIso,
+                    engine: (storyData as any).story_engine || "legacy",
+                    script: storyData.script
+                });
+            }
+
             // Update spreads with new text while strictly keeping existing illustrations
             const updatedSpreads = [...spreads];
             newScript.forEach((item: any, idx: number) => {
@@ -1031,7 +1112,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         ...updatedSpreads[spreadIdx],
                         text: newText,
                         leftText: isRight ? '' : newText,
-                        rightText: isRight ? newText : ''
+                        rightText: isRight ? newText : '',
+                        textVersion: currentVersion,
+                        textEngine: "v2-master-writer",
+                        textUpdatedAt: nowIso
                     };
                 }
             });
@@ -1042,16 +1126,20 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 const pageIdx = idx * 2;
                 const newText = typeof item === 'string' ? item : (item.text || '');
                 if (updatedPages[pageIdx]) {
-                    updatedPages[pageIdx] = { ...updatedPages[pageIdx], text: newText };
+                    updatedPages[pageIdx] = { ...updatedPages[pageIdx], text: newText, textVersion: currentVersion, textUpdatedAt: nowIso };
                 }
                 if (updatedPages[pageIdx + 1]) {
-                    updatedPages[pageIdx + 1] = { ...updatedPages[pageIdx + 1], text: newText };
+                    updatedPages[pageIdx + 1] = { ...updatedPages[pageIdx + 1], text: newText, textVersion: currentVersion, textUpdatedAt: nowIso };
                 }
             });
 
             const updatedStoryData = {
                 ...storyData,
                 script: newScript,
+                story_version: currentVersion,
+                story_engine: "v2-master-writer",
+                story_generated_at: nowIso,
+                story_history: existingScriptHistory,
                 spreads: updatedSpreads,
                 pages: updatedPages
             };
@@ -1063,7 +1151,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 await adminService.saveOrder(storyData.orderId, updatedStoryData, shippingDetails || {}, total);
             }
 
-            alert("✅ Story narrative text rewritten and polished with v3.3 Engine! All artworks and layouts were preserved.");
+            alert("✅ Story narrative text rewritten and polished with Master Writer v2 Engine! All artworks and layouts were preserved.");
         } catch (err: any) {
             console.error("Failed to rewrite story text:", err);
             alert(`❌ Failed to rewrite story text: ${err.message}`);
@@ -2237,6 +2325,11 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                     </div>
                                                 </div>
                                             </div>
+                                            <StoryTextVersionBadge 
+                                                spreadIndex={i} 
+                                                currentText={pageEdits[i]?.text !== undefined ? pageEdits[i].text : getSpreadText(spreads[i], i)} 
+                                                spreadData={spreads[i]} 
+                                            />
                                             <textarea value={pageEdits[i]?.text !== undefined ? pageEdits[i].text : getSpreadText(spreads[i], i)} onChange={(e) => handleTextChange(i, e.target.value)} onBlur={handleSilentSave} className="w-full p-5 bg-gray-50 border border-gray-100 rounded-[1.5rem] text-sm h-32 focus:ring-2 focus:ring-brand-teal/10 outline-none transition-all font-medium leading-relaxed" />
 
                                         </div>

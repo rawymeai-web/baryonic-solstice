@@ -448,6 +448,9 @@ export interface Page {
   pageSummary?: string;
   qcStatus?: string;
   generationModel?: string;
+  textVersion?: number;
+  textEngine?: string;
+  textUpdatedAt?: string;
 }
 
 /** One visual unit = one широко illustration + its two halves of story text */
@@ -465,6 +468,9 @@ export interface Spread {
   mainContentSide?: 'left' | 'right'; // Which side the hero/action occupies
   actionSide?: 'left' | 'right';
   generationModel?: string;   // The AI model used to generate this image
+  textVersion?: number;
+  textEngine?: string;
+  textUpdatedAt?: string;
   // Layout overrides (set in EditorScreen, applied in fileService PDF rendering)
   textOffsetX?: number;       // PDF mm — left edge of text box (overrides auto calculation)
   textOffsetY?: number;       // PDF mm — top edge of text box (overrides auto calculation)

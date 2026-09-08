@@ -314,7 +314,17 @@ export const OrderPreviewModal: React.FC<OrderPreviewModalProps> = ({ order, onC
                         <div className="w-6 h-6 rounded-full bg-brand-orange text-white flex items-center justify-center font-bold text-[10px] shrink-0">
                           {s.spreadNumber}
                         </div>
-                        <div className="flex-1 space-y-0.5">
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 rounded px-1.5 py-0.5">
+                              📖 {s.textEngine || (order.storyData as any).story_engine || 'v2-master-writer'} • v{s.textVersion || (order.storyData as any).story_version || 1}
+                            </span>
+                            {s.textUpdatedAt && (
+                              <span className="text-[8px] font-mono text-gray-400">
+                                {new Date(s.textUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-gray-700 font-medium">"{s.leftText || s.text || s.rightText || '...'}"</p>
                           <p className="text-[10px] text-gray-400 font-mono line-clamp-1">Prompt: {s.actualPrompt?.substring(0, 100)}...</p>
                         </div>
