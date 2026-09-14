@@ -367,17 +367,9 @@ export async function getQualityLogs(orderId: string, spreadNumber: number) {
       .eq('spread_number', spreadNumber)
       .order('iteration_number', { ascending: true });
 
-    if (!error && data && data.length > 0) return data;
-
-    // Fallback: If querying index 0 (Cover) and no logs, check if stored under index 1
-    if (spreadNumber === 0) {
-      const { data: legacyCoverData } = await supabase
-        .from('generation_quality_logs')
-        .select('*')
-        .eq('order_id', orderId)
-        .eq('spread_number', 1)
-        .order('iteration_number', { ascending: true });
-      if (legacyCoverData && legacyCoverData.length > 0) return legacyCoverData;
+    if (error) {
+      console.error('Error fetching quality logs:', error);
+      return [];
     }
     return data || [];
   } catch (err) {
@@ -691,3 +683,23 @@ export async function deletePromoCode(idOrCode: string): Promise<void> {
     return;
   }
 }
+
+export async function rerunQA(orderId: string, payload: {
+  spreadIndex: number | 'cover';
+  illustrationUrl?: string;
+  targetPrompt?: string;
+  spreadText?: string;
+  currentTextSide?: string;
+}): Promise<{ success: boolean; qcResult: any; logEntry: any }> {
+  const res = await fetch(`/api/admin/orders/${orderId}/rerun-qa`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'QA re-evaluation failed');
+  }
+  return res.json();
+}
+

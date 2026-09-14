@@ -82,6 +82,19 @@ export const INITIAL_THEMES: StoryTheme[] = [
     emoji: '🧸', category: 'values', visualDNA: 'Multi-colored blocks, bridges between islands.',
     skeleton: { storyCores: ["Overcoming possessiveness.", "Joy of shared play."], catalysts: ["A new toy everyone wants."], limiters: ["The 10-minute timer."], themeVisualDNA: ["Connected forts."], settingMandates: ["The Community Park."] }
   },
+  {
+    id: 'val-school',
+    title: { ar: 'أصدقاء جدد، يوم جديد (العودة للمدرسة)', en: 'New Friends, New Day (Back to School)' },
+    description: { ar: 'تخطي التوتر ومقابلة أصدقاء جدد واكتشاف متعة اليوم المدرسي.', en: 'Feeling excited instead of scared, making new friends, and discovering school is fun.' },
+    emoji: '🎒', category: 'values', visualDNA: 'Sunlit classroom windows, colorful cubbies with name tags, reading corner cushions, playground swings.',
+    skeleton: {
+      storyCores: ["Feeling excited instead of scared to go to school.", "Being brave enough to say hello first.", "Discovering the day is fun once you are in it."],
+      catalysts: ["The morning school bell.", "A shy classroom hamster who needs a friend."],
+      limiters: ["The nervous flutter in the morning walk.", "A big and bustling playground."],
+      themeVisualDNA: ["Sunlit classroom windows.", "Colorful cubbies with name tags.", "Crayon-bright bulletin boards."],
+      settingMandates: ["The Morning Classroom Circle.", "The School Playground."]
+    }
+  },
 
   // --- ADVENTURES (9) ---
   {

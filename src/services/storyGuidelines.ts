@@ -330,29 +330,39 @@ const themeLibrary: Record<string, ThemeContent> = {
     ]
   },
   'val-school': {
-    heritageContext: "The House of Wisdom (Bayt al-Hikmah).",
-    visualStyle: "Floating books, magical chalk dust, owl motifs, starlit libraries.",
-    maxAgeRecommended: 7,
-    homeBaseSuggestion: "A cozy study desk with fresh crayons and a shiny new backpack.",
-    anchorObject: "A magical glowing pencil that writes with starlight.",
-    anchorTriggerRule: "Draws golden stars when asking curious questions.",
-    companionGuide: "A wise little owl wearing round reading spectacles.",
-    returnBridgeHint: "Walking cheerfully through the school gate back home with a backpack full of discoveries.",
-    moralPayoffPhrase: "Every question is a golden key that opens a brand-new door of wonder.",
-    soundWordPalette: ["SCRITCH-SCRATCH", "HOOT-HOOT!", "DING-DONG!", "FLIP-FLAP", "AHA!"],
+    heritageContext: "A real, everyday neighborhood school — no myths, no magic academies. Just morning greetings, a friendly classroom, and recess with friends.",
+    visualStyle: "Sunlit classroom windows, colorful cubbies with name tags, a reading corner with soft cushions, a playground with swings and a climbing dome, crayon-bright bulletin boards, a good-morning circle on the rug.",
+    minAgeRecommended: 1,
+    maxAgeRecommended: 8,
+    homeBaseSuggestion: "Her own room at home, picking out her favorite shirt and packing her backpack the night before.",
+    anchorObject: "A small friendship bracelet she made over the summer, worn on her wrist.",
+    anchorTriggerRule: "Feels warm and bright when she's having fun, feels quiet and still when she's nervous.",
+    companionGuide: "A shy classroom hamster who is also new to the class and hides in his little house until she gently coaxes him out — by the end of the day, they're both a lot less scared.",
+    returnBridgeHint: "At home time, she waves goodbye to her hamster friend and skips home with her backpack, already looking forward to tomorrow.",
+    moralPayoffPhrase: "A new place feels a lot less scary once you've made a friend in it.",
+    soundWordPalette: ["RING!", "SHUFFLE-SHUFFLE", "GIGGLE GIGGLE", "TAP-TAP", "WHOOSH!", "CRUNCH"],
+    contentWatchlist: [
+      "No real-world named teacher, school, or classmate — use a warm, fictional teacher character and fictional classmates only, per the Guidebook's allowed/forbidden character lists.",
+      "Keep it fully grounded — no wizards, dragons, magic academies, or mythic mentors. The only 'magic' is the gentle anchor-object glow every theme uses, nothing else.",
+      "No real academic pressure — no literal tests, grades, or exams. The goal is joy and friendship, not achievement."
+    ],
     goals: [
-      { text: "To make friends with the Class Dragon.", ageBand: ["1-3", "4-5", "6-8"] },
-      { text: "To earn the badge of the 'Smart Explorer'.", ageBand: ["1-3", "4-5", "6-8"] },
-      { text: "To learn the 'Spell of Curiosity'.", ageBand: ["4-5", "6-8"] },
-      { text: "To pass the entrance exam for the 'Sky Academy'.", ageBand: ["4-5", "6-8"] },
-      { text: "To find the 'Library of All Answers'.", ageBand: ["6-8"] }
+      { text: "To be brave enough to say 'hi' first.", ageBand: ["1-3", "4-5", "6-8"] },
+      { text: "To make one new friend by the end of the day.", ageBand: ["1-3", "4-5", "6-8"] },
+      { text: "To find a seat next to someone new at circle time.", ageBand: ["1-3", "4-5", "6-8"] },
+      { text: "To help the shy new class hamster feel at home.", ageBand: ["1-3", "4-5", "6-8"] },
+      { text: "To find her name on her very own cubby.", ageBand: ["1-3", "4-5"] },
+      { text: "To share her crayons with someone who forgot theirs.", ageBand: ["1-3", "4-5"] },
+      { text: "To learn the words to the class's good-morning song.", ageBand: ["1-3", "4-5"] },
+      { text: "To win a smile from the whole class at show-and-tell.", ageBand: ["4-5", "6-8"] }
     ],
     challenges: [
-      { text: "Afraid to raise a hand to ask the Giant Owl a question.", ageBand: ["1-3", "4-5", "6-8"] },
-      { text: "The backpack feels heavy with new books.", ageBand: ["1-3", "4-5", "6-8"] },
-      { text: "Missing the comfort of home.", ageBand: ["1-3", "4-5", "6-8"] },
-      { text: "The 'Butterfly of Distraction'.", ageBand: ["4-5", "6-8"] },
-      { text: "Getting lost in the Hall of Hallways.", ageBand: ["6-8"] }
+      { text: "Her tummy feels fluttery and nervous on the walk to school.", ageBand: ["1-3", "4-5", "6-8"] },
+      { text: "She doesn't know anyone in her new class.", ageBand: ["1-3", "4-5", "6-8"] },
+      { text: "She's too shy to raise her hand and answer a question.", ageBand: ["1-3", "4-5", "6-8"] },
+      { text: "The hallways and rooms all look the same, and she isn't sure where to go.", ageBand: ["1-3", "4-5", "6-8"] },
+      { text: "Recess feels big and loud, and everyone already has someone to play with.", ageBand: ["1-3", "4-5", "6-8"] },
+      { text: "She misses home for a little while.", ageBand: ["1-3", "4-5", "6-8"] }
     ]
   },
   'val-potty': {

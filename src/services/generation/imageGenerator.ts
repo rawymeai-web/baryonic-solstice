@@ -406,21 +406,30 @@ ${masterGuardrails}`;
 let lastProCallTimestamp = 0;
 
 export async function generateMethod4Image(
-    prompt: string,
-    stylePrompt: string,
+    prompt: any,
+    stylePrompt: any,
     referenceBase64OrSet: string | string[],
-    characterDescription: string,
-    age: string,
+    characterDescription: any,
+    age: any,
     seed?: number,
     secondReferenceBase64OrSet?: string | string[],
-    secondCharacterDescription?: string
+    secondCharacterDescription?: any
 ): Promise<{ imageBase64: string; fullPrompt: string; seedPrompt: string; modelUsed: string }> {
     return withRetry(async () => {
-        // [HEAL] Sanitize polluted stylePrompt that contains DNA character portrait tasks
-        let cleanStylePrompt = stylePrompt;
-        if (stylePrompt && stylePrompt.includes('**TASK:**')) {
+        // [HEAL] Safely coerce stylePrompt and sanitize polluted stylePrompt containing DNA character portrait tasks
+        let rawStyleStr = "";
+        if (typeof stylePrompt === 'string') {
+            rawStyleStr = stylePrompt;
+        } else if (stylePrompt && typeof stylePrompt === 'object') {
+            rawStyleStr = stylePrompt.prompt || stylePrompt.visualDNA || stylePrompt.visual_dna || stylePrompt.stylePrompt || JSON.stringify(stylePrompt);
+        } else {
+            rawStyleStr = String(stylePrompt || "");
+        }
+
+        let cleanStylePrompt = rawStyleStr;
+        if (rawStyleStr && rawStyleStr.includes('**TASK:**')) {
             console.log("[HEAL] Detected polluted stylePrompt containing DNA task. Sanitizing...");
-            const match = stylePrompt.match(/Perfect\s+application\s+of\s+the\s+'([^']+)'\s+aesthetic/i);
+            const match = rawStyleStr.match(/Perfect\s+application\s+of\s+the\s+'([^']+)'\s+aesthetic/i);
             if (match && match[1]) {
                 cleanStylePrompt = match[1];
                 console.log("[HEAL] Successfully extracted original style aesthetic:", cleanStylePrompt);
@@ -534,30 +543,33 @@ export async function generateMethod4Image(
         let skinToneStr = "";
         let eyeColorStr = "";
         let hairColorStr = "";
-        try {
-            const parsed = JSON.parse(characterDescription);
-            if (parsed.identity) {
-                if (parsed.identity.skin?.tone) {
-                    skinToneStr = parsed.identity.skin.tone;
-                }
-                if (parsed.identity.eye_color) {
-                    eyeColorStr = parsed.identity.eye_color;
-                }
-                if (parsed.identity.hair?.color) {
-                    hairColorStr = parsed.identity.hair.color;
-                }
-            }
-        } catch (e) {
-            // Not JSON or missing fields
+        
+        let descObj: any = null;
+        let descStr = "";
+        
+        if (typeof characterDescription === 'object' && characterDescription !== null) {
+            descObj = characterDescription;
+            descStr = JSON.stringify(characterDescription);
+        } else if (typeof characterDescription === 'string') {
+            descStr = characterDescription;
+            try {
+                descObj = JSON.parse(characterDescription);
+            } catch (e) {}
+        }
+
+        if (descObj && descObj.identity) {
+            if (descObj.identity.skin?.tone) skinToneStr = descObj.identity.skin.tone;
+            if (descObj.identity.eye_color) eyeColorStr = descObj.identity.eye_color;
+            if (descObj.identity.hair?.color) hairColorStr = descObj.identity.hair.color;
         }
 
         // Regex fallbacks for string representation
-        if (!skinToneStr && characterDescription) {
-            const match = characterDescription.match(/Skin tone \(([^)]+)\)/i);
+        if (!skinToneStr && descStr) {
+            const match = descStr.match(/Skin tone \(([^)]+)\)/i);
             if (match) skinToneStr = match[1];
         }
-        if (!eyeColorStr && characterDescription) {
-            const match = characterDescription.match(/eye color \(([^)]+)\)/i) || characterDescription.match(/"eye_color":\s*"([^"]+)"/i);
+        if (!eyeColorStr && descStr) {
+            const match = descStr.match(/eye color \(([^)]+)\)/i) || descStr.match(/"eye_color":\s*"([^"]+)"/i);
             if (match) eyeColorStr = match[1];
         }
 
@@ -581,9 +593,9 @@ export async function generateMethod4Image(
             finalPromptText = finalPromptText + ageAndDescBlock;
         }
 
-        if (!isSelfContainedPrompt && cleanStylePrompt && !finalPromptText.includes('ART STYLE REQUIREMENT')) {
-            finalPromptText += `\n\n**ART STYLE REQUIREMENT:**
-- **STYLE:** Render this illustration in the following style: ${cleanStylePrompt}. Make sure the colors, lighting, rendering technique, brushwork, and background style align perfectly with this description.`;
+        if (cleanStylePrompt && !finalPromptText.includes('ART STYLE REQUIREMENT') && !finalPromptText.includes('ART STYLE & RENDERING REQUIREMENT')) {
+            finalPromptText += `\n\n**ART STYLE & RENDERING REQUIREMENT:**
+- **STYLE:** Render this illustration strictly in the following style: ${cleanStylePrompt}. Make sure the colors, lighting, rendering technique, brushwork, and background scenery style align seamlessly with this description and the approved style reference.`;
         }
  
         contents.push({

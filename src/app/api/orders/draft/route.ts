@@ -196,21 +196,8 @@ export async function PUT(req: Request) {
         }
         if (status) {
             updates.status = status;
-            // PRD REQUIREMENT: Address Snapshotting
-            // When order is paid (queueing for production), freeze the shipping details 
-            // so future profile updates don't alter this specific locked order.
             if (status === 'paid_confirmed') {
-                updates.status = 'queued'; // Fast-track to Queued for backend cron
-                // NOTE: shipping_details snapshot is handled by line below (updates.shipping_details),
-                // no separate shipping_snapshot column needed.
-
-                // Trigger email notifications: customer (order received) and admin (new order alert)
-                const orderTotal = (existing as any)?.total || 0;
-                await EmailService.sendNotification(orderId, 'order_received', { total: orderTotal });
-                await EmailService.sendNotification(orderId, 'admin_new_order', { total: orderTotal });
-
-                // TRIGGER SCHEDULER asynchronously since local environment lacks cron
-                MasterScheduler.executeTick().catch(e => console.error("Async Scheduler failed:", e));
+                updates.status = 'queued'; // Fast-track to Queued for autonomous backend pipeline
             }
         }
         if (shippingDetails) updates.shipping_details = shippingDetails;
@@ -223,6 +210,17 @@ export async function PUT(req: Request) {
 
         if (error) {
             return NextResponse.json({ error: 'Update Failed', details: error.message, hint: error.hint }, { status: 500 });
+        }
+
+        // After DB commit, if paid, trigger notifications & autonomous pipeline immediately
+        if (status === 'paid_confirmed') {
+            const orderTotal = (existing as any)?.total || 0;
+            EmailService.sendNotification(orderId, 'order_received', { total: orderTotal }).catch(() => {});
+            EmailService.sendNotification(orderId, 'admin_new_order', { total: orderTotal }).catch(() => {});
+
+            // Kick off blueprint job & scheduler tick immediately
+            MasterScheduler.dispatchJob(orderId, 'blueprint').catch(e => console.error("Async Job Dispatch failed:", e));
+            MasterScheduler.executeTick().catch(e => console.error("Async Scheduler failed:", e));
         }
 
         return NextResponse.json({ success: true, message: 'Draft Updated' });

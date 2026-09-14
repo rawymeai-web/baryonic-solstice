@@ -550,6 +550,15 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
         });
     }, [allOrders, activeTab, statusFilter, searchQuery]);
 
+    const flaggedOrders = React.useMemo(() => {
+        return allOrders.filter(o => {
+            const hasCoverFlag = o.storyData?.coverQcStatus === 'flagged';
+            const hasSpreadFlag = o.storyData?.spreads?.some((s: any) => s.qcStatus === 'flagged' || (s.spreadNumber > 0 && s.qcStatus === 'flagged'));
+            const hasPageFlag = o.storyData?.pages?.some((p: any) => p.qcStatus === 'flagged');
+            return hasCoverFlag || hasSpreadFlag || hasPageFlag;
+        });
+    }, [allOrders]);
+
     const handleQuickNotifyPreview = async (orderNumber: string) => {
         setNotifyingPreviewId(orderNumber);
         try {
@@ -920,6 +929,43 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
             )}
 
             <div className="space-y-4 px-4">
+                {/* Critical Red Attention Alert Banner for 3rd QA Failures */}
+                {flaggedOrders.length > 0 && (
+                    <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white p-5 rounded-3xl shadow-xl border-2 border-red-300/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white text-2xl font-black shrink-0 shadow-inner">
+                                <span className="material-symbols-outlined text-2xl animate-pulse">error</span>
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="bg-white text-red-700 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow-xs">
+                                        🚨 CRITICAL QA ATTENTION REQUIRED
+                                    </span>
+                                    <span className="text-xs font-black opacity-90">{flaggedOrders.length} Order(s) Need Polish</span>
+                                </div>
+                                <p className="text-xs text-white/90 font-medium mt-1">
+                                    {flaggedOrders.length === 1 
+                                        ? `Order #${flaggedOrders[0].orderNumber} has spread(s) flagged after 3 QA attempts. Please inspect and polish in the Spread Editor.`
+                                        : `${flaggedOrders.length} orders have spreads that completed 3 QA attempts and are pending manual admin review.`}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+                            <button
+                                onClick={() => {
+                                    if (flaggedOrders[0]) {
+                                        handleOpenEditor(flaggedOrders[0]);
+                                    }
+                                }}
+                                className="px-5 py-2.5 rounded-xl bg-white text-red-700 hover:bg-white/95 text-xs font-black uppercase tracking-wider shadow-lg flex items-center gap-2 active:scale-95 transition-all"
+                            >
+                                <span className="material-symbols-outlined text-base">auto_fix_high</span>
+                                Open Editor to Polish
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Top Actions & Filters Row */}
                 <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
                     {/* Left: Tab Switcher */}
@@ -1066,16 +1112,28 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                         <span className="text-[10px] font-black text-brand-navy/30 uppercase tracking-widest">No matching orders detected</span>
                     </div>
                 )}
-                {displayOrders.map(order => (
-                    <div key={order.orderNumber} className="bg-white/90 backdrop-blur-md rounded-3xl p-5 border border-brand-navy/5 shadow-lg space-y-4 transition-all hover:shadow-xl">
+                {displayOrders.map(order => {
+                    const isOrderFlagged = order.storyData?.coverQcStatus === 'flagged' || 
+                        order.storyData?.spreads?.some((s: any) => s.qcStatus === 'flagged' || (s.spreadNumber > 0 && s.qcStatus === 'flagged')) ||
+                        order.storyData?.pages?.some((p: any) => p.qcStatus === 'flagged');
+
+                    return (
+                    <div key={order.orderNumber} className={`backdrop-blur-md rounded-3xl p-5 border shadow-lg space-y-4 transition-all hover:shadow-xl ${isOrderFlagged ? 'bg-red-50/70 border-red-300 ring-2 ring-red-400/30' : 'bg-white/90 border-brand-navy/5'}`}>
                         {/* Header: Order ID & Date + Total */}
                         <div className="flex items-center justify-between gap-3 border-b border-brand-navy/5 pb-3">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl bg-brand-navy/5 flex items-center justify-center text-brand-navy shrink-0">
-                                    <span className="material-symbols-outlined text-lg">receipt_long</span>
+                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${isOrderFlagged ? 'bg-red-600 text-white shadow-md shadow-red-600/30' : 'bg-brand-navy/5 text-brand-navy'}`}>
+                                    <span className="material-symbols-outlined text-lg">{isOrderFlagged ? 'warning' : 'receipt_long'}</span>
                                 </div>
                                 <div>
-                                    <div className="font-black text-brand-navy tracking-tight text-sm">{order.orderNumber}</div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-black text-brand-navy tracking-tight text-sm">{order.orderNumber}</span>
+                                        {isOrderFlagged && (
+                                            <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[8px] font-black uppercase tracking-wider animate-pulse">
+                                                🚨 QA POLISH NEEDED
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="text-[9px] text-brand-navy/40 font-bold uppercase tracking-wider">{new Date(order.orderDate).toLocaleString()}</div>
                                 </div>
                             </div>
@@ -1250,7 +1308,8 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                             </button>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Desktop Table (>= lg) */}
@@ -1276,15 +1335,27 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                     </td>
                                 </tr>
                             )}
-                            {displayOrders.map(order => (
-                                <tr key={order.orderNumber} className="group/row hover:bg-orange-50/50 transition-colors align-middle">
+                            {displayOrders.map(order => {
+                                const isOrderFlagged = order.storyData?.coverQcStatus === 'flagged' || 
+                                    order.storyData?.spreads?.some((s: any) => s.qcStatus === 'flagged' || (s.spreadNumber > 0 && s.qcStatus === 'flagged')) ||
+                                    order.storyData?.pages?.some((p: any) => p.qcStatus === 'flagged');
+
+                                return (
+                                <tr key={order.orderNumber} className={`group/row transition-colors align-middle ${isOrderFlagged ? 'bg-red-50/80 hover:bg-red-100/80' : 'hover:bg-orange-50/50'}`}>
                                     <td className="px-10 py-8">
                                         <div className="flex items-center gap-4">
-                                           <div className="w-10 h-10 rounded-xl bg-brand-navy/5 flex items-center justify-center text-brand-navy group-hover/row:bg-brand-navy group-hover/row:text-white transition-all">
-                                              <span className="material-symbols-outlined text-lg">receipt_long</span>
+                                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isOrderFlagged ? 'bg-red-600 text-white shadow-md shadow-red-600/30' : 'bg-brand-navy/5 text-brand-navy group-hover/row:bg-brand-navy group-hover/row:text-white'}`}>
+                                              <span className="material-symbols-outlined text-lg">{isOrderFlagged ? 'warning' : 'receipt_long'}</span>
                                            </div>
                                            <div>
-                                              <div className="font-black text-brand-navy tracking-tight">{order.orderNumber}</div>
+                                              <div className="flex items-center gap-2">
+                                                  <span className="font-black text-brand-navy tracking-tight">{order.orderNumber}</span>
+                                                  {isOrderFlagged && (
+                                                      <span className="px-2 py-0.5 rounded-md bg-red-600 text-white text-[8px] font-black uppercase tracking-wider animate-pulse">
+                                                          🚨 QA Polish Needed
+                                                      </span>
+                                                  )}
+                                              </div>
                                               <div className="text-[9px] text-brand-navy/30 font-bold mt-1 uppercase tracking-wider">{new Date(order.orderDate).toLocaleString()}</div>
                                            </div>
                                         </div>
@@ -1457,7 +1528,8 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

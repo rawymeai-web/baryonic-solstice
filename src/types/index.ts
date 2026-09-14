@@ -477,6 +477,10 @@ export interface Spread {
   imageOffsetX?: number;      // % shift of illustration horizontally (-50 to +50, default 0)
   imageOffsetY?: number;      // % shift of illustration vertically (-50 to +50, default 0)
   imageScale?: number;        // scale of illustration (100 = default, 150 = 1.5x zoom)
+  promptDetails?: {
+    mainContentSide?: 'left' | 'right';
+    textSide?: 'left' | 'right';
+  };
 }
 
 

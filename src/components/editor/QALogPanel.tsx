@@ -8,10 +8,11 @@ interface QALogPanelProps {
     storyData?: any;
 }
 
-const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex }) => {
+const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex, storyData }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [logs, setLogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRerunningQA, setIsRerunningQA] = useState(false);
 
     const fetchLogs = async () => {
         if (!orderId || spreadIndex === undefined) return;
@@ -22,6 +23,32 @@ const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex }) => {
             console.error("Failed to fetch QA logs:", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleRerunQA = async (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (!orderId || spreadIndex === undefined) return;
+        setIsRerunningQA(true);
+        try {
+            const currentSpread = Number(spreadIndex) === 0
+                ? storyData?.spreads?.[0] || { illustrationUrl: storyData?.coverImageUrl, text: storyData?.title, actualPrompt: storyData?.actualCoverPrompt }
+                : storyData?.spreads?.[spreadIndex];
+
+            await adminService.rerunQA(orderId, {
+                spreadIndex,
+                illustrationUrl: currentSpread?.illustrationUrl || storyData?.coverImageUrl,
+                targetPrompt: currentSpread?.actualPrompt || storyData?.actualCoverPrompt,
+                spreadText: currentSpread?.text || storyData?.title,
+                currentTextSide: currentSpread?.textSide || 'left'
+            });
+            await fetchLogs();
+            setIsOpen(true);
+        } catch (err: any) {
+            console.error("QA Re-evaluation failed:", err);
+            alert(`QA Re-evaluation failed: ${err.message || String(err)}`);
+        } finally {
+            setIsRerunningQA(false);
         }
     };
 
@@ -37,7 +64,7 @@ const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex }) => {
 
     if (!isOpen) {
         return (
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
                 <button 
                     onClick={() => setIsOpen(true)}
                     className={`text-[10px] font-black uppercase rounded-lg px-3 py-1.5 transition-all flex items-center gap-2 border ${
@@ -56,6 +83,26 @@ const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex }) => {
                     </span>
                     <span className="text-[9px] text-gray-400">▼</span>
                 </button>
+
+                <button
+                    onClick={handleRerunQA}
+                    disabled={isRerunningQA}
+                    className="text-[10px] font-black uppercase rounded-lg px-2.5 py-1.5 transition-all flex items-center gap-1.5 bg-brand-navy text-white hover:bg-brand-navy/90 disabled:opacity-50 shadow-sm"
+                    title="Re-run QA agent evaluation with full authority on this spread"
+                >
+                    {isRerunningQA ? (
+                        <>
+                            <Spinner size="sm" color="text-white" />
+                            <span>Evaluating...</span>
+                        </>
+                    ) : (
+                        <>
+                            <span>⚡</span>
+                            <span>Re-run QA</span>
+                        </>
+                    )}
+                </button>
+
                 {latestLog?.character_consistency_status && (
                     <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${latestLog.character_consistency_status === 'pass' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
                         Face: {latestLog.character_consistency_status}
@@ -67,16 +114,35 @@ const QALogPanel: React.FC<QALogPanelProps> = ({ orderId, spreadIndex }) => {
 
     return (
         <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl w-full">
-            <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+            <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2 flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                     <span className="text-sm">🔍</span>
                     <h4 className="text-xs font-black text-brand-navy uppercase tracking-widest">
                         QA Agent Audit Report (Spread #{spreadIndex === 0 ? 'Cover' : spreadIndex})
                     </h4>
                 </div>
-                <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs font-bold px-2 py-1 bg-white border border-gray-200 rounded-lg">
-                    Hide ▲
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleRerunQA}
+                        disabled={isRerunningQA}
+                        className="text-[10px] font-black uppercase px-3 py-1.5 bg-brand-navy text-white hover:bg-brand-navy/90 rounded-lg flex items-center gap-1.5 disabled:opacity-50 transition-all shadow-sm"
+                    >
+                        {isRerunningQA ? (
+                            <>
+                                <Spinner size="sm" color="text-white" />
+                                <span>Evaluating QA...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>⚡</span>
+                                <span>Re-run QA Evaluation</span>
+                            </>
+                        )}
+                    </button>
+                    <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs font-bold px-2 py-1 bg-white border border-gray-200 rounded-lg">
+                        Hide ▲
+                    </button>
+                </div>
             </div>
 
             {isLoading ? (

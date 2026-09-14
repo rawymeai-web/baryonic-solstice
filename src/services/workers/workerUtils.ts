@@ -19,8 +19,21 @@ export class WorkerUtils {
     static classifyError(error: any): 'transient' | 'content' | 'deterministic' {
         const msg = error?.message?.toLowerCase() || '';
 
-        // Timeout or network issues
-        if (msg.includes('timeout') || msg.includes('network') || msg.includes('fetch') || msg.includes('502') || msg.includes('503') || msg.includes('429')) {
+        // Timeout or network issues or batch incomplete
+        if (
+            msg.includes('timeout') ||
+            msg.includes('network') ||
+            msg.includes('fetch') ||
+            msg.includes('502') ||
+            msg.includes('503') ||
+            msg.includes('504') ||
+            msg.includes('500') ||
+            msg.includes('429') ||
+            msg.includes('econnreset') ||
+            msg.includes('etimedout') ||
+            msg.includes('transient') ||
+            msg.includes('incomplete')
+        ) {
             return 'transient';
         }
 
@@ -56,6 +69,12 @@ export class WorkerUtils {
             // Deterministic errors immediately halt the pipeline. No retries.
             await supabase.from('order_jobs').update({ status: 'failed', error_message: `DETERMINISTIC: ${error.message}` }).eq('id', jobId);
             await supabase.from('orders').update({ status: 'on_hold', error_message: `Halted due to deterministic AI error: ${error.message}` }).eq('order_number', orderId);
+            try {
+                const { EmailService } = await import('../notifications/emailService');
+                await EmailService.sendNotification(orderId, 'status_changed', { status: 'on_hold' });
+            } catch (emailErr) {
+                console.warn('[WorkerUtils] Failed to send on_hold email:', emailErr);
+            }
             return;
         }
 
@@ -65,6 +84,12 @@ export class WorkerUtils {
             // Exceeded max retries (3)
             await supabase.from('order_jobs').update({ status: 'failed', error_message: `MAX_RETRIES_EXCEEDED: ${error.message}` }).eq('id', jobId);
             await supabase.from('orders').update({ status: 'on_hold', error_message: `Pipeline stalled. Max retries exceeded on job ${jobId}.` }).eq('order_number', orderId);
+            try {
+                const { EmailService } = await import('../notifications/emailService');
+                await EmailService.sendNotification(orderId, 'status_changed', { status: 'on_hold' });
+            } catch (emailErr) {
+                console.warn('[WorkerUtils] Failed to send on_hold email:', emailErr);
+            }
         } else {
             // Re-queue with backoff (We just mark it queued, the scheduler could respect a 'run_after' time or we just delay it inherently)
             // For now, setting status to 'queued' allows it to be picked up again immediately by the scheduler, 

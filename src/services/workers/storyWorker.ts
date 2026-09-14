@@ -215,8 +215,13 @@ export class StoryWorker {
       const promptRes = await WorkerUtils.withTimeout(
         generatePrompts(plan, blueprint, styleProfile, heroes, language)
       );
-      const prompts = promptRes.result;
+      const rawPrompts = promptRes.result;
 
+      console.log(`[StoryWorker] Running Pre-Generation Prompt Quality Assurance...`);
+      const qaPromptRes = await WorkerUtils.withTimeout(
+        runQualityAssurance(rawPrompts)
+      );
+      const prompts = qaPromptRes.result || rawPrompts;
 
       // --------------------------------------------------------
       // 3. COMPILE AND PERSIST
@@ -256,30 +261,48 @@ export class StoryWorker {
           textEngine: "v2-master-writer",
           textUpdatedAt: nowIso
         })),
-        spreads: (order.story_data?.spreads && order.story_data.spreads.length > 0)
-          ? order.story_data.spreads.map((s: any, idx: number) => {
-              if (idx === 0) return s;
-              const scriptItem = script[idx - 1];
-              const text = scriptItem ? (typeof scriptItem === 'string' ? scriptItem : (scriptItem.text || '')) : (s.text || s.leftText || s.rightText || '');
-              return {
-                ...s,
-                text,
-                leftText: s.textSide === 'right' ? '' : text,
-                rightText: s.textSide === 'right' ? text : '',
-                textVersion: currentVersion,
-                textEngine: "v2-master-writer",
-                textUpdatedAt: nowIso
-              };
-            })
-          : script.map((p: any, i: number) => ({
-              spreadNumber: i + 1,
-              text: p.text,
-              leftText: p.text,
-              rightText: '',
+        spreads: [
+          // Index 0: Cover
+          {
+            spreadNumber: 0,
+            text: '',
+            leftText: '',
+            rightText: '',
+            illustrationUrl: order.story_data?.coverImageUrl || order.story_data?.spreads?.[0]?.illustrationUrl || undefined,
+            actualPrompt: (prompts[0] as any)?.imagePrompt || "",
+            textSide: ((prompts[0] as any)?.textSide || "Right").toLowerCase(),
+            textOffsetX: ((prompts[0] as any)?.textSide || "Right").toLowerCase() === 'left' ? 20 : 220,
+            textOffsetY: 24,
+            textVersion: currentVersion,
+            textEngine: "v2-master-writer",
+            textUpdatedAt: nowIso
+          },
+          // Indices 1..N: Inner Spreads
+          ...script.map((p: any, i: number) => {
+            const spreadIdx = i + 1;
+            const promptItem = prompts[spreadIdx] as any;
+            const textSide = (promptItem?.textSide || (promptItem?.mainContentSide === 'left' ? 'right' : 'left') || 'right').toLowerCase();
+            const text = p.text || (typeof p === 'string' ? p : '');
+            return {
+              spreadNumber: spreadIdx,
+              text,
+              leftText: textSide === 'left' ? text : '',
+              rightText: textSide === 'right' ? text : '',
+              textSide,
+              textOffsetX: textSide === 'left' ? 20 : 220,
+              textOffsetY: 24,
+              actualPrompt: promptItem?.imagePrompt || "",
+              promptDetails: {
+                mainContentSide: promptItem?.mainContentSide,
+                textSide
+              },
+              illustrationUrl: order.story_data?.spreads?.[spreadIdx]?.illustrationUrl || undefined,
               textVersion: currentVersion,
               textEngine: "v2-master-writer",
               textUpdatedAt: nowIso
-            })),
+            };
+          })
+        ],
         finalPrompts: script.map(() => ""), // initialize empty prompts to match length
         actualCoverPrompt: prompts[0]?.imagePrompt || "", // Flush legacy cover prompt
         visualPlan: plan,

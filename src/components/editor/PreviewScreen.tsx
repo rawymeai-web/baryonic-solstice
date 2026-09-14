@@ -126,6 +126,42 @@ const CoverView: React.FC<{ storyData: StoryData, language: Language, isPurchase
                     </div>
                 )}
             </motion.div>
+            {storyData.coverQcStatus === 'flagged' && (
+                <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-md z-40 flex items-center justify-center p-4 sm:p-6 pointer-events-auto">
+                    <div className="bg-white/95 backdrop-blur-xl border border-amber-300/80 shadow-2xl rounded-3xl p-5 sm:p-7 text-center max-w-[92%] sm:max-w-md space-y-3 ring-1 ring-black/10 animate-fade-in">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-brand-orange flex items-center justify-center mx-auto shadow-inner border border-amber-300/40">
+                            <span className="material-symbols-outlined text-2xl animate-spin">palette</span>
+                        </div>
+                        <div className="space-y-1">
+                            <h4 className="text-sm sm:text-base font-black text-brand-navy tracking-tight">
+                                {isAr 
+                                    ? `✨ لا تقلق! نحن نعمل على تجهيز هذا المشهد` 
+                                    : `✨ Don't worry! We're working on this scene`}
+                            </h4>
+                            <p className="text-[11px] sm:text-xs text-brand-navy/70 leading-relaxed font-medium">
+                                {isAr
+                                    ? `فريقنا الفني يضع لمساته السحرية الأخيرة على الغلاف لـ ${storyData.childName || 'بطلكم'}. تابع تصفح باقي صفحات القصة بكل متعة، وسنقوم بتحديث هذا المشهد فور اكتماله!`
+                                    : `Our Art Team is putting magical touches on the cover for ${storyData.childName || 'your hero'}. Feel free to keep browsing the rest of the book — we'll update this scene shortly!`}
+                            </p>
+                        </div>
+                        <div className="pt-1 flex flex-wrap items-center justify-center gap-2">
+                            <a
+                                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                                    isAr 
+                                        ? `مرحباً فريق راوي، أود الاستفسار عن غلاف قصة ${storyData.childName || ''}` 
+                                        : `Hello Rawy team, inquiring about the cover for ${storyData.childName || ''}'s story`
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-xl text-[10px] sm:text-[11px] font-black transition-all shadow-md active:scale-95"
+                            >
+                                <span className="material-symbols-outlined text-xs text-brand-coral">support_agent</span>
+                                <span>{isAr ? 'تواصل مع فريق راوي' : 'Contact Rawy Team'}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
             {!isPurchased && <Watermark />}
         </div>
     );
@@ -241,7 +277,7 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
     const widthPercent = (TEXT_W / PDF_W) * 100;
 
     return (
-        <div className="w-full h-full flex shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] rounded-[3rem] overflow-hidden relative border-[12px] border-white ring-1 ring-black/5 bg-gradient-to-br from-slate-100 via-amber-50/30 to-slate-100"
+        <div className="w-full h-full flex shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] rounded-2xl sm:rounded-[2.5rem] md:rounded-[3rem] overflow-hidden relative border-2 sm:border-[8px] md:border-[12px] border-white ring-1 ring-black/5 bg-gradient-to-br from-slate-100 via-amber-50/30 to-slate-100"
             style={{ 
                 backgroundImage: isImgLoaded && spreadSrc ? `url(${spreadSrc})` : undefined,
                 backgroundSize: 'cover', 
@@ -268,26 +304,64 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
                     className="absolute z-20 transition-all duration-300 pointer-events-none"
                     style={{
                         left: `${leftPercent}%`,
-                        top: `${topPercent}%`,
+                        top: `${Math.min(topPercent, 8)}%`,
                         width: `${widthPercent}%`,
+                        maxHeight: '88%',
                     }}
                 >
                     <div 
-                        className="bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgba(0,26,64,0.08)] rounded-[1.6cqw] p-[1.8cqw] text-brand-navy max-w-full"
+                        className="bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgba(0,26,64,0.08)] rounded-[1.2cqw] sm:rounded-[1.6cqw] p-[1.2cqw] sm:p-[1.8cqw] text-brand-navy max-w-full"
                         style={{
                             boxShadow: '0 8px 30px rgba(0, 26, 64, 0.08), 0 1px 3px rgba(0,0,0,0.05)',
                         }}
                     >
                         <div
                             style={{
-                                fontSize: 'clamp(11px, 1.55cqw, 18px)',
-                                lineHeight: 1.55,
+                                fontSize: 'clamp(9px, 1.35cqw, 17px)',
+                                lineHeight: 1.4,
                                 fontFamily: isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif",
                                 color: '#001A40',
                             }}
                             className={`font-bold ${isAr ? 'text-right' : 'text-left'}`}
                             dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(narrativeText, storyData.childName) }}
                         />
+                    </div>
+                </div>
+            )}
+
+            {spread.qcStatus === 'flagged' && (
+                <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-md z-40 flex items-center justify-center p-4 sm:p-6 pointer-events-auto">
+                    <div className="bg-white/95 backdrop-blur-xl border border-amber-300/80 shadow-2xl rounded-3xl p-5 sm:p-7 text-center max-w-[92%] sm:max-w-md space-y-3 ring-1 ring-black/10 animate-fade-in">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-brand-orange flex items-center justify-center mx-auto shadow-inner border border-amber-300/40">
+                            <span className="material-symbols-outlined text-2xl animate-spin">palette</span>
+                        </div>
+                        <div className="space-y-1">
+                            <h4 className="text-sm sm:text-base font-black text-brand-navy tracking-tight">
+                                {isAr 
+                                    ? `✨ لا تقلق! نحن نعمل على تجهيز هذا المشهد` 
+                                    : `✨ Don't worry! We're working on this scene`}
+                            </h4>
+                            <p className="text-[11px] sm:text-xs text-brand-navy/70 leading-relaxed font-medium">
+                                {isAr
+                                    ? `فريقنا الفني يضع لمساته السحرية الأخيرة على هذا المشهد لـ ${storyData.childName || 'بطلكم'}. تابع تصفح باقي صفحات القصة بكل متعة، وسنقوم بتحديث هذا المشهد فور اكتماله!`
+                                    : `Our Art Team is putting magical touches on this scene for ${storyData.childName || 'your hero'}. Feel free to keep browsing the rest of the book — we'll update this scene shortly!`}
+                            </p>
+                        </div>
+                        <div className="pt-1 flex flex-wrap items-center justify-center gap-2">
+                            <a
+                                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                                    isAr 
+                                        ? `مرحباً فريق راوي، أود الاستفسار عن قصة ${storyData.childName || ''} (المشهد رقم ${spread.spreadNumber})` 
+                                        : `Hello Rawy team, inquiring about ${storyData.childName || ''}'s story (Spread ${spread.spreadNumber})`
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-xl text-[10px] sm:text-[11px] font-black transition-all shadow-md active:scale-95"
+                            >
+                                <span className="material-symbols-outlined text-xs text-brand-coral">support_agent</span>
+                                <span>{isAr ? 'تواصل مع فريق راوي' : 'Contact Rawy Team'}</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             )}
@@ -313,7 +387,7 @@ export interface PreviewScreenProps {
 const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
     const [viewIndex, setViewIndex] = useState(0);
     const [direction, setDirection] = useState<number>(1);
-    const [viewMode, setViewMode] = useState<'presentation' | 'scroll'>('presentation');
+    const [viewMode, setViewMode] = useState<'presentation' | 'scroll'>('scroll');
     const [isSpeaking, setIsSpeaking] = useState(false);
 
     const isPurchased = props.isPurchased ?? Boolean(
@@ -337,6 +411,17 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
             ...sortedSpreads.filter(s => s.spreadNumber > 0).map(s => ({ type: 'spread' as const, data: s }))
         ];
     }, [sortedSpreads]);
+
+    const flaggedSpreadsCount = useMemo(() => {
+        let count = 0;
+        if (props.storyData?.coverQcStatus === 'flagged') count++;
+        if (props.storyData?.spreads) {
+            props.storyData.spreads.forEach((s: any) => {
+                if (s.spreadNumber > 0 && s.qcStatus === 'flagged') count++;
+            });
+        }
+        return count;
+    }, [props.storyData]);
 
     // If story data is not loaded yet, show magical storybook skeleton
     if (!props.storyData || (!props.storyData.spreads && !props.storyData.coverImageUrl && !props.storyData.title)) {
@@ -539,6 +624,64 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
 
             {/* Content Area */}
             <div className="max-w-7xl mx-auto relative z-10">
+                {/* Flagged Spreads Warm Reassurance Banner */}
+                {flaggedSpreadsCount > 0 && (
+                    <div className="max-w-6xl mx-auto mb-6 p-4 sm:p-5 bg-gradient-to-r from-amber-50/95 via-orange-50/90 to-amber-50/95 border border-amber-300/80 rounded-2xl md:rounded-3xl shadow-lg text-amber-950 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in ring-1 ring-amber-400/20">
+                        <div className="flex items-center gap-3 text-center sm:text-left rtl:sm:text-right">
+                            <div className="w-11 h-11 rounded-2xl bg-brand-orange/15 border border-brand-orange/30 flex items-center justify-center shrink-0 shadow-inner">
+                                <span className="material-symbols-outlined text-brand-orange text-2xl animate-pulse">palette</span>
+                            </div>
+                            <div>
+                                <h4 className="text-xs sm:text-sm font-black text-amber-950">
+                                    {t(
+                                        `✨ قصتك الرائعة جاهزة للمعاينة! فريقنا يُجري لمسات فنية أخيرة على ${flaggedSpreadsCount} صفحة`,
+                                        `✨ Your story is ready to preview! Our team is putting final touches on ${flaggedSpreadsCount} page(s)`
+                                    )}
+                                </h4>
+                                <p className="text-[11px] sm:text-xs text-amber-900/80 font-medium leading-relaxed mt-0.5">
+                                    {t(
+                                        `يمكنك تصفح وقراءة القصة بالكامل الآن. فريق التصميم في راوي يقوم بإتقان الصفحات المحددة وسنقوم بإشعارك فور اعتمادها.`,
+                                        `You can flip through the entire story right now. Our art directors are perfecting the flagged page(s) and we will notify you once complete.`
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                        <a
+                            href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                                isAr 
+                                    ? `مرحباً فريق راوي، أود الاستفسار عن قصة ${props.storyData.childName || ''} (رقم الطلب: ${props.storyData.orderId || ''})` 
+                                    : `Hello Rawy team, inquiring about ${props.storyData.childName || ''}'s story (Order: ${props.storyData.orderId || ''})`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 px-5 py-2.5 bg-brand-navy hover:bg-brand-navy/90 text-white rounded-xl md:rounded-2xl text-xs font-black flex items-center gap-2 transition-all shadow-md active:scale-95"
+                        >
+                            <span className="material-symbols-outlined text-base text-brand-coral">support_agent</span>
+                            <span>{t('تواصل مع فريق راوي', 'Contact Rawy Team')}</span>
+                        </a>
+                    </div>
+                )}
+
+                {/* View Mode Switcher Pill */}
+                <div className="flex justify-center mb-6">
+                    <div className="inline-flex items-center bg-white/95 backdrop-blur-md p-1.5 rounded-2xl shadow-lg border border-amber-200/80 ring-1 ring-black/5 text-xs font-black">
+                        <button 
+                            onClick={() => setViewMode('scroll')}
+                            className={`flex items-center gap-1.5 px-4 sm:px-6 py-2.5 rounded-xl transition-all ${viewMode === 'scroll' ? 'bg-brand-navy text-white shadow-md' : 'text-brand-navy/60 hover:text-brand-navy'}`}
+                        >
+                            <span className="material-symbols-outlined text-sm">view_stream</span>
+                            <span>{t('📜 قراءة متواصلة (كل الصفحات)', '📜 Continuous Scroll (All Pages)')}</span>
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('presentation')}
+                            className={`flex items-center gap-1.5 px-4 sm:px-6 py-2.5 rounded-xl transition-all ${viewMode === 'presentation' ? 'bg-brand-navy text-white shadow-md' : 'text-brand-navy/60 hover:text-brand-navy'}`}
+                        >
+                            <span className="material-symbols-outlined text-sm">auto_stories</span>
+                            <span>{t('📖 صفحة بصفحة (تقليب)', '📖 Flip Book (Single Page)')}</span>
+                        </button>
+                    </div>
+                </div>
+
                 <AnimatePresence mode="wait">
                     {viewMode === 'presentation' ? (
                         <motion.div 
@@ -654,6 +797,17 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Mobile Quick Switch to Continuous Scroll */}
+                            <div className="flex md:hidden justify-center mt-5">
+                                <button 
+                                    onClick={() => setViewMode('scroll')}
+                                    className="px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-300/40 text-[11px] font-black text-amber-950 flex items-center gap-2 shadow-xs active:scale-95 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-sm text-brand-orange">view_stream</span>
+                                    <span>{t('📜 اعرض جميع صفحات القصة معاً (تمرير عمودي)', '📜 View All Pages Together (Continuous Scroll)')}</span>
+                                </button>
+                            </div>
                         </motion.div>
                     ) : (
                         <motion.div 
@@ -665,14 +819,39 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                             <div className="aspect-[2/1.1] max-w-6xl mx-auto">
                                 <CoverView storyData={props.storyData} language={props.language} isPurchased={isPurchased} onTitleChange={props.onTitleChange} />
                             </div>
-                            {sortedSpreads.filter(s => s.spreadNumber > 0).map((s, i) => (
-                                <div key={i} className="aspect-[2/1.1] max-w-6xl mx-auto group">
-                                    <div className="mb-3 flex justify-between items-end px-4">
-                                       <span className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.3em]">SPREAD {s.spreadNumber}</span>
+                            {sortedSpreads.filter(s => s.spreadNumber > 0).map((s, i) => {
+                                const spreadText = (s as any).text || [s.leftText, s.rightText].filter(Boolean).join(' ') || '';
+                                return (
+                                    <div key={i} className="max-w-6xl mx-auto group">
+                                        <div className="mb-3 flex justify-between items-end px-4">
+                                           <span className="text-[10px] font-black text-brand-navy/30 uppercase tracking-[0.3em]">SPREAD {s.spreadNumber}</span>
+                                        </div>
+                                        <div className="aspect-[2/1.1] w-full">
+                                            <SpreadView spread={s} storyData={props.storyData} language={props.language} isPurchased={isPurchased} />
+                                        </div>
+                                        {/* Dedicated Mobile Story Card for flawless readability */}
+                                        {spreadText && (
+                                            <div className="block md:hidden mt-3 p-4 bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-amber-100/80 ring-1 ring-black/5 text-brand-navy">
+                                                <div className="flex items-center justify-between mb-2 border-b border-slate-100 pb-1.5">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-pulse"></span>
+                                                        <span className="text-[10px] font-black uppercase tracking-wider text-brand-navy/60">
+                                                            {isAr 
+                                                                ? `📖 المشهد ${s.spreadNumber} من ${sortedSpreads.filter(sp => sp.spreadNumber > 0).length}` 
+                                                                : `📖 Scene ${s.spreadNumber} of ${sortedSpreads.filter(sp => sp.spreadNumber > 0).length}`}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div 
+                                                    className={`text-[15px] leading-[1.7] font-medium ${isAr ? 'text-right' : 'text-left'}`}
+                                                    style={{ fontFamily: isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif" }}
+                                                    dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(spreadText, props.storyData.childName) }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                    <SpreadView spread={s} storyData={props.storyData} language={props.language} isPurchased={isPurchased} />
-                                </div>
-                            ))}
+                                );
+                            })}
                         </motion.div>
                     )}
                 </AnimatePresence>

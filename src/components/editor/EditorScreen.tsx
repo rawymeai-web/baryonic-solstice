@@ -306,16 +306,24 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         return '';
     };
 
-    const getCleanStylePrompt = (stylePrompt: string | undefined): string => {
+    const getCleanStylePrompt = (stylePrompt: any): string => {
         if (!stylePrompt) return "Painterly children's book illustration style";
-        if (stylePrompt.includes('**TASK:**')) {
-            const match = stylePrompt.match(/Perfect\s+application\s+of\s+the\s+'([^']+)'\s+aesthetic/i);
+        let str = "";
+        if (typeof stylePrompt === 'string') {
+            str = stylePrompt;
+        } else if (typeof stylePrompt === 'object') {
+            str = stylePrompt.prompt || stylePrompt.visualDNA || stylePrompt.visual_dna || stylePrompt.stylePrompt || JSON.stringify(stylePrompt);
+        } else {
+            str = String(stylePrompt);
+        }
+        if (str.includes('**TASK:**')) {
+            const match = str.match(/Perfect\s+application\s+of\s+the\s+'([^']+)'\s+aesthetic/i);
             if (match && match[1]) {
                 return match[1];
             }
             return "Painterly children's book illustration style";
         }
-        return stylePrompt;
+        return str;
     };
 
     // Extract schema version from either the new v5.0+ English stamp or the legacy v4 JSON meta block
@@ -852,10 +860,27 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 seedPromptLength: imgRes.seedPrompt?.length
             });
 
+            // Upload base64 image to Supabase Storage to store lightweight public CDN URL instead of huge base64 payload
+            let finalImageUrl = imgRes.imageBase64;
+            const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
+            try {
+                const uploadRes = await backendApi.uploadImage({
+                    orderNumber: targetOrderId,
+                    spreadNum: index === 'cover' ? 0 : index,
+                    imageBase64: imgRes.imageBase64
+                });
+                if (uploadRes?.publicUrl) {
+                    finalImageUrl = uploadRes.publicUrl;
+                    console.log(`✅ [EditorScreen] Uploaded regenerated image to CDN: ${finalImageUrl}`);
+                }
+            } catch (uploadErr) {
+                console.warn("[EditorScreen] Direct storage upload failed, falling back to base64 URL:", uploadErr);
+            }
+
             if (index === 'cover') {
                 const newStory = {
                     ...storyData,
-                    coverImageUrl: imgRes.imageBase64,
+                    coverImageUrl: finalImageUrl,
                     coverOriginalUrl: undefined,
                     coverQcStatus: undefined,
                     // Keep the editable seed prompt in actualCoverPrompt (what you see in the textarea)
@@ -865,7 +890,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     coverGenerationModel: imgRes.modelUsed
                 };
                 onUpdateStory({
-                    coverImageUrl: imgRes.imageBase64,
+                    coverImageUrl: finalImageUrl,
                     coverOriginalUrl: undefined,
                     coverQcStatus: undefined,
                     actualCoverPrompt: imgRes.seedPrompt || promptToUse,
@@ -873,12 +898,20 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     coverGenerationModel: imgRes.modelUsed
                 } as any);
                 // Keep the textarea as-is (editable seed) — do NOT replace with compiled Gemini prompt
-                await adminService.saveOrder(storyData.orderId || 'RWY-UNKNOWN', newStory, shippingDetails || {});
+                await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
+
+                // Authoritative QA re-evaluation in background
+                adminService.rerunQA(targetOrderId, {
+                    spreadIndex: 0,
+                    illustrationUrl: finalImageUrl,
+                    targetPrompt: imgRes.fullPrompt || promptToUse,
+                    spreadText: storyData.title
+                }).catch(err => console.warn('[EditorScreen] Background QA failed:', err));
             } else {
                 const newSpreads = [...spreads];
                 newSpreads[index] = {
                     ...newSpreads[index],
-                    illustrationUrl: imgRes.imageBase64,
+                    illustrationUrl: finalImageUrl,
                     qcOriginalUrl: undefined,
                     qcStatus: undefined,
                     // Keep the editable seed prompt (what you see in the textarea)
@@ -891,7 +924,16 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 
                 // Do NOT update pageEdits — leave the seed prompt editable in the textarea
                 onUpdateStory({ spreads: newSpreads });
-                await adminService.saveOrder(storyData.orderId || 'RWY-UNKNOWN', newStory, shippingDetails || {});
+                await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
+
+                // Authoritative QA re-evaluation in background
+                adminService.rerunQA(targetOrderId, {
+                    spreadIndex: index,
+                    illustrationUrl: finalImageUrl,
+                    targetPrompt: imgRes.fullPrompt || promptToUse,
+                    spreadText: newSpreads[index]?.text,
+                    currentTextSide: newSpreads[index]?.textSide || 'left'
+                }).catch(err => console.warn('[EditorScreen] Background QA failed:', err));
             }
         } catch (e: any) {
             console.error("Failed to regenerate image", e);
@@ -2000,9 +2042,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                     />
 
                                     {/* QA Agent Logs Panel for Cover */}
-                                    {storyData.orderId && (
+                                    {(storyData.orderId || storyData.orderNumber) && (
                                         <QALogPanel 
-                                            orderId={storyData.orderId} 
+                                            orderId={storyData.orderId || storyData.orderNumber!} 
                                             spreadIndex={0} 
                                             storyData={storyData}
                                         />
@@ -2291,9 +2333,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         />
                                         
                                         {/* QA Agent Logs Panel */}
-                                        {storyData.orderId && (
+                                        {(storyData.orderId || storyData.orderNumber) && (
                                             <QALogPanel 
-                                                orderId={storyData.orderId} 
+                                                orderId={storyData.orderId || storyData.orderNumber!} 
                                                 spreadIndex={i} 
                                                 storyData={storyData}
                                             />

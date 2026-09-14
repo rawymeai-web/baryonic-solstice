@@ -172,18 +172,21 @@ export async function POST(req: NextRequest) {
           const targetPrompt =
             promptBlock?.imagePrompt || "No prompt recorded.";
           const textSide = promptBlock?.mainContentSide || "Right";
+          const spreadStoryText = storyData.pages?.[i]?.text || promptBlock?.storyText || "";
 
-          // Run the QA Agent
-          const qcResult = await QualityAgent.evaluateImage(
-            generatedBase64,
+          // Run the QA Agent with typed options object
+          const qcResult = await QualityAgent.evaluateImage({
+            generatedImageBase64: generatedBase64,
             heroRawBase64,
             heroDNABase64,
-            i === 0 ? "Cover" : "Spread",
-            textSide,
+            pageType: i === 0 ? "Cover" : "Spread",
+            currentTextSide: textSide,
             targetPrompt,
+            storyText: spreadStoryText,
             secondRawBase64,
             secondDNABase64,
-          );
+            childAge: storyData.childAge || "5"
+          });
 
           // Write to generation_quality_logs
           const { error: insertErr } = await supabase

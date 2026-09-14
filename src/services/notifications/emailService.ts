@@ -404,5 +404,100 @@ export class EmailService {
             ServerLogger.error('EMAIL_SEND_CRASH', err, { orderId, eventType });
         }
     }
+
+    /**
+     * Sends an urgent QA alert email to the Admin when a spread fails 3 QA generation attempts.
+     */
+    static async sendAdminQaAlert(orderId: string, spreadNumber: number | string, details: {
+        childName?: string;
+        likenessScore?: number;
+        characterConsistency?: string;
+        styleScore?: number;
+        reason?: string;
+        illustrationUrl?: string;
+        attemptCount?: number;
+    }) {
+        try {
+            const adminEmail = process.env.ADMIN_ALERT_EMAIL || process.env.ADMIN_EMAIL || 'admin@rawytime.com';
+            const spreadLabel = spreadNumber === 0 || spreadNumber === 'cover' ? 'Cover' : `Spread ${spreadNumber}`;
+            const subject = `🚨 [QA Action Required] ${spreadLabel} Flagged for Review (Order #${orderId})`;
+
+            const html = `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #fee2e2;">
+                    <div style="background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%); padding: 28px 24px; text-align: center; color: white;">
+                        <span style="font-size: 32px; display: block; margin-bottom: 8px;">🚨</span>
+                        <h1 style="font-size: 20px; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">QA Attention Required</h1>
+                        <p style="font-size: 13px; opacity: 0.9; margin: 6px 0 0 0;">3rd QA Generation Attempt Completed & Flagged</p>
+                    </div>
+
+                    <div style="padding: 24px 28px; color: #1e293b;">
+                        <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="margin: 0; font-size: 13px; font-weight: 700; color: #991b1b;">Order #${orderId} • ${spreadLabel}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #b91c1c;">Hero: <strong>${details.childName || 'Child'}</strong> | Attempts: <strong>${details.attemptCount || 3}</strong></p>
+                        </div>
+
+                        <h3 style="font-size: 14px; font-weight: 800; text-transform: uppercase; color: #475569; margin: 0 0 12px 0;">QA Evaluation Metrics</h3>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 0; color: #64748b;">Character Likeness Score:</td>
+                                <td style="padding: 8px 0; font-weight: 700; color: #dc2626; text-align: right;">${details.likenessScore !== undefined ? `${details.likenessScore}/10` : 'N/A'}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 0; color: #64748b;">Character Consistency:</td>
+                                <td style="padding: 8px 0; font-weight: 700; color: #334155; text-align: right;">${details.characterConsistency || 'Flagged'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #64748b;">Reason / Diagnostics:</td>
+                                <td style="padding: 8px 0; font-weight: 600; color: #334155; text-align: right;">${details.reason || 'Likeness or style threshold not met after Doctor prompt.'}</td>
+                            </tr>
+                        </table>
+
+                        ${details.illustrationUrl ? `
+                            <div style="margin-bottom: 20px; text-align: center;">
+                                <p style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Generated Artwork Preview:</p>
+                                <img src="${details.illustrationUrl}" alt="${spreadLabel}" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid #e2e8f0;" />
+                            </div>
+                        ` : ''}
+
+                        <div style="text-align: center; margin-top: 24px;">
+                            <a href="https://rawytime.com/admin" style="display: inline-block; background-color: #001A40; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                Open Spread Editor & Fix
+                            </a>
+                        </div>
+                    </div>
+
+                    <div style="background-color: #f8fafc; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9;">
+                        Rawy Autonomous Publishing Engine • Internal QA Dispatch
+                    </div>
+                </div>
+            `;
+
+            if (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.startsWith('re_stub')) {
+                const fromAddress = process.env.NODE_ENV === 'development'
+                    ? 'onboarding@resend.dev'
+                    : (process.env.RESEND_FROM_EMAIL || 'Rawy <noreply@rawytime.com>');
+
+                const { data, error: sendError } = await resend.emails.send({
+                    from: fromAddress,
+                    to: adminEmail,
+                    subject,
+                    html,
+                });
+
+                if (sendError) throw sendError;
+                ServerLogger.log('ADMIN_QA_ALERT_SENT', { resendId: data?.id, orderId, spreadNumber });
+            } else {
+                ServerLogger.log('ADMIN_QA_ALERT_STUB_SENT', { subject, adminEmail, orderId, spreadNumber });
+            }
+
+            await supabase.from('event_audit_log').insert({
+                event_type: 'admin_qa_alert_dispatched',
+                order_id: orderId,
+                details: { spreadNumber, details }
+            });
+        } catch (err: any) {
+            ServerLogger.error('ADMIN_QA_ALERT_ERROR', err, { orderId, spreadNumber });
+        }
+    }
 }
 

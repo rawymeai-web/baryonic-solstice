@@ -464,8 +464,8 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
             } catch (e) { console.warn("PDF Spread Add Failed", e); }
         }
 
-        // Draw Text — ONE combined text box, placed on the side OPPOSITE the image
-        const fullText = [spread.leftText, spread.rightText].filter(Boolean).join(' ') || (spread as any).text || '';
+        // Draw Text — ONE combined text box, placed on the side OPPOSITE the character/focus
+        const fullText = (spread as any).text || [spread.leftText, spread.rightText].filter(Boolean).join(' ') || '';
         if (fullText) {
             const ageNum = parseInt(storyData.childAge, 10) || 6;
             let fontSize = 48;
@@ -488,6 +488,10 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
                 textOnLeft = true;
             } else if (spread.textSide === 'right') {
                 textOnLeft = false;
+            } else if (spread.promptDetails?.mainContentSide === 'left') {
+                textOnLeft = false;
+            } else if (spread.promptDetails?.mainContentSide === 'right') {
+                textOnLeft = true;
             } else {
                 const promptText = (spread.actualPrompt || '').toLowerCase();
                 const rightEmptyMatch = /(?:the\s+)?right\s+(?:side|half)[^.]*empty/i.test(promptText);
@@ -499,7 +503,16 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
             // Apply per-spread X/Y overrides from the editor, fall back to auto calculations (Top 12% default)
             const defaultRectX = textOnLeft ? pdfW * 0.05 : pdfW * 0.55;
             const defaultRectY = pdfH * 0.12;
-            const rectX = spread.textOffsetX !== undefined ? spread.textOffsetX : defaultRectX;
+            let rectX = defaultRectX;
+            if (spread.textOffsetX !== undefined && spread.textOffsetX !== null) {
+                if (textOnLeft && spread.textOffsetX < (pdfW * 0.5)) {
+                    rectX = spread.textOffsetX;
+                } else if (!textOnLeft && spread.textOffsetX >= (pdfW * 0.5)) {
+                    rectX = spread.textOffsetX;
+                } else {
+                    rectX = defaultRectX;
+                }
+            }
             const rectY = spread.textOffsetY !== undefined ? spread.textOffsetY : defaultRectY;
 
             if (blobImg && blobImg.dataUrl) {

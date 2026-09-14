@@ -1,8 +1,10 @@
 import { supabase } from "@/utils/supabaseClient";
 import { generateMethod4Image } from "@/services/generation/imageGenerator";
 import { QualityAgent } from "../visual/qualityAgent";
+import { PromptDoctor } from "../visual/promptDoctor";
 import { WorkerUtils } from "./workerUtils";
 import { MasterScheduler } from "./scheduler";
+import { EmailService } from "../notifications/emailService";
 import { v4 as uuidv4 } from "uuid";
 
 export class IllustrationWorker {
@@ -92,29 +94,32 @@ export class IllustrationWorker {
       // Process each prompt payload
       for (let i = 0; i < storyData.prompts.length; i++) {
         const promptBlock = storyData.prompts[i];
-        const existingPage = storyData.pages?.[i];
+        const isCover = i === 0;
+        const pageIdx = isCover ? -1 : i - 1;
+        const existingUrl = isCover
+          ? storyData.coverImageUrl
+          : (storyData.spreads?.[i]?.illustrationUrl || storyData.pages?.[pageIdx]?.illustrationUrl || storyData.pages?.[pageIdx]?.imageUrl);
 
         // Idempotency: skip if already successfully generated
         const isUrlValid =
-          existingPage &&
-          existingPage.illustrationUrl &&
-          existingPage.illustrationUrl.length > 50 &&
-          !existingPage.illustrationUrl.includes("error") &&
-          !existingPage.illustrationUrl.endsWith("...");
+          existingUrl &&
+          existingUrl.length > 50 &&
+          !existingUrl.includes("error") &&
+          !existingUrl.endsWith("...");
 
         if (isUrlValid) {
           console.log(
-            `[IllustrationWorker] Spread ${i + 1} (${i === 0 ? "Cover" : "Page"}) already exists and is valid. Skipping generation.`,
+            `[IllustrationWorker] Spread ${i + 1} (${isCover ? "Cover" : "Page " + (pageIdx + 1)}) already exists and is valid. Skipping generation.`,
           );
           continue;
-        } else if (existingPage?.illustrationUrl) {
+        } else if (existingUrl) {
           console.log(
-            `[IllustrationWorker] Spread ${i + 1} has a phantom or invalid URL ("${existingPage.illustrationUrl.substring(0, 30)}..."). Forcing regeneration.`,
+            `[IllustrationWorker] Spread ${i + 1} has a phantom or invalid URL ("${existingUrl.substring(0, 30)}..."). Forcing regeneration.`,
           );
         }
 
         console.log(
-          `[IllustrationWorker] Generating Image ${i + 1}/${storyData.prompts.length}`,
+          `[IllustrationWorker] Generating Image ${i + 1}/${storyData.prompts.length} (${isCover ? "Cover" : "Page " + (pageIdx + 1)})`,
         );
 
         try {
@@ -160,14 +165,22 @@ export class IllustrationWorker {
             `[IllustrationWorker] Spread ${i + 1} - Generating Image`,
           );
 
-          // STYLE DNA: Priority chain mirrors StoryWorker — must use the same source.
-          // technicalStyleGuide = the locked art style from the frontend StyleSelectionScreen
-          const baseStyleDNA: string =
-            storyData.selectedStyleNames?.[0] ||
-            storyData.technicalStyleGuide ||
-            (storyData.selectedStylePrompt?.includes('**TASK:**') ? undefined : storyData.selectedStylePrompt) ||
-            storyData.themeVisualDNA ||
-            "high quality painterly children's book illustration";
+          // STYLE DNA: Priority chain mirrors StoryWorker — combine style name, prompt details, and technical style guide.
+          const styleName = storyData.selectedStyleNames?.[0] || '';
+          const stylePrompt = storyData.selectedStylePrompt?.includes('**TASK:**') ? '' : (storyData.selectedStylePrompt || '');
+          let techGuideStr = '';
+          if (storyData.technicalStyleGuide) {
+            techGuideStr = typeof storyData.technicalStyleGuide === 'object'
+              ? JSON.stringify(storyData.technicalStyleGuide)
+              : storyData.technicalStyleGuide;
+          }
+
+          const baseStyleDNA: string = [
+            styleName ? `Art Style: ${styleName}.` : '',
+            stylePrompt ? `Style Details: ${stylePrompt}.` : '',
+            techGuideStr ? `Technical Style Rules: ${techGuideStr}.` : '',
+            storyData.themeVisualDNA ? `Theme DNA: ${storyData.themeVisualDNA}.` : ''
+          ].filter(Boolean).join(' ') || "high quality painterly children's book illustration";
             
           const is3DStyle = baseStyleDNA.toLowerCase().includes('3d') || baseStyleDNA.toLowerCase().includes('pixar');
           const resolvedStyleDNA = is3DStyle ?
@@ -192,7 +205,7 @@ export class IllustrationWorker {
               Math.floor(Math.random() * 100000),
               secondaryImagesArray,
             ),
-            120000,
+            300000,
           );
 
           const base64Out = imgRes.imageBase64;
@@ -221,79 +234,58 @@ export class IllustrationWorker {
 
           finalFinalUrl = iterationUrl;
 
-          // 2. Patch storyData.pages safely
-          if (!storyData.pages) storyData.pages = [];
-          const safeExistingPage = storyData.pages[i] || {};
-
-          storyData.pages[i] = {
-            ...safeExistingPage,
-            pageNumber: i + 1,
-            text: safeExistingPage.text || promptBlock.storyText,
-            illustrationUrl: finalFinalUrl,
-            promptDetails: promptBlock,
-            textSide: promptBlock.textSide || "right",
-            qcStatus: "pending",
-          };
+          // 2. Patch storyData.pages safely (only for story spreads, not cover)
+          if (!isCover && pageIdx >= 0) {
+            if (!storyData.pages) storyData.pages = [];
+            while (storyData.pages.length <= pageIdx) {
+              storyData.pages.push({});
+            }
+            const safeExistingPage = storyData.pages[pageIdx] || {};
+            storyData.pages[pageIdx] = {
+              ...safeExistingPage,
+              pageNumber: pageIdx + 1,
+              text: safeExistingPage.text || promptBlock.storyText,
+              imageUrl: finalFinalUrl,
+              illustrationUrl: finalFinalUrl,
+              promptDetails: promptBlock,
+              textSide: (promptBlock.textSide || "right").toLowerCase(),
+              qcStatus: "pending",
+            };
+          }
 
           // Run Quality Agent Evaluation (Await to prevent state overwriting)
           let overallDecision = "pending";
           let originalUrl: string | undefined = undefined;
 
           try {
-            const toBase64 = async (
-              url: string | undefined,
-            ): Promise<string> => {
-              if (!url) return "";
-              if (url.startsWith("data:")) return url.split(",")[1] || url;
-              if (!url.startsWith("http://") && !url.startsWith("https://")) return url;
-              try {
-                const res = await fetch(url);
-                const buffer = await res.arrayBuffer();
-                return Buffer.from(buffer).toString("base64");
-              } catch (e) {
-                console.error(
-                  "[IllustrationWorker] Failed to fetch image to base64",
-                  url,
-                  e,
-                );
-                return "";
-              }
+            const qcParams = {
+              generatedImageBase64: base64Out,
+              rawHeroImages: heroImagesArray,
+              stylizedDnaImages: heroImagesArray,
+              childDescription: childDesc,
+              childAge: childAge,
+              targetPrompt: promptBlock.imagePrompt,
+              stylePrompt: resolvedStyleDNA,
+              spreadNumber: i,
+              isCover: isCover,
+              layoutPlanSide: promptBlock.textSide || "Right",
             };
 
-            const heroRawBase64 = await toBase64(heroRaw);
-            const heroDNABase64 = await toBase64(heroDNA);
-            const secondaryRawBase64 = secondaryDNA
-              ? await toBase64(secondaryDNA)
-              : undefined;
-            const secondaryDNABase64 = secondaryDNA
-              ? await toBase64(secondaryDNA)
-              : undefined;
-
-            const qcResult = await QualityAgent.evaluateImage(
-              base64Out,
-              heroRawBase64,
-              heroDNABase64,
-              i === 0 ? "Cover" : "Spread",
-              promptBlock.textSide || "Right",
-              promptBlock.imagePrompt,
-              promptBlock.storyText || (existingPage && existingPage.text) || "",
-              secondaryRawBase64,
-              secondaryDNABase64,
-            );
+            let qcResult = await QualityAgent.evaluateImage(qcParams);
 
             console.log(
-              `[QCAgent] Result for Spread ${i + 1}: ${qcResult.overallDecision}`,
+              `[QCAgent] Result for Spread ${i} (Attempt 1): Likeness ${qcResult.likenessScore}/10, Narrative: ${qcResult.narrativeAdherenceStatus}, Decision: ${qcResult.overallDecision}`,
             );
 
             overallDecision = qcResult.overallDecision;
 
             await supabase.from("generation_quality_logs").insert({
               order_id: orderId,
-              spread_number: i + 1,
+              spread_number: i,
               iteration_number: 1,
               image_url: iterationUrl,
               character_consistency_status: qcResult.characterConsistencyStatus,
-              character_reasoning: `[Visual: ${qcResult.visualDescription}] [Narrative Check: ${qcResult.narrativeAdherenceStatus || 'pass'} - ${qcResult.narrativeAdherenceReasoning || 'N/A'}] ${qcResult.characterReasoning}`,
+              character_reasoning: `[Likeness: ${qcResult.likenessScore}/10] [Visual: ${qcResult.visualDescription}] [Narrative Check: ${qcResult.narrativeAdherenceStatus} - ${qcResult.narrativeAdherenceReasoning}] ${qcResult.characterReasoning}`,
               style_consistency_status: qcResult.styleConsistencyStatus,
               style_reasoning: qcResult.styleReasoning,
               text_clearance_status: qcResult.textClearanceStatus,
@@ -302,22 +294,39 @@ export class IllustrationWorker {
               overall_decision: qcResult.overallDecision,
             });
 
+            // ATTEMPT 2: TARGETED REPAINT & RE-EVALUATION (Max 2 Attempts Per Spread Cap)
             if (qcResult.overallDecision === "fail" || qcResult.overallDecision === "flagged") {
-              console.log(`[QCAgent] Spread ${i + 1} flagged. Triggering automatic regeneration...`);
+              console.log(`[QCAgent] Spread ${i} flagged. Triggering targeted Art Director repaint (Attempt 2)...`);
               originalUrl = finalFinalUrl;
               
+              // Build targeted steering prompt
+              let targetedPrompt = promptBlock.imagePrompt;
+              const steeringNotes: string[] = [];
+              if (qcResult.characterConsistencyStatus === 'fail' || qcResult.likenessScore < 5) {
+                steeringNotes.push(`CRITICAL CHARACTER LIKENESS FIX: ${qcResult.characterReasoning}`);
+              }
+              if (qcResult.narrativeAdherenceStatus === 'fail') {
+                steeringNotes.push(`CRITICAL SCENE ACTION FIX: Ensure the scene directly depicts: ${promptBlock.storyText || 'the story action'}. Avoid incorrect actions.`);
+              }
+              if (qcResult.regenerationReason) {
+                steeringNotes.push(`CORRECTION MANDATE: ${qcResult.regenerationReason}`);
+              }
+              if (steeringNotes.length > 0) {
+                targetedPrompt = `${targetedPrompt}. [ART DIRECTOR MANDATE: ${steeringNotes.join(' ')}]`;
+              }
+
               try {
                 const regenRes = await WorkerUtils.withTimeout(
                   generateMethod4Image(
-                    promptBlock.imagePrompt,
+                    targetedPrompt,
                     resolvedStyleDNA,
                     heroImagesArray,
                     childDesc,
                     childAge,
-                    Math.floor(Math.random() * 100000), // New random seed
+                    Math.floor(Math.random() * 100000) + 1, // New randomized seed
                     secondaryImagesArray,
                   ),
-                  120000,
+                  300000,
                 );
 
                 const base64OutRegen = regenRes.imageBase64;
@@ -336,7 +345,129 @@ export class IllustrationWorker {
                     .getPublicUrl(fileNameRegen);
                   if (publicDataRegen?.publicUrl) {
                     finalFinalUrl = publicDataRegen.publicUrl;
-                    console.log(`[QCAgent] Spread ${i + 1} regenerated successfully: ${finalFinalUrl}`);
+                    console.log(`[QCAgent] Spread ${i} repainted. Running Iteration 2 QA Re-Evaluation...`);
+
+                    // RE-EVALUATION PASS ON REGENERATED IMAGE (Iteration 2)
+                    const qcRegenResult = await QualityAgent.evaluateImage({
+                      ...qcParams,
+                      generatedImageBase64: base64OutRegen,
+                      targetPrompt: targetedPrompt,
+                    });
+
+                    console.log(
+                      `[QCAgent] Result for Spread ${i} (Attempt 2): Likeness ${qcRegenResult.likenessScore}/10, Narrative: ${qcRegenResult.narrativeAdherenceStatus}, Decision: ${qcRegenResult.overallDecision}`,
+                    );
+
+                    overallDecision = qcRegenResult.overallDecision;
+                    qcResult = qcRegenResult; // Update reference for text layout & mapping
+
+                    await supabase.from("generation_quality_logs").insert({
+                      order_id: orderId,
+                      spread_number: i,
+                      iteration_number: 2,
+                      image_url: finalFinalUrl,
+                      character_consistency_status: qcRegenResult.characterConsistencyStatus,
+                      character_reasoning: `[Likeness: ${qcRegenResult.likenessScore}/10] [Visual (Iter 2): ${qcRegenResult.visualDescription}] [Narrative Check: ${qcRegenResult.narrativeAdherenceStatus}] ${qcRegenResult.characterReasoning}`,
+                      style_consistency_status: qcRegenResult.styleConsistencyStatus,
+                      style_reasoning: qcRegenResult.styleReasoning,
+                      text_clearance_status: qcRegenResult.textClearanceStatus,
+                      text_reasoning: qcRegenResult.textReasoning,
+                      recommended_text_side: qcRegenResult.recommendedTextSide,
+                      overall_decision: qcRegenResult.overallDecision,
+                    });
+
+                    // IF ATTEMPT 2 FAILS: Invoke QA Prompt Doctor for intelligent final fix (Attempt 3)
+                    if (qcRegenResult.overallDecision === "fail") {
+                      console.log(`[PromptDoctor] Attempt 2 failed for Spread ${i}. Invoking QA Prompt Doctor to rewrite prompt for final fix (Attempt 3)...`);
+                      try {
+                        const doctorResult = await PromptDoctor.refinePrompt({
+                          originalPrompt: targetedPrompt,
+                          storyText: promptBlock.storyText,
+                          characterDescription: childDesc,
+                          childAge,
+                          styleGuide: resolvedStyleDNA,
+                          qcResult: qcRegenResult,
+                          attemptNumber: 2
+                        });
+
+                        console.log(`[PromptDoctor] Surgical fixes applied:`, doctorResult.surgicalFixes);
+                        const promptAttempt3 = doctorResult.refinedPrompt;
+
+                        const attempt3Res = await WorkerUtils.withTimeout(
+                          generateMethod4Image(
+                            promptAttempt3,
+                            resolvedStyleDNA,
+                            heroImagesArray,
+                            childDesc,
+                            childAge,
+                            Math.floor(Math.random() * 100000) + 1,
+                            secondaryImagesArray,
+                          ),
+                          300000,
+                        );
+
+                        const base64OutAttempt3 = attempt3Res.imageBase64;
+                        const fileNameAttempt3 = `${orderId}/spread_${i + 1}_doctor_${Date.now()}.jpg`;
+                        const bufferAttempt3 = Buffer.from(base64OutAttempt3, "base64");
+                        const { error: uploadErr3 } = await supabase.storage
+                          .from(bucket)
+                          .upload(fileNameAttempt3, bufferAttempt3, {
+                            contentType: "image/jpeg",
+                            upsert: true,
+                          });
+
+                        if (!uploadErr3) {
+                          const { data: publicData3 } = supabase.storage
+                            .from(bucket)
+                            .getPublicUrl(fileNameAttempt3);
+                          if (publicData3?.publicUrl) {
+                            finalFinalUrl = publicData3.publicUrl;
+                            console.log(`[QCAgent] Spread ${i} (Attempt 3 / Doctor) painted. Running QA Evaluation...`);
+
+                            const qc3Result = await QualityAgent.evaluateImage({
+                              ...qcParams,
+                              generatedImageBase64: base64OutAttempt3,
+                              targetPrompt: promptAttempt3,
+                              iterationNumber: 3
+                            });
+
+                            console.log(
+                              `[QCAgent] Result for Spread ${i} (Attempt 3 / Doctor): Likeness ${qc3Result.likenessScore}/10, Narrative: ${qc3Result.narrativeAdherenceStatus}, Decision: ${qc3Result.overallDecision}`,
+                            );
+
+                            overallDecision = qc3Result.overallDecision;
+                            qcResult = qc3Result;
+
+                            await supabase.from("generation_quality_logs").insert({
+                              order_id: orderId,
+                              spread_number: i,
+                              iteration_number: 3,
+                              image_url: finalFinalUrl,
+                              character_consistency_status: qc3Result.characterConsistencyStatus,
+                              character_reasoning: `[Likeness: ${qc3Result.likenessScore}/10] [Doctor Iter 3: ${doctorResult.explanation}] ${qc3Result.characterReasoning}`,
+                              style_consistency_status: qc3Result.styleConsistencyStatus,
+                              style_reasoning: qc3Result.styleReasoning,
+                              text_clearance_status: qc3Result.textClearanceStatus,
+                              text_reasoning: qc3Result.textReasoning,
+                              recommended_text_side: qc3Result.recommendedTextSide,
+                              overall_decision: qc3Result.overallDecision,
+                            });
+                          }
+                        }
+                      } catch (docErr) {
+                        console.error(`[PromptDoctor] Error during Doctor Attempt 3 for Spread ${i}:`, docErr);
+                      }
+                    }
+
+                    if (overallDecision === "fail") {
+                      if (qcResult.likenessScore >= 5 || qcResult.characterConsistencyStatus === 'pass') {
+                        console.warn(`[QCAgent] Spread ${i} flagged for minor QA note (likeness ${qcResult.likenessScore}/10). Continuing autonomous pipeline.`);
+                        overallDecision = "flagged";
+                      } else {
+                        console.warn(`[QCAgent] Spread ${i} has low likeness score (${qcResult.likenessScore}/10) after doctor attempts. Continuing with best attempt.`);
+                        overallDecision = "flagged";
+                      }
+                    }
                   }
                 } else {
                   console.warn(`[QCAgent] Failed to upload regenerated image for Spread ${i + 1}:`, uploadErrRegen);
@@ -348,12 +479,13 @@ export class IllustrationWorker {
 
             // Update local storyData with QC results
             const mappedQcStatus = overallDecision === "pass" ? "passed" : "flagged";
-            if (storyData.pages && storyData.pages[i]) {
-              storyData.pages[i].qcStatus = mappedQcStatus;
-              storyData.pages[i].textSide = qcResult.recommendedTextSide.toLowerCase();
-              storyData.pages[i].illustrationUrl = finalFinalUrl;
+            if (!isCover && pageIdx >= 0 && storyData.pages && storyData.pages[pageIdx]) {
+              storyData.pages[pageIdx].qcStatus = mappedQcStatus;
+              storyData.pages[pageIdx].textSide = qcResult.recommendedTextSide.toLowerCase();
+              storyData.pages[pageIdx].imageUrl = finalFinalUrl;
+              storyData.pages[pageIdx].illustrationUrl = finalFinalUrl;
               if (originalUrl) {
-                storyData.pages[i].qcOriginalUrl = originalUrl;
+                storyData.pages[pageIdx].qcOriginalUrl = originalUrl;
               }
             }
             if (storyData.spreads && storyData.spreads[i]) {
@@ -363,12 +495,26 @@ export class IllustrationWorker {
                 storyData.spreads[i].qcOriginalUrl = originalUrl;
               }
             }
-            if (i === 0) {
+            if (isCover) {
               storyData.coverTextSide = qcResult.recommendedTextSide.toLowerCase();
               storyData.coverQcStatus = mappedQcStatus;
+              storyData.coverImageUrl = finalFinalUrl;
               if (originalUrl) {
                 storyData.coverOriginalUrl = originalUrl;
               }
+            }
+
+            // Dispatch Admin QA Alert Email if flagged after 3 attempts
+            if (mappedQcStatus === "flagged") {
+              console.warn(`[QCAgent] Spread ${i} flagged after attempts. Dispatching Admin QA Email Alert.`);
+              EmailService.sendAdminQaAlert(orderId, isCover ? 'cover' : i, {
+                childName: storyData.childName,
+                likenessScore: qcResult.likenessScore,
+                characterConsistency: qcResult.characterConsistencyStatus,
+                reason: qcResult.regenerationReason || qcResult.characterReasoning || qcResult.styleReasoning || 'Likeness/Style threshold not met after Doctor rewrite.',
+                illustrationUrl: finalFinalUrl,
+                attemptCount: 3
+              }).catch(emailErr => console.error('[QCAgent] Failed to dispatch Admin QA email:', emailErr));
             }
           } catch (err) {
             console.error(`[QCAgent] Failed to evaluate spread ${i + 1}`, err);
@@ -376,24 +522,34 @@ export class IllustrationWorker {
 
           // SYNC TO SPREADS FOR FRONTEND COMPATIBILITY
           if (!storyData.spreads) storyData.spreads = [];
-          // Ensure the array is long enough (it might be empty if this is a purely backend generated order)
           while (storyData.spreads.length <= i) {
             storyData.spreads.push({});
           }
           const safeExistingSpread = storyData.spreads[i] || {};
           const mappedQcStatusSync = overallDecision === "pass" ? "passed" : (overallDecision === "pending" ? "pending" : "flagged");
+          const resolvedTextSide = (promptBlock.textSide || (promptBlock.mainContentSide === 'left' ? 'right' : 'left') || "right").toLowerCase();
+          const resolvedStoryText = isCover ? '' : (promptBlock.storyText || (pageIdx >= 0 && storyData.pages?.[pageIdx]?.text) || '');
+
           storyData.spreads[i] = {
             ...safeExistingSpread,
-            spreadNumber: i, // Legacy format often used 0-indexed spreadNumber for Cover
+            spreadNumber: i,
             illustrationUrl: finalFinalUrl,
             qcOriginalUrl: originalUrl || safeExistingSpread.qcOriginalUrl || undefined,
-            text: safeExistingPage.text || promptBlock.storyText,
+            text: resolvedStoryText,
+            leftText: isCover ? '' : (resolvedTextSide === 'left' ? resolvedStoryText : ''),
+            rightText: isCover ? '' : (resolvedTextSide === 'right' ? resolvedStoryText : ''),
+            textSide: resolvedTextSide,
+            textOffsetX: safeExistingSpread.textOffsetX !== undefined ? safeExistingSpread.textOffsetX : (resolvedTextSide === 'left' ? 20 : 220),
+            textOffsetY: safeExistingSpread.textOffsetY !== undefined ? safeExistingSpread.textOffsetY : 24,
             actualPrompt: promptBlock.imagePrompt,
-            textSide: (promptBlock.textSide || "Right").toLowerCase(),
+            promptDetails: {
+              mainContentSide: promptBlock.mainContentSide,
+              textSide: resolvedTextSide,
+            },
             qcStatus: mappedQcStatusSync,
           };
 
-          if (i === 0) {
+          if (isCover) {
             storyData.coverImageUrl = finalFinalUrl;
             storyData.coverOriginalUrl = originalUrl || storyData.coverOriginalUrl || undefined;
             storyData.actualCoverPrompt = promptBlock.imagePrompt;
@@ -404,6 +560,16 @@ export class IllustrationWorker {
           }
 
           pagesUpdated++;
+
+          // Incrementally sync progress to DB after each successful spread
+          try {
+            await supabase
+              .from("orders")
+              .update({ story_data: storyData })
+              .eq("order_number", orderId);
+          } catch (syncErr) {
+            console.warn(`[IllustrationWorker] Warning: incremental story_data sync failed for spread ${i + 1}:`, syncErr);
+          }
         } catch (imgError: any) {
           console.error(
             `[IllustrationWorker] Failed on Spread ${i + 1}`,
@@ -427,16 +593,16 @@ export class IllustrationWorker {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
-      // Sync Partial/Full progress back to the database
+      // Final sync of storyData to the database
       await supabase
         .from("orders")
         .update({ story_data: storyData })
         .eq("order_number", orderId);
 
       if (!allCompleted) {
-        // Not all spreads finished. We throw an error to trigger the WorkerUtils retry backoff.
+        // Not all spreads finished. Throw a transient error to trigger the WorkerUtils retry backoff.
         throw new Error(
-          "DETERMINISTIC: One or more illustrations failed to generate during the batch loop.",
+          "TRANSIENT_BATCH_INCOMPLETE: One or more illustrations failed during generation loop. Will retry missing spreads.",
         );
       }
 
