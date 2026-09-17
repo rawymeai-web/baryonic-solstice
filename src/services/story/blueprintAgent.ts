@@ -145,7 +145,8 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
                - Establish the hero's name, their ONE key internal trait, and their starting **Home Base** (e.g., sunny play nook, bedroom rug, cozy garden porch).
                - **World Framing Bridge:** Always ground the child's home base so the story has a clear starting reality before any magical or outdoor exploration begins.
                - **Personal Motive Origin (NO Arbitrary Missions):** The hero's desire MUST spring from a warm, personal origin—a favorite activity, a deep love for animals/stars, a cherished gift, or gentle curiosity. NEVER drop an ungrounded mission statement (e.g., *"dreaming of helping desert friends sleep"* without explaining why this matters to the child).
-               - **Magical / Emotional Anchor Rule Planted Early:** If a recurring anchor prop (pebble, compass, lantern, crystal) is used, state its simple physical trigger in 1 clear sentence (e.g., *"The pebble glowed warm and bright whenever she felt calm and happy, but felt cool when she worried"*), making it an intuitive emotional barometer.
+               - **Physical Cause-First Anchor Prop Rule (STRICT v4.0 MANDATE):** If a recurring anchor prop (pebble, compass, lantern, astrolabe, toy tool) is used, state its concrete PHYSICAL CAUSE-FIRST OPERATIONAL RULE in 1 clear sentence (e.g., *"The brass lantern shutter opened wide only when the latch clicked into the top notch away from sand"*, or *"The compass needle pointed true only when held flat and away from iron buckles"*).
+                 ❌ **STRICTLY FORBIDDEN:** ABSOLUTELY NO mood-ring, psychic, or emotion-reading magic (e.g. NEVER write *"the pebble glowed when happy and dimmed when sad"*, *"the lantern shined with his curiosity"*). The prop must obey concrete, observable physical actions!
                - Set a clear physical ANCHOR IMAGE (location + object) — this will be returned to and echoed in Spread ${spreadCount}.
             2. **Spread 2 (Catalyst & Co-Hero Intentional Onboarding):** 
                - The problem/obstacle appears and directly targets the hero's flaw. The hero's desire is now blocked.
@@ -160,10 +161,10 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
                - The situation escalates. ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `The co-hero actively contributes their perspective/skills.` : `A supporting character or natural sign may appear.`} Things get harder, not easier.
                - **Named Emotional Beat:** Name the emotional state (e.g., "Confused", "Puzzled").
             5. **Spread 5 (Near-Quit Beat — CRITICAL):** 
-               - The hero's lowest emotional point. They MUST explicitly consider giving up. This beat must be written as: (a) the physical result of the failure (drooping shoulders, sitting down), (b) a quiet moment where the hero sits/stops and nearly decides to quit, and (c) the explicit named emotion ("Sad", "Disappointed"). The anchor prop mirrors this state (e.g., going dim or cold). The solution MUST NOT appear here.
+               - The hero's lowest emotional point. They MUST explicitly consider giving up. This beat must be written as: (a) the physical result of the failure (drooping shoulders, sitting down), (b) a quiet moment where the hero sits/stops and nearly decides to quit, and (c) the explicit named emotion ("Sad", "Disappointed"). If an anchor prop is present, it remains stuck, unlatched, or unresponsive due to the incorrect physical approach from Spread 3. The solution MUST NOT appear here.
             6. **Spread ${Math.ceil(spreadCount * 0.75)} (Insight & Observation):** 
-               - The "Aha!" moment. Something small the hero NOTICES (not something told to them) triggers a realization. This must be a direct logical response to the flaw revealed in Spread 3.
-               - **Theme–Premise Dramatization:** If the theme involves communicating with animals or nature, explicitly show the hero interpreting animal sounds, postures, or silence as a meaningful message (e.g., realizing a soft whimper is asking for quiet stillness). The magical anchor reflects the turn (e.g. glowing warm again).
+               - The "Aha!" moment. Something small the hero NOTICES (not something told to them) triggers a realization. This must be a direct logical response to the flaw revealed in Spread 3. The hero realizes the correct physical adjustment needed to operate the anchor prop or solve the obstacle.
+               - **Theme–Premise Dramatization:** If the theme involves communicating with animals or nature, explicitly show the hero interpreting animal sounds, postures, or silence as a meaningful message (e.g., realizing a soft whimper is asking for quiet stillness).
                - **Named Emotional Beat:** Name the shift ("Relieved", "Hopeful").
             7. **Spread ${spreadCount - 1} (Climax, Success & Title Secret Reveal):** 
                - Hero uses their new approach/insight. They succeed through their own effort (and teamwork).
@@ -171,7 +172,7 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
                - **Named Emotional Beat:** Name the triumph ("Proud", "Delighted").
             8. **Spread ${spreadCount} (Seamless Return Journey + Home Base Payoff):** 
                - **Return Journey Bridge (NO Teleporting):** Include an explicit bridging clause describing how the hero transitions smoothly from the adventure space back to the Spread 1 Home Base (e.g., *"Lana gently carried her sleepy new friend home, back to her cozy play nook..."*).
-               - Echo the familiar setting/anchor from Spread 1, showing the transformation through the hero's proud, happy body language and the warm glowing anchor. Explicitly state the earned emotional realization ("Content", "Safe", "Loved") in a simple, child-friendly closing line.
+               - Echo the familiar setting/anchor from Spread 1, showing the transformation through the hero's proud, happy body language and the successfully placed/held anchor tool. Explicitly state the earned emotional realization ("Content", "Safe", "Loved") in a simple, child-friendly closing line.
 
             **HERO DESIRE & MOTIVE CONSISTENCY (REQUIRED):**
             - The hero's desire and inciting motive from Spread 1 MUST be the exact thing resolved in Spread ${spreadCount - 1} or ${spreadCount}.
@@ -188,6 +189,10 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
             - Do not invent complex societal stakes, multiple concurrent problems, or over-complicated sequences.
             - Keep the action grounded, direct, and focused strictly on the age group. The simpler, the better!
             - The conflict must be personal to the child and easily solvable within a ${spreadCount}-point physical progression.
+
+            **ORIGINAL PLOT INVENTIVENESS & CLICHÉ BAN (STRICT):**
+            - ❌ **STRICTLY BANNED TROPES:** Do NOT write cliché "fear of the dark" or "scary shadows in the bedroom that turn out to be ordinary toys/clothes" stories.
+            - ✅ **REQUIRED:** Invent fresh, magical, wonder-filled, and proactive adventures that engage the child's natural curiosity and active exploration.
 
             ${Number(storyData.childAge) <= 3 ? `**AGE 1-3 TODDLER COGNITIVE BOUNDARIES (STRICT MANDATE):**
             - For toddlers (Age 1-3), the plot MUST be concrete, sensory, and emotionally tender.
@@ -292,8 +297,8 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
                     "storyCore": "[MUST BE IN ${targetLang}]",
                     "heroDesire": "[MUST BE IN ${targetLang}]",
                     "mainChallenge": "[MUST BE IN ${targetLang}]",
-                    "primaryVisualAnchor": "The object that stays with hero (e.g. A smooth glowing blue pebble)",
-                    "anchorTriggerRule": "MANDATORY NON-EMPTY: Simple physical trigger rule (e.g. 'glows warm and bright when calm and happy, cools when worried')",
+                    "primaryVisualAnchor": "The object that stays with hero (e.g. A brass explorer lantern with a rotating slot)",
+                    "anchorTriggerRule": "MANDATORY NON-EMPTY: Concrete physical cause-first trigger rule with observable physics (e.g. 'The brass lantern shutter opened wide only when the latch clicked into the top notch away from sand; rushed pulling jams the latch')",
                     "moral": "[MUST BE IN ${targetLang}]",
                     "failedAttemptSpread": 3,
                     "insightSpread": 6,

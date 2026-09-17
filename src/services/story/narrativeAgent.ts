@@ -87,229 +87,249 @@ Spread 8 — Return & Close: both return together; the close reflects
 
 const SINGLE_HERO_EXEMPLARS_EN: Record<string, string[]> = {
   "1-3": [
-    `EXEMPLAR A (Bedtime Theme, Hero: "Zara", Anchor: Star Jar):
-Spread 1: Zara plays in her cozy room.
-Spread 2: Zara holds her glowing star jar.
-Spread 3: Tap tap! A little lamb peeks in.
-Spread 4: The shy lamb hides away.
-Spread 5: Zara sits down. Zara feels sad.
-Spread 6: Zara sits still. The jar glows.
-Spread 7: The lamb hops out and snuggles close.
-Spread 8: Zara hugs the lamb. Sweet dreams!`,
+    `EXEMPLAR A (Bedtime Theme, Hero: "Zara", Anchor: Wooden Star Box):
+Spread 1: Zara plays on her soft bedroom rug.
+Spread 2: Zara holds her wooden star box. Two hands twist the lid to click open.
+Spread 3: TAP TAP! A tiny white lamb peeks through the door.
+Spread 4: Zara pulls fast with one hand. The wooden lid stays stuck. The shy lamb hides away.
+Spread 5: Zara sits down on the rug. Zara feels sad.
+Spread 6: Zara sits quiet and calm. Zara uses two hands and turns slowly. CLICK!
+Spread 7: The box opens with soft starlight. The lamb hops close and snuggles in Zara's lap.
+Spread 8: Zara hugs the sleepy lamb on the soft rug. Sweet dreams, little star!`,
 
     `EXEMPLAR B (Helping Theme, Hero: "Adam", Anchor: Water Pail):
-Spread 1: Adam plays in his sunny yard.
-Spread 2: Adam holds his glowing water pail.
-Spread 3: Drip drop! A thirsty flower droops down.
-Spread 4: The water spills on the grass.
-Spread 5: Adam sits down. Adam feels sad.
-Spread 6: Adam sits still. The pail glows.
-Spread 7: Adam pours softly. The flower blooms!
-Spread 8: Adam smiles in the warm sun.`
+Spread 1: Adam plays in his sunny garden nook.
+Spread 2: Adam holds his green water pail. Two hands tip the spout to pour gently.
+Spread 3: BUZZ BUZZ! A thirsty yellow flower droops low in the warm dirt.
+Spread 4: Adam tips the pail too fast. SPLASH! Water spills on the grass, missing the roots.
+Spread 5: Adam sits down by the stones. Adam feels sad.
+Spread 6: Adam sits still and takes a slow breath. Adam holds both handles and tilts slowly.
+Spread 7: TRICKLE TRICKLE! Cool water flows softly over the roots. The yellow flower blooms wide!
+Spread 8: Adam smiles in his sunny garden nook. Soft and slow made everything grow.`
   ],
   "4-5": [
     `EXEMPLAR A (Adventure Theme, Hero: "Leo", Anchor: Brass Compass):
-Spread 1: In his sunlit workshop, Leo polished his brass compass. It spun true when Leo stayed patient.
-Spread 2: A sudden breeze swept inside, carrying a bright golden feather. TWEET! A bluebird called outside.
-Spread 3: Leo dashed outside chasing the bird. His compass spun wild and useless. Leo felt upset.
-Spread 4: The forest path split into three dark turns. A calm mountain turtle crawled slowly past.
-Spread 5: Leo sat down on a mossy stone. The compass lay dark. Leo felt sad. SIGH...
-Spread 6: Leo sat very still and listened. His compass needle clicked north with warm gold light.
-Spread 7: Leo walked with steady steps. The compass glowed bright as he found the bird's nest.
-Spread 8: Leo returned to his cozy workshop, placing the feather down. Quiet patience was true magic.`,
+Spread 1: In his sunlit workshop, Leo polished his brass compass. Its needle pointed true north only when held flat away from iron buckles.
+Spread 2: A sudden breeze swept inside, carrying a bright golden feather. TWEET! A curious bluebird called from the garden gate.
+Spread 3: Leo dashed outside chasing the bird, gripping the compass right against his iron belt buckle. The needle spun wild and crooked. Leo felt frustrated.
+Spread 4: The forest path split into three leafy turns. CRUNCH CRUNCH! A calm mountain turtle crawled slowly past, heading toward the sunlit moss.
+Spread 5: Leo sat down on a mossy boulder. The needle stayed jammed sideways against the iron buckle. Leo felt disappointed. SIGH...
+Spread 6: Leo noticed how the turtle moved without any metal clinking. He unclasped his belt and laid the compass flat on wood. CLICK! The needle swung smoothly north.
+Spread 7: Leo walked with steady steps along the sunlit moss path. TWEET TWEET! He found the singing bluebird safe in its hollow. Leo cheered proudly!
+Spread 8: Leo returned to his sunlit workshop, placing the golden feather in his sketchbook. Leo felt peaceful and happy. Careful hands found the right way.`,
 
     `EXEMPLAR B (Nature Theme, Hero: "Maya", Anchor: Copper Lantern):
-Spread 1: Maya sat on her garden porch with her copper lantern. It glowed warm when Maya listened.
-Spread 2: FLAP FLAP! A baby barn owl hopped into the jasmine bushes, looking lost and confused.
-Spread 3: Maya reached out too fast to catch it. The startled owl fluttered high into branches.
-Spread 4: The owl stayed hidden in the leaves. A sleepy hedgehog rustled calmly through the grass.
-Spread 5: Maya sat by the flowerbed. Her lantern flickered and grew cool. Maya felt disappointed. SIGH...
-Spread 6: Maya sat quietly and listened to the gentle wind. Her lantern began glowing warm again.
-Spread 7: Maya held her lantern low and hummed softly. The baby owl hopped into her hands!
-Spread 8: Maya carried the sleepy owl back to her porch. Gentle listening was the best magic.`
+Spread 1: Maya sat on her breezy garden porch with her copper lantern. The lantern shutter opened wide only when the brass latch clicked into the top notch.
+Spread 2: FLAP FLAP! A baby barn owl hopped into the jasmine bushes, looking lost and blinking in the dusk.
+Spread 3: Maya rushed forward to catch it, tugging the lantern latch sideways with one hurried thumb. The shutter jammed half-shut with a harsh screech. Maya felt upset.
+Spread 4: The startled owl fluttered high into an olive branch. RUSTLE RUSTLE! A sleepy garden hedgehog trotted calmly through the dry grass.
+Spread 5: Maya sat down beside the flowerbed. The lantern shutter remained stuck crooked in the latch. Maya felt lonely and discouraged. SIGH...
+Spread 6: Maya watched the hedgehog pause and listen. Maya set the lantern flat on the stone step, cleared a speck of sand, and aligned the latch to the top notch. CLICK! The shutter slid wide open with a warm steady beam.
+Spread 7: Maya held the steady lantern low and hummed softly. HUMMM... The baby owl fluttered down safely onto her outstretched wrist!
+Spread 8: Maya carried the sleepy owl back to her breezy garden porch. Maya felt joyful and proud. Gentle patience unlocked every path.`
   ],
   "6-8": [
     `EXEMPLAR A (Discovery Theme, Hero: "Leo", Anchor: Brass Compass):
-Spread 1: In his sunlit workshop nook, Leo polished his brass compass. It spun true whenever Leo stayed patient. Leo dreamed of mapping the Whispering Forest.
-Spread 2: A sudden gust swept open the window, carrying a bright golden feather. TWEET! A curious bluebird called from the garden gate to Leo.
-Spread 3: Leo dashed through the brambles chasing the bird. His compass spun wild and useless in his shaking hands. Leo felt angry and frustrated.
-Spread 4: The path split three ways into dark shadows. Leo stopped, breathless and confused. An old mountain tortoise lumbered past, following the gentle slope of moss.
-Spread 5: Leo slumped onto a mossy boulder. The compass needle lay still and dull. Leo felt disappointed and alone in the quiet woods. SIGH...
-Spread 6: Leo closed his eyes and listened to the breeze. He noticed the moss faced the morning sun. His compass needle clicked firmly northward. Leo smiled.
-Spread 7: Leo walked with steady steps along the sunlit moss path. CLICK! The compass glowed gold as he reached the singing bird's hollow. Leo cheered proudly!
-Spread 8: Leo returned home to his cozy workshop nook, placing the golden feather on his finished map. Leo felt joyful. True exploration began with patience.`,
+Spread 1: In his sunlit workshop nook, Leo examined his brass pocket compass. The balanced needle aligned true north only when rested completely level away from iron tools. Leo dreamed of mapping the hidden Whispering Ridge.
+Spread 2: A sudden gust swept open the window shutters, blowing in a bright golden feather. TWEET! A bluebird called from the orchard gate, beckoning Leo to follow.
+Spread 3: Leo dashed through the brambles chasing the fluttering feather, waving his heavy iron trowel in the same hand as his compass. The magnetic needle spun frantically in useless circles. Leo felt angry and frustrated by his haste.
+Spread 4: The trail split into three shadowy forks under the dense pines. Leo stood breathless and confused. CRACKLE! An old mountain tortoise ambled slowly across the pine needles, steering steadily toward the bright mossy clearing.
+Spread 5: Leo slumped onto a granite boulder. He dropped his heavy iron tools in the dirt. The compass needle remained frozen off-center. Leo felt defeated and lonely in the quiet forest. SIGH...
+Spread 6: Leo watched the tortoise follow the natural slope of the ground. Leo realized the iron trowel had pulled the magnetic needle off course. He set the trowel aside and placed the compass flat on a flat cedar stump. CLICK! The needle swung freely and locked onto true north. Leo smiled with relief.
+Spread 7: Leo marched with calm, steady strides toward the north clearing. WHOOSH! He reached the bird's hollow just as the afternoon sun lit the golden feather nest. Leo cheered triumphantly!
+Spread 8: Leo returned home to his cozy workshop nook, pinning the golden feather to his completed map. Leo felt joyful and proud. True discovery began with steady focus and careful hands.`,
 
     `EXEMPLAR B (Nature Theme, Hero: "Maya", Anchor: Copper Lantern):
-Spread 1: Maya sat on her breezy garden porch, holding her copper lantern. The lantern shone warm whenever Maya listened carefully. Maya loved caring for night flowers.
-Spread 2: A sudden flutter rustled the jasmine bushes. FLAP FLAP! A baby barn owl hopped out, blinking its large eyes in great surprise and confusion.
-Spread 3: Maya reached out quickly to grab the owl. The startled owl fluttered up into a tall olive branch. Maya felt very upset and sad.
-Spread 4: The little owl stayed high in the dark leaves. Maya stood breathless and confused. A sleepy garden hedgehog rustled softly through the dry green grass.
-Spread 5: Maya sat down beside the flowerbed. Her copper lantern flickered and grew cool. Maya felt disappointed and alone in the dark garden. SIGH...
-Spread 6: Maya sat very quietly and listened to the breeze. She heard the soft rustling of the leaves. Her lantern glowed warm. Maya felt peaceful.
-Spread 7: Maya held her lantern low and hummed a sweet tune. HUMMM... The baby owl hopped down into Maya's gentle hands. Maya cheered with great pride!
-Spread 8: Maya carried the sleepy owl back to her breezy garden porch. Her lantern glowed bright. Maya felt joyful. Soft listening was the best magic.`
+Spread 1: Maya sat on her breezy garden porch with her copper expedition lantern. The lantern's brass shutter opened wide only when the locking pin clicked firmly into the top groove. Maya loved tending the rare night jasmine.
+Spread 2: A sudden rustle stirred the dark hedges. FLAP FLAP! A baby barn owl hopped onto the patio flagstones, blinking its wide amber eyes in search of its nest.
+Spread 3: Maya lunged forward eagerly to rescue the owl, yanking the lantern's brass pin with a forceful yank. The pin wedged crooked in the track, trapping the shutter closed. Maya felt distressed and annoyed with herself.
+Spread 4: The frightened owl fluttered into the high branches of the fig tree. Maya stood stranded in the twilight. RUSTLE RUSTLE! A mother hedgehog trotted deliberately past the garden stones, unbothered by the growing shadows.
+Spread 5: Maya sat down on the stone garden bench. The lantern pin remained wedged tight against the bronze frame. Maya felt disappointed and helpless in the dusk. SIGH...
+Spread 6: Maya observed the hedgehog's slow, methodical steps. She blew away the loose grit from the lantern track and tapped the pin straight with her fingertips. CLICK! The shutter slid upward smoothly, casting a bright amber beam across the lawn. Maya felt hopeful.
+Spread 7: Maya held the illuminated lantern still and whistled a soft, gentle melody. HUMMM... The baby owl glided down calmly from the fig tree and perched on Maya's sleeve. Maya cheered with boundless joy!
+Spread 8: Maya walked the sleepy owl safely back to her breezy garden porch. Her copper lantern rested on the table, gleaming brightly in the night. Maya felt deeply content. Gentle hands and calm patience brought every wanderer home.`
   ],
   "9-12": [
     `EXEMPLAR (Discovery Theme, Hero: "Tariq", Anchor: Silver Astrolabe):
-Spread 1: High in his attic observatory, Tariq polished his silver astrolabe beside the open skylight. The instrument hummed with silver light whenever Tariq was thoughtful and still. Tariq dreamed of discovering the forgotten Star of the Sea before the festival bells rang.
-Spread 2: A sudden flash of emerald light streaked across the evening sky, leaving a trail of glowing stardust over the ancient harbor ruins. WHOOSH! A sea gull squawked from the stone railing, dipping its wings toward the bay to guide him onward.
-Spread 3: Tariq bolted down the spiraling observatory stairs, running too fast across the slippery cobblestones. He tripped, dropping his charts into the wet tide pool. His astrolabe spun erratically and dimmed into darkness. Tariq felt angry and frustrated with himself for rushing so carelessly.
-Spread 4: The stardust trail began to fade into the dense coastal fog. Tariq stood stranded among the jagged tide rocks, unsure which inlet to follow. A gray harbor seal surfaced quietly in the calm water, tilting its whiskered head with unhurried patience.
-Spread 5: Tariq slumped against a damp sea wall. The silver astrolabe in his hands turned completely cold and dark. Tariq felt utterly defeated and ready to pack up his satchel and go home in deep disappointment. SIGH... The cold wind blew softly.
-Spread 6: Tariq took a slow, deep breath and watched the seal glide smoothly with the incoming tide. He realized that the stardust did not drift with the wind, but reflected along the natural current of the waves. His astrolabe chimed and pulsed warm silver. Tariq felt confident and focused.
-Spread 7: Tariq stepped carefully along the tidal rocks, matching the steady rhythm of the water. CHIME! His astrolabe blazed with bright emerald light as he uncovered the glowing Star of the Sea resting safely inside a giant sea shell. Tariq cheered with immense pride!
-Spread 8: Tariq walked briskly back up to his attic observatory, placing the radiant sea star beside his celestial map just as the town bells echoed warmly. Tariq felt profoundly happy and fulfilled. Patient observation had unlocked what hurried rushing could never find.`
+Spread 1: High in his attic observatory, Tariq inspected his silver astrolabe beside the brass skylight. The instrument's horizon ring rotated smoothly only when aligned with the engraved water-level groove. Tariq was determined to chart the rare Comet of the Bay before the midnight festival bells.
+Spread 2: A sudden trail of emerald sparks flashed across the harbor sky. WHOOSH! A sea hawk glided past the stone balustrade, angling its wings toward the jagged coastal cliffs.
+Spread 3: Tariq bolted down the spiral observatory staircase, sprinting haphazardly across the wet cobblestones while forcing the astrolabe dial with a heavy wrench. The silver gear teeth jammed tight in the casing. Tariq felt furious and frustrated at his reckless impatience.
+Spread 4: The emerald spark faded behind the dense maritime fog. Tariq stood stranded among the sharp tidal rocks, unable to measure the comet's trajectory. SPLASH! A harbor seal surfaced smoothly in the calm water, resting motionless against the current before dipping under.
+Spread 5: Tariq leaned against a cold seawall, dropping his heavy tools into his satchel. The silver astrolabe was locked solid. Tariq felt crushed and ready to abandon the expedition in bitter disappointment. SIGH... The harbor wind moaned quietly.
+Spread 6: Tariq watched the seal's unhurried balance in the tidal swell. He realized forcing the dial had jammed the calibration pin. Tariq cleared the sea spray, loosened the brass thumbscrew, and aligned the horizon ring with the true sea level. CLINK! The precision gears clicked into seamless motion. Tariq felt sharp confidence return.
+Spread 7: Tariq measured the exact elevation angle with unhurried precision. CHIME! The astrolabe aligned with the emerald comet trail, revealing the forgotten sea cave observatory. Tariq shouted with triumphant pride!
+Spread 8: Tariq climbed back to his attic observatory just as the town bells echoed midnight across the bay. He penned the final comet coordinates onto his chart. Tariq felt deeply fulfilled. Scientific mastery rewarded precision and calm resolve over reckless haste.`
   ]
 };
 
 const DUAL_HERO_EXEMPLARS_EN: Record<string, string[]> = {
   "1-3": [
     `EXEMPLAR (Teamwork Theme, Heroes: "Nour" and "Sami", Anchor: Shared Basket):
-Spread 1: Nour and Sami play in their yard.
-Spread 2: Their little basket glows warm gold.
-Spread 3: Creak creak! A tiny turtle looks stuck.
-Spread 4: The basket tips. Treats roll away.
-Spread 5: Nour and Sami sit down sad.
-Spread 6: They hold hands. The basket glows.
-Spread 7: Together, they lift the basket high.
-Spread 8: Nour and Sami cheer. Goodnight, friends!`
+Spread 1: Nour and Sami play in their sunny yard.
+Spread 2: Their woven berry basket has two smooth handles. Two hands on each side keep it level.
+Spread 3: CREAK CREAK! A little garden bunny hops by the strawberry patch.
+Spread 4: Nour pulls fast, but Sami steps slow. The basket tips sideways! Red berries roll away on the grass.
+Spread 5: Nour and Sami sit down on the grass. Nour feels sad. Sami feels shy.
+Spread 6: Nour and Sami hold hands. They grasp each handle together and count: One, two, three!
+Spread 7: UP UP! Together, they lift the basket level. The little bunny hops close and nibbles a sweet berry.
+Spread 8: Nour and Sami cheer together in their sunny yard. Sweet teamwork made the day bright!`
   ],
   "4-5": [
     `EXEMPLAR (Cooperation Theme, Heroes: "Tariq" and "Laila", Anchor: Sun Compass):
-Spread 1: Tariq and Laila played in their garden. Their sun compass glowed when they shared kindly.
-Spread 2: CHIRP! A tiny desert swallow fluttered near the garden wall, looking weary and very thirsty.
-Spread 3: Tariq rushed with crumbs while Laila shouted. The frightened bird flew to a high ledge.
-Spread 4: The bird stayed out of reach. A quiet garden turtle crawled slowly to the fountain.
-Spread 5: Tariq sat by the wall and Laila sat on the bench. Their compass dimmed.
-Spread 6: Tariq and Laila shared their water cup. Their sun compass sparked with warm gold light.
-Spread 7: Tariq held the dish steady while Laila called softly. The swallow drank happily from them.
-Spread 8: Tariq and Laila carried their bright compass home. Working gently together was the best magic.`
+Spread 1: Tariq and Laila played on their rooftop patio. Their brass sun compass worked only when both side-mirrors were tilted to meet in the center notch.
+Spread 2: CHIRP! A tiny desert swallow fluttered near the garden trellis, looking weary and thirsty in the midday heat.
+Spread 3: Tariq jerked the left mirror up while Laila yanked the right mirror down. The misaligned brass arms rattled and jammed shut. Tariq felt frustrated, and Laila felt cross.
+Spread 4: The thirsty swallow retreated to a high shade ledge. RATTLE! A calm desert tortoise crawled steadily to the cool fountain basin.
+Spread 5: Tariq sat by the trellis wall and Laila sat on the wooden bench. The compass mirrors lay crooked and stuck. Tariq felt discouraged, and Laila felt sad. SIGH...
+Spread 6: Tariq and Laila watched the tortoise share the fountain shade. Tariq reached out gently, and Laila apologized. Together, they eased both mirror levers toward the center notch. CLICK! A bright beam of sunlight reflected directly onto the water bowl.
+Spread 7: Tariq held the water dish steady while Laila called softly. CHIRP CHIRP! The swallow descended happily and drank from their shared dish. Tariq and Laila cheered!
+Spread 8: Tariq and Laila carried their gleaming compass back to the rooftop patio. tariq and Laila felt joyful. Working in harmony was the truest secret to every puzzle.`
   ],
   "6-8": [
     `EXEMPLAR (Adventure Partnership, Heroes: "Rayan" and "Maya", Anchor: Crystal Prism):
-Spread 1: In their cozy treehouse workshop, Rayan and Maya unfurled an ancient star chart beside their crystal prism. The prism glowed whenever both worked with calm trust.
-Spread 2: A brilliant blue spark danced across the night sky. WHOOSH! A mountain hare dashed past the ladder, kicking up a bright shower of glowing pebbles.
-Spread 3: Rayan hurried ahead with the lantern, while Maya lingered behind. In their haste, the star chart slipped into a thorny thicket. Both felt frustrated and upset.
-Spread 4: The thorny thicket was dark, and the canyon path was obscured. A wise mountain owl landed softly on a nearby branch, watching with calm, patient eyes.
-Spread 5: Rayan sat on a boulder in defeat. Maya knelt by the trail, fighting back tears of disappointment. Their crystal prism lay dark on the moss.
-Spread 6: Rayan and Maya observed how the owl stayed still. Rayan slowed down, and Maya offered her hand. The crystal prism flared with warm violet light.
-Spread 7: Maya held the prism high while Rayan reached through the brambles to retrieve the chart. Together, they reached the lookout summit. Both cheered with immense pride!
-Spread 8: Rayan and Maya returned safely to their cozy treehouse workshop, framing their star chart beside the glowing prism. Rayan and Maya felt happy and united.`
+Spread 1: In their cozy treehouse workshop, Rayan and Maya inspected their brass crystal prism. The dual lenses focused a sharp rainbow beam only when both side thumbscrews were turned at the exact same speed.
+Spread 2: A brilliant blue streak danced across the twilight canyon. WHOOSH! A mountain hare dashed past the ladder, leaving a path of glowing blue footprints.
+Spread 3: Rayan cranked his thumbscrew rapidly while Maya turned hers slowly. The mismatched gears snapped out of alignment, and the prism went blurry. Rayan felt annoyed, and Maya felt discouraged.
+Spread 4: The glowing hare trail vanished into the misty canyon brambles. SNAP! A wise mountain owl landed quietly on a pine bough, turning its head with slow, balanced grace.
+Spread 5: Rayan sat down on a boulder in defeat. Maya knelt by the trail, fighting back tears of disappointment. Their crystal prism remained locked and out of focus. SIGH...
+Spread 6: Rayan and Maya observed how the owl moved with steady balance. Rayan counted the rhythm while Maya turned her screw in sync with his hand. CLICK! The brass gears locked into harmony, casting a razor-sharp beam of light through the mist.
+Spread 7: Maya aimed the beam high while Rayan parted the brambles to uncover the ancient mountain sundial. WHOOSH! The sundial illuminated with radiant golden light. Rayan and Maya cheered with immense pride!
+Spread 8: Rayan and Maya returned safely to their cozy treehouse workshop, setting their crystal prism beside the completed canyon map. Rayan and Maya felt joyful and united. True partnership was the greatest discovery of all.`
   ],
   "9-12": [
     `EXEMPLAR (Scholarly Teamwork, Heroes: "Karim" and "Hana", Anchor: Bronze Chronometer):
-Spread 1: In the sun-drenched library of the coastal academy, Karim and Hana examined their bronze chronometer. The chronometer ticked in harmony only when both scholars shared discoveries without rivalry. They were determined to decode the ancient navigational parchment before the expedition fleet departed at dawn.
-Spread 2: A sudden sea breeze swept through the arched gallery, rustling parchment scrolls. A shimmering golden dragonfly darted into the courtyard, tracing glowing spirals above the sundial fountain before disappearing into the labyrinthine archives. Both scholars watched with eager curiosity and wonder.
-Spread 3: Karim insisted on using formulas, while Hana tried following its visual path. Their conflicting approaches caused Karim to miscalculate coordinates and Hana to lose the trail in the dark corridors. The chronometer stalled with a harsh rattle. Karim felt bitter frustration, and Hana felt dismissed.
-Spread 4: Deep in the archive vaults, shadows grew long and confusing. Karim and Hana stood stranded at a dead end of towering shelves. A seasoned archivist cat trotted gracefully past, pausing at the threshold of a forgotten doorway and listening to the subtle wind.
-Spread 5: Karim slumped against leather folios, running hands through his hair. Hana sat on the stone bench, staring at the frozen chronometer dials. Both felt defeated and sorrowful, fearing stubborn pride had cost them their expedition glory. SIGH...
-Spread 6: Karim and Hana watched the cat navigate the acoustic echoes. Karim realized his formulas needed Hana's intuition, while Hana recognized her tracking needed Karim's precision. When they shared notes and apologized, the chronometer chimed and glowed with warm amber light.
-Spread 7: Working in synergy, Hana mapped the resonant echoes while Karim calibrated celestial coordinates. CHIME! The bronze chronometer clicked open, revealing the hidden navigational cipher as the morning sun illuminated the library dome. Karim and Hana embraced with triumphant pride!
-Spread 8: Karim and Hana walked back to the sun-drenched library of the coastal academy, presenting the decoded parchment to the expedition captains as harbor horns sounded. Karim and Hana felt profound fulfillment. Great breakthroughs were born from the harmonious fusion of complementary minds.`
+Spread 1: In the sun-drenched library of the coastal academy, Karim and Hana examined their antique bronze chronometer. The chronometer's dual escapement gears ticked in unison only when both scholars lowered their counterweight levers simultaneously. They aimed to decode the ancient maritime chart before the morning expedition fleet set sail.
+Spread 2: A sudden sea breeze swept through the stone gallery, rustling parchment scrolls. A shimmering golden dragonfly darted across the courtyard sundial before disappearing into the labyrinthine archive vaults. Both scholars watched with intense curiosity.
+Spread 3: Karim insisted on forcing the main gear to rush ahead, while Hana tugged the timing wheel backward. Their conflicting forces sheared the alignment pin, freezing the chronometer with a harsh metallic screech. Karim felt bitter frustration, and Hana felt dismissed and angry.
+Spread 4: Deep in the archive vaults, shadows lengthened between towering bookcases. Karim and Hana stood stranded at a dead end of stone arches. A seasoned library cat trotted gracefully past, pausing at the threshold of an acoustic chamber to listen to the synchronized echoes of the tide.
+Spread 5: Karim slumped against leather folios, holding his head in defeat. Hana sat on the stone bench, staring at the locked chronometer gears. Both felt sorrowful, realizing stubborn pride had halted their work. SIGH... The ocean wind moaned softly through the gallery.
+Spread 6: Karim and Hana observed how the cat waited for the rhythm of the waves. Karim apologized for his hasty force, and Hana shared her timing notes. Together, they aligned their levers and released the counterweights at the exact same instant. CHIME! The escapement gears engaged in flawless synchronization.
+Spread 7: Working in perfect synergy, Hana tracked the acoustic echoes while Karim calibrated the celestial coordinates on the ticking chronometer. CLICK! The internal brass cylinder slid open, revealing the lost navigational route. Karim and Hana embraced with triumphant pride!
+Spread 8: Karim and Hana walked proudly back to the sun-drenched library of the coastal academy, presenting the decoded parchment to the ship captains as harbor horns sounded at dawn. Karim and Hana felt profound fulfillment. Groundbreaking discoveries were forged when sharp minds moved in steady harmony.`
   ]
 };
 
 const SINGLE_HERO_EXEMPLARS_AR: Record<string, string[]> = {
   "1-3": [
-    `نموذج (قصة وقت النوم، البطلة: "زارا"، الأداة: برطمان النجوم):
-الصفحة 1: تلعب زارا في غرفتها الدافئة.
-الصفحة 2: يتوهج برطمان زارا بنور جميل.
-الصفحة 3: طق طق! أطل حمل صغير.
-الصفحة 4: خاف الحمل الصغير واختبأ سريعا.
-الصفحة 5: جلست زارا حزينة على البساط.
-الصفحة 6: جلست زارا بهدوء فتوهج البرطمان.
-الصفحة 7: اقترب الحمل وعانق زارا بحب.
-الصفحة 8: نام الحمل الصغير. تصبح على خير.`,
+    `نموذج (قصة وقت النوم، البطلة: "زارا"، الأداة: برطمان النجوم الخشبي):
+الصفحة 1: تلعب زارا فوق بساط غرفتها الناعم.
+الصفحة 2: تحمل زارا برطمان النجوم الخشبي. يفتح الغطاء عند لفه باليدين معا بهدوء.
+الصفحة 3: طَقْ طَقْ! أطل حمل صغير أبيض من خلف الباب.
+الصفحة 4: سحبت زارا الغطاء بيد واحدة بقوة، فبقي الغطاء عالقا. خاف الحمل واختبأ بعيدا.
+الصفحة 5: جلست زارا على البساط. شعرت زارا بالحزن.
+الصفحة 6: جلست زارا بهدوء وسكينة. أمسكت الغطاء بكلتا يديها ولفته برفق. تِكْ!
+الصفحة 7: انفتح البرطمان ببريق ناعم. طَقْ طَقْ! قفز الحمل الصغير وجلس في حضن زارا بسعادة.
+الصفحة 8: احتضنت زارا الحمل الصغير فوق بساط غرفتها الناعم. تصبح على خير يا نجمي الجميل!`,
 
     `نموذج (قصة العطاء والمساعدة، البطل: "آدم"، الأداة: دلو الماء):
-الصفحة 1: يلعب آدم في حديقته المشمسة.
-الصفحة 2: يتوهج دلو آدم بنور دافئ.
-الصفحة 3: قطرة قطرة! مالت زهرة عطشى.
-الصفحة 4: انسكب الماء وبقيت الزهرة حزينة.
-الصفحة 5: جلس آدم حزينا على العشب.
-الصفحة 6: جلس آدم هادئا فتوهج الدلو.
-الصفحة 7: سقى آدم الزهرة فتفتحت بفرح.
-الصفحة 8: ابتسم آدم بسعادة في حديقته.`
+الصفحة 1: يلعب آدم في ركن حديقته المشمس.
+الصفحة 2: يحمل آدم دلو الماء الأخضر. ينسكب الماء برفق عند إمالة المقبضين بكلتا اليدين.
+الصفحة 3: طَنّ طَنّ! مالت زهرة صفراء عطشى فوق التراب الدافئ.
+الصفحة 4: أمال آدم الدلو بسرعة كبيرة. طَشّ! انسكب الماء على العشب بعيدا عن الجذور.
+الصفحة 5: جلس آدم قرب الحصى. شعر آدم بالحزن.
+الصفحة 6: جلس آدم هادئا وتنفس برفق. أمسك المقبضين بكلتا يديه ومال بهدوء.
+الصفحة 7: خَرِير خَرِير! سال الماء العذب برفق فوق الجذور. تفتحت الزهرة الصفراء بفرح!
+الصفحة 8: ابتسم آدم في ركن حديقته المشمس. الهدوء والرفق جعلا كل شيء ينمو بجمال.`
   ],
   "4-5": [
     `نموذج (قصة الاستكشاف والصبر، البطل: "ليث"، الأداة: البوصلة النحاسية):
-الصفحة 1: في ركن ورشته المشمس، جلس ليث يمسح بوصلته النحاسية. كانت تدور بثبات كلما تحلى بالصبر.
-الصفحة 2: هبت نسمة هواء دافئة وحملت ريشة ذهبية براقة. غرد عصفور أزرق جميل عند بوابة الحديقة.
-الصفحة 3: ركض ليث بسرعة يلاحق العصفور، فدارت البوصلة بعنف بين يديه. شعر ليث بالضيق والتعب.
-الصفحة 4: تفرقت المسارات بين الظلال. مرت سلحفاة جبلية قديمة تمشي بهدوء وثبات فوق العشب الأخضر.
-الصفحة 5: جلس ليث على صخرة مغطاة بالعشب. انطفأ نور البوصلة فشعر ليث بالحزن والوحدة. هفف...
-الصفحة 6: جلس ليث ساكنا يستمع لحفيف الرياح. أشارت البوصلة إلى الشمال بنور هادئ فاطمأن قلبه.
-الصفحة 7: مشى ليث بخطوات هادئة نحو النور. توهجت البوصلة بنور ذهبي حين وجد عش العصفور.
-الصفحة 8: عاد ليث بريشته الذهبية إلى ورشته المشمسة. الصبر والهدوء كانا أجمل بداية لكل مغامرة.`
+الصفحة 1: في ركن ورشته المشمس، جلس ليث يمسح بوصلته النحاسية. كانت إبرتها تستقر نحو الشمال فقط عندما يمسكها مستوية بعيدا عن مشابك الحزام الحديدي.
+الصفحة 2: هبت نسمة هواء عبر النافذة وحملت ريشة ذهبية براقة. زَقْزَقَ عصفور أزرق جميل عند بوابة الحديقة داعيا ليث لملاحقته.
+الصفحة 3: ركض ليث بسرعة ممسكا البوصلة قرب حزامه الحديدي. دارت الإبرة باضطراب دون اتجاه ثابت. شعر ليث بالضيق والإحباط.
+الصفحة 4: تفرقت المسارات بين ظلال الأشجار. خَرْ خَرْ! مرت سلحفاة جبلية قديمة تمشي بهدوء وثبات فوق العشب الأخضر.
+الصفحة 5: جلس ليث على صخرة مغطاة بالعشب. بقيت الإبرة مائلة نحو مشبك الحزام. شعر ليث بالحزن وخيبة الأمل. هَفْ...
+الصفحة 6: راقب ليث هدوء السلحفاة. فك ليث حزامه الحديدي ووضع البوصلة مستوية فوق الصخرة. طَقْ! استقرت الإبرة بدقة نحو الشمال. شعر ليث بالاطمئنان.
+الصفحة 7: مشى ليث بخطوات هادئة متبعا اتجاه الإبرة الثابت. وَجَدَ عش العصفور سالما فوق الغصن. صَاحَ ليث بفرح وفخر!
+الصفحة 8: عاد ليث بريشته الذهبية إلى ورشته المشمسة، ووضعها في دفتره. شعر ليث بالبهجة والرضا. التعامل الهادئ والدقيق يفتح كل الطرق.`,
+
+    `نموذج (قصة الطبيعة والرفق، البطلة: "ميس"، الأداة: الفانوس النحاسي):
+الصفحة 1: جلست ميس في شرفة حديقتها الهادئة تحمل فانوسها النحاسي. كان مصراع الفانوس ينفتح بضوء واسع فقط عندما يستقر المزلاج في الفتحة العلوية بعيدا عن الرمال.
+الصفحة 2: رَفْرَفَ بومة صغيرة بيضاء قرب شجيرات الياسمين، متلفتة بعينيها الواسعتين في عتمة المساء.
+الصفحة 3: اندفعت ميس بسرعة لتلتقط البومة، وشدت مزلاج الفانوس بقوة بيد واحدة. علق المزلاج مائلا في المجرى وانغلق المصراع بصوت صرير حاد. شعرت ميس بالانزعاج.
+الصفحة 4: طارت البومة خائفة واستقرت فوق غصن زيتون عال. حَفِيف حَفِيف! مر قنفذ صغير يمشي بهدوء وثقة بين الأعشاب الجافة.
+الصفحة 5: جلست ميس على حافة الحوض الحجري. بقي مزلاج الفانوس عالقا في مكانه. شعرت ميس بالوحدة والتردد. هَفْ...
+الصفحة 6: راقبت ميس هدوء القنفذ وصبره. مسحت ميس حبات الرمل العالقة وثبتت المزلاج بهدوء في الفتحة العلوية. طَقْ! انزلق المصراع واسعا وانطلق ضوء كهرماني دافئ. شعرت ميس بالأمل.
+الصفحة 7: حملت ميس الفانوس الثابت ودندنت بصوت عذب رقيق. هَمْس هَمْس... هبطت البومة الصغيرة واستقرت بأمان فوق يد ميس!
+الصفحة 8: حملت ميس البومة بهدوء وعادت إلى شرفة حديقتها الهادئة. وضعت فانوسها فوق الطاولة الخشبية. شعرت ميس بفخر وسعادة غامرة.`
   ],
   "6-8": [
     `نموذج (قصة التأمل والاكتشاف، البطل: "ليث"، الأداة: البوصلة النحاسية):
-الصفحة 1: في ركن ورشته المشمس، جلس ليث يمسح بوصلته النحاسية اللامعة. كانت تدور بثبات كلما تحلى ليث بالصبر. حلم ليث باستكشاف الغابة الهامسة ووديانها الجميلة.
-الصفحة 2: فجأة، هبت نسمة هواء دافئة وحملت ريشة ذهبية براقة عبر النافذة. غرد عصفور أزرق جميل عند بوابة الحديقة داعيا ليث لمغامرة شيقة وممتعة.
-الصفحة 3: ركض ليث بسرعة بين الشجيرات يلاحق العصفور الطائر. دارت البوصلة بعنف بين يديه المتعبتين وتوقف بريقها. شعر ليث بالضيق والإحباط الشديد من تسرعه.
-الصفحة 4: تفرقت المسارات بين الظلال الكثيفة، وتوقف ليث حائرا ومتعبا. مرت سلحفاة جبلية قديمة تمشي بهدوء وثبات وصبر عجيب فوق بساط العشب الأخضر.
-الصفحة 5: جلس ليث على صخرة مغطاة بالعشب الندي. توقفت إبرة البوصلة وبدت باردة ومظلمة تماما. شعر ليث بالحزن والوحدة في الغابة الهادئة. هفف...
-الصفحة 6: جلس ليث ساكنا وأغمض عينيه يستمع لحفيف الرياح. لاحظ أن العشب ينمو باتجاه شمس الصباح. أشارت البوصلة إلى الشمال بنور هادئ. شعر ليث بالاطمئنان.
-الصفحة 7: مشى ليث بخطوات هادئة وثابتة في طريق النور. توهجت البوصلة بنور ذهبي ساطع عندما وصل إلى عش العصفور المغرد. شعر ليث بالفخر والسرور!
-الصفحة 8: عاد ليث بريشته الذهبية إلى ركن ورشته المشمس، ووضعها فوق خريطته. توهجت بوصلته بنور دافئ. شعر ليث بالسعادة، فالصبر مفتاح كل استكشاف جميل.`
+الصفحة 1: في ركن ورشته المشمس، تفحص ليث بوصلته النحاسية الدقيقة. كانت إبرتها المغناطيسية تشير بدقة إلى الشمال فقط عندما تستقر مستوية بعيدا عن الأدوات الحديدية. حلم ليث برسم خريطة وادي الصنوبر السري.
+الصفحة 2: هبت عاصفة مفاجئة فتحت مصراعي النافذة، وحملت ريشة ذهبية براقة. زَقْزَقَ عصفور أزرق فوق بوابة البستان ملوحا بجناحيه نحو التلال البعيدة.
+الصفحة 3: اندفع ليث راكضا عبر الشجيرات الشائكة ممسكا مجرفته الحديدية الثقيلة في نفس اليد مع البوصلة. دارت الإبرة باضطراب في دوائر عشوائية. شعر ليث بالغضب والضيق من تسرعه.
+الصفحة 4: تفرعت الطرق إلى ثلاثة مسارات مظلمة تحت الأشجار الكثيفة. طَقْطَقَة طَقْطَقَة! مرت سلحفاة جبلية عجوز تمشي بتمهل وثبات فوق بساط الأعشاب نحو الممر المضيء.
+الصفحة 5: جلس ليث على صخرة غرانيتية ووضع أدواته الحديدية جانبا. بقيت إبرة البوصلة منحرفة ومضطربة. شعر ليث بالهزيمة والوحدة في سكون الغابة. هَفْ...
+الصفحة 6: راقب ليث كيف تتبع السلحفاة انحدار الأرض الطبيعي بهدوء. أدرك أن مجرفته الحديدية هي التي شوشت حركة الإبرة المغناطيسية. وضع البوصلة مستوية فوق جذع شجرة جاف. طَقْ! استقرت الإبرة بوضوح نحو اتجاه الشمال. شعر ليث بالارتياح والأمل.
+الصفحة 7: تقدم ليث بخطوات واثقة وهادئة نحو التلة الشمالية المشمسة. ووووش! وصل إلى شجرة البلوط العالية حيث يستقر عش العصفور الذهبي. هَتَفَ ليث بفرح وانتصار كبير!
+الصفحة 8: عاد ليث إلى ركن ورشته المشمس، وثبت الريشة الذهبية فوق خريطته المكتملة. وضع بوصلته النحاسية بعناية في صندوقها. شعر ليث بالبهجة العميقة. كان التركيز الهادئ مفتاح كل استكشاف حقيقي.`,
+
+    `نموذج (قصة الطبيعة والرفق، البطلة: "ميس"، الأداة: الفانوس النحاسي):
+الصفحة 1: جلست ميس في شرفة حديقتها الهادئة تتفحص فانوسها النحاسي المخصص للرحلات. كان مصراع الفانوس ينفتح بضوء واسع فقط عندما يستقر دبوس الإغلاق تماما في المجرى العلوي. عشقت ميس رعاية زهور الياسمين الليلية.
+الصفحة 2: تحركت أغصان السياج الأخضر فجأة في عتمة المساء. رَفْرَفَة رَفْرَفَة! قفزت بومة صغيرة بيضاء على بلاط الفناء، متلفتة بعينيها العسليتين الواسعتين بحثا عن دفء عشها.
+الصفحة 3: اندفعت ميس بسرعة لتنقذ البومة، وجذبت دبوس الفانوس بقوة خاطفة. انحرف الدبوس في مساره وانحشر بقوة، وظل المصراع مغلقا في الظلام. شعرت ميس بالانزعاج واللوم لنفسها.
+الصفحة 4: طارت البومة مرتبكة نحو الأغصان العالية لشجرة التين. حَفِيف حَفِيف! سار قنفذ الحديقة بخطوات واثقة وهادئة فوق الحصى، متتبعا مساره المعتاد دون خوف من العتمة.
+الصفحة 5: جلست ميس على المقعد الحجري البارد. ظل دبوس الفانوس محشورا في إطاره البرونزي. شعرت ميس بالحزن والتردد في هدوء المساء. هَفْ...
+الصفحة 6: راقبت ميس هدوء القنفذ وصبره. أزالت حبات الغبار الدقيقة عن مجرى الفانوس وضغطت الدبوس بلطف حتى استقام. طَقْ! انزلق المصراع للأعلى وانطلق شعاع كهرماني مشرق أضاء أرجاء الحديقة. شعرت ميس بالأمل والثقة.
+الصفحة 7: رفعت ميس الفانوس المضيء بثبات وأطلقت نغمة هادئة رقيقة. هَمْس هَمْس... هبطت البومة الصغيرة من شجرة التين واستقرت بلطف فوق ذراع ميس. صَاحَت ميس بفرح غامر وفخر عظيم!
+الصفحة 8: حملت ميس البومة بهدوء وعادت إلى شرفة حديقتها الهادئة. وضعت فانوسها النحاسي فوق الطاولة وهو يلمع بنور دافئ. شعرت ميس بالسكينة والبهجة. الرفق والتمهل ينيران أصعب الدروب.`
   ],
   "9-12": [
-    `نموذج (قصة التأمل والاكتشاف، البطل: "طارق"، الأداة: الأسطرلاب الفضي):
-الصفحة 1: في مرصده الهادئ أعلى البرج، جلس طارق يمسح أسطرلابه الفضي بجانب النافذة الواسعة. كان الأسطرلاب يهمس بنور ناصع كلما تأمل طارق بسكينة وصبر. تمنى طارق اكتشاف نجم البحر المضيء قبل أن تدق أجراس المساء في المدينة وتعلن بدء الاحتفال السنوي الكبير.
-الصفحة 2: فجأة، لمع بريق زمردي في السماء الصافية تاركا أثرا من الغبار المتلألئ فوق مياه الميناء القديم. طار طائر نورس أبيض ملوحا بجناحيه نحو الخليج الأزرق، كأنه يرشد طارق إلى المسار الصحيح نحو النور السري الخفي بين الأمواج.
-الصفحة 3: اندفع طارق راكضا على درجات البرج الحجرية ونزل مسرعا نحو الشاطئ الرطب دون انتباه. تعثر طارق وسقطت خرائطه في الماء، وتوقف أسطرلابه الفضي عن اللمعان والنبض. شعر طارق بالغضب والإحباط والندم من تسرعه الذي أفسد كل خططه الدقيقة.
-الصفحة 4: بدأ ضوء البريق يتلاشى بين ضباب الساحل الكثيف. وقف طارق بين الصخور المبللة لا يعرف أي ممر مائي يسلك. ظهرت فقمة رمادية لطيفة تسبح في الماء الهادئ برفق، مائلة برأسها الصغير في سكينة وصبر عجيب يلفت الأنظار في هذا الصمت.
-الصفحة 5: جلس طارق على جدار صخري قديم يراقب مياه البحر الهائجة. انطفأ ضوء الأسطرلاب الفضي في يديه تماما وبدا باردا كالحجر. شعر طارق بالحزن الشديد والرغبة في الاستسلام والعودة خائبا إلى البيت مع حلول الظلام الدامس. هفف...
-الصفحة 6: تنفس طارق بهدوء وراقب الفقمة تتبع حركة الأمواج اللطيفة دون تسرع. أدرك طارق أن الضوء يتجه مع حركة المد الطبيعية للماء وليس مع الرياح. أضاء الأسطرلاب الفضي بنور دافئ. شعر طارق بالأمل والثقة وعودة العزيمة من جديد.
-الصفحة 7: مشى طارق بخطوات متزنة مع إيقاع الموج الهادئ على الشاطئ. توهج الأسطرلاب ببريق زمردي مشرق حين وجد نجم البحر المضيء يستقر بأمان داخل صدفة بيضاء جميلة. شعر طارق بفخر عظيم وسعادة غامرة بهذا الإنجاز الرائع والمستحق!
-الصفحة 8: صعد طارق درجات مرصده الهادئ أعلى البرج، ووضع نجم البحر المضيء فوق خريطته الكبيرة مع دقات أجراس المساء الدافئة. شعر طارق بالسكينة والبهجة. كان التأمل الهادئ هو المفتاح الحقيقي لاكتشاف عجائب العالم التي لا ينالها المتعجلون أبدا.`
+    `نموذج (قصة التأمل والاكتشاف العلمي، البطل: "طارق"، الأداة: الأسطرلاب الفضي):
+الصفحة 1: في مرصده الهادئ أعلى البرج، عكف طارق على ضبط أسطرلابه الفضي بجانب النافذة الزجاجية الواسعة. كانت حلقة الأفق تدور بسلاسة متناهية فقط عندما تتطابق المؤشرات المنقوشة مع خط الأفق المائي الدقيق. عقد طارق العزم على رصد مذنب الخليج النادر قبل حلول منتصف الليل.
+الصفحة 2: لمع خط من الشرر الزمردي عبر سماء الميناء الصافية. ووووش! حلق صقر بحري بمحاذاة الشرفة الحجرية، مائلا بجناحيه نحو المنحدرات الصخرية الشاطئية.
+الصفحة 3: اندفع طارق راكضا عبر الدرج الحجري الحلزوني ونزل مسرعا فوق الحصى الرطب وهو يضغط قرص الأسطرلاب بمفتاح ربط ثقيل. علقت التروس الفضية الدقيقة وتوقفت الآلة عن الدوران تماما. شعر طارق بالغضب والإحباط الشديد من تسرعه غير المحسوب.
+الصفحة 4: اختفى البريق الزمردي خلف ضباب البحر الكثيف. وقف طارق عاجزا بين الصخور الشاطئية الحادة. رَشّاش رَشّاش! ظهرت فقمة رمادية تطفو بسلاسة فوق المياه الهادئة، مستقرة بتوازن رائع مع حركة الموج الطبيعية.
+الصفحة 5: أسند طارق ظهره إلى الجدار البحري البارد، واضعا أدواته الثقيلة في حقيبته. بقي الأسطرلاب الفضي متوقفا في يديه. شعر طارق بالخيبة والمرارة وكاد يستسلم للعودة إلى البيت. هَفْ... ترددت أصوات الرياح الرطبة في هدوء الميناء.
+الصفحة 6: تأمل طارق حركة الفقمة المتناغمة مع المد والجزر. أدرك أن الضغط العنيف أخرج مسمار المعايرة عن محوره الدقيق. نظف طارق رذاذ الملح، وأرخى البرغي النحاسي، وأعاد حلقة الأفق لتتطابق مع خط سطح الماء الساكن. طَقْ! دارت التروس الفضية بانسيابية تامة. شعر طارق بتجدد العزيمة والثقة.
+الصفحة 7: رفع طارق الأسطرلاب بزاوية الرصد الدقيقة برفق وتأن. رَنِين رَنِين! تطابقت عدسات الأسطرلاب مع مسار المذنب الزمردي، كاشفة عن مدخل الكهف البحري القديم. هَتَفَ طارق بفخر واعتزاز مستحقين!
+الصفحة 8: صعد طارق درجات مرصده أعلى البرج مع دقات أجراس منتصف الليل الدافئة. دون إحداثيات المذنب بدقة في سجله الفلكي. شعر طارق بالسكينة والبهجة الغامرة. الاكتشافات الحقيقية تصنعها الدقة الهادئة والروح الصبورة.`
   ]
 };
 
 const DUAL_HERO_EXEMPLARS_AR: Record<string, string[]> = {
   "1-3": [
     `نموذج (قصة العمل الجماعي، الأبطال: "نور" و"سامي"، الأداة: السلة المشتركة):
-الصفحة 1: لعبت نور وسامي في فنائهما.
-الصفحة 2: توهجت سلتهما المشتركة بنور ذهبي.
-الصفحة 3: طق طق! أطلت سلحفاة صغيرة.
-الصفحة 4: مالت السلة وسقطت الثمار بعيدا.
-الصفحة 5: جلست نور وجلس سامي بحزن.
-الصفحة 6: أمسكا الأيدي فتوهجت السلة مجددا.
-الصفحة 7: رفعا السلة معا بفرح وفخر.
-الصفحة 8: فرح الأصدقاء وعادت السعادة للفناء.`
+الصفحة 1: يلعب نور وسامي في فنائهما المشمس.
+الصفحة 2: يحملان سلة التوت الخشبية بمقبضين ناعمين. تظل السلة مستوية عند رفع المقبضين معا بهدوء.
+الصفحة 3: طَقْ طَقْ! قفز أرنب صغير قرب شجيرة الفراولة.
+الصفحة 4: شد نور بقوة بينما مشى سامي ببطء. مالت السلة وسقطت حبات التوت الأحمر فوق العشب!
+الصفحة 5: جلس نور وجلس سامي على العشب. شعر نور بالحزن وشعر سامي بالخجل.
+الصفحة 6: أمسك نور وسامي أيديهما. مسك كل منهما مقبضه وعدا معا: واحد، اثنان، ثلاثة!
+الصفحة 7: فَوْق فَوْق! ارتفعت السلة مستوية تماما. اقترب الأرنب الصغير وتناول حبة توت حلوة بسعادة.
+الصفحة 8: هَتَفَ نور وسامي معا في فنائهما المشمس. العمل المشترك جعل يومهما رائعا وسعيدا!`
   ],
   "4-5": [
-    `نموذج (قصة التعاون والمحبة، الأبطال: "طارق" و"ليلى"، الأداة: بوصلة الشمس):
-الصفحة 1: في حديقة سطحهما المشمسة، لعب طارق وليلى. كانت بوصلة الشمس تلمع بالذهب كلما تعاونا بمحبة.
-الصفحة 2: زقزق طائر سنونو صغير قرب السياج وبدا متعبا وعطشا. تمنى الصغيران مساعدته والاعتناء به.
-الصفحة 3: اندفع طارق بفتات الخبز وصاحت ليلى بحماس، فخاف الطائر وطار إلى حافة عالية.
-الصفحة 4: وقف الطائر بعيدا في الظل. مرت سلحفاة الحديقة الهادئة تزحف ببطء نحو حوض الماء.
-الصفحة 5: جلس طارق عند الجدار وجلست ليلى حزينة على المقعد. انطفأ نور بوصلة الشمس بينهما.
-الصفحة 6: تقاسم طارق وليلى وعاء الماء واعتذر كل منهما بلطف. أضاءت البوصلة بنور دافئ مجددا.
-الصفحة 7: حمل طارق الوعاء بثبات ونادت ليلى الطائر بهدوء، فهبط السنونو وشرب بفرح من أيديهما.
-الصفحة 8: عاد طارق وليلى ببوصلتهما المتوهجة إلى حديقة السطح. التعاون الصادق كان أجمل سر في الحديقة.`
+    `نموذج (قصة التعاون والتفاهم، الأبطال: "طارق" و"ليلى"، الأداة: بوصلة الشمس):
+الصفحة 1: لعب طارق وليلى في حديقة سطحهما المشمسة. كانت بوصلة الشمس النحاسية تعمل فقط عندما يضبطان ذراعي المرآتين معا نحو الفتحة المركزية.
+الصفحة 2: زَقْزَقَ طائر سنونو صغير قرب سياج الحديقة، وبدا متعبا وعطشا تحت شمس الظهيرة.
+الصفحة 3: سحب طارق المرآة اليسرى للأعلى بينما جذبت ليلى المرآة اليمنى للأسفل. قَرْقَعَة قَرْقَعَة! انحشرت أذرع البوصلة وتوقفت عن الحركة. شعر طارق بالضيق وشعرت ليلى بالعتب.
+الصفحة 4: طار السنونو إلى حافة الظل البعيدة. مرت سلحفاة الحديقة الهادئة تزحف ببطء وثبات نحو حوض الماء الصغير.
+الصفحة 5: جلس طارق عند الجدار وجلست ليلى على المقعد الخشبي. بقيت مرايا البوصلة عالقة ومائلة. شعر طارق بالإحباط وشعرت ليلى بالحزن. هَفْ...
+الصفحة 6: راقب طارق وليلى هدوء السلحفاة وصبرها. اعتذر طارق بلطف وابتسمت ليلى. وضعا أيديهما معا وحركا ذراعي المرآتين بتزامن هادئ نحو المنتصف. طَقْ! انطلق شعاع ذهبي منعكس مباشرة فوق وعاء الماء.
+الصفحة 7: حمل طارق وعاء الماء بثبات بينما نادت ليلى الطائر بصوت رقيق. هبط السنونو وشرب بارتياح وفرح. صَاحَ طارق وليلى بسعادة!
+الصفحة 8: عاد طارق وليلى ببوصلتهما النحاسية إلى حديقة السطح. شعر طارق وليلى بالبهجة والمحبة. التعاون الصادق والتمهل كانا أجمل أسرار النجاح.`
   ],
   "6-8": [
-    `نموذج (قصة التعاون والمحبة، الأبطال: "طارق" و"ليلى"، الأداة: بوصلة الشمس):
-الصفحة 1: في حديقة سطحهما المشمسة، لعب طارق وليلى معا. كانت بوصلة الشمس تلمع بالذهب كلما تعاونا بمحبة وتفاهم. رغب طارق وليلى في مساعدة طائر السنونو الصغير.
-الصفحة 2: فجأة، هبت نسمة رقيقة بين أوراق النخيل العالية. زقزق طائر سنونو صغير يقف عند سياج الحديقة متعبا وعطشا، متطلعا لقطرة ماء تنعش روحه.
-الصفحة 3: اندفع طارق سريعا بفتات الخبز وصاحت ليلى بحماس كبير. خاف الطائر الصغير وطار بعيدا نحو حافة صخرية عالية. شعر طارق وليلى بالضيق ولوم أحدهما الآخر.
-الصفحة 4: وقف الطائر بعيدا في الظل العالي. وقف الصغيران في حيرة وأسف. مرت سلحفاة الحديقة الهادئة تزحف ببطء ورفق شديد نحو حوض الماء الصغير.
-الصفحة 5: جلس طارق عند الجدار شاعرا بالخيبة، وجلست ليلى على المقعد شاعرة بالحزن. انطفأ نور بوصلة الشمس وبدت باردة ومظلمة بين يديهما في صمت الحديقة.
-الصفحة 6: راقب طارق وليلى هدوء السلحفاة وصبرها. مد طارق يده لليلى واعتذرت ليلى بلطف وقاسما وعاء الماء معا. أضاءت بوصلة الشمس بنور دافئ، فشعرا بالأمل.
-الصفحة 7: حمل طارق وعاء الماء بثبات كبير بينما نادت ليلى الطائر بصوت رقيق وهادئ. هبط السنونو وشرب بارتياح من بين أيديهما. شعر طارق وليلى بالفخر والسرور!
-الصفحة 8: حمل طارق وليلى بوصلة الشمس وعادا إلى حديقة سطحهما المشمسة بينما غرد السنونو فرحا في السماء. تلألأت البوصلة بنور ذهبي ساطع. شعرا بالسعادة الغامرة والمحبة.`
+    `نموذج (قصة المغامرة والشراكة، الأبطال: "ريان" و"ميس"، الأداة: موشور الكريستال):
+الصفحة 1: في ورشة بيتهما الشجري الهادئ، تفحص ريان وميس موشور الكريستال النحاسي. كانت عدسات الموشور تجمع شعاعا ملونا ناصعا فقط عندما يدير الصغيران برغيي الضبط الجانبيين بنفس السرعة تماما.
+الصفحة 2: لمع وميض أزرق في سماء الوادي الصافية. ووووش! ركض أرنب جبلي سريع متجاوزا السلم الخشبي، تاركا أثرا من النجوم الزرقاء المضيئة.
+الصفحة 3: أدار ريان البرغي بسرعة فائقة بينما حركت ميس برغيها ببطء شديد. طَقْ! اختل توازن التروس النحاسية وانحرف الضوء بعيدا في الضباب. شعر ريان بالإحباط وشعرت ميس بالانزعاج.
+الصفحة 4: توارى أثر الأرنب الأزرق بين صخور الوادي الوعرة. حَفِيف حَفِيف! هبطت بومة جبلية حكيمة فوق غصن صنوبر قريب، محركة رأسها بتوازن وهدوء بديع.
+الصفحة 5: جلس ريان على صخرة في صمت، بينما جلست ميس على العشب تراقب الضباب الكثيف. ظل الموشور متوقفا وغير متوازن. شعر ريان بالهزيمة وشعرت ميس بالحزن وخيبة الأمل. هَفْ...
+الصفحة 6: راقب ريان وميس تناغم حركة البومة وتوازنها. ضبط ريان إيقاع الحركة وتطابقت يده مع يد ميس في تدوير البرغيين بتزامن متقن. طَقْ! التقت التروس بانسجام تام، وانطلق شعاع ضوئي ساطع يشق الضباب.
+الصفحة 7: وجهت ميس الشعاع بثبات بينما أزاح ريان الأغصان ليكشفا عن المزولة الصخرية المفقودة. بَرِيق بَرِيق! توهجت المزولة ببريق ذهبي مدهش. هَتَفَ ريان وميس بفخر عظيم وسعادة بالغة!
+الصفحة 8: عاد ريان وميس بأمان إلى ورشة بيتهما الشجري، ووضعا موشور الكريستال فوق خريطة الوادي المكتملة. شعر ريان وميس بالبهجة والوحدة الصادقة. التناغم الحقيقي كان أثمن ما اكتشفاه في رحلتهما.`
   ],
   "9-12": [
-    `نموذج (قصة التكامل الفكري، الأبطال: "كريم" و"هناء"، الأداة: الميقاتية النحاسية):
-الصفحة 1: في رحاب مكتبة الأكاديمية البحرية المطلة على الساحل المشمس، جلس كريم وهناء يدرسان الميقاتية النحاسية العتيقة المستقرة فوق مكتبهما المشترك. كانت الميقاتية تنبض بنور كهرماني متناغم فقط عندما يجمع الباحثان بين مهاراتهما الفكرية بروح الفريق ودون تنافس. كانا عازمين على فك الشفرة قبل الفجر.
-الصفحة 2: هبت نسمة بحرية عليلة عبر الأقواس الحجرية للمكتبة وحركت لفائف المخطوطات القديمة. وفي تلك الأثناء، حلقت يعسوب ذهبية براقة في الفناء، راسمتا مسارات هندسية مضيئة فوق نافورة المزولة الشمسية قبل أن تتوارى نحو أروقة الأرشيف الحجري العتيق في غموض وإثارة.
-الصفحة 3: أصر كريم على استخدام المعادلات الحسابية لتوقع مسار اليعسوب، بينما اندفعت هناء لتتبع أثرها البصري سيرا على الأقدام. أدى هذا الاختلاف إلى خطأ كريم في الحساب وفقدان هناء للأثر في الممرات، فتوقفت الميقاتية بصوت رنين حاد. شعر كريم بالإحباط، وشعرت هناء بالغضب والخذلان.
-الصفحة 4: امتدت الظلال الطويلة بين رفوف الكتب الجلدية الضخمة في أقبية الأرشيف، ووجد كريم وهناء نفسيهما عند ممر مسدود تماما. مر قط الأرشيف الماهر بخطوات واثقة وهادئة، متوقفا عند عتبة باب حجري مهجور ومصغيا بانتباه شديد لأصداء الرياح المترددة عبر الشقوق في جدران القبو.
-الصفحة 5: جلس كريم على درج حجري وأسند جبينه إلى كفيه في حزن شديد، بينما جلست هناء تراقب الميقاتية النحاسية الساكنة. شعر كلاهما بالهزيمة، وظنا أن كبرياءهما وتشبث كل منهما برأيه قد أضاع فرصة المشاركة في رحلة الاستكشاف الكبرى التي كانا يحلمان بها طويلا.
-الصفحة 6: راقب كريم وهناء حركة القط وتركيزه على أصداء المكان. أدرك كريم أن معادلاته تفتقر إلى حدس هناء البصري، وأدركت هناء أن ملاحظاتها تحتاج إلى دقة كريم الرياضية. وحين جمعا دفاترهما وتسامحا بلطف وصدق، عادت الميقاتية تدق بنغمات موسيقية ساحرة وتتوهج بنور كهرماني مشرق.
-الصفحة 7: بتعاون مخلص وتناغم تام، حددت هناء اتجاه الأصداء الصوتية بينما ضبط كريم إحداثيات البوصلة الفلكية. انفتحت الميقاتية النحاسية معلنة فك الشفرة الملاحية في اللحظة التي أشرقت فيها خيوط الشمس الأولى على قبة المكتبة. تعانق كريم وهناء بفخر واعتزاز غامرين بهذا الإنجاز المشترك!
-الصفحة 8: سار كريم وهناء بثقة عائدين إلى رحاب مكتبة الأكاديمية البحرية المطلة على الساحل، وسلما المخطوطة المفكوكة لقادة الأسطول مع انطلاق أبواق السفن في الميناء. شعر كريم وهناء ببهجة عميقة وامتنان متبادل. فالإنجازات العظيمة لا تصنعها العقول الفردية وحدها، بل تولد من التناغم الصادق بين العقول المتعاونة.`
+    `نموذج (قصة التكامل العلمي، الأبطال: "كريم" و"هناء"، الأداة: الميقاتية النحاسية):
+الصفحة 1: في رحاب مكتبة الأكاديمية البحرية المشمسة، جلس كريم وهناء يدرسان الميقاتية النحاسية الأثرية. كانت تروس الميزان المزدوجة تدق بإيقاع متناسق فقط عندما يخفض الباحثان ذراعي الثقلين المعاكسين في نفس اللحظة تماما. كان هدفهما فك رموز الخريطة الملاحية قبل إبحار أسطول الفجر.
+الصفحة 2: هبت نسمة بحرية عبر الأروقة الحجرية وحركت لفائف المخطوطات. حلقت يعسوب ذهبية في الفناء راسمة مسارات متوهجة قبل أن تختفي في أقبية الأرشيف العتيقة في غموض مشوق.
+الصفحة 3: أصر كريم على دفع الترس الأكبر بقوة ليتعجل الدوران، بينما جذبت هناء عجلة التوقيت للخلف. صَرِير صَرِير! انحرف محور التوازن وتوقفت الميقاتية بصوت احتكاك معدني حاد. شعر كريم بالمرارة والإحباط، وشعرت هناء بالغضب لتجاهل رأيها.
+الصفحة 4: امتدت الظلال الطويلة بين خزائن الكتب الجلدية في قبو الأرشيف. وقف كريم وهناء عند ممر مسدود تماما. سار قط المكتبة الخبير بخطوات واثقة وهادئة، متوقفا عند مدخل القاعة الرخامية ومصغيا لتناغم أصداء أمواج البحر المترددة عبر الشقوق.
+الصفحة 5: جلس كريم على عتبة حجرية واضعا يديه فوق رأسه، بينما جلست هناء تراقب الميقاتية الساكنة. شعر كلاهما بالأسف، وأدركا أن العناد والتعجل أوقفا التقدم. هَفْ... تناهت أصوات الرياح الشاطئية في صمت المكان.
+الصفحة 6: تأمل كريم وهناء ترقب القط وإصغاءه لإيقاع الأمواج الطبيعي. اعتذر كريم عن تسرعه، وشاركت هناء حساباتها التوقيتية بروح مرحبة. وضعا أيديهما على الذراعين وأنزلا الثقلين بتطابق تام في نفس الثانية. رَنِين رَنِين! دارت التروس في توافق موسيقي مذهل.
+الصفحة 7: بتعاون وثيق وتكامل كامل، حددت هناء اتجاه الأصداء الصوتية بينما ضبط كريم إحداثيات البوصلة الفلكية على دقات الميقاتية المنتظمة. طَقْ! انفتحت الأسطوانة النحاسية الداخلية كاشفة عن المسار الملاحي السري. تعانق كريم وهناء بفخر واعتزاز غامرين!
+الصفحة 8: سار كريم وهناء بثقة عائدين إلى قاعة الأكاديمية المشمسة، وسلما الخريطة المفكوكة لقادة الأسطول مع انطلاق أبواق السفن في الميناء عند الشروق. شعر كريم وهناء ببهجة عميقة وامتنان متبادل. النجاحات الكبرى تولد من التناغم الصادق بين العقول الصبورة.`
   ]
 };
 
@@ -404,7 +424,17 @@ NON-NEGOTIABLES (short on purpose — everything else is voice, not rule)
    named in spread 1, in the same words used there, and close on a warm,
    concrete, non-preachy line — never a stated "moral of the story," but
    never silence either.
-8. Arabic Output Rules (CRITICAL FOR AGE-APPROPRIATE STORYTELLING):
+8. STRICT CAUSE-FIRST ANCHOR MECHANIC (ZERO TOLERANCE FOR MOOD-RING TROPES):
+   - The anchor object/tool is NEVER an emotion detector or psychic mood ring (never write: "the pebble glowed when happy and dimmed when sad", or "his lantern lights up with his curiosity").
+   - The anchor object MUST operate purely via observable physical mechanisms (e.g. clicking a latch into a slot, twisting a lid with two hands, sliding a notch, leveling away from metal, turning a dial).
+   - When operated incorrectly, it jams or resets physically; when adjusted properly, it unlocks physically.
+9. READ-ALOUD ONOMATOPOEIA MANDATE:
+   - Every spread MUST include at least one vivid, joyful, or evocative sound word (e.g. In English: TAP TAP!, WHOOSH!, CLICK!, SPLASH!, CRUNCH!, SIGH..., HUMMM...; In Arabic: طَقْ طَقْ!, ووووش!, زَقْزَقَ!, تِكْ تِكْ!, خَرِير خَرِير!, هَفْ..., هَمْس هَمْس!).
+10. CLICHÉ PLOT BAN:
+   - STRICTLY DO NOT write cliché "fear of the dark" or "scary shadows that turn out to be ordinary toys/clothes" stories. Focus on proactive wonder, curious exploration, and joyful discoveries.
+11. EMOTION-ACTION NON-REDUNDANCY:
+   - Do NOT redundantly state an emotion and then make an object react to that emotion in successive sentences (avoid: "Leo felt sad. The compass dimmed."). Keep feelings named simply for the child, and let physical actions explain the state of the world.
+12. Arabic Output Rules (CRITICAL FOR AGE-APPROPRIATE STORYTELLING):
    - Use clean, modern, child-accessible Fusha (فصحى بسيطة وسلسة وشيقة للأطفال).
    - FORBIDDEN COMPLEXITY: Strictly avoid heavy classical rhetoric, archaic vocabulary, and abstract adult metaphors (e.g. do NOT use adult expressions like "يثقل كاهلها بالتردد", "فجوة عميقة لا نهاية لها", "حسرة دفينة", "صراع مرير"). Keep thoughts, actions, and dialogues simple, sensory, playful, and directly relatable to a young child.
    - GENDER CONSISTENCY (CRITICAL): Ensure 100% strict gender agreement across all verbs, adjectives, and pronouns matching the hero's gender ({{CHILD_GENDER_ARABIC}}). Never switch between masculine and feminine verbs in the same story.

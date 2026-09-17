@@ -1104,7 +1104,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         for (let i = 0; i < Math.max(8, finalSpreads.length); i++) {
             const spreadText = pageEdits[i]?.text !== undefined ? pageEdits[i].text : getSpreadText(finalSpreads[i]);
             if (spreadText || finalSpreads[i]) {
-                fullTextContent += `Spread ${i + 1}:\n${spreadText}\n\n`;
+                if (i === 0) {
+                    const coverTitle = localTitle || storyData.title || '';
+                    const coverSub = localSubtitleOverride || storyData.coverSubtitle || '';
+                    fullTextContent += `Cover:\nTitle: ${coverTitle}\nSubtitle: ${coverSub}\n\n`;
+                } else {
+                    fullTextContent += `Spread ${i}:\n${spreadText}\n\n`;
+                }
             }
         }
         const blob = new Blob([fullTextContent], { type: 'text/plain' });

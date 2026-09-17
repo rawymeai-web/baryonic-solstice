@@ -121,15 +121,18 @@ export async function runEditorPass(
             4. **APPLY AGE-TIERED VOCABULARY WHITELIST (Age ${childAge}):**
                ${childAge <= 3 ? `- Use ONLY simple verbs (ran, hid, sat down, moved, blew, looked), simple nouns (little fox, play spot), and primary emotions (happy, sad, mad, calm, proud, scared, mixed up, safe).` : `- Use clear, everyday concrete words.`}
             5. **UNIVERSAL INTUITIVE SOUNDS:** Use recognizable sounds (*CRUNCH*, *SHHH...*, *SNIFF SNIFF*, *SIGH...*, *SNORE!*, *GIGGLE GIGGLE*).
-            6. **CAUSE-FIRST ANCHOR LOGIC:** State feelings/causes before magic reactions.
-            7. **INSIGHT STRUCTURE:** Spread 6 must have TWO beats (observe clue → realize meaning).
-            8. **RHYTHM, CONCISENESS AND VOCABULARY:**
-               - Keep text punchy, crisp, and within target: **${wordCountRule.min}–${wordCountRule.max} words per spread**.
-            9. **LANGUAGE:** All output text MUST be in ${targetLang}. Arabic MUST NOT contain Tashkeel (vowel diacritics).
-            10. **HERO NAMES:** ${isDual ? `You MUST feature BOTH "${heroNameA}" and "${heroNameB}" throughout. Spread 3 must show mismatch friction, Spread 5 must give each hero their own named feeling, and Spread 7 must have both heroes act together.` : `You MUST use the exact name "${childName}" throughout. Do NOT change it.`}
-            11. **PAGE BUDGET:** You MUST return EXACTLY ${draft.length} spreads. Do not add or remove pages.
-            12. **WORD COUNT:** ${wordCountRule.min}-${wordCountRule.max} words per spread.
-            13. **NO PHYSICAL DESCRIPTIONS:** Do NOT invent clothing, physical features, or skin color for the hero. Let the illustrations do that.
+            6. **CAUSE-FIRST ANCHOR LOGIC & ZERO MOOD-RING TOLERANCE:** Strictly ban emotion-reading objects (no "the pebble glowed when happy and dimmed when sad" or "the lantern shone with his curiosity"). The anchor object must obey observable physical mechanisms (e.g. clicking a latch, setting a dial, winding a key, holding level away from metal).
+            7. **ORIGINALITY & CLICHÉ BAN:** Ban cliché "fear of the dark" or "scary shadows turning out to be ordinary toys" plots. Ensure active, proactive, wonder-filled child exploration.
+            8. **READ-ALOUD ONOMATOPOEIA:** Ensure every spread includes at least one engaging sound word (*CRUNCH*, *SHHH...*, *CLICK!*, *SPLASH!*, *SIGH...*, *HUMMM...* in English; *طَقْ طَقْ!*, *ووووش!*, *زَقْزَقَ!*, *تِكْ تِكْ!*, *خَرِير!*, *هَفْ...* in Arabic).
+            9. **EMOTION-ACTION NON-REDUNDANCY:** Do NOT redundantly state an emotion and then describe an object reaction in consecutive sentences. Narrate feelings and physical mechanics cleanly.
+            10. **INSIGHT STRUCTURE:** Spread 6 must have TWO beats (observe clue → realize meaning).
+            11. **RHYTHM, CONCISENESS AND VOCABULARY:**
+                - Keep text punchy, crisp, and within target: **${wordCountRule.min}–${wordCountRule.max} words per spread**.
+            12. **LANGUAGE:** All output text MUST be in ${targetLang}. Arabic MUST NOT contain Tashkeel (vowel diacritics).
+            13. **HERO NAMES:** ${isDual ? `You MUST feature BOTH "${heroNameA}" and "${heroNameB}" throughout. Spread 3 must show mismatch friction, Spread 5 must give each hero their own named feeling, and Spread 7 must have both heroes act together.` : `You MUST use the exact name "${childName}" throughout. Do NOT change it.`}
+            14. **PAGE BUDGET:** You MUST return EXACTLY ${draft.length} spreads. Do not add or remove pages.
+            15. **WORD COUNT:** ${wordCountRule.min}-${wordCountRule.max} words per spread.
+            16. **NO PHYSICAL DESCRIPTIONS:** Do NOT invent clothing, physical features, or skin color for the hero. Let the illustrations do that.
 
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             🔁 PASS 4 — VERIFICATION RE-READ (MANDATORY)
@@ -137,7 +140,9 @@ export async function runEditorPass(
             Before producing your final JSON output, re-audit your Pass 3 rewritten spreads against this mandatory checklist. If ANY check fails, fix that spread immediately:
             - [ ] **Home Base Grounding:** Spread 1 explicitly grounds ${isDual ? `BOTH ${heroNameA} and ${heroNameB}` : childName} in their Home Base and establishes a personal emotional origin for their desire.
             - [ ] **Object Continuity:** Special items use possessives rather than generic articles ("a [item]").
-            - [ ] **Anchor Item Rule:** Anchor item trigger is stated cause-first (concrete physical action operating the tool; rushed action jams/resets it).
+            - [ ] **Anchor Item Rule:** Anchor item trigger is stated cause-first (concrete physical action operating the tool; rushed action jams/resets it). ZERO emotion-reading magic.
+            - [ ] **Cliché Check:** Zero "fear of the dark / shadows turn into toys" clichés.
+            - [ ] **Onomatopoeia Check:** Every spread contains at least one vivid sound word.
             - [ ] **Return Journey Bridge & Warm Takeaway:** Spread ${draft.length} contains a smooth return bridge and ends with a warm child-voice takeaway.
             - [ ] **Helper Animal Meaning:** Helper creatures are given a clear meaning on introduction so callbacks are earned.
             - [ ] **Simple Vocabulary Whitelist (Age ${childAge}):** ${childAge <= 3 ? `Zero complex verbs and zero adult emotions. Pure simple words.` : `Zero academic/adult words.`}
