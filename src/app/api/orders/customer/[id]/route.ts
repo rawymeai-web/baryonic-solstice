@@ -67,7 +67,9 @@ export async function GET(
           text: s.text,
           illustrationUrl: s.illustrationUrl || s.imageUrl || '',
           textOffsetX: s.textOffsetX,
-          textOffsetY: s.textOffsetY
+          textOffsetY: s.textOffsetY,
+          textSide: s.textSide,
+          qcStatus: s.qcStatus || 'passed'
         }))
       };
 
