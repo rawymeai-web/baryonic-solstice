@@ -127,6 +127,8 @@ export const backendApi = {
         spreadIndex?: number;
         spreadText?: string;
         iterationNumber?: number;
+        childDescription?: any;
+        characterDescription?: any;
     }) => fetchBackend<any>('/generate/qa', {
         method: 'POST',
         body: JSON.stringify(payload)

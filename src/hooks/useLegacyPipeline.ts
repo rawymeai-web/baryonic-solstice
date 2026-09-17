@@ -900,7 +900,9 @@ export const useLegacyPipeline = (
                                 orderId: orderNumber,
                                 spreadIndex: 0,
                                 spreadText: `Title: ${storyData.title || ''}. Subtitle: ${storyData.coverSubtitle || ''}`,
-                                iterationNumber: attempts
+                                iterationNumber: attempts,
+                                childDescription: storyData.mainCharacter?.description,
+                                characterDescription: storyData.mainCharacter?.description
                             }) as any;
                             
                             qcStatus = qaResult.overallDecision === 'pass' ? 'passed' : 'flagged';
@@ -1059,7 +1061,9 @@ export const useLegacyPipeline = (
                                     orderId: orderNumber,
                                     spreadIndex: spreadNum,
                                     spreadText: [spreads[spreadNum]?.leftText, spreads[spreadNum]?.rightText].filter(Boolean).join(' ') || (spreads[spreadNum] as any)?.text || "",
-                                    iterationNumber: attempts
+                                    iterationNumber: attempts,
+                                    childDescription: storyData.mainCharacter?.description,
+                                    characterDescription: storyData.mainCharacter?.description
                                 }) as any;
                                 
                                 qcStatus = qaResult.overallDecision === 'pass' ? 'passed' : 'flagged';

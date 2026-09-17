@@ -1,5 +1,6 @@
 import { ai, cleanJsonString, withRetry } from '../generation/modelGateway';
 import { supabase } from '../../utils/supabaseClient';
+import { extractBiometrics } from './promptEngineer';
 
 export interface ImageQAResult {
     likeness_score: number;
@@ -24,7 +25,8 @@ export async function runImageQACheck(
     blueprintJson: string,
     resultImageBase64: string,
     dnaImages: { base64: string, label: string }[],
-    spreadText?: string
+    spreadText?: string,
+    childDescription?: any
 ): Promise<ImageQAResult> {
     return withRetry(async () => {
         const parts: any[] = [];
@@ -51,18 +53,27 @@ export async function runImageQACheck(
         }
 
         let childAge = "5";
+        let parsedBlueprint: any = null;
         try {
-            const parsed = typeof blueprintJson === 'string' ? JSON.parse(blueprintJson) : blueprintJson;
-            const rawAge = parsed?.childAge || parsed?.age || parsed?.foundation?.age || "5";
+            parsedBlueprint = typeof blueprintJson === 'string' ? JSON.parse(blueprintJson) : blueprintJson;
+            const rawAge = parsedBlueprint?.childAge || parsedBlueprint?.age || parsedBlueprint?.foundation?.age || "5";
             const numMatch = String(rawAge).match(/\d+/);
             if (numMatch) childAge = numMatch[0];
         } catch (e) {}
+
+        const biometrics = extractBiometrics(childDescription || parsedBlueprint?.childDescription || parsedBlueprint?.mainCharacter?.description || parsedBlueprint);
 
         // Add Instructions
         const prompt = `You are a strict, uncompromising Art Director and Quality Assurance Inspector for a high-end personalized children's book publishing house.
 Your highest priority is CHARACTER LIKENESS AND IDENTITY INTEGRITY. A parent is paying for a book featuring THEIR specific child; if the character's face drifts or looks like a random child, the customer will return the book.
 
-Compare the "FINAL GENERATED SPREAD IMAGE" directly against the "Reference DNA Images" and the narrative text.
+Compare the "FINAL GENERATED SPREAD IMAGE" directly against the "Reference DNA Images", the biometric profile, and the narrative text.
+
+MANDATORY BIOMETRIC TARGET PROFILE:
+- Target Age: ${childAge} years old
+- Mandatory Eye Color: ${biometrics.eyeColor}
+- Mandatory Hair Color & Style: ${biometrics.hairColor} (${biometrics.hairStyle})
+- Mandatory Skin Tone: ${biometrics.skinTone}
 
 Story Text for this Spread:
 "${spreadText || 'No text context provided'}"
@@ -72,16 +83,28 @@ ${typeof blueprintJson === 'string' ? blueprintJson : JSON.stringify(blueprintJs
 
 CRITICAL EVALUATION CRITERIA:
 
-1. Character Facial Likeness, Feature Proportions & Identity (TARGET AGE: ${childAge} YEARS OLD):
+1. Character Facial Likeness & Biometric Color Integrity (TARGET AGE: ${childAge} YEARS OLD):
    - Compare facial landmarks and proportions between the Reference DNA Image and the character in the generated spread:
      a) Face & Jaw Shape: Head shape, cheek roundness/fullness, and chin geometry.
-     b) Eyes & Eyebrows: Eye shape, eyelid fold, pupil color, eyebrow arch, and eye-to-head proportion scale.
+     b) Eyes & Eyebrows: Eye shape, eyelid fold, pupil/iris color, eyebrow arch, and eye-to-head proportion scale.
      c) Nose & Mouth: Nose bridge/tip width and mouth shape.
      d) Hair: Hair color, wave/curl texture, volume, and hairline.
-   - FORBIDDEN STYLIZATION MUTATION: The character must NOT undergo unprompted stylization drift (e.g. realistic child drifting into exaggerated cartoon/doll eyes, or stylized character drifting into uncanny photographic realism).
-   - Assign a quantitative "likeness_score" from 1 to 10 (10 = identical match, 7-9 = strong likeness with minor angle/pose shifts, 5-6 = generic caricature, distorted proportions, or stylization drift, 1-4 = wrong child or total identity loss).
-   - MANDATORY FAIL RULE: Set "character_consistency_status": "fail" and "request_regeneration": true if the likeness_score is LESS THAN 7/10 or if the character lost the child's identity/proportions.
-   - If likeness is 7 or above, set "character_consistency_status": "pass", and note any minor observations in "character_reasoning".
+
+   - MANDATORY BIOMETRIC FAIL RULES (ZERO TOLERANCE FOR EYE/HAIR COLOR MUTATION):
+     * EYE COLOR CHECK: Look closely at the character's irises/eyes in the generated image. If the target is Dark Brown (${biometrics.eyeColor}), but the generated character has GREEN, HAZEL, LIGHT BROWN, AMBER, or BLUE eyes (even if caused by ambient lighting or lantern glow reflections), this is an UNACCEPTABLE identity hallucination.
+       -> You MUST set "character_consistency_status": "fail"
+       -> Set "likeness_score": 4 (or less than 6)
+       -> Set "request_regeneration": true and "overall_decision": "fail"
+       -> In "regeneration_reason", state: "Biometric Failure: Character rendered with incorrect eye color instead of mandatory ${biometrics.eyeColor}. Eyes must be deep ${biometrics.eyeColor}."
+     * HAIR COLOR & SILHOUETTE: If the character's hair color is lightened (e.g. reddish, strawberry blonde, light brown) when target is Dark Brown (${biometrics.hairColor}), or if the haircut mutates into an unprompted fade/undercut when reference is curly/wavy, you MUST set "character_consistency_status": "fail", "overall_decision": "fail", and "request_regeneration": true.
+     * SKIN TONE & PROPORTIONS: Skin tone must match the reference without unprompted bleaching or ethnic distortion.
+
+   - Scoring Guide:
+     * 9-10: Flawless, unmistakable identity match to the reference child with accurate anatomical/stylization scale.
+     * 7-8: Clear, recognizable likeness with natural expression adaptation and accurate eye/hair colors.
+     * 5-6: Generic caricature, distorted proportions, mutated eye/hair colors, or stylization drift — FAILS parent recognition.
+     * 1-4: Wrong child, imposter, or complete identity loss.
+   - MANDATORY FAIL RULE: Any likeness score below 7/10 is an AUTOMATIC FAIL.
 
 2. Character Wardrobe & Footwear Consistency:
    - Check the character's clothing and footwear across poses:
@@ -96,7 +119,7 @@ CRITICAL EVALUATION CRITERIA:
 4. Style, Medium & Dimensionality Consistency:
    - Does the illustration match the exact artistic medium, rendering dimensionality, brushwork/textures, and lighting quality of the Reference DNA Image?
    - FORBIDDEN STYLE DRIFT: The illustration must NOT drift into contrasting artistic media or incompatible stylization levels (e.g., painterly realism shifting to 3D CGI plastic or flat vector, 3D animated shifting to flat 2D or realistic photo, watercolor shifting to digital glossy CGI).
-   - MANDATORY FAIL RULE: If the illustration mutates into a contrasting artistic medium or different dimensionality/stylization level, set "style_consistency_status": "fail", "overall_decision": "fail", and specify the exact observed drift and target requirement in "regeneration_reason" (e.g., "Style drifted into [Observed Style] with [Observed Deviations]; must strictly match the target medium and anatomical scale of the DNA Reference Image").
+   - MANDATORY FAIL RULE: If the illustration mutates into a contrasting artistic medium or different dimensionality/stylization level, set "style_consistency_status": "fail", "overall_decision": "fail", and specify the exact observed drift and target requirement in "regeneration_reason".
 
 5. Text Zone Clearance:
    - Check if the designated side is clear of the character's face.
@@ -106,7 +129,7 @@ Return a strictly valid JSON object matching exactly this structure:
 {
     "likeness_score": number,
     "character_consistency_status": "pass" | "fail",
-    "character_reasoning": "Detailed breakdown of face shape, eyes, nose, hair, and specific reasons for the score...",
+    "character_reasoning": "Detailed breakdown of face shape, eyes (including iris color), nose, hair, and specific reasons for the score...",
     "wardrobe_consistency_status": "pass" | "fail",
     "wardrobe_reasoning": "Detailed explanation of top, bottom pants/shorts, and footwear consistency...",
     "style_consistency_status": "pass" | "fail",
@@ -134,23 +157,30 @@ Return a strictly valid JSON object matching exactly this structure:
         const response = await model.generateContent(parts);
         const rawText = response.response.text();
         const cleaned = cleanJsonString(rawText);
-        const qaResult = JSON.parse(cleaned);
+        const qaResult: ImageQAResult = JSON.parse(cleaned);
+
+        // Enforce schema integrity: if likeness < 7 or any critical check failed, overall decision MUST be fail
+        if (qaResult.likeness_score < 7 || qaResult.character_consistency_status === 'fail' || qaResult.style_consistency_status === 'fail') {
+            qaResult.overall_decision = 'fail';
+            qaResult.request_regeneration = true;
+        }
 
         return qaResult;
     }, 3, 3000, {
-        likeness_score: 8,
-        character_consistency_status: 'pass',
-        character_reasoning: 'QA agent completed evaluation with default pass fallback.',
+        likeness_score: 5,
+        character_consistency_status: 'fail',
+        character_reasoning: 'QA agent encountered transient vision timeout/error during automated check.',
         wardrobe_consistency_status: 'pass',
-        wardrobe_reasoning: 'Wardrobe audit completed.',
+        wardrobe_reasoning: 'Default fallback applied.',
         style_consistency_status: 'pass',
-        style_reasoning: 'Style consistency acceptable.',
+        style_reasoning: 'Default fallback applied.',
         text_clearance_status: 'pass',
-        text_reasoning: 'Text area clear.',
+        text_reasoning: 'Default text clearance applied.',
         recommended_text_side: 'Right',
         recommended_text_offset_x: 0,
         recommended_text_offset_y: 0,
         request_regeneration: false,
-        overall_decision: 'pass'
+        overall_decision: 'flagged',
+        regeneration_reason: 'Transient QA error. Flagged for manual review.'
     });
 }

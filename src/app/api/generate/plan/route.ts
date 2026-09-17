@@ -8,19 +8,24 @@ function buildHeroProfiles(frontendHeroes: any[]) {
     return frontendHeroes.map((h, i) => ({
         hero_id: `hero_${i+1}`,
         token: `[[HERO_${i+1}]]`,
+        name: h.name || (i === 0 ? "Primary Hero" : "Secondary Hero"),
+        age: h.age || h.childAge,
         role: h.role || (i === 0 ? "primary" : "secondary"),
         identity_anchor_image_index: h.identity_image_id ? (i * 2) + 1 : -1,
         stylized_dna_image_index: h.style_dna_image_id ? (i * 2) + 2 : undefined,
         real_photo_role: "identity only" as const,
         stylized_reference_role: "outfit and character design only" as const,
+        description: h.description || h.childDescription || h.characterDescription,
+        clothing: h.clothing || h.outfit || h.clothing_lock,
+        clothing_lock: h.clothing_lock || h.clothing || "Use the approved clothing from the character design reference.",
+        hair: h.hair || h.hair_lock,
+        hair_lock: h.hair_lock || h.hair,
+        accessory_lock: undefined,
         likeness_rules: {
             preserve: ["facial likeness", "face shape", "eye spacing", "eyebrow shape", "nose proportions", "smile shape", "skin tone", "hair color", "hairstyle"],
             avoid: ["pose", "lighting", "realism level", "photographic rendering", "background", "crop"],
             translation_rule: "Preserve each hero's key identity cues from the real photo, but translate every feature into the selected global style."
-        },
-        clothing_lock: "Use the approved clothing from the character design reference.",
-        hair_lock: undefined,
-        accessory_lock: undefined
+        }
     }));
 }
 

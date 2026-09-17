@@ -26,6 +26,11 @@ function buildHeroProfiles(frontendHeroes: any[]) {
             name: h.name || (i === 0 ? 'Primary Hero' : 'Secondary Hero'),
             role: (h.role || (i === 0 ? 'primary' : 'secondary')) as 'primary' | 'secondary' | 'supporting',
             age: h.age || h.childAge,
+            description: h.description || h.childDescription || h.characterDescription,
+            clothing: h.clothing || h.outfit || h.clothing_lock,
+            clothing_lock: h.clothing_lock || h.clothing,
+            hair: h.hair || h.hair_lock,
+            hair_lock: h.hair_lock || h.hair,
 
             // DNA-only: identity_anchor is -1 (no raw photo), DNA gets the index
             identity_anchor_image_index: -1,
@@ -60,10 +65,24 @@ export async function POST(req: Request) {
             frontendHeroes = [];
             if (body.visualDNA || body.plan || body.script) {
                 // Primary Hero
-                frontendHeroes.push({ role: 'primary', style_dna_image_id: 'legacy_dna_1' });
+                frontendHeroes.push({ 
+                    role: 'primary', 
+                    name: body.childName,
+                    age: body.childAge,
+                    description: body.childDescription,
+                    clothing: body.mainCharacter?.clothing || body.mainCharacter?.outfit,
+                    style_dna_image_id: 'legacy_dna_1' 
+                });
                 // Secondary Hero
                 if (body.hasSecondHero || (body.secondCharacter && Object.keys(body.secondCharacter).length > 0)) {
-                    frontendHeroes.push({ role: 'secondary', style_dna_image_id: 'legacy_dna_2' });
+                    frontendHeroes.push({ 
+                        role: 'secondary', 
+                        name: body.secondCharacter?.name,
+                        age: body.secondCharacter?.age,
+                        description: body.secondCharacter?.description,
+                        clothing: body.secondCharacter?.clothing || body.secondCharacter?.outfit,
+                        style_dna_image_id: 'legacy_dna_2' 
+                    });
                 }
             }
         }

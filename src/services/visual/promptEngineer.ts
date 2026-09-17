@@ -124,6 +124,75 @@ function sanitizeUnnamedCharacters(text: string, heroTokens: string[]): string {
 }
 
 // ---------------------------------------------------------------------------
+// BIOMETRIC EXTRACTION HELPER
+// ---------------------------------------------------------------------------
+export function extractBiometrics(desc: any): {
+    eyeColor: string;
+    hairColor: string;
+    hairStyle: string;
+    skinTone: string;
+    hasExplicitLocks: boolean;
+} {
+    if (!desc) {
+        return {
+            eyeColor: 'Dark brown',
+            hairColor: 'Dark brown',
+            hairStyle: 'Short, natural texture',
+            skinTone: 'Warm natural tone',
+            hasExplicitLocks: false
+        };
+    }
+
+    let obj: any = null;
+    let descStr = '';
+
+    if (typeof desc === 'object') {
+        obj = desc;
+        try {
+            descStr = JSON.stringify(desc);
+        } catch (e) {}
+    } else if (typeof desc === 'string') {
+        descStr = desc;
+        try {
+            obj = JSON.parse(desc);
+        } catch (e) {}
+    }
+
+    let eyeColor = obj?.identity?.eye_color || '';
+    let hairColor = obj?.identity?.hair?.color || '';
+    let hairStyle = obj?.identity?.hair?.style || obj?.identity?.hair?.texture || '';
+    let skinTone = obj?.identity?.skin?.tone || '';
+
+    // Regex fallbacks from raw text
+    if (!eyeColor && descStr) {
+        const eyeMatch = descStr.match(/eye(?:s|\s*color)?[:\s]+([^\n,.}"]+)/i) || descStr.match(/"eye_color":\s*"([^"]+)"/i);
+        if (eyeMatch) eyeColor = eyeMatch[1].trim();
+    }
+    if (!hairColor && descStr) {
+        const hairMatch = descStr.match(/hair(?:[\s\-_]*color)?[:\s]+([^\n,.}"]+)/i) || descStr.match(/"color":\s*"([^"]+)"/i);
+        if (hairMatch) hairColor = hairMatch[1].trim();
+    }
+    if (!hairStyle && descStr) {
+        const styleMatch = descStr.match(/hair(?:[\s\-_]*style)?[:\s]+([^\n,.}"]+)/i) || descStr.match(/"style":\s*"([^"]+)"/i);
+        if (styleMatch) hairStyle = styleMatch[1].trim();
+    }
+    if (!skinTone && descStr) {
+        const skinMatch = descStr.match(/skin(?:[\s\-_]*tone)?[:\s]+([^\n,.}"]+)/i) || descStr.match(/"tone":\s*"([^"]+)"/i);
+        if (skinMatch) skinTone = skinMatch[1].trim();
+    }
+
+    const hasExplicitLocks = !!(eyeColor || hairColor || skinTone);
+
+    return {
+        eyeColor: eyeColor || 'Dark brown',
+        hairColor: hairColor || 'Dark brown',
+        hairStyle: hairStyle || 'Natural texture matching DNA reference',
+        skinTone: skinTone || 'Warm natural tone matching DNA reference',
+        hasExplicitLocks
+    };
+}
+
+// ---------------------------------------------------------------------------
 // SECTION A — HERO REFERENCE (DNA-ONLY)
 // ---------------------------------------------------------------------------
 function buildHeroReferenceParagraph(heroes: HeroProfile[]): string {
@@ -848,9 +917,16 @@ function assembleEnglishPromptV7_4(
             ? ` Do NOT blend, swap, or mix facial features between [[HERO_1]] and [[HERO_2]].`
             : '';
 
+        const biometrics = extractBiometrics(h.description || (h as any).childDescription || (h as any).characterDescription || (h as any).identity);
+        const bioLock = `
+  * MANDATORY BIOMETRIC LOCKS (ZERO TOLERANCE FOR COLOR MUTATION):
+    - Eye Color: ${biometrics.eyeColor}. Under NO circumstances render with green, hazel, blue, amber, or light-colored eyes. The eyes must remain distinctly ${biometrics.eyeColor} in all scenes and under all lighting conditions (including lantern light, moonlight, and sunset).
+    - Hair Color & Style: ${biometrics.hairColor} (${biometrics.hairStyle}). Maintain the exact hair color and wave/curl pattern from Image ${dnaIdx}. Do NOT lighten, bleach, or alter haircut (no modern high-fades, tapers, or undercuts).
+    - Skin Tone: ${biometrics.skinTone}. Preserve natural ethnic complexion without bleaching or unnatural lighting shifts.`;
+
         castingDirectives.push(`- ${heroToken} (${name}${ageDesc}): ${roleText}
   * DYNAMIC ISOLATION RULE: Isolate ONLY the character figure from Image ${dnaIdx}. Completely discard and ignore all background scenery, surrounding environment, animals, objects, textures, and props visible in Image ${dnaIdx}.
-  * 1:1 IDENTITY & ANATOMY FIDELITY: Maintain exact 1:1 facial likeness from Image ${dnaIdx}: head and jaw shape, cheek structure, eye shape and color, eyebrow arch, nose and mouth geometry, skin tone, and exact hairstyle/hairline. Strictly preserve the established anatomical scale and facial feature proportions from Image ${dnaIdx} (including eye-to-face proportion ratio). Do NOT alter stylization depth, re-imagine, or substitute with generic caricature.${dualDistinction}`);
+  * 1:1 IDENTITY & ANATOMY FIDELITY: Maintain exact 1:1 facial likeness from Image ${dnaIdx}: head and jaw shape, cheek structure, eye shape and color, eyebrow arch, nose and mouth geometry, skin tone, and exact hairstyle/hairline. Strictly preserve the established anatomical scale and facial feature proportions from Image ${dnaIdx} (including eye-to-face proportion ratio). Do NOT alter stylization depth, re-imagine, or substitute with generic caricature.${bioLock}${dualDistinction}`);
 
         // Resolve 3-part wardrobe (Top, Bottom, Footwear)
         let outfitStr = '';

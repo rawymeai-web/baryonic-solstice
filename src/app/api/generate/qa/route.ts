@@ -24,12 +24,15 @@ export async function POST(req: Request) {
             currentTextSide,
             targetPrompt,
             secondRawBase64,
-            secondDNABase64
+            secondDNABase64,
+            childDescription,
+            characterDescription
         } = body;
 
         let resultImageBase64 = "";
         let finalDnaImages: { base64: string, label: string }[] = [];
         let finalBlueprintJson = blueprintJson;
+        const resolvedChildDescription = childDescription || characterDescription;
 
         const isLegacyFormat = !!generatedImageBase64;
 
@@ -53,7 +56,8 @@ export async function POST(req: Request) {
                 finalBlueprintJson = JSON.stringify({
                     page_type: pageType || "Spread",
                     image_prompt: targetPrompt || "",
-                    text_placement: currentTextSide || "right"
+                    text_placement: currentTextSide || "right",
+                    childDescription: resolvedChildDescription
                 });
             }
         } else {
@@ -71,7 +75,7 @@ export async function POST(req: Request) {
         }
 
         // Run the QA check using Gemini Vision
-        const qaResult = await runImageQACheck(finalBlueprintJson, resultImageBase64, finalDnaImages, spreadText);
+        const qaResult = await runImageQACheck(finalBlueprintJson, resultImageBase64, finalDnaImages, spreadText, resolvedChildDescription);
 
         // Enrich the logging text with offset changes and regeneration requests
         let finalCharacterReasoning = qaResult.character_reasoning || "";

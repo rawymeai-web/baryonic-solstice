@@ -1,4 +1,5 @@
 import { ai, cleanJsonString, withRetry } from '../generation/modelGateway';
+import { extractBiometrics } from './promptEngineer';
 
 export interface ImageEvaluationParams {
     generatedImageBase64: string;
@@ -126,15 +127,23 @@ export class QualityAgent {
                 }
             }
 
+            const biometrics = extractBiometrics(params.childDescription || targetPrompt);
+
             const promptContext = `
 You are the child's PARENT and a world-class, uncompromising Art Director inspecting a personalized storybook.
 A parent has paid a premium for a custom keepsake starring THEIR specific child (Target Age: ${childAge} years old).
 
+MANDATORY BIOMETRIC TARGET PROFILE:
+- Target Age: ${childAge} years old
+- Mandatory Eye Color: ${biometrics.eyeColor}
+- Mandatory Hair Color & Style: ${biometrics.hairColor} (${biometrics.hairStyle})
+- Mandatory Skin Tone: ${biometrics.skinTone}
+
 CRITICAL MINDSET — THE PARENT EYE TEST:
-Look at the generated character in the spread and compare them side-by-side with the Reference DNA Image / Raw Photo.
+Look at the generated character in the spread and compare them side-by-side with the Reference DNA Image / Raw Photo and the Mandatory Biometric Profile.
 Ask yourself the fundamental parent question:
 "Is this unmistakably MY child, or does this look like a different kid / stranger?"
-If a parent would say "That is not my child!", "Why does his haircut look completely different?", "Why does he look 12 instead of 6?", or "Why is his skin color different?", you MUST FAIL the image immediately. Do NOT be polite, agreeable, or lenient. Generic "it's a boy with dark curly hair" is NOT acceptable likeness.
+If a parent would say "That is not my child!", "Why does his haircut look completely different?", "Why are his eyes green when his eyes are dark brown?", "Why does he look 12 instead of 6?", or "Why is his skin color different?", you MUST FAIL the image immediately. Do NOT be polite, agreeable, or lenient. Generic "it's a boy with dark curly hair" is NOT acceptable likeness.
 
 Story Text for this Page (${pageType}):
 "${storyText || 'N/A'}"
@@ -146,16 +155,20 @@ Designated Text Box Side: ${currentTextSide || 'Right'}
 
 STRICT BIOMETRIC & ARTISTIC EVALUATION CRITERIA:
 
-1. Facial Likeness, Feature Proportions & Identity Preservation (Weight: CRITICAL):
+1. Facial Likeness, Feature Proportions & Biometric Color Integrity (Weight: CRITICAL):
+   - Eye Color Integrity: Look closely at the character's irises/eyes in the generated image. If the target is Dark Brown (${biometrics.eyeColor}), but the generated character has GREEN, HAZEL, LIGHT BROWN, AMBER, or BLUE eyes (even if caused by lighting or lantern glow reflections), this is an UNACCEPTABLE identity hallucination.
+     -> You MUST set "characterConsistencyStatus": "fail", "likenessScore": 4, and "overallDecision": "fail".
+     -> Specify in "regenerationReason": "Biometric Failure: Character rendered with incorrect eye color instead of mandatory ${biometrics.eyeColor}. Eyes must be deep ${biometrics.eyeColor}."
+   - Hair Color & Cut Integrity: Hair color MUST match ${biometrics.hairColor} (${biometrics.hairStyle}). If hair appears noticeably lightened (e.g. reddish, strawberry blonde, light brown) when target is Dark Brown, or if the haircut mutates into an unprompted fade/undercut when reference is curly/wavy, you MUST set "characterConsistencyStatus": "fail" and "overallDecision": "fail".
    - Head & Facial Geometry: Does the jawline, chin shape, cheek fullness, and eye spacing match the reference?
    - Eye Shape & Feature Proportions: Are the eye contour, pupil color, and brow arch preserved? Compare the eye-to-face proportion scale directly against the DNA reference.
    - FORBIDDEN STYLIZATION MUTATION: The character must NOT undergo unprompted stylization drift (e.g., a realistic child drifting into exaggerated cartoon/doll eyes, or a stylized animated character drifting into photographic realism).
    - Scoring Guide:
-     * 9-10: Flawless, unmistakable identity match to the reference child with accurate anatomical/stylization scale.
-     * 7-8: Clear, recognizable likeness with natural expression adaptation.
-     * 5-6: Generic caricature, distorted proportions, or stylization drift — FAILS parent recognition.
+     * 9-10: Flawless, unmistakable identity match to the reference child with accurate anatomical/stylization scale and exact eye/hair colors.
+     * 7-8: Clear, recognizable likeness with natural expression adaptation and accurate biometrics.
+     * 5-6: Generic caricature, distorted proportions, mutated eye/hair colors, or stylization drift — FAILS parent recognition.
      * 1-4: Wrong child, imposter, or complete identity loss.
-   - MANDATORY FAIL RULE: Any score below 7/10 is an AUTOMATIC FAIL.
+   - MANDATORY FAIL RULE: Any score below 7/10 or any eye/hair color shift is an AUTOMATIC FAIL.
 
 2. Haircut Silhouette & Hair Texture Invariance (Weight: CRITICAL):
    - Hair Structure: Wave/curl pattern, volume, hairline, and side coverage MUST match the DNA reference.
