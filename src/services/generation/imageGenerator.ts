@@ -741,36 +741,8 @@ ${imageSlots.map(s => '→ Image ' + s.slot + ' maps to: ' + s.label).join('<br>
                 throw new Error(`Vision Model Error: No image data returned. (Model: ${finalModelName})`);
             }
         } catch (error: any) {
-            if (isPro) {
-                console.warn(`[FALLBACK] Primary model ${modelName} failed. Message: ${error.message || error}. SILENTLY FALLING BACK TO NANO BANANA 2 (gemini-3-flash-image-preview)...`);
-                finalModelName = 'gemini-3-flash-image-preview';
-                
-                try {
-                    console.log(`Calling Fallback Gemini Multimodal Image Model: ${finalModelName}...`);
-                    const model = ai().getGenerativeModel({ model: finalModelName });
-                    const response = await model.generateContent(contents);
-
-                    // Extract Image
-                    const candidates = response.response.candidates || [];
-                    if (candidates.length > 0 && candidates[0].content?.parts) {
-                        for (const part of candidates[0].content.parts) {
-                            if (part.inlineData?.data) {
-                                b64 = part.inlineData.data;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!b64) {
-                        throw new Error(`Vision Model Error: No image data returned on fallback model: ${finalModelName}`);
-                    }
-                } catch (fallbackError: any) {
-                    console.error(`[FALLBACK FAILED] Fallback model ${finalModelName} also failed: ${fallbackError.message || fallbackError}`);
-                    throw fallbackError;
-                }
-            } else {
-                throw error;
-            }
+            console.warn(`[ImageGen] Generation with ${finalModelName} encountered error: ${error.message || error}. Retrying primary model...`);
+            throw error;
         }
 
         return { 
