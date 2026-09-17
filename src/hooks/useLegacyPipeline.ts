@@ -909,11 +909,14 @@ export const useLegacyPipeline = (
                             if (qaResult.recommendedTextOffsetX !== undefined || qaResult.recommendedTextOffsetY !== undefined) {
                                 const shiftX = qaResult.recommendedTextOffsetX ?? 0;
                                 const shiftY = qaResult.recommendedTextOffsetY ?? 0;
-                                logMsg(`[QA POSITION] Cover: QA Agent recommended text offsets: X = ${shiftX}mm, Y = ${shiftY}mm`);
-                                
-                                if (spreads[0]) {
-                                    spreads[0].textOffsetX = (spreads[0].textOffsetX || 0) + shiftX;
-                                    spreads[0].textOffsetY = (spreads[0].textOffsetY || 0) + shiftY;
+                                if (shiftX !== 0 || shiftY !== 0) {
+                                    logMsg(`[QA POSITION] Cover: QA Agent recommended text offsets: X = ${shiftX}mm, Y = ${shiftY}mm`);
+                                    if (spreads[0]) {
+                                        const coverDefaultX = (storyData.coverTextSide || 'right') === 'left' ? 20 : 220;
+                                        const coverDefaultY = 16;
+                                        spreads[0].textOffsetX = (spreads[0].textOffsetX ?? coverDefaultX) + shiftX;
+                                        spreads[0].textOffsetY = (spreads[0].textOffsetY ?? coverDefaultY) + shiftY;
+                                    }
                                 }
                             }
                             
@@ -1068,10 +1071,13 @@ export const useLegacyPipeline = (
                                 if (qaResult.recommendedTextOffsetX !== undefined || qaResult.recommendedTextOffsetY !== undefined) {
                                     const shiftX = qaResult.recommendedTextOffsetX ?? 0;
                                     const shiftY = qaResult.recommendedTextOffsetY ?? 0;
-                                    logMsg(`[QA POSITION] Spread ${spreadNum}: QA Agent recommended text offsets: X = ${shiftX}mm, Y = ${shiftY}mm`);
-                                    
-                                    spreads[spreadNum].textOffsetX = (spreads[spreadNum].textOffsetX || 0) + shiftX;
-                                    spreads[spreadNum].textOffsetY = (spreads[spreadNum].textOffsetY || 0) + shiftY;
+                                    if (shiftX !== 0 || shiftY !== 0) {
+                                        logMsg(`[QA POSITION] Spread ${spreadNum}: QA Agent recommended text offsets: X = ${shiftX}mm, Y = ${shiftY}mm`);
+                                        const baseDefaultX = recommendedTextSide === 'left' ? 20 : 220;
+                                        const baseDefaultY = 24;
+                                        spreads[spreadNum].textOffsetX = (spreads[spreadNum].textOffsetX ?? baseDefaultX) + shiftX;
+                                        spreads[spreadNum].textOffsetY = (spreads[spreadNum].textOffsetY ?? baseDefaultY) + shiftY;
+                                    }
                                 }
 
                                 logMsg(`[QA RESULT] Spread ${spreadNum} (Attempt ${attempts}): ${qcStatus.toUpperCase()} (Text Side: ${recommendedTextSide})`);

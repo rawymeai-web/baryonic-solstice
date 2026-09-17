@@ -7,15 +7,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const ShareComponent = lazy(() => import('@/components/ui/ShareComponent'));
 
-const formatStoryTextHTML = (text: string, childName: string): string => {
+const formatStoryTextHTML = (text: string, childName?: string, secondName?: string): string => {
     if (!text || typeof text !== 'string') return '';
-    const childFirstName = childName?.trim().split(/\s+/)[0] || '';
-    const escapedName = childFirstName ? childFirstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
-    const nameRegex = escapedName ? new RegExp(`(?<=^|[^\\p{L}\\p{N}_])(${escapedName})(?=[^\\p{L}\\p{N}_]|$)`, 'gu') : null;
-    let formatted = text.split('\n\n').map(p => `<p class="mb-[0.8cqw] last:mb-0 leading-relaxed">${p.trim()}</p>`).join('');
-    if (nameRegex) {
-        formatted = formatted.replace(nameRegex, `<span style="color: #F78F50; font-weight: 800; font-size: 1.05em;">$1</span>`);
+    const namesToHighlight: string[] = [];
+    if (childName && typeof childName === 'string' && childName.trim()) {
+        namesToHighlight.push(childName.trim().split(/\s+/)[0]);
     }
+    if (secondName && typeof secondName === 'string' && secondName.trim()) {
+        namesToHighlight.push(secondName.trim().split(/\s+/)[0]);
+    }
+
+    let formatted = text.split('\n\n').map(p => `<p class="mb-[0.8cqw] last:mb-0 leading-relaxed">${p.trim()}</p>`).join('');
+
+    namesToHighlight.forEach(name => {
+        if (!name) return;
+        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const nameRegex = new RegExp(`(?<=^|[^\\p{L}\\p{N}_])(${escapedName})(?=[^\\p{L}\\p{N}_]|$)`, 'gu');
+        formatted = formatted.replace(nameRegex, `<span style="color: #F78F50; font-weight: 800; font-size: 1.08em; text-shadow: 0 1px 2px rgba(247,143,80,0.15);">$1</span>`);
+    });
+
     return formatted;
 };
 
@@ -257,7 +267,7 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
     const defaultY = PDF_H * 0.12; // 24mm from top
 
     let activeX = defaultX;
-    if (spread.textOffsetX !== undefined && spread.textOffsetX !== null) {
+    if (spread.textOffsetX !== undefined && spread.textOffsetX !== null && spread.textOffsetX > 0) {
         // Guard against coordinate/side mismatch (e.g. text moved to Right, but old Left offset persisted)
         if (textOnLeft && spread.textOffsetX < (PDF_W * 0.5)) {
             activeX = spread.textOffsetX;
@@ -268,7 +278,7 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
         }
     }
 
-    const activeY = spread.textOffsetY !== undefined && spread.textOffsetY !== null
+    const activeY = (spread.textOffsetY !== undefined && spread.textOffsetY !== null && spread.textOffsetY > 0)
         ? spread.textOffsetY
         : defaultY;
 
@@ -310,20 +320,20 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
                     }}
                 >
                     <div 
-                        className="bg-white/95 backdrop-blur-xl border border-white/90 shadow-[0_12px_40px_rgba(0,26,64,0.12)] rounded-[1.4cqw] sm:rounded-[1.8cqw] p-[1.4cqw] sm:p-[2cqw] text-brand-navy max-w-full"
+                        className="bg-white/95 backdrop-blur-xl border border-white/90 shadow-[0_12px_40px_rgba(0,26,64,0.12)] rounded-[1.4cqw] sm:rounded-[1.8cqw] p-[1.6cqw] sm:p-[2.2cqw] text-brand-navy max-w-full"
                         style={{
                             boxShadow: '0 12px 40px rgba(0, 26, 64, 0.12), 0 2px 6px rgba(0,0,0,0.06)',
                         }}
                     >
                         <div
                             style={{
-                                fontSize: 'clamp(11px, 1.65cqw, 20px)',
-                                lineHeight: 1.55,
+                                fontSize: 'clamp(13px, 2.05cqw, 24px)',
+                                lineHeight: 1.7,
                                 fontFamily: isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif",
                                 color: '#001A40',
                             }}
                             className={`font-bold ${isAr ? 'text-right' : 'text-left'}`}
-                            dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(narrativeText, storyData.childName) }}
+                            dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(narrativeText, storyData.childName || storyData.mainCharacter?.name, storyData.secondCharacter?.name) }}
                         />
                     </div>
                 </div>
@@ -759,7 +769,7 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                                     <div 
                                         className={`text-[16px] leading-[1.8] font-medium ${isAr ? 'text-right' : 'text-left'}`}
                                         style={{ fontFamily: isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif" }}
-                                        dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(currentSpreadText, props.storyData.childName) }}
+                                        dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(currentSpreadText, props.storyData.childName || props.storyData.mainCharacter?.name, props.storyData.secondCharacter?.name) }}
                                     />
                                 </div>
                             )}
@@ -845,7 +855,7 @@ const PreviewScreen: React.FC<PreviewScreenProps> = (props) => {
                                                 <div 
                                                     className={`text-[15px] leading-[1.7] font-medium ${isAr ? 'text-right' : 'text-left'}`}
                                                     style={{ fontFamily: isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif" }}
-                                                    dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(spreadText, props.storyData.childName) }}
+                                                    dangerouslySetInnerHTML={{ __html: formatStoryTextHTML(spreadText, props.storyData.childName || props.storyData.mainCharacter?.name, props.storyData.secondCharacter?.name) }}
                                                 />
                                             </div>
                                         )}

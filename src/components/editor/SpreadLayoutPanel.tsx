@@ -105,8 +105,19 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
         ? PDF_H * 0.08 
         : PDF_H * 0.12;
 
-    const activeX = textOffsetX !== undefined ? textOffsetX : defaultX;
-    const activeY = textOffsetY !== undefined ? textOffsetY : defaultY;
+    let activeX = defaultX;
+    if (textOffsetX !== undefined && textOffsetX !== null && textOffsetX > 0) {
+        if (textOnLeft && textOffsetX < (PDF_W * 0.5)) {
+            activeX = textOffsetX;
+        } else if (!textOnLeft && textOffsetX >= (PDF_W * 0.5)) {
+            activeX = textOffsetX;
+        }
+    }
+
+    const activeY = (textOffsetY !== undefined && textOffsetY !== null && textOffsetY > 0)
+        ? textOffsetY
+        : defaultY;
+
     const activeImgOffset = imageOffsetX;
     const activeImgOffsetY = imageOffsetY;
 
