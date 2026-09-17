@@ -201,16 +201,34 @@ export function extractGlobalPropLocks(
 ): { name: string; canonicalDescription: string }[] {
     const propMap = new Map<string, { name: string; descriptions: string[]; count: number }>();
 
-    const normalize = (n: string) => n.trim().toLowerCase().replace(/^(the|a|an)\s+/i, '');
+    const normalize = (n: string) => n.trim().toLowerCase().replace(/^(the|a|an)\s+/i, '').replace(/[\(\)\[\]]/g, '').trim();
 
     const addProp = (name: string, desc?: string) => {
-        if (!name || typeof name !== 'string' || name.trim().length === 0) return;
+        if (!name || typeof name !== 'string') return;
         const cleanName = name.replace(/[\[\]]/g, '').trim();
         const norm = normalize(cleanName);
-        if (!propMap.has(norm)) {
-            propMap.set(norm, { name: cleanName, descriptions: [], count: 0 });
+        if (norm.length < 3) return;
+        // Ignore single-word adjectives that are fragments
+        if (/^(small|trusty|large|soft|wooden|magic|magical|golden|blue|red|old|new|tiny)$/i.test(norm)) return;
+
+        // Check if there is an existing key that is closely matching (e.g. "brass lantern" vs "the brass lantern")
+        let targetKey = norm;
+        for (const existingKey of propMap.keys()) {
+            if (existingKey === norm || (existingKey.length > 5 && norm.includes(existingKey)) || (norm.length > 5 && existingKey.includes(norm))) {
+                targetKey = existingKey.length <= norm.length && existingKey.includes('lantern') ? existingKey : (existingKey.length < norm.length ? norm : existingKey);
+                if (targetKey !== existingKey && propMap.has(existingKey)) {
+                    const oldVal = propMap.get(existingKey)!;
+                    propMap.delete(existingKey);
+                    propMap.set(targetKey, oldVal);
+                }
+                break;
+            }
         }
-        const entry = propMap.get(norm)!;
+
+        if (!propMap.has(targetKey)) {
+            propMap.set(targetKey, { name: cleanName, descriptions: [], count: 0 });
+        }
+        const entry = propMap.get(targetKey)!;
         entry.count += 1;
         if (desc && typeof desc === 'string' && desc.trim().length > 0) {
             entry.descriptions.push(desc.trim());
@@ -226,10 +244,17 @@ export function extractGlobalPropLocks(
     if ((plan as any)?.visualAnchors) {
         const va = (plan as any).visualAnchors;
         if (typeof va.persistentprops === 'string' && va.persistentprops.length > 0) {
-            va.persistentprops.split(/[;,]/).forEach((p: string) => addProp(p, p));
+            // Split by semicolon or newline first; if only commas, check for balanced phrases
+            const parts = va.persistentprops.includes(';') 
+                ? va.persistentprops.split(';') 
+                : va.persistentprops.split(/,\s*(?=[A-Z\u0600-\u06FF])/);
+            parts.forEach((p: string) => addProp(p, p));
         }
         if (typeof va.signatureItems === 'string' && va.signatureItems.length > 0) {
-            va.signatureItems.split(/[;,]/).forEach((p: string) => addProp(p, p));
+            const parts = va.signatureItems.includes(';')
+                ? va.signatureItems.split(';')
+                : va.signatureItems.split(/,\s*(?=[A-Z\u0600-\u06FF])/);
+            parts.forEach((p: string) => addProp(p, p));
         }
     }
 
