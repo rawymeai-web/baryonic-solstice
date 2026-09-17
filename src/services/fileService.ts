@@ -169,7 +169,7 @@ async function renderTextBlobToImage(
     if (childName) {
         const childFirstName = childName.trim().split(/\s+/)[0];
         const escapedName = childFirstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const nameRegex = new RegExp(`\\b(${escapedName})\\b`, 'gi');
+        const nameRegex = new RegExp(`(?<=^|[^\\p{L}\\p{N}_])(${escapedName})(?=[^\\p{L}\\p{N}_]|$)`, 'gu');
         finalHtml = finalHtml.replace(nameRegex, `<span style="font-weight: 900; color: #F78F50; font-size: 1.05em;">$1</span>`);
     }
 
@@ -252,6 +252,8 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
 
     const pdfW = pdf.internal.pageSize.getWidth();
     const pdfH = pdf.internal.pageSize.getHeight();
+    const resolvedLang = (storyData.language || language || 'en') as Language;
+    const isAr = resolvedLang === 'ar' || /[\u0600-\u06FF]/.test(storyData.title || '') || /[\u0600-\u06FF]/.test(storyData.childName || '');
 
     // Helper to normalize image data (Base64 or URL)
     const normalizeImage = async (input: string | undefined): Promise<string> => {
@@ -312,7 +314,6 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
         // LOGIC: Center title on the FRONT COVER half.
         // EN: Front is RIGHT half (50% to 100%)
         // AR: Front is LEFT half (0% to 50%)
-        const isAr = language === 'ar';
         // Smart subtitle: double hero vs single hero (coverSubtitle = manual override)
         const subtitle = storyData.coverSubtitle || (
             storyData.useSecondCharacter && storyData.secondCharacter?.name
@@ -322,7 +323,7 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
                     : `A Story for ${storyData.childName}`
         );
         const coverTitle = storyData.title || storyData.blueprint?.foundation?.title || storyData.childName || 'My Story';
-        const titleB64 = await createTextImage({ title: coverTitle, subtitle }, language);
+        const titleB64 = await createTextImage({ title: coverTitle, subtitle }, resolvedLang);
 
         // Title Width: 40% of full PDF (80% of front cover)
         const tw = pdfW * 0.4;
@@ -474,7 +475,7 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
             else if (ageNum >= 4) fontSize = 48;
 
             const blobImg = await renderTextBlobToImage(
-                fullText, 800, 600, 0, language, fontSize, storyData.childName, 'box'
+                fullText, 800, 600, 0, resolvedLang, fontSize, storyData.childName, 'box'
             );
 
             const rectW = pdfW * 0.40;
@@ -482,7 +483,6 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
             if (blobImg && blobImg.width > 0) { rectH = rectW * (blobImg.height / blobImg.width); }
 
             // Determine which side the text block should appear on.
-            const isAr = language === 'ar';
             let textOnLeft: boolean;
             if (spread.textSide === 'left') {
                 textOnLeft = true;
@@ -589,7 +589,7 @@ export const generateStitchedPdf = async (
         } catch (e) { console.warn("PDF Cover Add Failed", e); }
 
         // Add Title Overlay to Cover
-        const isAr = language === 'ar';
+        const isAr = language === 'ar' || /[\u0600-\u06FF]/.test(storyDetails.title || '') || /[\u0600-\u06FF]/.test(storyDetails.childName || '');
         // Smart subtitle: double hero vs single hero (coverSubtitle = manual override)
         const subtitle = storyDetails.coverSubtitle || (
             storyDetails.secondCharacterName
@@ -598,7 +598,7 @@ export const generateStitchedPdf = async (
                     ? `قصة ${storyDetails.childName}`
                     : `A Story for ${storyDetails.childName}`
         );
-        const titleB64 = await createTextImage({ title: storyDetails.title, subtitle }, language);
+        const titleB64 = await createTextImage({ title: storyDetails.title, subtitle }, isAr ? 'ar' : language);
 
         const tw = pdfW * 0.4;
         const titleAspect = 1000 / 200;
@@ -828,37 +828,16 @@ export const uploadOrderFiles = async (orderNumber: string, content: Blob): Prom
 export const generatePrintPackage = async (storyData: StoryData, shipping: ShippingDetails, language: Language, orderNumber: string) => {
     try {
         const zip = new JSZip();
-
-        // 1. Generate PDF
-        const pdfBlob = await generatePreviewPdf(storyData, language, undefined, orderNumber);
-        zip.file(`${orderNumber}_Preview.pdf`, pdfBlob);
-
-        // 2. Full Written Story
-        let storyText = `Title: ${storyData.title}\nAuthor: ${storyData.childName}\n\n`;
-        (storyData.spreads || []).forEach((s, i) => {
-            if (i === 0) return; // skip cover
-            const spreadText = [s.leftText, s.rightText].filter(Boolean).join(' ') || (s as any).text || '';
-            storyText += `[Spread ${s.spreadNumber}]\n${spreadText}\n\n`;
-        });
-        zip.file('story_narrative.txt', storyText);
-
-        // 3. Raw Images (High Res)
-        // 3. Raw Images (High Res)
         const imagesFolder = zip.folder("raw_images");
 
         // Helper to get Base64 from URL or Raw String
         const getBase64Data = async (input: string): Promise<string> => {
-            // Support both standard HTTP and local Browser Blob URLs
             if (input.startsWith('http') || input.startsWith('blob:')) {
                 try {
-                    // Try fetching; blob URLs don't need CORS, but standard ones might
                     const fetchOptions: RequestInit = input.startsWith('blob:') ? {} : { mode: 'cors' };
                     const resp = await fetch(input, fetchOptions);
-
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                     const blob = await resp.blob();
-
-                    // Convert blob to base64
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onloadend = () => {
@@ -876,9 +855,38 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
             return input.includes(',') ? input.split(',')[1] : input;
         };
 
+        // 1. Parallel upscale of cover and all spreads to 4K 300 DPI via Real-ESRGAN
+        const upscaleTo300Dpi = async (input: string): Promise<string> => {
+            if (!input) return "";
+            try {
+                const res = await fetch('/api/admin/upscale', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        imageUrl: input.startsWith('http') ? input : undefined,
+                        imageBase64: !input.startsWith('http') ? (input.includes(',') ? input.split(',')[1] : input) : undefined,
+                        model: 'realesrgan-x4plus-anime',
+                        scaleFactor: 4,
+                        density: 300,
+                        quality: 96
+                    })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data?.imageBase64) {
+                        return data.imageBase64;
+                    }
+                }
+            } catch (upscaleErr) {
+                console.warn("[fileService] Server 300 DPI upscale fallback:", upscaleErr);
+            }
+            return getBase64Data(input);
+        };
+
+        // Upscale Cover
         let coverB64ToUse = "";
         if (storyData.coverImageUrl) {
-            const coverB64 = await getBase64Data(storyData.coverImageUrl);
+            const coverB64 = await upscaleTo300Dpi(storyData.coverImageUrl);
             if (coverB64) {
                 imagesFolder?.file("cover_clean.jpg", coverB64, { base64: true });
                 coverB64ToUse = coverB64;
@@ -886,8 +894,7 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
         }
 
         // Generate and add cover text and composite cover
-        const isAr = language === 'ar';
-        // Smart subtitle: double hero vs single hero (coverSubtitle = manual override)
+        const isAr = language === 'ar' || storyData?.language === 'ar' || /[\u0600-\u06FF]/.test(storyData?.title || '') || /[\u0600-\u06FF]/.test(storyData?.childName || '');
         const subtitle = storyData.coverSubtitle || (
             storyData.useSecondCharacter && storyData.secondCharacter?.name
                 ? `${storyData.childName} ${isAr ? 'و' : '&'} ${storyData.secondCharacter.name}`
@@ -896,7 +903,7 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
                     : `A Story for ${storyData.childName}`
         );
         const coverTitle = storyData.title || storyData.blueprint?.foundation?.title || storyData.childName || 'My Story';
-        const titleB64 = await createTextImage({ title: coverTitle, subtitle }, language);
+        const titleB64 = await createTextImage({ title: coverTitle, subtitle }, isAr ? 'ar' : language);
         
         if (titleB64) {
             const cleanTitleB64 = titleB64.includes(',') ? titleB64.split(',')[1] : titleB64;
@@ -907,6 +914,46 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
                 imagesFolder?.file("cover_with_text.jpg", coverWithTextB64, { base64: true });
             }
         }
+
+        // Upscale all Spreads
+        const upscaledSpreadB64s: Record<number, string> = {};
+        const spreadPromises = (storyData.spreads || []).map(async (s, i) => {
+            if (!s.illustrationUrl) return;
+            const imgB64 = await upscaleTo300Dpi(s.illustrationUrl);
+            if (imgB64) {
+                upscaledSpreadB64s[s.spreadNumber] = imgB64;
+                const filename = i === 0 ? 'cover.jpg' : `spread_${s.spreadNumber}.jpg`;
+                imagesFolder?.file(filename, imgB64, { base64: true });
+            } else {
+                console.warn(`Failed to package image for spread ${s.spreadNumber}`);
+            }
+        });
+        await Promise.all(spreadPromises);
+
+        // Build 4K StoryData Clone for PDF generation with embedded 4K images
+        const highResStoryData: StoryData = {
+            ...storyData,
+            coverImageUrl: coverB64ToUse ? `data:image/jpeg;base64,${coverB64ToUse}` : storyData.coverImageUrl,
+            spreads: (storyData.spreads || []).map(s => ({
+                ...s,
+                illustrationUrl: upscaledSpreadB64s[s.spreadNumber]
+                    ? `data:image/jpeg;base64,${upscaledSpreadB64s[s.spreadNumber]}`
+                    : s.illustrationUrl
+            }))
+        };
+
+        // 2. Generate PDF with 4K 300 DPI Spreads and crisp Text Boxes
+        const pdfBlob = await generatePreviewPdf(highResStoryData, language, undefined, orderNumber);
+        zip.file(`${orderNumber}_Preview.pdf`, pdfBlob);
+
+        // 3. Full Written Story
+        let storyText = `Title: ${storyData.title}\nAuthor: ${storyData.childName}\n\n`;
+        (storyData.spreads || []).forEach((s, i) => {
+            if (i === 0) return; // skip cover
+            const spreadText = [s.leftText, s.rightText].filter(Boolean).join(' ') || (s as any).text || '';
+            storyText += `[Spread ${s.spreadNumber}]\n${spreadText}\n\n`;
+        });
+        zip.file('story_narrative.txt', storyText);
 
         // Add Reference Images (Visual DNA) to the raw_images folder
         if (storyData.styleReferenceImageUrl) {
@@ -921,19 +968,6 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
             const ref2B64 = await getBase64Data(storyData.secondCharacterImageBase64);
             if (ref2B64) imagesFolder?.file("reference_secondary_character.jpg", ref2B64, { base64: true });
         }
-
-        // Use Promise.all for parallel fetching with better error handling
-        const spreadPromises = (storyData.spreads || []).map(async (s, i) => {
-            if (!s.illustrationUrl) return;
-            const imgB64 = await getBase64Data(s.illustrationUrl);
-            if (imgB64) {
-                const filename = i === 0 ? 'cover.jpg' : `spread_${s.spreadNumber}.jpg`;
-                imagesFolder?.file(filename, imgB64, { base64: true });
-            } else {
-                console.warn(`Failed to package image for spread ${s.spreadNumber}`);
-            }
-        });
-        await Promise.all(spreadPromises);
 
         // 4. Workflow Artifacts (Debug/Re-creation)
         const artifactsFolder = zip.folder("workflow_artifacts");

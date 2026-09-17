@@ -13,19 +13,20 @@ export const GUIDEBOOK = {
             "Neighbor (Fictional)", "Shopkeeper (Fictional)"
         ],
         wordCount: {
-            "1-3": { min: 10, max: 18 },
-            "4-5": { min: 18, max: 28 },
-            "6-8": { min: 30, max: 50 },
-            "9-12": { min: 55, max: 85 }
+            "1-3": { min: 4, max: 8 },
+            "4-5": { min: 9, max: 17 },
+            "6-8": { min: 18, max: 28 },
+            "9-12": { min: 30, max: 50 }
         },
         structure: {
             intro: "Establish Hero in grounded Home Base. State personal desire origin and establish anchor item rule.",
             catalyst: "The sensory trigger / incident that invites the hero into the adventure.",
-            risingAction: "Three escalating attempts/obstacles with strict causal continuity and named emotions.",
+            risingAction: "Three escalating attempts/obstacles with strict causal continuity and named emotions (for ages 1-3: simplified 3-beat shape: Want -> Try/Recovery -> Got it/Rest).",
             climax: "The insight and final test delivering the title/theme promise.",
             resolution: "Seamless return bridge to the Home Base with cozy emotional realization and child-voice takeaway."
         },
         principles: {
+            toddlerStoryArchitecture: "For ages 1–3, follow a 3-beat board book shape: Want (Spreads 1-3) -> Try/Trouble & Simple Recovery (Spreads 4-6) -> Got it/Happy/Rest (Spreads 7-8). Strictly 4-8 words per spread, one idea per spread, no subordinate clauses (cut 'because', 'so that'), with playful repetition and rhythm.",
             personalMotiveOrigin: "Hero desire must have a clear personal root (love, gift, curiosity), never an ungrounded mission statement.",
             worldLogicAndFrame: "Spread 1 must name the child's home base so the final spread's return journey makes complete sense.",
             recurringDeviceRule: "State the simple physical trigger of any anchor item on first use in Spread 1. Always state cause before effect.",

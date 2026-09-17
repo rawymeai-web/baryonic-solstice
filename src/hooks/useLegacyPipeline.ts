@@ -141,7 +141,7 @@ export const useLegacyPipeline = (
                 logMsg(`══════════════════════════════════════════════════════`);
                 logMsg(`🚀 PIPELINE RESTART — CLEAN INITIALIZATION`);
                 logMsg(`📖 Story Narrative Engine : Writer V5 (Master Narrative Architecture — Dual-Hero & Causal Flow)`);
-                logMsg(`🎨 Image Prompt Engine    : [v7.6-actor-placement]`);
+                logMsg(`🎨 Image Prompt Engine    : [v7.7-wide-actor-placement]`);
                 logMsg(`══════════════════════════════════════════════════════`);
                 logMsg(`Pre-flight: Wiping old intermediate data for clean run...`);
                 storyData.blueprint = undefined;
@@ -170,7 +170,7 @@ export const useLegacyPipeline = (
                 logMsg(`══════════════════════════════════════════════════════`);
                 logMsg(`🚀 RESUMING PIPELINE`);
                 logMsg(`📖 Story Narrative Engine : Writer V5 (Master Narrative Architecture)`);
-                logMsg(`🎨 Image Prompt Engine    : [v7.6-actor-placement]`);
+                logMsg(`🎨 Image Prompt Engine    : [v7.7-wide-actor-placement]`);
                 logMsg(`══════════════════════════════════════════════════════`);
                 logMsg(`Resuming pipeline. Skipping pre-flight wipe and jumping to first missing artifact...`);
                 
@@ -224,19 +224,52 @@ export const useLegacyPipeline = (
             logMsg(`Starting Phase 1: Visual DNA & Character Profiling`);
             setStatus(t('معالجة الهوية البصرية...', 'Processing Visual DNA...'));
             const mainChar = storyData.mainCharacter || {};
+
+            // 1. Fetch modern DNA links and original photos from order_dna table if needed
+            if (orderNumber) {
+                try {
+                    const dnaRecords = await adminService.fetchOrderDNA(orderNumber);
+                    if (dnaRecords && dnaRecords.length > 0) {
+                        const hAStyle = dnaRecords.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Stylized DNA');
+                        const hAOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Original Photo');
+                        const hBStyle = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA');
+                        const hBOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Original Photo');
+
+                        if (hAStyle?.image_url && (!mainChar.imageDNA || mainChar.imageDNA.length === 0)) {
+                            mainChar.imageDNA = [hAStyle.image_url];
+                        }
+                        if (hAOrig?.image_url && !mainChar.imageRawUrl) {
+                            mainChar.imageRawUrl = hAOrig.image_url;
+                        }
+                        if (storyData.secondCharacter) {
+                            if (hBStyle?.image_url && (!storyData.secondCharacter.imageDNA || storyData.secondCharacter.imageDNA.length === 0)) {
+                                storyData.secondCharacter.imageDNA = [hBStyle.image_url];
+                            }
+                            if (hBOrig?.image_url && !storyData.secondCharacter.imageRawUrl) {
+                                storyData.secondCharacter.imageRawUrl = hBOrig.image_url;
+                            }
+                        }
+                        storyData.mainCharacter = mainChar;
+                    }
+                } catch (e: any) {
+                    logMsg(`⚠️ Error querying order_dna records: ${e.message}`);
+                }
+            }
             
             let isLegacyDescription = true;
-            if (mainChar.description && typeof mainChar.description === 'string') {
-                try {
-                    const parsed = JSON.parse(mainChar.description);
-                    if (parsed.identity && 
-                        parsed.identity.eye_color && 
-                        parsed.identity.skin && 
-                        parsed.identity.skin.tone) {
+            if (mainChar.description) {
+                let parsed: any = mainChar.description;
+                if (typeof mainChar.description === 'string') {
+                    try {
+                        parsed = JSON.parse(mainChar.description);
+                    } catch (e) {
+                        // Not JSON string
+                    }
+                }
+                if (parsed && typeof parsed === 'object') {
+                    if (parsed.identity || parsed.identity_preservation_priorities || (parsed.skin && parsed.eye_color)) {
                         isLegacyDescription = false;
                     }
-                } catch (e) {
-                    // Not valid JSON
                 }
             }
 
@@ -253,91 +286,122 @@ export const useLegacyPipeline = (
                     : [storyData.mainCharacterImageBase64].filter(Boolean);
 
                 if (originalMainBases.length === 0) {
-                    const fallbackUrl = storyData.styleReferenceImageUrl || 
-                                        mainChar.imageRawUrl || 
+                    const fallbackUrl = mainChar.imageRawUrl || 
+                                        (mainChar.imageDNA && mainChar.imageDNA[0]) ||
+                                        storyData.styleReferenceImageUrl || 
                                         storyData.heroImageUrl || 
                                         storyData.firstCharacterImageUrl;
-                    if (fallbackUrl) {
-                        logMsg(`Downloading character photo from public URL to build Visual DNA...`);
-                        try {
-                            const b64 = await urlToBase64(fallbackUrl);
-                            originalMainBases = [b64];
-                        } catch (e: any) {
-                            logMsg(`⚠️ Failed to download character photo from URL: ${e.message}`);
+                    if (fallbackUrl && typeof fallbackUrl === 'string') {
+                        if (fallbackUrl.startsWith('data:')) {
+                            originalMainBases = [fallbackUrl];
+                        } else if (fallbackUrl.startsWith('http')) {
+                            logMsg(`Downloading character photo from public URL to build Visual DNA...`);
+                            try {
+                                const b64 = await urlToBase64(fallbackUrl);
+                                originalMainBases = [b64];
+                            } catch (e: any) {
+                                logMsg(`⚠️ Failed to download character photo from URL: ${e.message}`);
+                            }
                         }
                     }
                 }
 
-                const compressedMainBases = await Promise.all(originalMainBases.map((b: any) => compressBase64Image(b, 800, 0.7)));
-
-                let compressedSecondBases: string[] = [];
-                if (storyData.secondCharacter) {
-                     let originalSecondBases = (storyData.secondCharacter.imageBases64 && storyData.secondCharacter.imageBases64.length > 0)
-                        ? storyData.secondCharacter.imageBases64
-                        : [storyData.secondCharacterImageBase64].filter(Boolean);
-
-                     if (originalSecondBases.length === 0) {
-                         const fallbackUrl = storyData.secondCharacterImageUrl || 
-                                             storyData.secondCharacter?.imageRawUrl || 
-                                             storyData.secondCharacterImageBase64;
-                         if (fallbackUrl && fallbackUrl.startsWith('http')) {
-                            logMsg(`Downloading second character photo from public URL to build Visual DNA...`);
-                            try {
-                                const b64 = await urlToBase64(fallbackUrl);
-                                originalSecondBases = [b64];
-                            } catch (e: any) {
-                                logMsg(`⚠️ Failed to download second character photo from URL: ${e.message}`);
-                            }
-                         }
-                     }
-
-                     compressedSecondBases = await Promise.all(originalSecondBases.map((b: any) => compressBase64Image(b, 800, 0.7)));
-                }
-
-                const dnaPayload = {
-                    mainCharacter: {
+                if (originalMainBases.length === 0 && mainChar.description) {
+                    logMsg(`Visual reference image not found; preserving current character description.`);
+                    isLegacyDescription = false;
+                } else if (originalMainBases.length === 0) {
+                    logMsg(`No reference photo found for character. Synthesizing default visual profile...`);
+                    storyData.mainCharacter = {
                         ...mainChar,
-                        imageBases64: compressedMainBases
-                    },
-                    secondCharacter: storyData.secondCharacter ? {
-                        ...storyData.secondCharacter,
-                        imageBases64: compressedSecondBases
-                    } : undefined,
-                    theme: ensureSafeString(storyData.theme, "Neutral Setting"),
-                    style: ensureSafeString(storyData.selectedStyleNames?.[0] || storyData.selectedStylePrompt, "Painterly illustration"),
-                    age: ensureSafeString(storyData.childAge, "5"),
-                    occasion: storyData.occasion,
-                    customGoal: storyData.customGoal
-                };
-                
-                const dnaRes = await retryStep('Vision AI DNA', () => backendApi.generateDna(dnaPayload)) as any;
-                if (dnaRes.error) throw new Error(dnaRes.error);
-                
-                storyData.mainCharacter = {
-                    ...mainChar,
-                    description: dnaRes.physicalDescription,
-                    imageDNA: [dnaRes.artifiedHeroBase64]
-                };
-
-                if (storyData.useSecondCharacter && storyData.secondCharacter) {
-                    storyData.secondCharacter = {
-                        ...storyData.secondCharacter,
-                        description: dnaRes.secondPhysicalDescription,
-                        imageDNA: dnaRes.secondArtifiedHeroBase64 ? [dnaRes.secondArtifiedHeroBase64] : undefined
-                    };
-                } else if (storyData.secondCharacter) {
-                    storyData.secondCharacter = {
-                        ...storyData.secondCharacter,
-                        description: "",
+                        description: JSON.stringify({
+                            identity: {
+                                face_shape: 'Oval to round',
+                                eye_color: 'Dark brown',
+                                hair: { color: 'Dark brown', style: 'Short neat hair' },
+                                skin: { tone: 'Warm tan' }
+                            }
+                        }),
                         imageDNA: []
                     };
+                    storyDataRef.current = storyData;
+                    onUpdateStory(storyData);
+                } else {
+                    const compressedMainBases = await Promise.all(originalMainBases.map((b: any) => compressBase64Image(b, 800, 0.7)));
+
+                    let compressedSecondBases: string[] = [];
+                    if (storyData.secondCharacter) {
+                         let originalSecondBases = (storyData.secondCharacter.imageBases64 && storyData.secondCharacter.imageBases64.length > 0)
+                            ? storyData.secondCharacter.imageBases64
+                            : [storyData.secondCharacterImageBase64].filter(Boolean);
+
+                         if (originalSecondBases.length === 0) {
+                             const fallbackUrl = storyData.secondCharacter?.imageRawUrl || 
+                                                 (storyData.secondCharacter?.imageDNA && storyData.secondCharacter?.imageDNA[0]) ||
+                                                 storyData.secondCharacterImageUrl || 
+                                                 storyData.secondCharacterImageBase64;
+                             if (fallbackUrl && typeof fallbackUrl === 'string') {
+                                if (fallbackUrl.startsWith('data:')) {
+                                    originalSecondBases = [fallbackUrl];
+                                } else if (fallbackUrl.startsWith('http')) {
+                                    logMsg(`Downloading second character photo from public URL to build Visual DNA...`);
+                                    try {
+                                        const b64 = await urlToBase64(fallbackUrl);
+                                        originalSecondBases = [b64];
+                                    } catch (e: any) {
+                                        logMsg(`⚠️ Failed to download second character photo from URL: ${e.message}`);
+                                    }
+                                }
+                             }
+                         }
+
+                         compressedSecondBases = await Promise.all(originalSecondBases.map((b: any) => compressBase64Image(b, 800, 0.7)));
+                    }
+
+                    const dnaPayload = {
+                        mainCharacter: {
+                            ...mainChar,
+                            imageBases64: compressedMainBases
+                        },
+                        secondCharacter: storyData.secondCharacter ? {
+                            ...storyData.secondCharacter,
+                            imageBases64: compressedSecondBases
+                        } : undefined,
+                        theme: ensureSafeString(storyData.theme, "Neutral Setting"),
+                        style: ensureSafeString(storyData.selectedStyleNames?.[0] || storyData.selectedStylePrompt, "Painterly illustration"),
+                        age: ensureSafeString(storyData.childAge, "5"),
+                        occasion: storyData.occasion,
+                        customGoal: storyData.customGoal
+                    };
+                    
+                    const dnaRes = await retryStep('Vision AI DNA', () => backendApi.generateDna(dnaPayload)) as any;
+                    if (dnaRes.error) throw new Error(dnaRes.error);
+                    
+                    storyData.mainCharacter = {
+                        ...mainChar,
+                        description: dnaRes.physicalDescription,
+                        imageDNA: [dnaRes.artifiedHeroBase64]
+                    };
+
+                    if (storyData.useSecondCharacter && storyData.secondCharacter) {
+                        storyData.secondCharacter = {
+                            ...storyData.secondCharacter,
+                            description: dnaRes.secondPhysicalDescription,
+                            imageDNA: dnaRes.secondArtifiedHeroBase64 ? [dnaRes.secondArtifiedHeroBase64] : undefined
+                        };
+                    } else if (storyData.secondCharacter) {
+                        storyData.secondCharacter = {
+                            ...storyData.secondCharacter,
+                            description: "",
+                            imageDNA: []
+                        };
+                    }
+                    const rawStyle = storyData.selectedStylePrompt || "A magical, painterly children's book illustration";
+                    storyData.selectedStylePrompt = typeof rawStyle === 'string' ? rawStyle.replace(/([A-Za-z0-9+/]{100,}=*)/g, '[REDACTED_IMAGE_STYLE]') : rawStyle;
+                    storyDataRef.current = storyData;
+                    onUpdateStory(storyData);
+                    await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
+                    logMsg(`✓ Visual DNA generated successfully.`);
                 }
-                const rawStyle = storyData.selectedStylePrompt || "A magical, painterly children's book illustration";
-                storyData.selectedStylePrompt = typeof rawStyle === 'string' ? rawStyle.replace(/([A-Za-z0-9+/]{100,}=*)/g, '[REDACTED_IMAGE_STYLE]') : rawStyle;
-                storyDataRef.current = storyData;
-                onUpdateStory(storyData);
-                await adminService.saveOrder(orderNumber, storyData, initialShippingDetails);
-                logMsg(`✓ Visual DNA generated successfully.`);
             } else {
                 logMsg(`Visual DNA already exists, skipping.`);
             }
@@ -427,15 +491,15 @@ export const useLegacyPipeline = (
             };
             checkAborted();
             // Step 4: Engineering Prompts & Phase 5: Illustrator AI Pass
-            logMsg(`Starting Phase 4: AI Prompt Engineering ([v7.6-actor-placement])`);
+            logMsg(`Starting Phase 4: AI Prompt Engineering ([v7.7-wide-actor-placement])`);
             setStatus(t('هندسة وتدقيق الأوامر...', 'Engineering & Auditing Prompts...'));
 
             // Helper: check if a prompt contains a modern schema stamp.
             const hasV3Stamp = (p: any): boolean => {
                 try {
                     const str = typeof p === 'string' ? p : JSON.stringify(p || '');
-                    // Force upgrade if it's older than v7.6-actor-placement
-                    return str.includes('v7.6') || str.includes('v7.5');
+                    // Force upgrade if it's older than v7.7-wide-actor-placement
+                    return str.includes('v7.7') || str.includes('v7.6') || str.includes('v7.5');
                 } catch { return false; }
             };
 
@@ -476,6 +540,7 @@ export const useLegacyPipeline = (
                 const promptsRes = await retryStep('Prompt Engineer AI', () => backendApi.generatePrompts({ 
                     plan: storyData.spreadPlan, 
                     blueprint: storyData.blueprint,  
+                    language: lang,
                     selected_style_id: storyData.selected_style_id || "premium_3d_adventure",
                     visualDNA: storyData.selectedStyleNames?.[0] || storyData.technicalStyleGuide || (storyData.selectedStylePrompt?.includes('**TASK:**') ? undefined : storyData.selectedStylePrompt) || storyData.themeVisualDNA || "Painterly illustration",
                     heroes: [

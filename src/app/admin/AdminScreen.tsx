@@ -870,13 +870,20 @@ const OrdersView: React.FC<{ orders: AdminOrder[], language: Language, refreshOr
                         isLegacy={isLegacyMode}
                         isResume={isResumeMode}
                         onUpdateStory={async (updates) => {
-                            const merged = { ...editorOrder.storyData, ...updates, orderId: editorOrder.orderNumber } as any;
-                            // Optimistic update for immediate visual feedback
-                            setEditorOrder({ ...editorOrder, storyData: merged });
-                            try {
-                                await adminService.saveOrder(editorOrder.orderNumber, merged, editorOrder.shippingDetails, editorOrder.total);
-                            } catch (e) {
-                                console.error("Auto-save failed:", e);
+                            if (!editorOrder) return;
+                            const orderNum = editorOrder.orderNumber;
+                            const shipping = editorOrder.shippingDetails;
+                            const orderTotal = editorOrder.total;
+                            const mergedStory = { ...editorOrder.storyData, ...updates, orderId: orderNum };
+
+                            setEditorOrder(prev => prev ? { ...prev, storyData: mergedStory } : null);
+
+                            if (orderNum) {
+                                try {
+                                    await adminService.saveOrder(orderNum, mergedStory, shipping, orderTotal);
+                                } catch (e) {
+                                    console.error("Auto-save failed:", e);
+                                }
                             }
                         }}
                         onFinalize={async (args) => { 

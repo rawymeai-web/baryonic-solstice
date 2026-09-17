@@ -1,4 +1,5 @@
 import type { StoryData } from '@/types';
+import { selectArcForStory, getThemeById, resolveThemeId, THEME_ALIASES } from './story/arcCatalog';
 
 export interface AgeTaggedItem {
   text: string;
@@ -8,7 +9,7 @@ export interface AgeTaggedItem {
 export type ThemeItem = string | AgeTaggedItem;
 
 export interface ThemeContent {
-  heritageContext: string;
+heritageContext: string;
   visualStyle: string;
   minAgeRecommended?: number;
   maxAgeRecommended?: number;
@@ -675,76 +676,18 @@ const themeLibrary: Record<string, ThemeContent> = {
 };
 
 
-export const THEME_ALIASES: Record<string, string> = {
-  'val-dentist': 'val-dentist',
-  'val-siblings': 'val-siblings',
-  'adv-magic-obj': 'adv-magic-obj',
-  'adv-daily': 'adv-daily',
-  'adv-animals': 'adv-animal',
-  'adv-dinosaur': 'adv-dino',
-  'adv-dinosaurs': 'adv-dino',
-  'adv-pyramids': 'adv-pyramid',
-  // Natural Language & Storefront Name Aliases
-  'animal adventures': 'adv-animal',
-  'animals': 'adv-animal',
-  'talking to animals and understanding their language': 'adv-animal',
-  'space adventure': 'adv-space',
-  'space': 'adv-space',
-  'pyramid adventure': 'adv-pyramid',
-  'pyramids': 'adv-pyramid',
-  'treasure hunt': 'adv-treasure',
-  'treasure': 'adv-treasure',
-  'fantasy play': 'adv-fantasy',
-  'fantasy': 'adv-fantasy',
-  'magical objects': 'adv-magic-obj',
-  'magic': 'adv-magic',
-  'mini nature adventure': 'adv-mini-nature',
-  'nature': 'adv-mini-nature',
-  'lost and found': 'adv-lost-found',
-  'lost and found journey': 'adv-lost-found',
-  'dinosaur adventure': 'adv-dino',
-  'dinosaurs': 'adv-dino',
-  'staying tidy': 'val-tidy',
-  'tidy': 'val-tidy',
-  'sharing toys': 'val-sharing-toys',
-  'sharing': 'val-sharing-toys',
-  'helping others': 'val-helping',
-  'helping': 'val-helping',
-  'the importance of honesty': 'val-honesty',
-  'honesty': 'val-honesty',
-  'respect': 'val-respect',
-  'bravery at the dentist': 'val-dentist',
-  'bravery': 'val-bravery',
-  'bedtime & sleep': 'val-sleep',
-  'sleep': 'val-sleep',
-  'bedtime': 'val-sleep',
-  'school': 'val-school',
-  'potty': 'val-potty',
-  'teamwork': 'val-teamwork',
-  'cooking': 'adv-cooking',
-  'daily life adventure': 'adv-daily'
-};
-
-export function resolveThemeId(themeIdOrName: string): string {
-  if (!themeIdOrName) return '';
-  const clean = themeIdOrName.toLowerCase().trim();
-  if (themeLibrary[clean]) return clean;
-  if (THEME_ALIASES[clean]) return THEME_ALIASES[clean];
-  
-  for (const [alias, targetId] of Object.entries(THEME_ALIASES)) {
-    if (clean.includes(alias) || alias.includes(clean)) {
-      return targetId;
-    }
-  }
-  return clean;
-}
+// THEME_ALIASES and resolveThemeId are exported from ./story/arcCatalog
+export { THEME_ALIASES, resolveThemeId } from './story/arcCatalog';
 
 export function getGuidelineForTheme(storyData: StoryData): string {
   const themeId = resolveThemeId(storyData.themeId || storyData.theme || '');
+  const age = parseInt(storyData.childAge || "5", 10);
+  const selectedArc = selectArcForStory(themeId, age, (storyData as any).preferredArcId, storyData.childName);
+
   const themeContent = themeLibrary[themeId];
 
   // Custom theme fallback
-  if (!themeContent) {
+  if (!themeContent && !selectedArc) {
     return `
 **Theme:** A custom story about "${storyData.theme}"
 *   **Narrative Design:** Ensure {child_name} is the architect of their own success.
@@ -759,7 +702,6 @@ export function getGuidelineForTheme(storyData: StoryData): string {
 `;
   }
 
-  const age = parseInt(storyData.childAge || "5", 10);
   const ageBand = age <= 3 ? '1-3' : age <= 5 ? '4-5' : age <= 8 ? '6-8' : '9-12';
 
   const filterItems = (items: ThemeItem[]): string[] => {
@@ -769,36 +711,43 @@ export function getGuidelineForTheme(storyData: StoryData): string {
     return matching.length > 0 ? matching : items.map(item => (typeof item === 'string' ? item : item.text));
   };
 
-  const candidateGoals = filterItems(themeContent.goals);
-  const candidateChallenges = filterItems(themeContent.challenges);
+  const candidateGoals = themeContent ? filterItems(themeContent.goals) : [];
+  const candidateChallenges = themeContent ? filterItems(themeContent.challenges) : [];
 
-  const goal = storyData.customGoal || candidateGoals[Math.floor(Math.random() * candidateGoals.length)];
-  const challenge = storyData.customChallenge || candidateChallenges[Math.floor(Math.random() * candidateChallenges.length)];
+  const goal = storyData.customGoal || (selectedArc ? selectedArc.premise : candidateGoals[0] || 'A wonderful discovery');
+  const challenge = storyData.customChallenge || (selectedArc && selectedArc.beats.length >= 3 ? selectedArc.beats[2].text : candidateChallenges[0] || 'Overcoming an obstacle');
 
   let contextLock = "";
   if (themeId) {
     const parts = themeId.split('-');
     const category = parts[0];
     const name = parts[1];
-    contextLock = `STRICT SETTING LOCK: This is a ${category} story specifically about ${name}. Do NOT use generic 'backyards' or 'gardens' unless that is the Heritage Context below.\n`;
+    contextLock = `STRICT SETTING LOCK: This is a ${category} story specifically about ${name}.
+`;
   }
 
+  const anchorDesc = selectedArc ? selectedArc.anchorAndRule : (themeContent ? `${themeContent.anchorObject || "A special personal item"} (Rule: ${themeContent.anchorTriggerRule || "Observable physical cause-first trigger"})` : "A special personal item");
+  const homeBase = selectedArc && selectedArc.beats.length > 0 ? selectedArc.beats[0].text.split(':')[0] : (themeContent ? themeContent.homeBaseSuggestion : "A cozy, familiar starting space.");
+  const guide = selectedArc ? selectedArc.castPlan : (themeContent ? themeContent.companionGuide : "A friendly talking animal guide");
+  const returnBridge = selectedArc && selectedArc.beats.length >= 8 ? selectedArc.beats[7].text : (themeContent ? themeContent.returnBridgeHint : "Traveling safely back home to the starting space");
+
   return `${contextLock}
-**Heritage Context:** ${themeContent.heritageContext}
-**Home Base Idea:** ${themeContent.homeBaseSuggestion || "A cozy, familiar starting space."}
-**Anchor Device:** ${themeContent.anchorObject || "A special personal item"} (Rule: ${themeContent.anchorTriggerRule || "Glows warm when happy, cools when worried"})
+**Heritage Context:** ${themeContent ? themeContent.heritageContext : "Universal childhood wonder"}
+**Arc ID:** ${selectedArc ? selectedArc.arcId : "custom"}
+**Arc Title:** ${selectedArc ? selectedArc.title : (storyData.theme || "Custom Story")}
+**Home Base Idea:** ${homeBase || "A cozy, familiar starting space."}
+**Anchor Device:** ${anchorDesc}
 **Goal:** ${goal}
 **Challenge:** ${challenge}
-**Companion Guide:** ${themeContent.companionGuide || "A friendly talking animal guide"}
-**Return Bridge Hint:** ${themeContent.returnBridgeHint || "Traveling safely back home to the starting space"}
-**Moral Payoff:** ${themeContent.moralPayoffPhrase || "A warm child realization"}
-**Visual Style:** ${themeContent.visualStyle}
+**Companion Guide:** ${guide || "A friendly talking animal guide"}
+**Return Bridge Hint:** ${returnBridge || "Traveling safely back home to the starting space"}
+**Visual Style:** ${themeContent ? themeContent.visualStyle : "Warm storybook textures"}
 **Planner Beats:**
-1. **Setup:** {child_name} starts in Home Base: ${themeContent.homeBaseSuggestion || themeContent.heritageContext}
+1. **Setup:** {child_name} starts in Home Base: ${homeBase}
 2. **Catalyst:** They set out to: ${goal}
 3. **Escalation:** They face the obstacle: ${challenge}
-4. **Shift:** They overcome it using the values of the theme.
-5. **Resolution:** Seamless return bridge to Home Base with cozy bedtime payoff.
+4. **Shift:** They overcome it using the values of the theme and their own agency.
+5. **Resolution:** Seamless return bridge to Home Base (${homeBase}) with cozy bedtime payoff.
 `.replace(/{child_name}/g, storyData.childName)
     .replace(/{child_age}/g, storyData.childAge);
 }
@@ -815,38 +764,43 @@ export function getGuidelineComponentsForTheme(
   homeBaseSuggestion?: string;
   returnBridgeHint?: string;
   moralPayoffPhrase?: string;
+  arcId?: string;
+  arcTitle?: string;
 } | null {
   const resolvedId = resolveThemeId(themeIdOrName);
+  const targetAge = age || 5;
+  const selectedArc = selectArcForStory(resolvedId, targetAge);
   const theme = themeLibrary[resolvedId] || themeLibrary[themeIdOrName];
-  if (!theme) return null;
 
-  const ageBand = age ? (age <= 3 ? '1-3' : age <= 5 ? '4-5' : age <= 8 ? '6-8' : '9-12') : undefined;
+  if (!theme && !selectedArc) return null;
+
+  const ageBand = targetAge <= 3 ? '1-3' : targetAge <= 5 ? '4-5' : targetAge <= 8 ? '6-8' : '9-12';
 
   const filterItems = (items: ThemeItem[]): string[] => {
-    if (!ageBand) {
-      return items.map(item => (typeof item === 'string' ? item : item.text));
-    }
     const matching = items
       .filter(item => typeof item === 'string' || !item.ageBand || item.ageBand.includes(ageBand))
       .map(item => (typeof item === 'string' ? item : item.text));
     return matching.length > 0 ? matching : items.map(item => (typeof item === 'string' ? item : item.text));
   };
 
-  const candidateGoals = filterItems(theme.goals);
-  const candidateChallenges = filterItems(theme.challenges);
+  const candidateGoals = theme ? filterItems(theme.goals) : [];
+  const candidateChallenges = theme ? filterItems(theme.challenges) : [];
 
-  // RANDOMIZATION LOGIC: Pick one random goal and one random challenge matching age
-  const randomGoal = candidateGoals[Math.floor(Math.random() * candidateGoals.length)];
-  const randomChallenge = candidateChallenges[Math.floor(Math.random() * candidateChallenges.length)];
+  const goal = selectedArc ? selectedArc.premise : (candidateGoals.length > 0 ? candidateGoals[0] : 'Adventure');
+  const challenge = selectedArc && selectedArc.beats.length >= 3 ? selectedArc.beats[2].text : (candidateChallenges.length > 0 ? candidateChallenges[0] : 'Challenge');
+  const homeBase = selectedArc && selectedArc.beats.length > 0 ? selectedArc.beats[0].text.split(':')[0] : (theme ? theme.homeBaseSuggestion : 'Home Base');
+  const returnBridge = selectedArc && selectedArc.beats.length >= 8 ? selectedArc.beats[7].text : (theme ? theme.returnBridgeHint : 'Return Home');
 
   return {
-    goal: randomGoal,
-    challenge: randomChallenge,
-    illustrationNotes: theme.visualStyle,
-    anchorObject: theme.anchorObject,
-    anchorTriggerRule: theme.anchorTriggerRule,
-    homeBaseSuggestion: theme.homeBaseSuggestion,
-    returnBridgeHint: theme.returnBridgeHint,
-    moralPayoffPhrase: theme.moralPayoffPhrase
+    goal,
+    challenge,
+    illustrationNotes: theme ? theme.visualStyle : 'Warm storybook style',
+    anchorObject: selectedArc ? selectedArc.anchorAndRule.split(';')[0] : (theme ? theme.anchorObject : undefined),
+    anchorTriggerRule: selectedArc ? selectedArc.anchorAndRule : (theme ? theme.anchorTriggerRule : undefined),
+    homeBaseSuggestion: homeBase,
+    returnBridgeHint: returnBridge,
+    moralPayoffPhrase: theme ? theme.moralPayoffPhrase : 'A warm child realization',
+    arcId: selectedArc ? selectedArc.arcId : undefined,
+    arcTitle: selectedArc ? selectedArc.title : undefined
   };
 }

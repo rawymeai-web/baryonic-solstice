@@ -11,10 +11,10 @@ const formatStoryTextHTML = (text: string, childName: string): string => {
     if (!text || typeof text !== 'string') return '';
     const childFirstName = childName?.trim().split(/\s+/)[0] || '';
     const escapedName = childFirstName ? childFirstName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
-    const nameRegex = escapedName ? new RegExp(`\\b(${escapedName})\\b`, 'gi') : null;
+    const nameRegex = escapedName ? new RegExp(`(?<=^|[^\\p{L}\\p{N}_])(${escapedName})(?=[^\\p{L}\\p{N}_]|$)`, 'gu') : null;
     let formatted = text.split('\n\n').map(p => `<p class="mb-[0.8cqw] last:mb-0 leading-relaxed">${p.trim()}</p>`).join('');
     if (nameRegex) {
-        formatted = formatted.replace(nameRegex, `<span class="font-black text-brand-orange">$1</span>`);
+        formatted = formatted.replace(nameRegex, `<span style="color: #F78F50; font-weight: 800; font-size: 1.05em;">$1</span>`);
     }
     return formatted;
 };
@@ -304,21 +304,21 @@ const SpreadView: React.FC<{ spread: Spread, storyData: StoryData, language: Lan
                     className="absolute z-20 transition-all duration-300 pointer-events-none"
                     style={{
                         left: `${leftPercent}%`,
-                        top: `${Math.min(topPercent, 8)}%`,
+                        top: `${topPercent}%`,
                         width: `${widthPercent}%`,
                         maxHeight: '88%',
                     }}
                 >
                     <div 
-                        className="bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgba(0,26,64,0.08)] rounded-[1.2cqw] sm:rounded-[1.6cqw] p-[1.2cqw] sm:p-[1.8cqw] text-brand-navy max-w-full"
+                        className="bg-white/95 backdrop-blur-xl border border-white/90 shadow-[0_12px_40px_rgba(0,26,64,0.12)] rounded-[1.4cqw] sm:rounded-[1.8cqw] p-[1.4cqw] sm:p-[2cqw] text-brand-navy max-w-full"
                         style={{
-                            boxShadow: '0 8px 30px rgba(0, 26, 64, 0.08), 0 1px 3px rgba(0,0,0,0.05)',
+                            boxShadow: '0 12px 40px rgba(0, 26, 64, 0.12), 0 2px 6px rgba(0,0,0,0.06)',
                         }}
                     >
                         <div
                             style={{
-                                fontSize: 'clamp(9px, 1.35cqw, 17px)',
-                                lineHeight: 1.4,
+                                fontSize: 'clamp(11px, 1.65cqw, 20px)',
+                                lineHeight: 1.55,
                                 fontFamily: isAr ? "'Tajawal', sans-serif" : "'Nunito', sans-serif",
                                 color: '#001A40',
                             }}

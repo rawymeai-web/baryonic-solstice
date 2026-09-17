@@ -138,7 +138,7 @@ export const backendApi = {
             body: JSON.stringify(payload)
         }),
 
-    outpaintSpreadImage: (payload: { imageBase64: string; stylePrompt: string; childDNA?: string; secondDNA?: string }) =>
+    outpaintSpreadImage: (payload: { imageUrl?: string; imageBase64?: string; scale?: number; offsetX?: number; offsetY?: number; stylePrompt: string; childDNA?: string; secondDNA?: string }) =>
         fetchBackend<{ imageBase64: string }>('/generate/outpaint', {
             method: 'POST',
             body: JSON.stringify(payload)

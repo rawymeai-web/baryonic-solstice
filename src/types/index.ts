@@ -44,6 +44,8 @@ export interface StoryBlueprint {
     mainChallenge: string;
     primaryVisualAnchor: string; // NEW
     anchorTriggerRule?: string; // v3.3: Structured physical trigger rule (e.g. 'glows warm when calm, cools when worried')
+    arcId?: string; // v4.1: Stable canonical arc ID (e.g. 'adv-space:1-3:1')
+    selectedArc?: any; // v4.1: Resolved structured ArcRecord
     moral: string;
     failedAttemptSpread?: number; // NEW
     insightSpread?: number; // NEW

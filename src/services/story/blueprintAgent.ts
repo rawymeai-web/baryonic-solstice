@@ -1,3 +1,4 @@
+import { selectArcForStory, ArcRecord } from './arcCatalog';
 import { ai, cleanJsonString, withRetry } from '../generation/modelGateway';
 import { Validator } from '../rules/validator';
 import { StoryData, StoryBlueprint, WorkflowLog } from '../../types';
@@ -26,6 +27,13 @@ export async function generateBlueprint(
         };
 
         const targetLang = languageMap[language] || 'English';
+        const targetAgeNum = parseInt(storyData.childAge || "5", 10);
+        const selectedArc = selectArcForStory(
+            storyData.themeId || storyData.theme || '',
+            targetAgeNum,
+            (storyData as any).preferredArcId,
+            (storyData as any).orderId || (storyData as any).id
+        );
 
         return await withRetry(async () => {
 
@@ -42,10 +50,20 @@ export async function generateBlueprint(
             - Moral/Goal: ${storyData.customGoal || "Standard theme goal"}.
             - Challenge: ${storyData.customChallenge || "Standard theme challenge"}.
 
-            **CRITICAL VARIETY RULE (MUST FOLLOW):**
-            - You MUST be highly creative and unpredictable.
-            - If "Standard theme goal" or "Standard theme challenge" is provided, you MUST completely invent a WILDLY NEW, original, and unexpected challenge and goal each time you run. 
-            - DO NOT repeat the same cliché story (e.g., losing a kite in a tree, afraid of the dark, or getting lost in a forest). Invent new scenarios: maybe they are building a spaceship out of cardboard, trying to catch a rogue firefly, or baking a cake that comes to life. Surprise the reader with true variety!
+            ${selectedArc ? `
+            **CANONICAL 8-SPREAD STORY ARCHITECTURE (ARC: ${selectedArc.arcId} — "${selectedArc.title}"):**
+            - **Premise / Core Fun:** ${selectedArc.premise}
+            - **Named Anchor & Observable Physical Rule:** ${selectedArc.anchorAndRule}
+            - **Cast & Location-Lock Plan:** ${selectedArc.castPlan}
+            ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `- **Dual-Hero Dynamic:** ${selectedArc.dualAdaptation}` : ''}
+            ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type === 'object' ? `- **Personal-Item Dynamic:** ${selectedArc.itemAdaptation}` : ''}
+            - **Canonical 8-Spread Story Beats (You MUST structure your 8 spreads faithfully around these beats):**
+${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join('\n')}
+            - **CREATIVE FREEDOM MANDATE:** Follow the canonical arc's beats and physical mechanics faithfully; your creative freedom is in vivid child-appropriate dialogue, sensory details, and pacing—NOT in altering the core plot beats or inventing a different conflict.
+            ` : `
+            **CRITICAL VARIETY RULE (CUSTOM THEME):**
+            - You MUST be highly creative and unpredictable. Invent a fresh, engaging, and original challenge and goal for this custom theme.
+            `}
 
             **LANGUAGE RULE:**
             - The "title", "storyCore", "moral", "heroDesire", and "mainChallenge" fields MUST be strictly in **${targetLang}**.
@@ -270,6 +288,7 @@ export async function generateBlueprint(
                 "foundation": {
                     "title": "[MUST BE IN ${targetLang}]",
                     "targetAge": "${storyData.childAge}",
+                    "arcId": "${selectedArc ? selectedArc.arcId : 'custom'}",
                     "storyCore": "[MUST BE IN ${targetLang}]",
                     "heroDesire": "[MUST BE IN ${targetLang}]",
                     "mainChallenge": "[MUST BE IN ${targetLang}]",
@@ -343,6 +362,14 @@ export async function generateBlueprint(
             if (!text) throw new Error("No response from AI");
 
             const blueprint = JSON.parse(cleanJsonString(text));
+
+            if (selectedArc) {
+                blueprint.foundation.arcId = selectedArc.arcId;
+                blueprint.foundation.selectedArc = selectedArc;
+                if (!blueprint.foundation.anchorTriggerRule) {
+                    blueprint.foundation.anchorTriggerRule = selectedArc.anchorAndRule;
+                }
+            }
 
             if (!Validator.validateBlueprint(blueprint)) {
                 throw new Error("Invalid Blueprint Structure generated.");

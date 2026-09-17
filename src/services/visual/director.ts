@@ -81,10 +81,10 @@ export async function generateVisualPlan(
             13. **FACE VISIBILITY MANDATE:**
                - Do not write actions where characters' hands, arms, or objects obscure their faces (e.g., no "covering face with hands").
 
-            14. **CHARMING, CUTE & ENDEARING EXPRESSIONS (MANDATORY CHILD APPEAL):**
-               - The child hero must ALWAYS look cute, lovable, and appealing to parents in every illustration.
-               - NEVER use negative, aggressive, or depressing expressions like "scowling", "angry frown", "crying", "miserable", "exhausted", "sulking", or "terrified".
-               - For challenges or lowest points, use charming childlike expressions: "cute thinking face", "curious wonder", "puzzled with a slight head tilt", "determined little hero face", "gentle thoughtful look". Keep physical actions grounded and endearing.
+            14. **EMOTIONALLY AUTHENTIC, ENGAGING EXPRESSIONS (NARRATIVE DRIVEN):**
+               - Character expressions must be emotionally authentic, appealing, and directly reflective of the story beat (e.g., thoughtful curiosity, quiet realization, gentle determination, joyful celebration).
+               - Avoid extreme negative or distressing expressions like "scowling", "angry frown", "crying", "miserable", "exhausted", "sulking", or "terrified". For challenges, use expressions like "intrigued thinking face", "focused curiosity", "puzzled with a slight head tilt", or "calm determination".
+               - Do NOT inject forced stylistic caricature terms (e.g., do NOT mandate "oversized wide cartoon eyes", "baby-doll face", or forced 3D tropes); keep facial expressions grounded in natural narrative emotions so the selected visual style and DNA reference govern rendering.
 
             OUTPUT JSON SCHEMA:
             {

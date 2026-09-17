@@ -788,7 +788,7 @@ function assembleEnglishPromptV7_2(
 }
 
 // ---------------------------------------------------------------------------
-// SECTION I.3 — UNIFIED ACTOR PLACEMENT PROMPT ASSEMBLER (v7.6)
+// SECTION I.3 — UNIFIED ACTOR PLACEMENT PROMPT ASSEMBLER (v7.7)
 // ---------------------------------------------------------------------------
 function assembleEnglishPromptV7_4(
     spread: any,
@@ -798,7 +798,7 @@ function assembleEnglishPromptV7_4(
     isRTL: boolean = false
 ): { prompt: string; validation: PromptValidationResult } {
 
-    const schemaStamp = `[v7.6-actor-placement]`;
+    const schemaStamp = `[v7.8-style-dna-lock]`;
 
     // 1. Dynamic Actor Casting & Reference Mapping (Single & Dual Hero)
     // Filter heroes to only those who are actually present in this scene/spread
@@ -850,7 +850,7 @@ function assembleEnglishPromptV7_4(
 
         castingDirectives.push(`- ${heroToken} (${name}${ageDesc}): ${roleText}
   * DYNAMIC ISOLATION RULE: Isolate ONLY the character figure from Image ${dnaIdx}. Completely discard and ignore all background scenery, surrounding environment, animals, objects, textures, and props visible in Image ${dnaIdx}.
-  * 1:1 IDENTITY PRESERVATION: Maintain exact 1:1 facial likeness from Image ${dnaIdx}: head and jaw shape, cheek structure, eye shape and color, eyebrow arch, nose and mouth geometry, skin tone, and exact hairstyle/hairline. Do NOT re-imagine, further stylize, or replace with a generic cartoon face.${dualDistinction}`);
+  * 1:1 IDENTITY & ANATOMY FIDELITY: Maintain exact 1:1 facial likeness from Image ${dnaIdx}: head and jaw shape, cheek structure, eye shape and color, eyebrow arch, nose and mouth geometry, skin tone, and exact hairstyle/hairline. Strictly preserve the established anatomical scale and facial feature proportions from Image ${dnaIdx} (including eye-to-face proportion ratio). Do NOT alter stylization depth, re-imagine, or substitute with generic caricature.${dualDistinction}`);
 
         // Resolve 3-part wardrobe (Top, Bottom, Footwear)
         let outfitStr = '';
@@ -894,9 +894,18 @@ function assembleEnglishPromptV7_4(
         ? `WARDROBE & ATTIRE LOCK:\n${wardrobeDirectives.join('\n')}`
         : '';
 
-    // Style Matching Directive (Inherit from reference image rather than descriptive cartoon text)
-    const stylePrompt = styleProfile?.style_name || styleProfile?.prompt || '';
-    const styleText = `ART STYLE MATCHING:\n- Inherit the visual style, lighting quality, textures, and medium directly from the character reference image(s). Do not introduce contrasting art styles or simplify into flat cartoon vectors.`;
+    // Style Matching Directive (Generalized & Style-Invariant)
+    const styleName = styleProfile?.style_name || (styleProfile as any)?.name || styleProfile?.prompt || 'Approved Book Style';
+    const styleLock = styleProfile?.positive_style_lock ? ` ${styleProfile.positive_style_lock}` : '';
+    const charRules = styleProfile?.character_rendering_rules ? ` ${styleProfile.character_rendering_rules}` : '';
+    const texRules = styleProfile?.texture_rules ? ` ${styleProfile.texture_rules}` : '';
+    const forbiddenDirectives = styleProfile?.forbidden_styles && Array.isArray(styleProfile.forbidden_styles) && styleProfile.forbidden_styles.length > 0
+        ? ` Strictly avoid incompatible art styles, medium drift, or unapproved rendering techniques: ${styleProfile.forbidden_styles.join(', ')}.`
+        : ' Do not introduce contrasting art styles, unauthorized 3D/2D medium shifts, or unstyled textures.';
+
+    const styleText = `ART STYLE & STYLIZATION FIDELITY:
+- Target Style: ${styleName}.${styleLock}${charRules}${texRules}
+- Inherit the visual artistic medium, lighting quality, surface textures, and stylization depth directly from the character reference image(s). Strictly maintain the artistic medium, dimensionality, and stylization level of Image 1.${forbiddenDirectives}`;
 
     // 2. Setting & Environment (Sanitizing conflicting medium terms)
     const s = spread.setting;
@@ -931,7 +940,7 @@ function assembleEnglishPromptV7_4(
         settingText = `Scene: A wide 16:9 children's book illustration scene.`;
     }
 
-    // 3. Actions & Expressions (Clean grammar flow, expression sanitizer & cute appeal mandate)
+    // 3. Actions & Expressions (Clean narrative flow, authentic emotional expressions)
     let actionsText = '';
     if (typeof spread.keyActions === 'string') {
         let actionStr = spread.keyActions;
@@ -939,7 +948,7 @@ function assembleEnglishPromptV7_4(
             const regex = new RegExp(`\\[Hero\\s*${idx + 1}\\]`, 'gi');
             actionStr = actionStr.replace(regex, h.token);
         });
-        actionsText = `Action: ${actionStr}\nHero Expression: Ensure the hero's face is always charming, cute, and lovable with sweet, endearing childlike appeal.`;
+        actionsText = `Action: ${actionStr}`;
     } else {
         const actionLines = (spread.hero_actions || [])
             .filter((a: any) => a.presence !== 'absent' && a.action)
@@ -953,9 +962,6 @@ function assembleEnglishPromptV7_4(
                 if (a.eye_line) actionStr += `, ${sanitizeText(a.eye_line)}`;
                 return actionStr.trim().replace(/\.+$/, '') + '.';
             });
-        if (actionLines.length > 0) {
-            actionLines.push(`Hero Expression: Ensure the hero's face is always charming, cute, and lovable with sweet, endearing childlike appeal.`);
-        }
         actionsText = actionLines.length > 0 
             ? `Action: ${actionLines.join(' ')}` 
             : '';
@@ -978,15 +984,15 @@ function assembleEnglishPromptV7_4(
     }
     const view = comp.composition_view || spread.compositionView || '';
     const viewText = view ? ` Framing: Use a ${view} composition.` : '';
-    let compositionText = `Composition: Place all characters, actions, and key props on the ${actionSide} side of the frame. The opposite ${quietSide} side must remain open, uncluttered negative space with simple, soft background scenery.${viewText}`;
+    let compositionText = `Composition: Wide-angle full-body environmental shot with generous vertical clearance. Ground all characters, actions, and key props strictly in the lower 45% of the frame on the ${actionSide} side, showing full figures from head to toe with feet visible on the ground. The upper 50% of the frame must remain expansive, open negative space with empty sky, high ceiling, or soft atmospheric background scenery. The top of the characters' heads must remain strictly below the 45% horizontal midline. The opposite ${quietSide} side must remain calm, open negative space with simple, soft background scenery.${viewText}`;
 
     if (isCover) {
         if (isRTL) {
             // Arabic / RTL: Front Cover is on the LEFT half, Back Cover is on the RIGHT half
-            compositionText = `Composition: Single panoramic seamless illustration spread across the wide canvas. Place all main characters and the primary hero action strictly on the LEFT side of the frame (within the lower 60% of the left half). The upper 40% of the left side must remain calm, open negative space with empty sky or soft ambient background scenery. Characters' heads and faces must not enter the upper 20% area. The entire RIGHT side of the frame must contain calm, peaceful ambient background scenery without any character figures. No vertical lines, creases, splits, borders, or text.`;
+            compositionText = `Composition: Single panoramic seamless illustration spread across the entire wide canvas. Extreme wide-angle full-body environmental shot. Place all main characters and the primary hero action strictly on the LEFT side of the frame, confined entirely within the bottom 45% height of the left half with full bodies and feet visible on the ground. The entire upper 55% of the left side must remain calm, expansive open negative space with vast empty sky or soft ambient background scenery. Characters' heads and faces must remain strictly below the 45% horizontal midline. The entire RIGHT side of the frame must contain calm, peaceful ambient background scenery without any character figures. No vertical lines, creases, splits, borders, or text.`;
         } else {
             // English / LTR: Front Cover is on the RIGHT half, Back Cover is on the LEFT half
-            compositionText = `Composition: Single panoramic seamless illustration spread across the wide canvas. Place all main characters and the primary hero action strictly on the RIGHT side of the frame (within the lower 60% of the right half). The upper 40% of the right side must remain calm, open negative space with empty sky or soft ambient background scenery. Characters' heads and faces must not enter the upper 20% area. The entire LEFT side of the frame must contain calm, peaceful ambient background scenery without any character figures. No vertical lines, creases, splits, borders, or text.`;
+            compositionText = `Composition: Single panoramic seamless illustration spread across the entire wide canvas. Extreme wide-angle full-body environmental shot. Place all main characters and the primary hero action strictly on the RIGHT side of the frame, confined entirely within the bottom 45% height of the right half with full bodies and feet visible on the ground. The entire upper 55% of the right side must remain calm, expansive open negative space with vast empty sky or soft ambient background scenery. Characters' heads and faces must remain strictly below the 45% horizontal midline. The entire LEFT side of the frame must contain calm, peaceful ambient background scenery without any character figures. No vertical lines, creases, splits, borders, or text.`;
         }
     }
 
@@ -1059,7 +1065,7 @@ export async function generatePrompts(
             const bpSpread = blueprint?.structure?.spreads?.find(s => s.spreadNumber === spreadIndex);
             const isCover = spreadIndex === 0;
 
-            const spreadIsRTL = isRTL || /[\u0600-\u06FF]/.test(spread?.storyText || '') || /[\u0600-\u06FF]/.test(bpSpread?.narrative || '');
+            const spreadIsRTL = isRTL || /[\u0600-\u06FF]/.test(spread?.storyText || '') || /[\u0600-\u06FF]/.test((bpSpread as any)?.storyText || '') || /[\u0600-\u06FF]/.test(bpSpread?.narrative || '');
 
             const { prompt, validation } = assembleEnglishPromptV7_4(spread, styleProfile, heroes, isCover, spreadIsRTL);
 
@@ -1083,7 +1089,7 @@ export async function generatePrompts(
             return {
                 spreadNumber: spreadIndex,
                 imagePrompt: prompt,
-                storyText: isCover ? '' : (bpSpread?.narrative || ''),
+                storyText: isCover ? '' : ((bpSpread as any)?.storyText || spread?.storyText || spread?.text || bpSpread?.narrative || ''),
                 mainContentSide: actionSide,
                 textSide: txtSide,
             };
@@ -1097,7 +1103,7 @@ export async function generatePrompts(
                 inputs: { planSize: plan.spreads.length, heroCount: heroes.length },
                 outputs: {
                     promptCount: prompts.length,
-                    method: 'DNA Likeness & Wardrobe Assembler v7.5-wardrobe-unified',
+                    method: 'DNA Likeness & Wardrobe Assembler v7.8-style-dna-lock',
                     validationErrors: allValidationErrors.length > 0 ? allValidationErrors : 'none',
                 },
                 status: allValidationErrors.length > 0 ? 'Warning' : 'Success',

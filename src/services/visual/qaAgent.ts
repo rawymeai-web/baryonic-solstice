@@ -72,15 +72,16 @@ ${typeof blueprintJson === 'string' ? blueprintJson : JSON.stringify(blueprintJs
 
 CRITICAL EVALUATION CRITERIA:
 
-1. Character Facial Likeness & Identity (TARGET AGE: ${childAge} YEARS OLD):
-   - Compare facial landmarks between the Reference DNA Image and the character in the generated spread:
+1. Character Facial Likeness, Feature Proportions & Identity (TARGET AGE: ${childAge} YEARS OLD):
+   - Compare facial landmarks and proportions between the Reference DNA Image and the character in the generated spread:
      a) Face & Jaw Shape: Head shape, cheek roundness/fullness, and chin geometry.
-     b) Eyes & Eyebrows: Eye shape, eyelid fold, pupil color, and eyebrow arch.
+     b) Eyes & Eyebrows: Eye shape, eyelid fold, pupil color, eyebrow arch, and eye-to-head proportion scale.
      c) Nose & Mouth: Nose bridge/tip width and mouth shape.
      d) Hair: Hair color, wave/curl texture, volume, and hairline.
-   - Assign a quantitative "likeness_score" from 1 to 10 (10 = identical match, 7-9 = strong likeness with minor angle/pose shifts, 5-6 = acceptable likeness for 2D stylized art, 1-4 = wrong child or total identity loss).
-   - MANDATORY FAIL RULE: Set "character_consistency_status": "fail" and "request_regeneration": true ONLY if the likeness_score is LESS THAN 5/10 or if the character clearly lost the child's identity completely (e.g. wrong gender, entirely different facial features).
-   - If likeness is between 5 and 7, set "character_consistency_status": "pass", and note any minor observations in "character_reasoning".
+   - FORBIDDEN STYLIZATION MUTATION: The character must NOT undergo unprompted stylization drift (e.g. realistic child drifting into exaggerated cartoon/doll eyes, or stylized character drifting into uncanny photographic realism).
+   - Assign a quantitative "likeness_score" from 1 to 10 (10 = identical match, 7-9 = strong likeness with minor angle/pose shifts, 5-6 = generic caricature, distorted proportions, or stylization drift, 1-4 = wrong child or total identity loss).
+   - MANDATORY FAIL RULE: Set "character_consistency_status": "fail" and "request_regeneration": true if the likeness_score is LESS THAN 7/10 or if the character lost the child's identity/proportions.
+   - If likeness is 7 or above, set "character_consistency_status": "pass", and note any minor observations in "character_reasoning".
 
 2. Character Wardrobe & Footwear Consistency:
    - Check the character's clothing and footwear across poses:
@@ -92,9 +93,10 @@ CRITICAL EVALUATION CRITERIA:
 3. Narrative Logic & Action:
    - Does the character action and setting align with the story beat described in the narrative?
 
-4. Style Consistency:
-   - Does the illustration match the painterly/storybook visual style of the DNA reference?
-   - Fail only if it renders as flat clip-art, unrendered 3D CGI plastic, or a raw unstyled photograph.
+4. Style, Medium & Dimensionality Consistency:
+   - Does the illustration match the exact artistic medium, rendering dimensionality, brushwork/textures, and lighting quality of the Reference DNA Image?
+   - FORBIDDEN STYLE DRIFT: The illustration must NOT drift into contrasting artistic media or incompatible stylization levels (e.g., painterly realism shifting to 3D CGI plastic or flat vector, 3D animated shifting to flat 2D or realistic photo, watercolor shifting to digital glossy CGI).
+   - MANDATORY FAIL RULE: If the illustration mutates into a contrasting artistic medium or different dimensionality/stylization level, set "style_consistency_status": "fail", "overall_decision": "fail", and specify the exact observed drift and target requirement in "regeneration_reason" (e.g., "Style drifted into [Observed Style] with [Observed Deviations]; must strictly match the target medium and anatomical scale of the DNA Reference Image").
 
 5. Text Zone Clearance:
    - Check if the designated side is clear of the character's face.

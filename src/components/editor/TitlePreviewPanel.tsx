@@ -22,8 +22,8 @@ interface TitlePreviewPanelProps {
  * We render it into a fixed element at viewport edge with overflow:hidden clipping.
  */
 async function renderTitleToDataUrl(title: string, subtitle: string, lang: Language): Promise<string> {
-    const isAr = lang === 'ar';
-    const isEn = lang === 'en';
+    const isAr = lang === 'ar' || /[\u0600-\u06FF]/.test(title || '') || /[\u0600-\u06FF]/.test(subtitle || '');
+    const isEn = lang === 'en' && !isAr;
     const fontFamily = isAr ? "'Tajawal', sans-serif" : (isEn ? "'Luckiest Guy', cursive" : "'Nunito', sans-serif");
     const letterSpacing = isAr ? 'normal' : '2px';
     const textShadow = '4px 4px 0 #203A72, -2px -2px 0 #203A72, 2px -2px 0 #203A72, -2px 2px 0 #203A72, 2px 2px 0 #203A72, 0 8px 15px rgba(0,0,0,0.3)';
@@ -129,7 +129,7 @@ const TitlePreviewPanel: React.FC<TitlePreviewPanelProps> = ({
     const titleAspect = 1000 / 200;
     const th = tw / titleAspect;
     
-    const isAr = language === 'ar';
+    const isAr = language === 'ar' || /[\u0600-\u06FF]/.test(title || '') || /[\u0600-\u06FF]/.test(subtitle || '');
     const side = coverTextSide || (isAr ? 'left' : 'right');
     const defaultTx = side === 'left'
         ? (PDF_W * 0.25) - (tw / 2)

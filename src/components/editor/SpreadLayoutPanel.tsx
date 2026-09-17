@@ -188,6 +188,47 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
                 </div>
             </div>
 
+            {/* Quick Presets for Vertical Headroom & Framing */}
+            <div className="flex items-center gap-1.5 pt-1">
+                <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest shrink-0">Presets:</span>
+                <button
+                    type="button"
+                    onClick={() => {
+                        onImageScaleChange(78);
+                        onImageOffsetYChange(10);
+                        onImageOffsetXChange(0);
+                    }}
+                    className="flex-1 text-[8px] font-black uppercase bg-indigo-100/70 hover:bg-indigo-200 text-indigo-700 py-1 px-1.5 rounded-lg transition-all text-center border border-indigo-200/60 active:scale-95"
+                    title="Zoom out to 78% and pan down to create top headroom for text/title"
+                >
+                    ↕️ +Headroom (78%)
+                </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        onImageScaleChange(75);
+                        onImageOffsetYChange(0);
+                        onImageOffsetXChange(0);
+                    }}
+                    className="flex-1 text-[8px] font-black uppercase bg-emerald-100/70 hover:bg-emerald-200 text-emerald-700 py-1 px-1.5 rounded-lg transition-all text-center border border-emerald-200/60 active:scale-95"
+                    title="Zoom out to 75% wide angle view"
+                >
+                    ↔️ Wide (75%)
+                </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        onImageScaleChange(100);
+                        onImageOffsetXChange(0);
+                        onImageOffsetYChange(0);
+                    }}
+                    className="text-[8px] font-black uppercase bg-slate-100 hover:bg-slate-200 text-slate-600 py-1 px-2 rounded-lg transition-all border border-slate-200 active:scale-95"
+                    title="Reset image to 100% full bleed"
+                >
+                    ↺ 100%
+                </button>
+            </div>
+
             {/* Stats row */}
             <div className="grid grid-cols-2 gap-2">
                 <div className="bg-white/80 rounded-xl p-2.5 border border-indigo-100 space-y-1 font-mono text-[9px]">
@@ -199,7 +240,7 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
                 </div>
                 <div className="bg-white/80 rounded-xl p-2.5 border border-indigo-100 space-y-1 font-mono text-[9px]">
                     <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Image Pan & Zoom</p>
-                    <div className="flex justify-between"><span className="text-gray-400">Zoom</span><span className="font-bold text-green-500">{imageScale}%</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Zoom</span><span className={`font-bold ${imageScale < 100 ? 'text-amber-600' : 'text-green-500'}`}>{imageScale}%</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">Pan</span><span className="font-bold text-orange-500">X:{activeImgOffset}% Y:{activeImgOffsetY}%</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">PDF Res</span><span className="font-bold text-indigo-600">{PDF_W}×{PDF_H}</span></div>
                 </div>
@@ -223,20 +264,40 @@ const SpreadLayoutPanel: React.FC<SpreadLayoutPanelProps> = ({
                             onImageOffsetYChange(0);
                             onImageScaleChange(100);
                         }}
-                        className="w-full text-[9px] font-black uppercase text-gray-400 hover:text-red-500 transition-colors py-1 mt-2 block"
+                        className="w-full text-[9px] font-black uppercase text-gray-400 hover:text-red-500 transition-colors py-1 mt-1 block"
                     >
                         ↺ Reset to defaults
                     </button>
                 )}
 
-                {/* Generative Fill Button */}
-                {(imageScale !== 100 || imageOffsetX !== 0 || imageOffsetY !== 0) && onGenerativeFill && (
+                {/* Generative Fill (Outpaint) Button — Always accessible with Review Modal */}
+                {onGenerativeFill && (
                     <button
+                        type="button"
                         onClick={onGenerativeFill}
                         disabled={isGeneratingFill}
-                        className={`w-full py-2 mt-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-md ${isGeneratingFill ? 'bg-indigo-300 cursor-not-allowed animate-pulse' : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 hover:scale-[1.02]'}`}
+                        className={`w-full py-2.5 px-3 mt-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-md flex flex-col items-center justify-center gap-0.5 ${
+                            isGeneratingFill 
+                                ? 'bg-indigo-400 cursor-not-allowed animate-pulse' 
+                                : imageScale < 100 || activeImgOffset !== 0 || activeImgOffsetY !== 0
+                                    ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:to-purple-700 hover:scale-[1.02] shadow-indigo-500/25 ring-2 ring-indigo-300'
+                                    : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 hover:scale-[1.01]'
+                        }`}
                     >
-                        {isGeneratingFill ? '✨ Filling Empty Space...' : '✨ Generative Fill (Outpaint)'}
+                        <span>
+                            {isGeneratingFill 
+                                ? '✨ Expanding Background with AI...' 
+                                : imageScale < 100 || activeImgOffset !== 0 || activeImgOffsetY !== 0
+                                    ? `✨ Generative Fill (Outpaint ${imageScale}%)`
+                                    : '✨ Generative Fill (Outpaint Headroom)'}
+                        </span>
+                        {!isGeneratingFill && (
+                            <span className="text-[7.5px] text-indigo-100 font-medium normal-case tracking-normal opacity-90">
+                                {imageScale < 100 || activeImgOffset !== 0 || activeImgOffsetY !== 0
+                                    ? 'Fills empty canvas areas & opens review comparison'
+                                    : 'Auto zooms out & fills sky/environment for title'}
+                            </span>
+                        )}
                     </button>
                 )}
             </div>

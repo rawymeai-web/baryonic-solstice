@@ -1,7 +1,7 @@
 
 import { StoryBlueprint, SpreadDesignPlan } from '../../types';
 
-import { SIMPLE_WORD_REPLACEMENT_DICTIONARY } from './guidebook';
+import { SIMPLE_WORD_REPLACEMENT_DICTIONARY, getWordCountForAge } from './guidebook';
 
 export interface DraftValidationResult {
     valid: boolean;
@@ -10,6 +10,22 @@ export interface DraftValidationResult {
 }
 
 export const Validator = {
+    // rawy-visible-words-v1 Tokenizer
+    countVisibleWords: (text: string): number => {
+        if (!text) return 0;
+        const normalized = text.normalize('NFC').trim();
+        if (!normalized) return 0;
+        const tokens = normalized.split(/\s+/);
+        return tokens.filter(t => /[\p{L}\p{N}]/u.test(t)).length;
+    },
+
+    // Arabic Zero-Tashkeel Guard (v4.1)
+    checkArabicTashkeel: (text: string): { pass: boolean, tashkeelCount: number } => {
+        if (!text) return { pass: true, tashkeelCount: 0 };
+        const matches = text.match(/[\u064B-\u065F\u0670]/g) || [];
+        return { pass: matches.length === 0, tashkeelCount: matches.length };
+    },
+
     validateBlueprint: (blueprint: any): boolean => {
         if (!blueprint) return false;
         if (!blueprint.foundation || !blueprint.structure) return false;
@@ -175,7 +191,13 @@ export const Validator = {
         };
     },
 
-    // Deterministic Quality Checks for Story Engine v3.3
+    // Strip Arabic Tashkeel helper (v4.1)
+    stripArabicTashkeel: (text: string): string => {
+        if (!text) return '';
+        return text.replace(/[\u064B-\u065F\u0670]/g, '');
+    },
+
+    // Deterministic Quality Checks for Story Engine v4.1
     validateDraftQuality: (
         draft: { text?: string }[] | string[],
         options: {
@@ -199,41 +221,68 @@ export const Validator = {
         }
 
         const texts = draft.map(item => (typeof item === 'string' ? item : item.text || ''));
+        const wordCountRule = getWordCountForAge(age);
 
-        // Check 1: Home Base Grounding (Spread 1)
+        // Check 1: Word Count per Spread (rawy-visible-words-v1 hard error)
+        texts.forEach((text, idx) => {
+            const wc = Validator.countVisibleWords(text);
+            if (wc < wordCountRule.min || wc > wordCountRule.max) {
+                errors.push(`Word Count Violation (Spread ${idx + 1}): Contains ${wc} visible words, expected ${wordCountRule.min}–${wordCountRule.max} words.`);
+            }
+        });
+
+        // Check 2: Arabic Zero-Tashkeel Guard (hard error)
+        if (language === 'ar') {
+            texts.forEach((text, idx) => {
+                const tashkeel = Validator.checkArabicTashkeel(text);
+                if (!tashkeel.pass) {
+                    errors.push(`Arabic Tashkeel Violation (Spread ${idx + 1}): Contains ${tashkeel.tashkeelCount} diacritics. Arabic manuscript must be 100% free of Tashkeel.`);
+                }
+            });
+        }
+
+        // Check 3: Pronoun Policy Guard (Ages 1–5 hard error for English)
+        if (age <= 5 && language !== 'ar') {
+            texts.forEach((text, idx) => {
+                const pronounCheck = Validator.checkPronounGuard(text, age, language);
+                if (!pronounCheck.pass) {
+                    errors.push(`Pronoun Policy Violation (Spread ${idx + 1}): Found pronouns [${pronounCheck.matchedPronouns.join(', ')}]. For ages 1–5, avoid 3rd-person pronouns. Use hero's name possessive ('${options.childName || 'Hero'}'s pebble') or active verbs.`);
+                }
+            });
+        }
+
+        // Check 4: Grammar Fragment Guard (hard error)
+        const grammarCheck = Validator.checkGrammarFragments(texts);
+        if (!grammarCheck.pass) {
+            grammarCheck.fragments.forEach(f => {
+                errors.push(`Grammar Fragment Violation (Spread ${f.spread}): Possible missing verb in '${f.text}' (use 'felt ${f.text.split(' ')[1]}' or '${f.text.split(' ')[0]} was ${f.text.split(' ')[1]}').`);
+            });
+        }
+
+        // Check 5: Home Base Grounding (Spread 1 soft warning)
         if (!Validator.checkHomeBase(texts[0] || '', language)) {
             warnings.push("Spread 1 Home Base Check: Spread 1 should explicitly ground the child's starting location (e.g. cozy spot, room, rug, garden).");
         }
 
-        // Check 2: Return Bridge (Final Spread)
+        // Check 6: Return Bridge (Final Spread soft warning)
         if (!Validator.checkReturnBridge(texts[texts.length - 1] || '', language)) {
             warnings.push(`Final Spread (${texts.length}) Return Bridge Check: Final spread should include a warm return bridge or cozy bedtime closure.`);
         }
 
-        // Check 3: Anchor Trigger Rule / Visual Anchor Echo
+        // Check 7: Anchor Trigger Rule / Visual Anchor Echo (soft warning)
         if (options.primaryVisualAnchor || options.anchorTriggerRule) {
             if (!Validator.checkAnchorEcho(texts[0] || '', options.primaryVisualAnchor, options.anchorTriggerRule)) {
                 warnings.push(`Anchor Trigger Echo Check: Spread 1 should introduce and establish the physical behavior of '${options.primaryVisualAnchor || 'anchor item'}'.`);
             }
         }
 
-        // Check 4: Pronoun Policy Guard (Ages 1–5)
-        if (age <= 5 && language !== 'ar') {
-            texts.forEach((text, idx) => {
-                const pronounCheck = Validator.checkPronounGuard(text, age, language);
-                if (!pronounCheck.pass) {
-                    warnings.push(`Pronoun Policy Guard (Spread ${idx + 1}): Found pronouns [${pronounCheck.matchedPronouns.join(', ')}]. For ages 1–5, avoid 3rd-person pronouns. Use hero's name possessive ('${options.childName || 'Hero'}'s pebble') or active verbs.`);
-                }
-            });
-        }
-
-        // Check 5: Named Emotion Check (Ages 1–5)
+        // Check 8: Named Emotion Check (Ages 1–5 soft warning)
         const emotionCheck = Validator.checkNamedEmotions(texts, age, language);
         if (!emotionCheck.pass) {
             warnings.push(`Named Emotion Check: Spreads [${emotionCheck.missingSpreads.join(', ')}] should pair physical actions with direct child-friendly emotion words for ages 1–5.`);
         }
 
-        // Check 6: Simple Vocabulary Check (Ages 1–3)
+        // Check 9: Simple Vocabulary Check (Ages 1–3 soft warning)
         if (age <= 3) {
             const vocabCheck = Validator.checkSimpleVocabularyForAge(texts, age, language);
             if (!vocabCheck.pass) {
@@ -241,14 +290,6 @@ export const Validator = {
                     warnings.push(`Simple Vocabulary Guard (Spread ${f.spread}): '${f.word}' is too complex for age ${age}. Replace with: [${f.suggestions.join(', ')}].`);
                 });
             }
-        }
-
-        // Check 7: Grammar Fragment Guard
-        const grammarCheck = Validator.checkGrammarFragments(texts);
-        if (!grammarCheck.pass) {
-            grammarCheck.fragments.forEach(f => {
-                warnings.push(`Grammar Fragment Guard (Spread ${f.spread}): Possible missing verb in '${f.text}' (use 'felt ${f.text.split(' ')[1]}' or '${f.text.split(' ')[0]} was ${f.text.split(' ')[1]}').`);
-            });
         }
 
         return {
@@ -285,7 +326,10 @@ export const Validator = {
     ): { text: string }[] => {
         if (!Array.isArray(draft)) return [];
         return draft.map(item => {
-            const rawText = typeof item === 'string' ? item : item.text || '';
+            let rawText = typeof item === 'string' ? item : item.text || '';
+            if (language === 'ar') {
+                rawText = Validator.stripArabicTashkeel(rawText);
+            }
             const sanitizedText = Validator.sanitizeVocabulary(rawText, age, language);
             return { text: sanitizedText };
         });

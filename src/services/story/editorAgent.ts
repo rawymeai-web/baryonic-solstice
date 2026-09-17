@@ -42,7 +42,7 @@ export async function runEditorPass(
             const wordCountRule = getWordCountForAge(childAge);
             const primaryAnchor = blueprint.foundation?.primaryVisualAnchor || 'Special Object';
             const heroDesire = blueprint.foundation?.heroDesire || '';
-            const fallbackTrigger = `When ${isDual ? `${heroNameA} and ${heroNameB} act` : `${childName} acts`} with calm kindness and patience, the ${primaryAnchor} glows warm and bright. When rushed, worried, or loud, it dims and cools.`;
+            const fallbackTrigger = `When ${isDual ? `${heroNameA} and ${heroNameB} operate` : `${childName} operates`} the ${primaryAnchor} with calm, steady patience, it works smoothly. When rushed, pulled hard, or tilted, it stops or resets.`;
             const activeAnchorRule = blueprint.foundation?.anchorTriggerRule || fallbackTrigger;
 
             const prompt = `
@@ -68,14 +68,17 @@ export async function runEditorPass(
             C. **MAGICAL ANCHOR CONTINUITY & CAUSE-FIRST LOGIC:** 
                - Is the anchor item established as special from first mention?
                - Does the text maintain object continuity by writing "${isDual ? 'their [item]' : childName + '\'s [item]'}" instead of "a [item]"?
-               - Is cause stated before effect? (❌ "Glowed warm for happy ${childName}" → ✅ "${childName} felt happy and calm. The pebble glowed warm.").
+               - Is cause stated before effect with observable physics? (❌ "Glowed warm for happy ${childName}" → ✅ "${childName} held the tray level and tapped the lid. The lantern clicked open.").
             D. **SEAMLESS RETURN TRANSITION & WARM RESOLUTION TAKEAWAY (SPREAD ${draft.length}):**
                - Is there an explicit bridging sentence explaining how ${isDual ? `${heroNameA} and ${heroNameB}` : childName} traveled back from the adventure setting to the Spread 1 Home Base?
                - Does the final spread conclude with a warm, comforting takeaway in the child's own voice (e.g., *"Quiet and slow was the best kind of magic."*) instead of abruptly stopping?
             E. **MENTOR / HELPER ANIMAL PURPOSE AUDIT:** If a helper animal appears (e.g., an owl, turtle, or lizard), is their presence given a clear quality (e.g., *"An owl blinked, slow and calm."*) so later callbacks make immediate sense?
             F. **AGE-TIERED VOCABULARY AUDIT (AGE ${childAge}):**
                ${childAge <= 3 ? `
-               - **TODDLER VOCABULARY PURITY (Ages 1–3):**
+               - **TODDLER VOCABULARY & SIMPLICITY (Ages 1–3):**
+                 - **STRICT WORD COUNT:** Every spread must be strictly **${wordCountRule.min}–${wordCountRule.max} words**.
+                 - **ONE IDEA PER SPREAD:** Avoid cramming action + description + emotion into a single spread. Keep it spare and let the art do the work.
+                 - **ZERO SUBORDINATE CLAUSES:** Eliminate "because", "so that", "in order to", or chained compound sentences. Keep sentences short, musical, and direct.
                  - ❌ **FLAG & FIX OVERLY COMPLEX VERBS:** "scurried" → "ran/hid", "slumped/sank" → "sat down", "swayed" → "moved", "drifted/fluttered" → "blew/flew", "peered/observed" → "looked/peeked".
                  - ❌ **FLAG & FIX OBSCURE NOUNS:** "nook" → "cozy spot" or "play spot", "fennec fox" → "little fox", "canopy" → "big trees".
                  - ❌ **FLAG & FIX ADVANCED EMOTIONS:** "frustrated" → "mad/upset", "confused" → "mixed up", "disappointed" → "sad", "relieved" → "calm/safe".
@@ -134,7 +137,7 @@ export async function runEditorPass(
             Before producing your final JSON output, re-audit your Pass 3 rewritten spreads against this mandatory checklist. If ANY check fails, fix that spread immediately:
             - [ ] **Home Base Grounding:** Spread 1 explicitly grounds ${isDual ? `BOTH ${heroNameA} and ${heroNameB}` : childName} in their Home Base and establishes a personal emotional origin for their desire.
             - [ ] **Object Continuity:** Special items use possessives rather than generic articles ("a [item]").
-            - [ ] **Anchor Item Rule:** Anchor item trigger is stated cause-first (happy → warm, worried → cold).
+            - [ ] **Anchor Item Rule:** Anchor item trigger is stated cause-first (concrete physical action operating the tool; rushed action jams/resets it).
             - [ ] **Return Journey Bridge & Warm Takeaway:** Spread ${draft.length} contains a smooth return bridge and ends with a warm child-voice takeaway.
             - [ ] **Helper Animal Meaning:** Helper creatures are given a clear meaning on introduction so callbacks are earned.
             - [ ] **Simple Vocabulary Whitelist (Age ${childAge}):** ${childAge <= 3 ? `Zero complex verbs and zero adult emotions. Pure simple words.` : `Zero academic/adult words.`}
@@ -190,38 +193,61 @@ export async function runEditorPass(
                 primaryVisualAnchor: primaryAnchor
             });
 
-            // Step 3: Surgical repair for pronoun leaks or grammar fragments on young ages
-            if (!customStoryText && childAge <= 5 && language !== 'ar') {
-                const failingIndices: number[] = [];
+            // Step 3: Surgical repair for word count bounds, Arabic tashkeel, pronouns (ages 1-5), or grammar fragments
+            if (!customStoryText) {
+                const failingSpreads: { index: number; spreadNumber: number; currentText: string; issues: string[] }[] = [];
                 refinedDraft.forEach((s, idx) => {
-                    const pCheck = Validator.checkPronounGuard(s.text, childAge, language);
+                    const issues: string[] = [];
+                    const wc = Validator.countVisibleWords(s.text);
+                    if (wc < wordCountRule.min || wc > wordCountRule.max) {
+                        issues.push(`Word count is ${wc} words (must be strictly ${wordCountRule.min}–${wordCountRule.max} words).`);
+                    }
+                    if (language === 'ar') {
+                        const tashkeel = Validator.checkArabicTashkeel(s.text);
+                        if (!tashkeel.pass) {
+                            issues.push(`Contains ${tashkeel.tashkeelCount} Arabic Tashkeel/harakat diacritics. Remove all Tashkeel.`);
+                        }
+                    }
+                    if (childAge <= 5 && language !== 'ar') {
+                        const pCheck = Validator.checkPronounGuard(s.text, childAge, language);
+                        if (!pCheck.pass) {
+                            issues.push(`Avoid 3rd-person pronouns [${pCheck.matchedPronouns.join(', ')}]. Use hero possessive ('${childName}'s [item]') or active verbs.`);
+                        }
+                    }
                     const gCheck = Validator.checkGrammarFragments([s.text]);
-                    if (!pCheck.pass || !gCheck.pass) {
-                        failingIndices.push(idx);
+                    if (!gCheck.pass) {
+                        issues.push(`Fix grammar fragment / missing verb.`);
+                    }
+                    if (issues.length > 0) {
+                        failingSpreads.push({
+                            index: idx,
+                            spreadNumber: idx + 1,
+                            currentText: s.text,
+                            issues
+                        });
                     }
                 });
 
-                if (failingIndices.length > 0) {
+                if (failingSpreads.length > 0) {
                     try {
                         const surgicalPrompt = `
 ROLE: Senior Picture-Book Editor (Surgical Fix).
 LANGUAGE: ${targetLang}
 AGE GROUP: ${childAge} years old
-HERO NAME: "${childName}"
+${isDual ? `HEROES: "${heroNameA}" and "${heroNameB}"` : `HERO NAME: "${childName}"`}
 
-Fix ONLY the following specific spreads to eliminate 3rd-person pronouns ("it", "its", "he", "she", "him", "her", "his") or grammar fragments:
-${failingIndices.map(idx => `Spread ${idx + 1} Current Text: "${refinedDraft[idx].text}"`).join('\n')}
+Fix ONLY the following specific spreads to resolve the listed violations:
+${failingSpreads.map(f => `Spread ${f.spreadNumber}:
+- Current Text: "${f.currentText}"
+- Issues to Fix: ${f.issues.join('; ')}`).join('\n\n')}
 
 MANDATORY RULES:
-1. AGE ${childAge} PRONOUN POLICY: Do NOT use "it", "its", "he", "she", "him", "her", "his". Replace them with:
-   - The animal's explicit name (e.g. "The little fox", "The owl")
-   - The hero's name / possessive ("${childName}'s pebble")
-   - Direct active verbs (e.g. "Ran and hid" instead of "It ran and hid")
-2. Complete sentences only (no missing verbs).
-3. Keep word count strictly within ${wordCountRule.min}–${wordCountRule.max} words.
-4. Output JSON array with ONLY the fixed spreads:
+1. Target Word Count: Strictly ${wordCountRule.min}–${wordCountRule.max} visible words per spread.
+2. ${language === 'ar' ? 'Arabic Output: 100% free of Tashkeel/Harakat diacritics.' : (childAge <= 5 ? `Age 1–5 Pronoun Policy: Do NOT use "it", "its", "he", "she", "him", "her", "his". Replace with character name, object possessive ("${childName}'s pebble"), or active verbs.` : 'Natural grammar and gender matching.')}
+3. Complete sentences only (no missing verbs).
+4. Output JSON array containing ONLY the fixed spreads:
 [
-  ${failingIndices.map(idx => `{ "spreadNumber": ${idx + 1}, "text": "Fixed text..." }`).join(',\n  ')}
+  ${failingSpreads.map(f => `{ "spreadNumber": ${f.spreadNumber}, "text": "Fixed text..." }`).join(',\n  ')}
 ]
 `;
                         const fixResponse = await model.generateContent(surgicalPrompt);
@@ -230,7 +256,11 @@ MANDATORY RULES:
                             fixJson.forEach((item: any) => {
                                 const spNum = item.spreadNumber;
                                 if (typeof spNum === 'number' && spNum >= 1 && spNum <= refinedDraft.length && item.text) {
-                                    refinedDraft[spNum - 1] = { text: Validator.sanitizeVocabulary(item.text, childAge, language) };
+                                    let fixedText = item.text;
+                                    if (language === 'ar') {
+                                        fixedText = Validator.stripArabicTashkeel(fixedText);
+                                    }
+                                    refinedDraft[spNum - 1] = { text: Validator.sanitizeVocabulary(fixedText, childAge, language) };
                                 }
                             });
                         }

@@ -106,7 +106,7 @@ export async function POST(req: Request) {
         }
 
         const heroes = buildHeroProfiles(frontendHeroes);
-        const language = body.language || blueprint?.foundation?.targetLanguage || 'en';
+        const language = body.language || blueprint?.foundation?.targetLanguage || (blueprint as any)?.foundation?.language || (body as any)?.storyData?.language || (plan as any)?.language || 'en';
 
         // 1. Generate Raw Prompts using the new JSON Architecture Schema Compiler
         const engineerResponse = await generatePrompts(plan, blueprint, styleProfile, heroes, language);

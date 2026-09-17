@@ -60,7 +60,8 @@ export class QualityAgent {
             storyText = params.storyText || params.spreadText || "",
             secondRawBase64,
             secondDNABase64,
-            childAge = "5"
+            childAge = "5",
+            stylePrompt = params.stylePrompt || ""
         } = params;
 
         return withRetry(async () => {
@@ -126,8 +127,14 @@ export class QualityAgent {
             }
 
             const promptContext = `
-You are a strict, uncompromising Art Director and Quality Assurance Inspector for a premium personalized children's book publisher.
-A parent has paid for a book starring THEIR real child (Age: ${childAge} years old). Character likeness, artistic quality, and story continuity must be exceptional.
+You are the child's PARENT and a world-class, uncompromising Art Director inspecting a personalized storybook.
+A parent has paid a premium for a custom keepsake starring THEIR specific child (Target Age: ${childAge} years old).
+
+CRITICAL MINDSET — THE PARENT EYE TEST:
+Look at the generated character in the spread and compare them side-by-side with the Reference DNA Image / Raw Photo.
+Ask yourself the fundamental parent question:
+"Is this unmistakably MY child, or does this look like a different kid / stranger?"
+If a parent would say "That is not my child!", "Why does his haircut look completely different?", "Why does he look 12 instead of 6?", or "Why is his skin color different?", you MUST FAIL the image immediately. Do NOT be polite, agreeable, or lenient. Generic "it's a boy with dark curly hair" is NOT acceptable likeness.
 
 Story Text for this Page (${pageType}):
 "${storyText || 'N/A'}"
@@ -137,58 +144,75 @@ Generation Prompt:
 
 Designated Text Box Side: ${currentTextSide || 'Right'}
 
-EVALUATION CRITERIA:
+STRICT BIOMETRIC & ARTISTIC EVALUATION CRITERIA:
 
-1. Character Facial Likeness & Identity Integrity (Target Age: ${childAge} years old):
-   - Compare facial landmarks between the Reference DNA Image / Raw Photo and the character in the generated spread:
-     a) Head & Jaw Shape: Cheek fullness, chin geometry, head proportions.
-     b) Eyes & Eyebrows: Eye shape, spacing, eyelid fold, pupil color, eyebrow arch.
-     c) Nose & Mouth: Nose bridge/tip width, smile shape.
-     d) Hair: Hair color, wave/curl texture, volume, and hairline.
-   - Assign a quantitative "likenessScore" from 1 to 10 (10 = identical match, 7-9 = strong likeness with minor pose shifts, 5-6 = acceptable 2D stylized likeness, 1-4 = wrong child or total identity loss).
-   - MANDATORY FAIL RULE: Set "characterConsistencyStatus": "fail" and "overallDecision": "fail" if likenessScore is LESS THAN 5/10 or if the character lost the child's identity completely.
+1. Facial Likeness, Feature Proportions & Identity Preservation (Weight: CRITICAL):
+   - Head & Facial Geometry: Does the jawline, chin shape, cheek fullness, and eye spacing match the reference?
+   - Eye Shape & Feature Proportions: Are the eye contour, pupil color, and brow arch preserved? Compare the eye-to-face proportion scale directly against the DNA reference.
+   - FORBIDDEN STYLIZATION MUTATION: The character must NOT undergo unprompted stylization drift (e.g., a realistic child drifting into exaggerated cartoon/doll eyes, or a stylized animated character drifting into photographic realism).
+   - Scoring Guide:
+     * 9-10: Flawless, unmistakable identity match to the reference child with accurate anatomical/stylization scale.
+     * 7-8: Clear, recognizable likeness with natural expression adaptation.
+     * 5-6: Generic caricature, distorted proportions, or stylization drift — FAILS parent recognition.
+     * 1-4: Wrong child, imposter, or complete identity loss.
+   - MANDATORY FAIL RULE: Any score below 7/10 is an AUTOMATIC FAIL.
 
-2. Wardrobe & Footwear Consistency:
-   - Check clothing and footwear consistency across poses (top, pants/shorts, footwear).
-   - Set "wardrobeConsistencyStatus": "fail" if there is an unexplained severe outfit contradiction.
+2. Haircut Silhouette & Hair Texture Invariance (Weight: CRITICAL):
+   - Hair Structure: Wave/curl pattern, volume, hairline, and side coverage MUST match the DNA reference.
+   - FORBIDDEN MUTATIONS: If the reference has full curls covering the sides and ears, the character MUST NOT be rendered with a modern high-fade, undercut, taper, buzzed sides, or slicked-back styling.
+   - MANDATORY FAIL RULE: If the haircut type, side length, or hair texture contradicts the reference, set "characterConsistencyStatus": "fail" and "overallDecision": "fail".
 
-3. Style Consistency:
-   - Does the illustration match the painterly/storybook art style of the DNA Reference?
-   - Fail if it renders as flat clip-art, raw unstyled photograph, or unrendered 3D CGI plastic.
+3. Age Invariance (Target Age: ${childAge} years old):
+   - The character MUST visually read as a child of ${childAge} years old.
+   - FORBIDDEN AGING: The character must NOT be aged up into an older kid / pre-teen / teenager (e.g. elongated torso, angular adult jaw, mature posture) or de-aged into a toddler.
+   - MANDATORY FAIL RULE: If the character appears >2 years older or younger than ${childAge}, set "characterConsistencyStatus": "fail" and "overallDecision": "fail".
 
-4. Text Zone Clearance:
+4. Skin Tone & Ethnic Feature Integrity (Weight: CRITICAL):
+   - Compare skin tone, undertone, and complexion directly to the DNA reference and raw photo.
+   - FORBIDDEN: Any unprompted lightening/bleaching, unnatural oversaturation, or darkening that alters the child's racial/ethnic heritage.
+   - MANDATORY FAIL RULE: If the skin tone or ethnic features do not match the reference, set "characterConsistencyStatus": "fail" and "overallDecision": "fail".
+
+5. Wardrobe & Footwear Consistency:
+   - Check clothing consistency across scenes against the reference outfit.
+   - Fail if there is an unprompted, radical outfit contradiction.
+
+6. Style, Medium & Dimensionality Consistency (Weight: CRITICAL):
+   - Target Style Profile: ${stylePrompt || 'Defined by DNA Reference Image'}
+   - Compare the artistic medium, rendering dimensionality (2D painterly vs 3D CGI vs vector vs photographic), surface brushwork/textures, and lighting model directly against the DNA Reference Image and the Target Style.
+   - FORBIDDEN STYLE DRIFT: The generated image must strictly adhere to the established artistic medium and stylization level of the DNA Reference. It must NOT drift into contrasting artistic media or incompatible stylization levels (e.g., painterly realism shifting to 3D CGI plastic or flat vector, 3D animated shifting to flat 2D or realistic photo, watercolor shifting to digital glossy CGI).
+   - MANDATORY FAIL RULE: If the illustration mutates into a contrasting artistic medium or different dimensionality/stylization level, set "styleConsistencyStatus": "fail", "overallDecision": "fail", and specify the exact observed drift and target requirement in "regenerationReason" (e.g., "Style drifted into [Observed Style] with [Observed Deviations]; must strictly match the [Target Style] and anatomical scale of the DNA Reference Image").
+
+7. Text Zone Clearance:
    - Check if the designated side (${currentTextSide || 'Right'}) is clear of the character's face.
-   - If the character is on that side, set "recommendedTextSide" to the opposite side ("Left" or "Right").
-   - Text clearance alone should NOT fail the image if simply moving the text to the opposite side provides perfect clearance.
+   - If the character is on that side, recommend the opposite side ("Left" or "Right").
 
-5. Narrative Adherence & Action Matching (CRITICAL):
-   - Does the image accurately reflect the story beat, setting, and character action described in the story text?
-   - MANDATORY FAIL RULE: If the character is performing the completely wrong action or the scene severely contradicts the story beat, set "narrativeAdherenceStatus": "fail" AND set "overallDecision": "fail" with specific "regenerationReason".
+8. Narrative Adherence & Action Matching:
+   - Does the image accurately reflect the story action and mood described in the story text?
 
 OVERALL DECISION RULES:
-- "overallDecision": "pass" -> Character likeness >= 5, style matches, text zone resolved, narrative adheres.
-- "overallDecision": "fail" -> Character likeness < 5, severe anatomical/identity loss, corrupted style, or narrative action contradiction requiring repaint.
-- "overallDecision": "flagged" -> Ambiguous quality requiring Art Director review.
+- "overallDecision": "pass" -> Likeness >= 7, haircut matches reference, age matches ${childAge}, skin tone matches, style matches, narrative adheres.
+- "overallDecision": "fail" -> Any failure in likeness (< 7), haircut mutation (fade/undercut when curls), age shift, skin tone shift, corrupted style, or narrative contradiction.
+- "overallDecision": "flagged" -> Borderline edge-case requiring Art Director review.
 
 Output STRICTLY a JSON object matching this schema:
 {
   "visualDescription": "Concise 2-sentence description of the generated image.",
   "likenessScore": 8,
   "characterConsistencyStatus": "pass" | "fail",
-  "characterReasoning": "Detailed breakdown of face shape, eyes, nose, hair, and score justification...",
+  "characterReasoning": "Explicit evaluation of facial likeness, haircut silhouette, age accuracy, and skin tone match against reference...",
   "wardrobeConsistencyStatus": "pass" | "fail",
-  "wardrobeReasoning": "Clothing and footwear evaluation...",
+  "wardrobeReasoning": "Clothing evaluation...",
   "styleConsistencyStatus": "pass" | "fail",
-  "styleReasoning": "Style consistency evaluation...",
+  "styleReasoning": "Style medium and texture evaluation...",
   "textClearanceStatus": "pass" | "fail",
   "textReasoning": "Text layout and clearance explanation...",
   "recommendedTextSide": "Right" | "Left",
   "recommendedTextOffsetX": 0,
   "recommendedTextOffsetY": 0,
   "narrativeAdherenceStatus": "pass" | "fail",
-  "narrativeAdherenceReasoning": "Detailed action and story adherence evaluation...",
+  "narrativeAdherenceReasoning": "Story beat and action evaluation...",
   "overallDecision": "pass" | "fail" | "flagged",
-  "regenerationReason": "Clear, specific correction instruction for repainting if failed"
+  "regenerationReason": "Clear, actionable correction instruction for repainting if failed"
 }
 `;
 
@@ -207,11 +231,9 @@ Output STRICTLY a JSON object matching this schema:
             const cleaned = cleanJsonString(rawText);
             const result: QualityCheckResult = JSON.parse(cleaned);
 
-            // Enforce schema integrity: if likeness < 5 or narrative failed, overall decision cannot be pass
-            if (result.likenessScore < 5 || result.characterConsistencyStatus === 'fail' || result.narrativeAdherenceStatus === 'fail') {
-                if (result.overallDecision === 'pass') {
-                    result.overallDecision = 'fail';
-                }
+            // Enforce schema integrity: if likeness < 7 or any critical check failed, overall decision MUST be fail
+            if (result.likenessScore < 7 || result.characterConsistencyStatus === 'fail' || result.narrativeAdherenceStatus === 'fail') {
+                result.overallDecision = 'fail';
             }
 
             console.log(`[QCAgent] Spread evaluated. Likeness: ${result.likenessScore}/10, Narrative: ${result.narrativeAdherenceStatus}, Decision: ${result.overallDecision}`);

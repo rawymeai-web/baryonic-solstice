@@ -109,3 +109,92 @@ Composition: Place all characters, actions, and key props on the [right/left] si
 
 Constraints: Strictly no letters, numbers, signs, text, logos, or watermarks anywhere in the illustration. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while keeping each character's exact face, hairstyle, and outfit from their reference image.
 ```
+
+---
+
+## Version 7.6: Dynamic Actor Placement & Wardrobe Lock (`[v7.6-actor-placement]`)
+*Date: September 2026*
+
+### Core Architectural Principles:
+1. **Dynamic Actor Casting:** Disentangles character identity from background in reference images. Explicit 1:1 facial likeness mandate.
+2. **Canonical 3-Part Wardrobe Lock:** Top, bottom, footwear strictly preserved across all spreads.
+3. **RTL/LTR Cover Geometry:** Front cover action locked to correct side (Left for Arabic, Right for English).
+
+---
+
+## Version 7.7: Wide Environmental Full-Body Placement & Vertical Clearance (`[v7.7-wide-actor-placement]`)
+*Date: September 2026*
+
+### Core Architectural Principles:
+1. **Wide-Angle Full-Body Environmental Framing:** Eliminates close-up portrait bias by commanding full-body figures with visible footwear grounded in the lower 45% of the frame.
+2. **Generous Vertical Headroom (Top 50-55% Negative Space):** Characters' heads and faces are strictly kept below the 45% horizontal midline, ensuring the top half of the canvas remains open sky, ceiling, or distant atmospheric background.
+3. **Zero Confusion Language:** Strictly avoids mentioning layout reasons (e.g. no mentions of "text", "book cover", or "title") to prevent generative models from hallucinating text or watermarks.
+
+### Standard v7.7 Cover Prompt Template:
+```text
+[v7.7-wide-actor-placement]
+
+CHARACTER CASTING & SOURCE REFERENCES:
+- Image 1: Approved character reference image for [[HERO_1]] ([Name], a [Age]-year-old child).
+
+CHARACTER CASTING & SCENE PLACEMENT:
+- [[HERO_1]] ([Name], a [Age]-year-old child): The protagonist in this image is the EXACT child shown in Image 1. Place this specific child into the new scene and action described below.
+  * DYNAMIC ISOLATION RULE: Isolate ONLY the character figure from Image 1. Completely discard and ignore all background scenery, surrounding environment, animals, objects, textures, and props visible in Image 1.
+  * 1:1 IDENTITY PRESERVATION: Maintain exact 1:1 facial likeness from Image 1: head and jaw shape, cheek structure, eye shape and color, eyebrow arch, nose and mouth geometry, skin tone, and exact hairstyle/hairline. Do NOT re-imagine, further stylize, or replace with a generic cartoon face.
+
+WARDROBE & ATTIRE LOCK:
+- [[HERO_1]] ([Name]): Must strictly wear: [Outfit]. Maintain this exact clothing and footwear across all full-body, standing, and seated poses.
+
+ART STYLE MATCHING:
+- Inherit the visual style, lighting quality, textures, and medium directly from the character reference image(s). Do not introduce contrasting art styles or simplify into flat cartoon vectors.
+
+Scene: Set in [Setting/Location] (Environment: [Type], Time of Day: [Time], Mood: [Mood], Lighting: [Lighting]).
+
+Action: Show [[HERO_1]] [Dynamic Action], with a [Expression] expression.
+Hero Expression: Ensure the hero's face is always charming, cute, and lovable with sweet, endearing childlike appeal.
+
+Props to include: [Scene Props].
+
+Composition: Single panoramic seamless illustration spread across the entire wide canvas. Extreme wide-angle full-body environmental shot. Place all main characters and the primary hero action strictly on the [RIGHT/LEFT] side of the frame, confined entirely within the bottom 45% height of the [right/left] half with full bodies and feet visible on the ground. The entire upper 55% of the [right/left] side must remain calm, expansive open negative space with vast empty sky or soft ambient background scenery. Characters' heads and faces must remain strictly below the 45% horizontal midline. The entire opposite side of the frame must contain calm, peaceful ambient background scenery without any character figures. No vertical lines, creases, splits, borders, or text.
+
+Constraints: Strictly no letters, numbers, signs, text, logos, or watermarks anywhere in the illustration. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while strictly maintaining each character's exact face, hairstyle, and locked wardrobe from their reference and instructions.
+```
+
+## Version 7.8: Generalized Style-DNA Lock & Proportion Parity (`[v7.8-style-dna-lock]`)
+*Date: September 2026*
+
+### Core Architectural Principles:
+1. **Dynamic Style Profile & Medium Injection:** Fully dynamic integration of the active `StyleProfile` (`positive_style_lock`, `character_rendering_rules`, `texture_rules`, and `forbidden_styles`). Removes all hardcoded style assumptions and protects all book styles (3D Adventure, 2D Watercolor, Dreamy Realism, Anime, etc.) equally.
+2. **1:1 Anatomical & Stylization Parity:** Explicitly commands diffusion models to maintain the exact anatomical scale (e.g. eye-to-head proportion ratio) and stylization depth established in the Character DNA Reference Image (Image 1), preventing unprompted cartoon caricaturing or doll-face distortion in realistic books.
+3. **Elimination of Hardcoded Caricature Tropes:** Strips unconditional boilerplate strings (such as *"Ensure the hero's face is always charming, cute, and lovable with sweet, endearing childlike appeal"*) and replaces them with authentic, narrative-grounded emotional expressions.
+4. **Dynamic QA Alignment:** Live QA audits feature proportions and medium parity relative to the Character DNA Reference Image and Target Style Profile, triggering automated surgical prompt repairs via Prompt Doctor upon detecting any stylization drift.
+
+### Standard v7.8 Prompt Template:
+```text
+[v7.8-style-dna-lock]
+
+CHARACTER CASTING & SOURCE REFERENCES:
+- Image 1: Approved character reference image for [[HERO_1]] ([Name], a [Age]-year-old child).
+
+CHARACTER CASTING & SCENE PLACEMENT:
+- [[HERO_1]] ([Name], a [Age]-year-old child): The protagonist in this image is the EXACT child shown in Image 1. Place this specific child into the new scene and action described below.
+  * DYNAMIC ISOLATION RULE: Isolate ONLY the character figure from Image 1. Completely discard and ignore all background scenery, surrounding environment, animals, objects, textures, and props visible in Image 1.
+  * 1:1 IDENTITY & ANATOMY FIDELITY: Maintain exact 1:1 facial likeness from Image 1: head and jaw shape, cheek structure, eye shape and color, eyebrow arch, nose and mouth geometry, skin tone, and exact hairstyle/hairline. Strictly preserve the established anatomical scale and facial feature proportions from Image 1 (including eye-to-face proportion ratio). Do NOT alter stylization depth, re-imagine, or substitute with generic caricature.
+
+WARDROBE & ATTIRE LOCK:
+- [[HERO_1]] ([Name]): Must strictly wear: [Outfit]. Maintain this exact clothing and footwear across all full-body, standing, and seated poses.
+
+ART STYLE & STYLIZATION FIDELITY:
+- Target Style: [Active Style Profile Name]. [Positive Style Lock] [Character Rendering Rules] [Texture Rules]
+- Inherit the visual artistic medium, lighting quality, surface textures, and stylization depth directly from the character reference image(s). Strictly maintain the artistic medium, dimensionality, and stylization level of Image 1. Strictly avoid incompatible art styles, medium drift, or unapproved rendering techniques: [Forbidden Styles].
+
+Scene: Set in [Setting/Location] (Environment: [Type], Time of Day: [Time], Mood: [Mood], Lighting: [Lighting]).
+
+Action: Show [[HERO_1]] [Dynamic Action], with a [Expression] expression.
+
+Props to include: [Scene Props].
+
+Composition: Wide-angle full-body environmental shot with generous vertical clearance. Ground all characters, actions, and key props strictly in the lower 45% of the frame on the [RIGHT/LEFT] side, showing full figures from head to toe with feet visible on the ground. The upper 50% of the frame must remain expansive, open negative space with empty sky, high ceiling, or soft atmospheric background scenery. The top of the characters' heads must remain strictly below the 45% horizontal midline. The opposite side must remain calm, open negative space with simple, soft background scenery.
+
+Constraints: Strictly no letters, numbers, signs, text, logos, or watermarks anywhere in the illustration. Must be a wide 16:9 horizontal image. Illustrate the new pose and action described above, while strictly maintaining each character's exact face, hairstyle, and locked wardrobe from their reference and instructions.
+```

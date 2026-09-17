@@ -577,7 +577,9 @@ export async function generateMethod4Image(
             finalPromptText.includes('[v7.1-dna-clean]') ||
             finalPromptText.includes('[v7.4') ||
             finalPromptText.includes('[v7.5') ||
-            finalPromptText.includes('[v7.6');
+            finalPromptText.includes('[v7.6') ||
+            finalPromptText.includes('[v7.7') ||
+            finalPromptText.includes('[v7.8');
 
         if (!isSelfContainedPrompt) {
             let ageAndDescBlock = `\n\n**CHARACTER IDENTITY & LIKENESS:**

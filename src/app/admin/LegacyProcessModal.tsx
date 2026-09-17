@@ -62,27 +62,51 @@ export const LegacyProcessModal: React.FC<LegacyProcessModalProps> = ({ order, o
             // Step 1: DNA & Character
             setStatus(t('معالجة الهوية البصرية...', 'Processing Visual DNA...'));
             const mainChar = storyData.mainCharacter || {};
-            if (!mainChar.imageDNA || mainChar.imageDNA.length === 0) {
-                logMsg(`Character DNA not found. Calling Vision AI API... (This may take 15-30 seconds)`);
-                const dnaPayload = {
-                    mainCharacter: mainChar,
-                    theme: ensureSafeString(storyData.theme, "Neutral Setting"),
-                    style: ensureSafeString(storyData.selectedStylePrompt, "Painterly illustration"),
-                    age: ensureSafeString(storyData.childAge, "5")
-                };
-                
+
+            if (order.orderNumber) {
                 try {
-                    const dnaRes = await backendApi.generateDna(dnaPayload) as any;
-                    if (dnaRes.error) throw new Error(dnaRes.error as string);
-                    
-                    storyData.mainCharacter = {
-                        ...mainChar,
-                        description: dnaRes.physicalDescription,
-                        imageDNA: [dnaRes.artifiedHeroBase64]
+                    const dnaRecords = await adminService.fetchOrderDNA(order.orderNumber);
+                    if (dnaRecords && dnaRecords.length > 0) {
+                        const hAStyle = dnaRecords.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Stylized DNA');
+                        const hAOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Original Photo');
+                        if (hAStyle?.image_url && (!mainChar.imageDNA || mainChar.imageDNA.length === 0)) {
+                            mainChar.imageDNA = [hAStyle.image_url];
+                        }
+                        if (hAOrig?.image_url && !mainChar.imageRawUrl) {
+                            mainChar.imageRawUrl = hAOrig.image_url;
+                        }
+                        storyData.mainCharacter = mainChar;
+                    }
+                } catch (e: any) {
+                    logMsg(`⚠️ Error querying order_dna records: ${e.message}`);
+                }
+            }
+
+            if (!mainChar.imageDNA || mainChar.imageDNA.length === 0) {
+                if (mainChar.description) {
+                    logMsg(`Visual DNA image not found; preserving current character description.`);
+                } else {
+                    logMsg(`Character DNA not found. Calling Vision AI API... (This may take 15-30 seconds)`);
+                    const dnaPayload = {
+                        mainCharacter: mainChar,
+                        theme: ensureSafeString(storyData.theme, "Neutral Setting"),
+                        style: ensureSafeString(storyData.selectedStylePrompt, "Painterly illustration"),
+                        age: ensureSafeString(storyData.childAge, "5")
                     };
-                    await adminService.saveOrder(order.orderNumber, storyData, order.shippingDetails, activeOrder.total);
-                } catch(e:any) {
-                    throw new Error("DNA Phase Error: " + (e.message || JSON.stringify(e)));
+                    
+                    try {
+                        const dnaRes = await backendApi.generateDna(dnaPayload) as any;
+                        if (dnaRes.error) throw new Error(dnaRes.error as string);
+                        
+                        storyData.mainCharacter = {
+                            ...mainChar,
+                            description: dnaRes.physicalDescription,
+                            imageDNA: [dnaRes.artifiedHeroBase64]
+                        };
+                        await adminService.saveOrder(order.orderNumber, storyData, order.shippingDetails, activeOrder.total);
+                    } catch(e:any) {
+                        throw new Error("DNA Phase Error: " + (e.message || JSON.stringify(e)));
+                    }
                 }
             }
             setProgress(15);

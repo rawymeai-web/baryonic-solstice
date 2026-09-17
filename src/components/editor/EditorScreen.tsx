@@ -12,6 +12,7 @@ import SpreadGeminiEditPanel from '@/components/editor/SpreadGeminiEditPanel';
 import QALogPanel from '@/components/editor/QALogPanel';
 import { DNAManagerModal } from '@/components/editor/DNAManagerModal';
 import { ShippingModal } from '@/components/admin/ShippingModal';
+import OutpaintReviewModal from '@/components/editor/OutpaintReviewModal';
 import { ClientLogger } from '@/utils/clientLogger';
 import { getWordCountForAge } from '@/services/rules/guidebook';
 
@@ -118,7 +119,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
     const spreads = storyData.spreads || [];
     const blueprint = storyData.blueprint;
-    const coverUrl = storyData.coverImageUrl;
     // Coerce to string — DB can store a JSON object in actualCoverPrompt/finalPrompts[0]
     const _rawCoverPrompt = storyData.actualCoverPrompt || storyData.finalPrompts?.[0]?.imagePrompt || storyData.finalPrompts?.[0] || '';
     const coverPrompt = typeof _rawCoverPrompt === 'string' ? _rawCoverPrompt : (typeof _rawCoverPrompt === 'object' ? JSON.stringify(_rawCoverPrompt) : String(_rawCoverPrompt));
@@ -242,7 +242,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     }
 
     // Local state to handle edits before saving them back to storyData
-    const [pageEdits, setPageEdits] = useState<{ [index: number]: { text: string; prompt: string; textSide?: 'left'|'right'; textOffsetX?: number; textOffsetY?: number; imageOffsetX?: number; imageOffsetY?: number; imageScale?: number } }>({});
+    const [pageEdits, setPageEdits] = useState<{ [index: number]: { text: string; prompt: string; textSide?: 'left'|'right'; textOffsetX?: number; textOffsetY?: number; imageOffsetX?: number; imageOffsetY?: number; imageScale?: number; illustrationUrl?: string } }>({});
+    const coverUrl = pageEdits[0]?.illustrationUrl || storyData.coverImageUrl || spreads[0]?.illustrationUrl || '';
     const [coverEdit, setCoverEdit] = useState(coverPrompt);
     const [localTitle, setLocalTitle] = useState(storyData.title || '');
     // Subtitle override: empty = use auto-computed smart subtitle
@@ -273,7 +274,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     };
 
     // Smart auto-computed subtitle — single hero vs double hero
-    const isAr = language === 'ar';
+    const isAr = language === 'ar' || storyData?.language === 'ar' || /[\u0600-\u06FF]/.test(storyData?.childName || '') || /[\u0600-\u06FF]/.test(storyData?.title || '');
     const hasSecondHero = !!(storyData.useSecondCharacter && storyData.secondCharacter?.name);
     const computedSubtitle = hasSecondHero
         ? `${storyData.childName} ${isAr ? 'و' : '&'} ${storyData.secondCharacter!.name}`
@@ -487,10 +488,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     // Falls back to storyData.script[spreadIndex - 1] if the spread has no text
     const getSpreadText = (spread: any, spreadIndex?: number): string => {
         if (!spread) {
-            // No spread object at all — try to pull directly from script
+            // No spread object at all — try to pull directly from script or blueprint
             if (spreadIndex !== undefined) {
                 const scriptItem = (storyData.script as any)?.[spreadIndex - 1];
                 if (scriptItem) return typeof scriptItem === 'string' ? scriptItem : (scriptItem.text || '');
+                const bpItem = (storyData.blueprint as any)?.structure?.spreads?.[spreadIndex - 1];
+                if (bpItem?.storyText) return bpItem.storyText;
             }
             return '';
         }
@@ -502,10 +505,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             return spread.textBlocks.map((b: any) => b.text).join(' ');
         }
         if (spread.text) return spread.text;
-        // Last resort: pull from storyData.script using spread number
+        if (spread.storyText) return spread.storyText;
+        // Last resort: pull from storyData.script or blueprint using spread number
         if (spreadIndex !== undefined) {
             const scriptItem = (storyData.script as any)?.[spreadIndex - 1];
             if (scriptItem) return typeof scriptItem === 'string' ? scriptItem : (scriptItem.text || '');
+            const bpItem = (storyData.blueprint as any)?.structure?.spreads?.[spreadIndex - 1];
+            if (bpItem?.storyText) return bpItem.storyText;
         }
         return '';
     };
@@ -527,23 +533,16 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     };
 
     const handleTextSideChange = (index: number, newSide: 'left' | 'right') => {
+        const PDF_W = 400;
+        const newDefaultX = newSide === 'left' ? PDF_W * 0.05 : PDF_W * 0.55; // 20mm for Left, 220mm for Right
         setPageEdits(prev => {
             const currentSpread = spreads[index] || {};
-            const existingOffsetX = prev[index]?.textOffsetX !== undefined ? prev[index].textOffsetX : currentSpread.textOffsetX;
-            let nextOffsetX = existingOffsetX;
-            // If switching to right, clear any left-half offset (< 200)
-            if (newSide === 'right' && existingOffsetX !== undefined && existingOffsetX < 200) {
-                nextOffsetX = undefined;
-            } else if (newSide === 'left' && existingOffsetX !== undefined && existingOffsetX >= 200) {
-                nextOffsetX = undefined;
-            }
-
             return {
                 ...prev,
                 [index]: {
                     ...(prev[index] || { text: getSpreadText(currentSpread, index), prompt: getPromptForIndex(index, currentSpread) }),
                     textSide: newSide,
-                    textOffsetX: nextOffsetX
+                    textOffsetX: newDefaultX
                 }
             };
         });
@@ -561,13 +560,28 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     };
 
     const handleGeminiImageEdit = async (index: number, newBase64: string) => {
+        let finalUrl = newBase64.startsWith('http') || newBase64.startsWith('data:') ? newBase64 : `data:image/jpeg;base64,${newBase64}`;
+        const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
+        try {
+            const uploadRes = await backendApi.uploadImage({
+                orderNumber: targetOrderId,
+                spreadNum: index,
+                imageBase64: newBase64
+            });
+            if (uploadRes?.publicUrl) {
+                finalUrl = uploadRes.publicUrl;
+            }
+        } catch (uploadErr) {
+            console.warn("[EditorScreen] Gemini edit upload failed, fallback to base64:", uploadErr);
+        }
+
         const newSpreads = [...spreads];
-        newSpreads[index] = { ...newSpreads[index], illustrationUrl: newBase64 };
+        newSpreads[index] = { ...newSpreads[index], illustrationUrl: finalUrl };
         const newStory = { ...storyData, spreads: newSpreads };
         onUpdateStory({ spreads: newSpreads });
-        if (storyData.orderId) {
+        if (targetOrderId && targetOrderId !== 'RWY-UNKNOWN') {
             try {
-                await adminService.saveOrder(storyData.orderId, newStory, shippingDetails || {});
+                await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
             } catch (err) {
                 console.error('Failed to save Gemini-edited image to DB', err);
             }
@@ -575,165 +589,150 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     };
 
     const [generatingFillIndex, setGeneratingFillIndex] = useState<number | null>(null);
+    const [outpaintReviewState, setOutpaintReviewState] = useState<{
+        isOpen: boolean;
+        spreadIndex: number | 'cover';
+        originalImageUrl: string;
+        outpaintedBase64: string;
+        isApplying?: boolean;
+    } | null>(null);
 
     const handleGenerativeFill = async (index: number) => {
         setGeneratingFillIndex(index);
         try {
             // 1. Get current image URL
-            const currentImg = index === 0 ? storyData.coverImageUrl : spreads[index]?.illustrationUrl;
+            const currentImg = index === 0 
+                ? (pageEdits[0]?.illustrationUrl || storyData.coverImageUrl || spreads[0]?.illustrationUrl) 
+                : (pageEdits[index]?.illustrationUrl || spreads[index]?.illustrationUrl);
             if (!currentImg) throw new Error("No image found to fill.");
 
-            // 2. Fetch the base64 of the image
-            const res = await fetch(currentImg.startsWith('http') ? currentImg : `data:image/jpeg;base64,${currentImg}`);
-            const blob = await res.blob();
-            const base64 = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    const result = reader.result as string;
-                    resolve(result.includes(',') ? result.split(',')[1] : result);
-                };
-                reader.readAsDataURL(blob);
-            });
+            // 2. Read user layout parameters
+            let userScale = pageEdits[index]?.imageScale ?? spreads[index]?.imageScale ?? 100;
+            let panPercX = pageEdits[index]?.imageOffsetX ?? spreads[index]?.imageOffsetX ?? 0;
+            let panPercY = pageEdits[index]?.imageOffsetY ?? spreads[index]?.imageOffsetY ?? 0;
 
-            // 3. Render into canvas with scaling and panning applied
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.src = `data:image/jpeg;base64,${base64}`;
-            await new Promise((r) => { img.onload = r; });
-
-            // Convert to a reasonable pixel resolution for API (e.g. 1600x800)
-            const targetW = 1600;
-            const targetH = 800;
-
-            const canvas = document.createElement('canvas');
-            canvas.width = targetW;
-            canvas.height = targetH;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) throw new Error("Canvas context missing");
-
-            // Fill with solid white so the model can visually see the border regions
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, targetW, targetH);
-
-            // Compute dimensions exactly like getCoverDimensions does
-            const imgRatio = img.width / img.height;
-            const targetRatio = targetW / targetH;
-            let dimW, dimH, dimX, dimY;
-            if (imgRatio > targetRatio) {
-                dimH = targetH;
-                dimW = dimH * imgRatio;
-                dimX = (targetW - dimW) / 2;
-                dimY = 0;
-            } else {
-                dimW = targetW;
-                dimH = dimW / imgRatio;
-                dimX = 0;
-                dimY = (targetH - dimH) / 2;
+            // Auto headroom preset if untouched
+            if (userScale === 100 && panPercX === 0 && panPercY === 0) {
+                userScale = 78;
+                panPercY = 10;
+                console.log("[Outpaint] Applying default 78% zoom & +10% pan Y headroom preset.");
             }
 
-            // Apply scaling and offsets
-            const scale = (pageEdits[index]?.imageScale ?? spreads[index]?.imageScale ?? 100) / 100;
-            const scaledW = dimW * scale;
-            const scaledH = dimH * scale;
-            const centerShiftX = (scaledW - dimW) / 2;
-            const centerShiftY = (scaledH - dimH) / 2;
+            console.log(`[Outpaint] Sending outpaint request to server — Scale: ${userScale}%, PanX: ${panPercX}%, PanY: ${panPercY}%`);
 
-            const panPercX = pageEdits[index]?.imageOffsetX ?? spreads[index]?.imageOffsetX ?? 0;
-            const panPercY = pageEdits[index]?.imageOffsetY ?? spreads[index]?.imageOffsetY ?? 0;
-            const panX = (panPercX / 100) * targetW;
-            const panY = (panPercY / 100) * targetH;
-
-            const finalX = dimX - centerShiftX + panX;
-            const finalY = dimY - centerShiftY + panY;
-
-            ctx.drawImage(img, finalX, finalY, scaledW, scaledH);
-            
-            // AI Aspect Ratio Padding: The AI will crop non-standard aspect ratios (like 2:1).
-            // All spreads (including Spread 0 Cover wrap) are 2:1 horizontal panoramic spreads (400x200mm).
-            // We pad the canvas to 16:9 (1600x900) with white borders top/bottom so Gemini can naturally outpaint.
-            const padW = 1600;
-            const padH = 900;
-            const padOffsetX = (padW - targetW) / 2; // (1600 - 1600) / 2 = 0
-            const padOffsetY = (padH - targetH) / 2; // (900 - 800) / 2 = 50
-
-            const padCanvas = document.createElement('canvas');
-            padCanvas.width = padW;
-            padCanvas.height = padH;
-            const padCtx = padCanvas.getContext('2d');
-            if (padCtx) {
-                padCtx.fillStyle = '#FFFFFF';
-                padCtx.fillRect(0, 0, padW, padH);
-                // Draw the scaled/panned image exactly where it belongs within the padded 16:9 area
-                padCtx.drawImage(img, finalX + padOffsetX, finalY + padOffsetY, scaledW, scaledH);
-            }
-
-            // Export as JPEG
-            const paddedBase64 = padCanvas.toDataURL('image/jpeg', 0.95).split(',')[1];
-
-            // Debug: log exactly what white borders are being sent to the model
-            const borderLeft = Math.max(0, finalX + padOffsetX);
-            const borderTop = Math.max(0, finalY + padOffsetY);
-            const borderRight = Math.max(0, padW - (finalX + padOffsetX + scaledW));
-            const borderBottom = Math.max(0, padH - (finalY + padOffsetY + scaledH));
-            console.log(`[Outpaint] Padded 16:9 AI Input — L:${borderLeft.toFixed(0)}px R:${borderRight.toFixed(0)}px T:${borderTop.toFixed(0)}px B:${borderBottom.toFixed(0)}px`);
-            
-            // 4. Send to backend
+            // 3. Server handles image download, 2:1 sharp canvas padding, and Gemini 3 Pro outpaint seamlessly
             const response = await backendApi.outpaintSpreadImage({
-                imageBase64: paddedBase64,
-                stylePrompt: getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly style',
+                imageUrl: currentImg.startsWith('http') ? currentImg : undefined,
+                imageBase64: !currentImg.startsWith('http') ? currentImg : undefined,
+                scale: userScale,
+                offsetX: panPercX,
+                offsetY: panPercY,
+                stylePrompt: getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly children\'s book illustration style, expansive atmosphere',
                 childDNA: masterDNA || storyData.styleReferenceImageBase64 || storyData.styleReferenceImageUrl,
                 secondDNA: masterDNA2 || storyData.secondCharacterImageBase64
             });
 
-            if (response.imageBase64) {
-                try {
-                    const aiImg = new Image();
-                    aiImg.crossOrigin = 'anonymous';
-                    aiImg.src = `data:image/jpeg;base64,${response.imageBase64}`;
-                    await new Promise((r) => { aiImg.onload = r; });
-                    
-                    ctx.clearRect(0, 0, targetW, targetH);
-                    
-                    // Draw AI filled image stretched back to padW/padH and cropped to targetW/targetH (2:1)
-                    ctx.drawImage(aiImg, -padOffsetX, -padOffsetY, padW, padH);
-                    
-                    response.imageBase64 = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
-                    console.log("[Outpaint] Successfully filled empty space with AI background.");
-                } catch (compositeErr) {
-                    console.error("[Outpaint] Compositing failed, falling back to pure AI image", compositeErr);
-                }
+            if (!response?.imageBase64) {
+                throw new Error("Server did not return an outpainted image.");
+            }
 
-                // Save new image
-                let newStory = { ...storyData };
-                if (index === 0) {
-                    newStory.coverImageUrl = response.imageBase64;
-                    onUpdateStory({ coverImageUrl: response.imageBase64 });
-                } else {
-                    const newSpreads = [...spreads];
-                    newSpreads[index] = { ...newSpreads[index], illustrationUrl: response.imageBase64 };
-                    newStory.spreads = newSpreads;
-                    onUpdateStory({ spreads: newSpreads });
-                }
+            console.log(`[Outpaint] ✅ Received outpainted image from server (${response.imageBase64.length} chars). Opening Review Window...`);
 
-                // Reset scale and offsets
-                handleLayoutOffsetChange(index, 'imageScale', 100);
-                handleLayoutOffsetChange(index, 'imageOffsetX', 0);
-                handleLayoutOffsetChange(index, 'imageOffsetY', 0);
-                
-                // Immediate save to db
-                if (storyData.orderId) {
+            // 4. Open the Dedicated Comparison & Review Modal
+            setOutpaintReviewState({
+                isOpen: true,
+                spreadIndex: index === 0 ? 'cover' : index,
+                originalImageUrl: currentImg,
+                outpaintedBase64: response.imageBase64,
+                isApplying: false,
+            });
+
+        } catch (err: any) {
+            console.error("Generative Fill failed:", err);
+            alert("Generative Fill Failed: " + (err.message || 'Unknown error'));
+        } finally {
+            setGeneratingFillIndex(null);
+        }
+    };
+
+    const handleApplyOutpaint = async () => {
+        if (!outpaintReviewState) return;
+        setOutpaintReviewState(prev => prev ? { ...prev, isApplying: true } : null);
+        try {
+            const index = outpaintReviewState.spreadIndex === 'cover' ? 0 : outpaintReviewState.spreadIndex;
+            const finalB64 = outpaintReviewState.outpaintedBase64;
+            let finalImageUrl = `data:image/jpeg;base64,${finalB64}`;
+            const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
+
+            try {
+                const uploadRes = await backendApi.uploadImage({
+                    orderNumber: targetOrderId,
+                    spreadNum: index === 0 ? 0 : index,
+                    imageBase64: finalB64
+                });
+                if (uploadRes?.publicUrl) {
+                    finalImageUrl = uploadRes.publicUrl;
+                    console.log(`✅ [Outpaint] Uploaded outpainted image to CDN: ${finalImageUrl}`);
+                }
+            } catch (uploadErr) {
+                console.warn("[Outpaint] Direct storage upload failed, falling back to base64 URL:", uploadErr);
+            }
+
+            // Reset scale and offsets in pageEdits directly and update illustrationUrl
+            setPageEdits(prev => ({
+                ...prev,
+                [index]: {
+                    ...(prev[index] || { text: getSpreadText(spreads[index], index), prompt: getPromptForIndex(index, spreads[index]) }),
+                    illustrationUrl: finalImageUrl,
+                    imageScale: 100,
+                    imageOffsetX: 0,
+                    imageOffsetY: 0
+                }
+            }));
+
+            // Save new image and update storyData
+            if (index === 0) {
+                const updatedSpreads = [...spreads];
+                if (updatedSpreads[0]) {
+                    updatedSpreads[0] = { ...updatedSpreads[0], illustrationUrl: finalImageUrl, imageScale: 100, imageOffsetX: 0, imageOffsetY: 0 };
+                }
+                const newStory = {
+                    ...storyData,
+                    coverImageUrl: finalImageUrl,
+                    spreads: updatedSpreads
+                };
+                onUpdateStory({ coverImageUrl: finalImageUrl, spreads: updatedSpreads });
+                if (targetOrderId && targetOrderId !== 'RWY-UNKNOWN') {
                     try {
-                        await adminService.saveOrder(storyData.orderId, newStory, shippingDetails || {});
+                        await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
+                    } catch (err) {
+                        console.error('Failed to save Generative Fill image to DB', err);
+                    }
+                }
+            } else {
+                const newSpreads = [...spreads];
+                newSpreads[index] = {
+                    ...newSpreads[index],
+                    illustrationUrl: finalImageUrl,
+                    imageScale: 100,
+                    imageOffsetX: 0,
+                    imageOffsetY: 0
+                };
+                const newStory = { ...storyData, spreads: newSpreads };
+                onUpdateStory({ spreads: newSpreads });
+                if (targetOrderId && targetOrderId !== 'RWY-UNKNOWN') {
+                    try {
+                        await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
                     } catch (err) {
                         console.error('Failed to save Generative Fill image to DB', err);
                     }
                 }
             }
-        } catch (err: any) {
-            console.error("Generative Fill failed:", err);
-            alert("Generative Fill Failed: " + err.message);
-        } finally {
-            setGeneratingFillIndex(null);
+            setOutpaintReviewState(null);
+        } catch (applyErr: any) {
+            console.error("Failed to apply outpaint:", applyErr);
+            alert("Failed to apply outpainted image: " + applyErr.message);
+            setOutpaintReviewState(prev => prev ? { ...prev, isApplying: false } : null);
         }
     };
 
@@ -957,15 +956,42 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     const fullBase64 = event.target?.result as string;
                     ClientLogger.log('IMAGE_UPLOADED_MANUALLY', { index, fileName: file.name, fileSize: file.size });
                     
+                    let finalUrl = fullBase64;
+                    const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
+                    try {
+                        const uploadRes = await backendApi.uploadImage({
+                            orderNumber: targetOrderId,
+                            spreadNum: index === 'cover' ? 0 : index,
+                            imageBase64: fullBase64
+                        });
+                        if (uploadRes?.publicUrl) {
+                            finalUrl = uploadRes.publicUrl;
+                        }
+                    } catch (uploadErr) {
+                        console.warn("[EditorScreen] Upload failed, falling back to base64:", uploadErr);
+                    }
+
                     if (index === 'cover') {
-                        onUpdateStory({ coverImageUrl: fullBase64 });
+                        const updatedSpreads = [...spreads];
+                        if (updatedSpreads[0]) {
+                            updatedSpreads[0] = { ...updatedSpreads[0], illustrationUrl: finalUrl };
+                        }
+                        const newStory = { ...storyData, coverImageUrl: finalUrl, spreads: updatedSpreads };
+                        onUpdateStory({ coverImageUrl: finalUrl, spreads: updatedSpreads });
+                        if (targetOrderId && targetOrderId !== 'RWY-UNKNOWN') {
+                            await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
+                        }
                     } else {
                         const newSpreads = [...spreads];
                         newSpreads[index] = {
                             ...newSpreads[index],
-                            illustrationUrl: fullBase64
+                            illustrationUrl: finalUrl
                         };
+                        const newStory = { ...storyData, spreads: newSpreads };
                         onUpdateStory({ spreads: newSpreads });
+                        if (targetOrderId && targetOrderId !== 'RWY-UNKNOWN') {
+                            await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
+                        }
                     }
                 } finally {
                     setUploadingIndex(null);
@@ -1299,6 +1325,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         textBlocks: [] // CLEAR blocks to force single-block manual layout
                     } as any;
                 }
+                if (pageEdits[i]?.illustrationUrl) {
+                    finalSpreads[i] = { ...finalSpreads[i], illustrationUrl: pageEdits[i]!.illustrationUrl! };
+                }
                 if (pageEdits[i]?.prompt !== undefined && pageEdits[i].prompt !== finalSpreads[i].actualPrompt) {
                     finalSpreads[i] = { ...finalSpreads[i], actualPrompt: pageEdits[i].prompt };
                 }
@@ -1324,11 +1353,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 }
             }
 
+            const finalCoverUrl = pageEdits[0]?.illustrationUrl || storyData.coverImageUrl;
             const finalStoryData = {
                 ...storyData,
                 title: localTitle,
                 coverSubtitle: localSubtitle,
                 coverTextSide: localCoverTextSide,
+                coverImageUrl: finalCoverUrl,
                 spreads: finalSpreads,
                 actualCoverPrompt: coverEdit,
             };
@@ -1358,6 +1389,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     textBlocks: [] // CLEAR blocks to force single-block manual layout
                 } as any;
             }
+            if (pageEdits[i]?.illustrationUrl) {
+                finalSpreads[i] = { ...finalSpreads[i], illustrationUrl: pageEdits[i]!.illustrationUrl! };
+            }
             if (pageEdits[i]?.prompt !== undefined && pageEdits[i].prompt !== finalSpreads[i].actualPrompt) {
                 finalSpreads[i] = { ...finalSpreads[i], actualPrompt: pageEdits[i].prompt };
             }
@@ -1382,13 +1416,29 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 finalSpreads[i] = { ...finalSpreads[i], imageScale: pageEdits[i].imageScale };
             }
         }
-        onUpdateStory({ spreads: finalSpreads, actualCoverPrompt: coverEdit, title: localTitle, coverSubtitle: localSubtitle, coverTextSide: localCoverTextSide });
+        const finalCoverUrl = pageEdits[0]?.illustrationUrl || storyData.coverImageUrl;
+        onUpdateStory({
+            spreads: finalSpreads,
+            coverImageUrl: finalCoverUrl,
+            actualCoverPrompt: coverEdit,
+            title: localTitle,
+            coverSubtitle: localSubtitle,
+            coverTextSide: localCoverTextSide
+        });
         
         const orderId = storyData.orderId || storyData.orderNumber;
         if (orderId) {
             ClientLogger.log('SILENT_SAVE', { orderId, title: localTitle });
             try {
-                await adminService.saveOrder(orderId as string, { ...storyData, spreads: finalSpreads, actualCoverPrompt: coverEdit, title: localTitle, coverSubtitle: localSubtitle, coverTextSide: localCoverTextSide }, shippingDetails || {});
+                await adminService.saveOrder(orderId as string, {
+                    ...storyData,
+                    spreads: finalSpreads,
+                    coverImageUrl: finalCoverUrl,
+                    actualCoverPrompt: coverEdit,
+                    title: localTitle,
+                    coverSubtitle: localSubtitle,
+                    coverTextSide: localCoverTextSide
+                }, shippingDetails || {});
             } catch(e) {
                 ClientLogger.error('SILENT_SAVE_FAILED', e);
                 console.error("Silent save failed", e);
@@ -2144,10 +2194,30 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                     stylePrompt={getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly children\'s book illustration style'}
                                     childDNA={masterDNA}
                                     secondDNA={masterDNA2}
-                                    onImageEdited={newB64 => {
-                                        const newStoryData = { ...storyData, coverImageUrl: newB64 };
-                                        onUpdateStory({ coverImageUrl: newB64 });
-                                        if (storyData.orderId) adminService.saveOrder(storyData.orderId, newStoryData, shippingDetails || {}).catch(console.error);
+                                    onImageEdited={async newB64 => {
+                                        let finalUrl = newB64.startsWith('http') || newB64.startsWith('data:') ? newB64 : `data:image/jpeg;base64,${newB64}`;
+                                        const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
+                                        try {
+                                            const uploadRes = await backendApi.uploadImage({
+                                                orderNumber: targetOrderId,
+                                                spreadNum: 0,
+                                                imageBase64: newB64
+                                            });
+                                            if (uploadRes?.publicUrl) {
+                                                finalUrl = uploadRes.publicUrl;
+                                            }
+                                        } catch (uploadErr) {
+                                            console.warn("[EditorScreen] Gemini cover edit upload failed:", uploadErr);
+                                        }
+                                        const updatedSpreads = [...spreads];
+                                        if (updatedSpreads[0]) {
+                                            updatedSpreads[0] = { ...updatedSpreads[0], illustrationUrl: finalUrl };
+                                        }
+                                        const newStoryData = { ...storyData, coverImageUrl: finalUrl, spreads: updatedSpreads };
+                                        onUpdateStory({ coverImageUrl: finalUrl, spreads: updatedSpreads });
+                                        if (targetOrderId && targetOrderId !== 'RWY-UNKNOWN') {
+                                            adminService.saveOrder(targetOrderId, newStoryData, shippingDetails || {}).catch(console.error);
+                                        }
                                     }}
                                 />
                             </div>
@@ -2241,10 +2311,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                             <Spinner size="md" color="text-brand-orange" />
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
                                                         </div>
-                                                    ) : spreads[i]?.illustrationUrl ? (
+                                                    ) : (pageEdits[i]?.illustrationUrl || spreads[i]?.illustrationUrl) ? (
                                                         <>
                                                             <img 
-                                                                src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} 
+                                                                src={(pageEdits[i]?.illustrationUrl || spreads[i].illustrationUrl).startsWith('http') || (pageEdits[i]?.illustrationUrl || spreads[i].illustrationUrl).startsWith('data:') ? (pageEdits[i]?.illustrationUrl || spreads[i].illustrationUrl) : `data:image/jpeg;base64,${pageEdits[i]?.illustrationUrl || spreads[i].illustrationUrl}`} 
                                                                 className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages[`spread-regen-${i}`] ? 'opacity-100' : 'opacity-0'}`} 
                                                                 loading="lazy"
                                                                 onLoad={() => setLoadedImages(prev => ({ ...prev, [`spread-regen-${i}`]: true }))}
@@ -2278,10 +2348,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                                         <Spinner size="md" color="text-brand-orange" />
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange animate-pulse">Processing...</span>
                                                     </div>
-                                                ) : spreads[i]?.illustrationUrl ? (
+                                                ) : (pageEdits[i]?.illustrationUrl || spreads[i]?.illustrationUrl) ? (
                                                     <>
                                                         <img 
-                                                            src={spreads[i].illustrationUrl.startsWith('http') || spreads[i].illustrationUrl.startsWith('data:') ? spreads[i].illustrationUrl : `data:image/jpeg;base64,${spreads[i].illustrationUrl}`} 
+                                                            src={(pageEdits[i]?.illustrationUrl || spreads[i].illustrationUrl).startsWith('http') || (pageEdits[i]?.illustrationUrl || spreads[i].illustrationUrl).startsWith('data:') ? (pageEdits[i]?.illustrationUrl || spreads[i].illustrationUrl) : `data:image/jpeg;base64,${pageEdits[i]?.illustrationUrl || spreads[i].illustrationUrl}`} 
                                                             className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${loadedImages[`spread-single-${i}`] ? 'opacity-100' : 'opacity-0'}`} 
                                                             loading="lazy"
                                                             onLoad={() => setLoadedImages(prev => ({ ...prev, [`spread-single-${i}`]: true }))}
@@ -2315,7 +2385,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         {/* Spread Layout Map + Position Controls */}
                                         <SpreadLayoutPanel
                                             spreadIndex={i}
-                                            illustrationUrl={spreads[i]?.illustrationUrl}
+                                            illustrationUrl={pageEdits[i]?.illustrationUrl || spreads[i]?.illustrationUrl}
                                             textSide={pageEdits[i]?.textSide || spreads[i]?.textSide || (spreads[i]?.mainContentSide === 'left' ? 'right' : 'left')}
                                             language={language}
                                             textOffsetX={pageEdits[i]?.textOffsetX ?? spreads[i]?.textOffsetX}
@@ -2524,6 +2594,18 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     }}
                     isOpen={isShippingModalOpen}
                     onClose={() => setIsShippingModalOpen(false)}
+                    language={language}
+                />
+            )}
+            {outpaintReviewState && (
+                <OutpaintReviewModal
+                    isOpen={outpaintReviewState.isOpen}
+                    spreadIndex={outpaintReviewState.spreadIndex}
+                    originalImageUrl={outpaintReviewState.originalImageUrl}
+                    outpaintedBase64={outpaintReviewState.outpaintedBase64}
+                    onApply={handleApplyOutpaint}
+                    onDiscard={() => setOutpaintReviewState(null)}
+                    isApplying={outpaintReviewState.isApplying}
                     language={language}
                 />
             )}

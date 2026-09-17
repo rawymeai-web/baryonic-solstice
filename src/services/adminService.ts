@@ -521,6 +521,11 @@ export async function hardResetOrder(orderNumber: string): Promise<void> {
     delete cleanStoryData.coverImageUrl;
     delete cleanStoryData.finalPrompts;
     delete cleanStoryData.spreadPlan;
+    delete cleanStoryData.blueprint;
+    delete cleanStoryData.script;
+    delete cleanStoryData.rawScript;
+    delete cleanStoryData.pageEdits;
+    delete cleanStoryData.customIllustrations;
 
     const { error: orderErr } = await supabase.from('orders').update({
       status: 'paid',
