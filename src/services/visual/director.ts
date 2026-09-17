@@ -86,6 +86,10 @@ export async function generateVisualPlan(
                - Avoid extreme negative or distressing expressions like "scowling", "angry frown", "crying", "miserable", "exhausted", "sulking", or "terrified". For challenges, use expressions like "intrigued thinking face", "focused curiosity", "puzzled with a slight head tilt", or "calm determination".
                - Do NOT inject forced stylistic caricature terms (e.g., do NOT mandate "oversized wide cartoon eyes", "baby-doll face", or forced 3D tropes); keep facial expressions grounded in natural narrative emotions so the selected visual style and DNA reference govern rendering.
 
+            15. **GLOBAL RECURRING OBJECT & PROP INVARIANCE (CRITICAL):**
+               - If an object, vehicle, furniture piece (e.g., Bed-boat, spaceship, bicycle, carriage), tool, or companion toy appears across multiple spreads (or is a key narrative device), you MUST establish an immutable, canonical physical_description for it in 'visualAnchors.persistentprops'.
+               - You must NOT redesign, recolor, or mutate the structure, material, or color of this persistent object in different spreads. Maintain identical frame materials, bedding/cushion patterns, shape, and colors across every spread it appears in.
+
             OUTPUT JSON SCHEMA:
             {
                 "visualAnchors": { 

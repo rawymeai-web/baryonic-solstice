@@ -10,6 +10,8 @@ export interface ImageQAResult {
     wardrobe_reasoning: string;
     style_consistency_status: 'pass' | 'fail';
     style_reasoning: string;
+    prop_consistency_status?: 'pass' | 'fail';
+    prop_reasoning?: string;
     text_clearance_status: 'pass' | 'fail';
     text_reasoning: string;
     recommended_text_side: 'Right' | 'Left';
@@ -121,7 +123,11 @@ CRITICAL EVALUATION CRITERIA:
    - FORBIDDEN STYLE DRIFT: The illustration must NOT drift into contrasting artistic media or incompatible stylization levels (e.g., painterly realism shifting to 3D CGI plastic or flat vector, 3D animated shifting to flat 2D or realistic photo, watercolor shifting to digital glossy CGI).
    - MANDATORY FAIL RULE: If the illustration mutates into a contrasting artistic medium or different dimensionality/stylization level, set "style_consistency_status": "fail", "overall_decision": "fail", and specify the exact observed drift and target requirement in "regeneration_reason".
 
-5. Text Zone Clearance:
+5. Global Recurring Object & Persistent Prop Consistency:
+   - Check recurring signature story objects (e.g. Bed-boat, brass lantern, signature toy, magical vehicle).
+   - If a persistent prop defined in the blueprint or prompt mutates into a completely different design, form, or material, flag or fail with clear steering.
+
+6. Text Zone Clearance:
    - Check if the designated side is clear of the character's face.
    - If the character is on the designated side, set "recommended_text_side" to the opposite side ("Left" or "Right") and recommend shifting the text. Do NOT fail the entire image or request regeneration if simply placing text on the other side provides perfect clearance.
 
@@ -134,6 +140,8 @@ Return a strictly valid JSON object matching exactly this structure:
     "wardrobe_reasoning": "Detailed explanation of top, bottom pants/shorts, and footwear consistency...",
     "style_consistency_status": "pass" | "fail",
     "style_reasoning": "Detailed explanation of style match...",
+    "prop_consistency_status": "pass" | "fail",
+    "prop_reasoning": "Evaluation of recurring props and objects...",
     "text_clearance_status": "pass" | "fail",
     "text_reasoning": "Detailed explanation of text layout or overlap...",
     "recommended_text_side": "Right" | "Left",
@@ -142,7 +150,8 @@ Return a strictly valid JSON object matching exactly this structure:
     "request_regeneration": boolean,
     "regeneration_reason": "Clear, specific correction instruction for the image generator on repaint",
     "overall_decision": "pass" | "fail" | "flagged"
-}`;
+}
+`;
 
         parts.push({ text: prompt });
 
@@ -160,7 +169,7 @@ Return a strictly valid JSON object matching exactly this structure:
         const qaResult: ImageQAResult = JSON.parse(cleaned);
 
         // Enforce schema integrity: if likeness < 7 or any critical check failed, overall decision MUST be fail
-        if (qaResult.likeness_score < 7 || qaResult.character_consistency_status === 'fail' || qaResult.style_consistency_status === 'fail') {
+        if (qaResult.likeness_score < 7 || qaResult.character_consistency_status === 'fail' || qaResult.style_consistency_status === 'fail' || qaResult.prop_consistency_status === 'fail') {
             qaResult.overall_decision = 'fail';
             qaResult.request_regeneration = true;
         }
@@ -174,6 +183,8 @@ Return a strictly valid JSON object matching exactly this structure:
         wardrobe_reasoning: 'Default fallback applied.',
         style_consistency_status: 'pass',
         style_reasoning: 'Default fallback applied.',
+        prop_consistency_status: 'pass',
+        prop_reasoning: 'Default fallback applied.',
         text_clearance_status: 'pass',
         text_reasoning: 'Default text clearance applied.',
         recommended_text_side: 'Right',

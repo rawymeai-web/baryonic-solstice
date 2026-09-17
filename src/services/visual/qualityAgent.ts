@@ -34,6 +34,8 @@ export interface QualityCheckResult {
     wardrobeReasoning: string;
     styleConsistencyStatus: 'pass' | 'fail';
     styleReasoning: string;
+    propConsistencyStatus?: 'pass' | 'fail';
+    propReasoning?: string;
     textClearanceStatus: 'pass' | 'fail';
     textReasoning: string;
     recommendedTextSide: 'Right' | 'Left';
@@ -195,11 +197,15 @@ STRICT BIOMETRIC & ARTISTIC EVALUATION CRITERIA:
    - FORBIDDEN STYLE DRIFT: The generated image must strictly adhere to the established artistic medium and stylization level of the DNA Reference. It must NOT drift into contrasting artistic media or incompatible stylization levels (e.g., painterly realism shifting to 3D CGI plastic or flat vector, 3D animated shifting to flat 2D or realistic photo, watercolor shifting to digital glossy CGI).
    - MANDATORY FAIL RULE: If the illustration mutates into a contrasting artistic medium or different dimensionality/stylization level, set "styleConsistencyStatus": "fail", "overallDecision": "fail", and specify the exact observed drift and target requirement in "regenerationReason" (e.g., "Style drifted into [Observed Style] with [Observed Deviations]; must strictly match the [Target Style] and anatomical scale of the DNA Reference Image").
 
-7. Text Zone Clearance:
+7. Global Recurring Object & Persistent Prop Invariance:
+   - Check recurring signature objects (e.g. Bed-boat, signature lantern, vehicles, core story props).
+   - If an established recurring prop defined in the prompt/blueprint mutates into a completely different design, material, or object across scenes, flag or fail.
+
+8. Text Zone Clearance:
    - Check if the designated side (${currentTextSide || 'Right'}) is clear of the character's face.
    - If the character is on that side, recommend the opposite side ("Left" or "Right").
 
-8. Narrative Adherence & Action Matching:
+9. Narrative Adherence & Action Matching:
    - Does the image accurately reflect the story action and mood described in the story text?
 
 OVERALL DECISION RULES:
@@ -217,6 +223,8 @@ Output STRICTLY a JSON object matching this schema:
   "wardrobeReasoning": "Clothing evaluation...",
   "styleConsistencyStatus": "pass" | "fail",
   "styleReasoning": "Style medium and texture evaluation...",
+  "propConsistencyStatus": "pass" | "fail",
+  "propReasoning": "Evaluation of recurring props and objects...",
   "textClearanceStatus": "pass" | "fail",
   "textReasoning": "Text layout and clearance explanation...",
   "recommendedTextSide": "Right" | "Left",
@@ -245,7 +253,7 @@ Output STRICTLY a JSON object matching this schema:
             const result: QualityCheckResult = JSON.parse(cleaned);
 
             // Enforce schema integrity: if likeness < 7 or any critical check failed, overall decision MUST be fail
-            if (result.likenessScore < 7 || result.characterConsistencyStatus === 'fail' || result.narrativeAdherenceStatus === 'fail') {
+            if (result.likenessScore < 7 || result.characterConsistencyStatus === 'fail' || result.narrativeAdherenceStatus === 'fail' || result.propConsistencyStatus === 'fail') {
                 result.overallDecision = 'fail';
             }
 
@@ -261,6 +269,8 @@ Output STRICTLY a JSON object matching this schema:
             wardrobeReasoning: 'Default fallback applied.',
             styleConsistencyStatus: 'pass',
             styleReasoning: 'Default fallback applied.',
+            propConsistencyStatus: 'pass',
+            propReasoning: 'Default fallback applied.',
             textClearanceStatus: 'pass',
             textReasoning: 'Default right-side clearance applied.',
             recommendedTextSide: (currentTextSide === 'Left' ? 'Left' : 'Right'),

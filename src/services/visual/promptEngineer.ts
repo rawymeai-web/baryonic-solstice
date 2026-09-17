@@ -193,6 +193,81 @@ export function extractBiometrics(desc: any): {
 }
 
 // ---------------------------------------------------------------------------
+// GLOBAL PROP INVARIANCE LOCK HELPER
+// ---------------------------------------------------------------------------
+export function extractGlobalPropLocks(
+    plan: SpreadDesignPlan | undefined,
+    blueprint: StoryBlueprint | undefined
+): { name: string; canonicalDescription: string }[] {
+    const propMap = new Map<string, { name: string; descriptions: string[]; count: number }>();
+
+    const normalize = (n: string) => n.trim().toLowerCase().replace(/^(the|a|an)\s+/i, '');
+
+    const addProp = (name: string, desc?: string) => {
+        if (!name || typeof name !== 'string' || name.trim().length === 0) return;
+        const cleanName = name.replace(/[\[\]]/g, '').trim();
+        const norm = normalize(cleanName);
+        if (!propMap.has(norm)) {
+            propMap.set(norm, { name: cleanName, descriptions: [], count: 0 });
+        }
+        const entry = propMap.get(norm)!;
+        entry.count += 1;
+        if (desc && typeof desc === 'string' && desc.trim().length > 0) {
+            entry.descriptions.push(desc.trim());
+        }
+    };
+
+    // 1. Foundation primaryVisualAnchor
+    if (blueprint?.foundation?.primaryVisualAnchor) {
+        addProp(blueprint.foundation.primaryVisualAnchor, blueprint.foundation.primaryVisualAnchor);
+    }
+
+    // 2. Visual Anchors in Plan
+    if ((plan as any)?.visualAnchors) {
+        const va = (plan as any).visualAnchors;
+        if (typeof va.persistentprops === 'string' && va.persistentprops.length > 0) {
+            va.persistentprops.split(/[;,]/).forEach((p: string) => addProp(p, p));
+        }
+        if (typeof va.signatureItems === 'string' && va.signatureItems.length > 0) {
+            va.signatureItems.split(/[;,]/).forEach((p: string) => addProp(p, p));
+        }
+    }
+
+    // 3. Spreads scene_props
+    if (plan?.spreads && Array.isArray(plan.spreads)) {
+        plan.spreads.forEach((spread: any) => {
+            const sceneProps = spread.scene_props || spread.props || [];
+            if (Array.isArray(sceneProps)) {
+                sceneProps.forEach((p: any) => {
+                    const name = typeof p === 'string' ? p : p.name;
+                    const desc = typeof p === 'object' ? p.physical_description || p.description : undefined;
+                    addProp(name, desc);
+                });
+            }
+        });
+    }
+
+    const globalLocks: { name: string; canonicalDescription: string }[] = [];
+
+    propMap.forEach((entry, norm) => {
+        // Exclude generic environmental non-props
+        if (/^(shadows|soft shadows|dimly lit room|bedroom elements|room|darkness|light|background|bedroom elements \(normal\)|bedroom elements \(obscured\))$/i.test(norm)) return;
+
+        if (entry.count >= 2 || entry.descriptions.length >= 2 || (blueprint?.foundation?.primaryVisualAnchor && normalize(blueprint.foundation.primaryVisualAnchor).includes(norm))) {
+            const sortedDescs = entry.descriptions.sort((a, b) => b.length - a.length);
+            let canonical = sortedDescs[0] || `${entry.name} design matching the established story anchor.`;
+            canonical = sanitizeText(canonical);
+            globalLocks.push({
+                name: entry.name,
+                canonicalDescription: canonical
+            });
+        }
+    });
+
+    return globalLocks;
+}
+
+// ---------------------------------------------------------------------------
 // SECTION A — HERO REFERENCE (DNA-ONLY)
 // ---------------------------------------------------------------------------
 function buildHeroReferenceParagraph(heroes: HeroProfile[]): string {
@@ -864,7 +939,8 @@ function assembleEnglishPromptV7_4(
     styleProfile: StyleProfile,
     heroes: HeroProfile[],
     isCover: boolean = false,
-    isRTL: boolean = false
+    isRTL: boolean = false,
+    globalPropLocks: { name: string; canonicalDescription: string }[] = []
 ): { prompt: string; validation: PromptValidationResult } {
 
     const schemaStamp = `[v7.8-style-dna-lock]`;
@@ -970,6 +1046,15 @@ function assembleEnglishPromptV7_4(
         ? `WARDROBE & ATTIRE LOCK:\n${wardrobeDirectives.join('\n')}`
         : '';
 
+    // Global Prop Invariance Directive
+    let persistentPropsText = '';
+    if (globalPropLocks && globalPropLocks.length > 0) {
+        const lockLines = globalPropLocks.map(p => 
+            `- "${p.name}": MUST be visually IDENTICAL across all spreads. Maintain the exact same design: ${p.canonicalDescription}. Do NOT alter the structure, frame materials, colors, or visual design between scenes.`
+        );
+        persistentPropsText = `GLOBAL OBJECT & PERSISTENT PROP INVARIANCE LOCK:\n${lockLines.join('\n')}`;
+    }
+
     // Style Matching Directive (Generalized & Style-Invariant)
     const styleName = styleProfile?.style_name || (styleProfile as any)?.name || styleProfile?.prompt || 'Approved Book Style';
     const styleLock = styleProfile?.positive_style_lock ? ` ${styleProfile.positive_style_lock}` : '';
@@ -1043,10 +1128,13 @@ function assembleEnglishPromptV7_4(
             : '';
     }
 
-    // 4. Props
-    const propsText = spread.scene_props && spread.scene_props.length > 0 
-        ? `Props to include: ${spread.scene_props.map((p: any) => p.name).join(', ')}.`
-        : '';
+    // 4. Props (Detailed visual descriptors with text safety)
+    let propsText = '';
+    if (spread.scene_props && Array.isArray(spread.scene_props) && spread.scene_props.length > 0) {
+        propsText = buildPropsInstruction(spread.scene_props);
+    } else if (spread.props && Array.isArray(spread.props) && spread.props.length > 0) {
+        propsText = buildPropsInstruction(spread.props);
+    }
 
     // 5. Composition (Strict spatial side sanitizer — RTL aware for cover and interior)
     const comp = spread.composition || {};
@@ -1093,6 +1181,7 @@ function assembleEnglishPromptV7_4(
         legend,
         likenessText,
         wardrobeText,
+        persistentPropsText,
         styleText,
         settingText,
         actionsText,
@@ -1129,6 +1218,8 @@ export async function generatePrompts(
             throw new Error('Invalid plan structure.');
         }
 
+        const globalPropLocks = extractGlobalPropLocks(plan, blueprint);
+
         const isRTL = language === 'ar' ||
             (plan as any)?.language === 'ar' ||
             (blueprint as any)?.language === 'ar' ||
@@ -1143,7 +1234,7 @@ export async function generatePrompts(
 
             const spreadIsRTL = isRTL || /[\u0600-\u06FF]/.test(spread?.storyText || '') || /[\u0600-\u06FF]/.test((bpSpread as any)?.storyText || '') || /[\u0600-\u06FF]/.test(bpSpread?.narrative || '');
 
-            const { prompt, validation } = assembleEnglishPromptV7_4(spread, styleProfile, heroes, isCover, spreadIsRTL);
+            const { prompt, validation } = assembleEnglishPromptV7_4(spread, styleProfile, heroes, isCover, spreadIsRTL, globalPropLocks);
 
             if (!validation.passed) {
                 allValidationErrors.push(`Spread ${spreadIndex}: ${validation.errors.join('; ')}`);
@@ -1179,7 +1270,7 @@ export async function generatePrompts(
                 inputs: { planSize: plan.spreads.length, heroCount: heroes.length },
                 outputs: {
                     promptCount: prompts.length,
-                    method: 'DNA Likeness & Wardrobe Assembler v7.8-style-dna-lock',
+                    method: 'DNA Likeness, Global Prop Lock & Wardrobe Assembler v7.8-style-dna-lock',
                     validationErrors: allValidationErrors.length > 0 ? allValidationErrors : 'none',
                 },
                 status: allValidationErrors.length > 0 ? 'Warning' : 'Success',
