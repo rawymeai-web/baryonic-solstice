@@ -315,12 +315,17 @@ export const generatePreviewPdf = async (storyData: StoryData, language: Languag
         // EN: Front is RIGHT half (50% to 100%)
         // AR: Front is LEFT half (0% to 50%)
         // Smart subtitle: double hero vs single hero (coverSubtitle = manual override)
-        const subtitle = storyData.coverSubtitle || (
-            storyData.useSecondCharacter && storyData.secondCharacter?.name
-                ? `${storyData.childName} ${isAr ? 'و' : '&'} ${storyData.secondCharacter.name}`
+        const childHeroName = storyData.childName || storyData.mainCharacter?.name || '';
+        const secondHeroName = storyData.secondCharacter?.name || '';
+        const effectiveStoredSub = (isAr && storyData.coverSubtitle && storyData.coverSubtitle.startsWith('A Story for '))
+            ? `قصة ${storyData.coverSubtitle.replace(/^A Story for\s*/i, '')}`
+            : storyData.coverSubtitle;
+        const subtitle = effectiveStoredSub || (
+            storyData.useSecondCharacter && secondHeroName
+                ? `${childHeroName} ${isAr ? 'و' : '&'} ${secondHeroName}`
                 : isAr
-                    ? `قصة ${storyData.childName}`
-                    : `A Story for ${storyData.childName}`
+                    ? `قصة ${childHeroName}`
+                    : `A Story for ${childHeroName}`
         );
         const coverTitle = storyData.title || storyData.blueprint?.foundation?.title || storyData.childName || 'My Story';
         const titleB64 = await createTextImage({ title: coverTitle, subtitle }, resolvedLang);
@@ -591,12 +596,17 @@ export const generateStitchedPdf = async (
         // Add Title Overlay to Cover
         const isAr = language === 'ar' || /[\u0600-\u06FF]/.test(storyDetails.title || '') || /[\u0600-\u06FF]/.test(storyDetails.childName || '');
         // Smart subtitle: double hero vs single hero (coverSubtitle = manual override)
-        const subtitle = storyDetails.coverSubtitle || (
-            storyDetails.secondCharacterName
-                ? `${storyDetails.childName} ${isAr ? 'و' : '&'} ${storyDetails.secondCharacterName}`
+        const childHeroName = storyDetails.childName || 'Hero';
+        const secondHeroName = storyDetails.secondCharacterName || '';
+        const effectiveStoredSub = (isAr && storyDetails.coverSubtitle && storyDetails.coverSubtitle.startsWith('A Story for '))
+            ? `قصة ${storyDetails.coverSubtitle.replace(/^A Story for\s*/i, '')}`
+            : storyDetails.coverSubtitle;
+        const subtitle = effectiveStoredSub || (
+            secondHeroName
+                ? `${childHeroName} ${isAr ? 'و' : '&'} ${secondHeroName}`
                 : isAr
-                    ? `قصة ${storyDetails.childName}`
-                    : `A Story for ${storyDetails.childName}`
+                    ? `قصة ${childHeroName}`
+                    : `A Story for ${childHeroName}`
         );
         const titleB64 = await createTextImage({ title: storyDetails.title, subtitle }, isAr ? 'ar' : language);
 
@@ -894,13 +904,18 @@ export const generatePrintPackage = async (storyData: StoryData, shipping: Shipp
         }
 
         // Generate and add cover text and composite cover
-        const isAr = language === 'ar' || storyData?.language === 'ar' || /[\u0600-\u06FF]/.test(storyData?.title || '') || /[\u0600-\u06FF]/.test(storyData?.childName || '');
-        const subtitle = storyData.coverSubtitle || (
-            storyData.useSecondCharacter && storyData.secondCharacter?.name
-                ? `${storyData.childName} ${isAr ? 'و' : '&'} ${storyData.secondCharacter.name}`
+        const childHeroName = storyData.childName || storyData.mainCharacter?.name || '';
+        const secondHeroName = storyData.secondCharacter?.name || '';
+        const isAr = language === 'ar' || storyData?.language === 'ar' || /[\u0600-\u06FF]/.test(storyData?.title || '') || /[\u0600-\u06FF]/.test(childHeroName);
+        const effectiveStoredSub = (isAr && storyData.coverSubtitle && storyData.coverSubtitle.startsWith('A Story for '))
+            ? `قصة ${storyData.coverSubtitle.replace(/^A Story for\s*/i, '')}`
+            : storyData.coverSubtitle;
+        const subtitle = effectiveStoredSub || (
+            storyData.useSecondCharacter && secondHeroName
+                ? `${childHeroName} ${isAr ? 'و' : '&'} ${secondHeroName}`
                 : isAr
-                    ? `قصة ${storyData.childName}`
-                    : `A Story for ${storyData.childName}`
+                    ? `قصة ${childHeroName}`
+                    : `A Story for ${childHeroName}`
         );
         const coverTitle = storyData.title || storyData.blueprint?.foundation?.title || storyData.childName || 'My Story';
         const titleB64 = await createTextImage({ title: coverTitle, subtitle }, isAr ? 'ar' : language);

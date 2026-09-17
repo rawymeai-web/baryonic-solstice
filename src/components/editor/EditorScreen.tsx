@@ -274,15 +274,20 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     };
 
     // Smart auto-computed subtitle — single hero vs double hero
-    const isAr = language === 'ar' || storyData?.language === 'ar' || /[\u0600-\u06FF]/.test(storyData?.childName || '') || /[\u0600-\u06FF]/.test(storyData?.title || '');
-    const hasSecondHero = !!(storyData.useSecondCharacter && storyData.secondCharacter?.name);
+    const childHeroName = storyData.childName || storyData.mainCharacter?.name || '';
+    const secondHeroName = storyData.secondCharacter?.name || '';
+    const isAr = language === 'ar' || storyData?.language === 'ar' || /[\u0600-\u06FF]/.test(childHeroName) || /[\u0600-\u06FF]/.test(storyData?.title || '');
+    const hasSecondHero = !!(storyData.useSecondCharacter && secondHeroName);
     const computedSubtitle = hasSecondHero
-        ? `${storyData.childName} ${isAr ? 'و' : '&'} ${storyData.secondCharacter!.name}`
+        ? `${childHeroName} ${isAr ? 'و' : '&'} ${secondHeroName}`
         : isAr
-            ? `قصة ${storyData.childName}`
-            : `A Story for ${storyData.childName}`;
+            ? `قصة ${childHeroName}`
+            : `A Story for ${childHeroName}`;
     // Active subtitle: override if enabled, else auto
-    const localSubtitle = useSubtitleOverride ? localSubtitleOverride : computedSubtitle;
+    const effectiveStored = (isAr && localSubtitleOverride && localSubtitleOverride.startsWith('A Story for '))
+        ? `قصة ${localSubtitleOverride.replace(/^A Story for\s*/i, '')}`
+        : localSubtitleOverride;
+    const localSubtitle = useSubtitleOverride ? (effectiveStored || computedSubtitle) : computedSubtitle;
 
     // Helper to safely extract prompt
     const getPromptForIndex = (pageIndex: number, pageData: any) => {
