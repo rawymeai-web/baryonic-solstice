@@ -310,9 +310,6 @@ Output STRICTLY a JSON object matching this schema:
             console.log(`[QCAgent] Evaluated: Likeness: ${result.likenessScore}/10, Style: ${result.styleConsistencyStatus}, Prop: ${result.propConsistencyStatus || 'n/a'}, Narrative: ${result.narrativeAdherenceStatus}, Decision: ${result.overallDecision}`);
             return result;
 
-            console.log(`[QCAgent] Spread evaluated. Likeness: ${result.likenessScore}/10, Narrative: ${result.narrativeAdherenceStatus}, Decision: ${result.overallDecision}`);
-            return result;
-
         }, 2, 4000, {
             visualDescription: "Vision QA evaluation fallback due to timeout or transient error.",
             likenessScore: 5,
@@ -336,3 +333,19 @@ Output STRICTLY a JSON object matching this schema:
         });
     }
 }
+
+/**
+ * Determines whether a QA result qualifies as a definite hard failure
+ * warranting an automated retry attempt in Fast Production Mode.
+ * Borderline / cosmetic issues (e.g. wardrobe variation, text clearance offset)
+ * do not trigger retries and are instead routed to the admin review queue.
+ */
+export function isDefiniteHardFailure(qc: QualityCheckResult): boolean {
+    if (qc.likenessScore < 7) return true;
+    if (qc.characterConsistencyStatus === 'fail') return true;
+    if (qc.styleConsistencyStatus === 'fail') return true;
+    if (qc.propConsistencyStatus === 'fail') return true;
+    if (qc.narrativeAdherenceStatus === 'fail') return true;
+    return false;
+}
+

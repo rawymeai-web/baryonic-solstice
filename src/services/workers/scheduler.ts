@@ -343,9 +343,9 @@ export class MasterScheduler {
 
         if (!jobs || jobs.length === 0) return;
 
-        for (const job of jobs) {
-            await BlueprintWorker.processJob(job.id, job.order_id, job.attempts);
-        }
+        await Promise.allSettled(
+            jobs.map(job => BlueprintWorker.processJob(job.id, job.order_id, job.attempts))
+        );
     }
 
     static async processCharacterGenerations() {
@@ -359,9 +359,9 @@ export class MasterScheduler {
 
         if (!jobs || jobs.length === 0) return;
 
-        for (const job of jobs) {
-            await CharacterWorker.processJob(job.id, job.order_id, job.attempts);
-        }
+        await Promise.allSettled(
+            jobs.map(job => CharacterWorker.processJob(job.id, job.order_id, job.attempts))
+        );
     }
 
     static async processStoryGenerations() {
@@ -375,10 +375,9 @@ export class MasterScheduler {
 
         if (!jobs || jobs.length === 0) return;
 
-        for (const job of jobs) {
-            // We await here to respect limits, but in a real lambda architecture we might fan out.
-            await StoryWorker.processJob(job.id, job.order_id, job.attempts);
-        }
+        await Promise.allSettled(
+            jobs.map(job => StoryWorker.processJob(job.id, job.order_id, job.attempts))
+        );
     }
 
     static async processIllustrationGenerations() {
@@ -392,9 +391,10 @@ export class MasterScheduler {
 
         if (!jobs || jobs.length === 0) return;
 
-        for (const job of jobs) {
-            await IllustrationWorker.processJob(job.id, job.order_id, job.attempts);
-        }
+        // Fast Production Mode: 2 controlled concurrent workers
+        await Promise.allSettled(
+            jobs.map(job => IllustrationWorker.processJob(job.id, job.order_id, job.attempts))
+        );
     }
 
     static async processCompilations() {
@@ -408,9 +408,9 @@ export class MasterScheduler {
 
         if (!jobs || jobs.length === 0) return;
 
-        for (const job of jobs) {
-            await CompilationWorker.processJob(job.id, job.order_id, job.attempts);
-        }
+        await Promise.allSettled(
+            jobs.map(job => CompilationWorker.processJob(job.id, job.order_id, job.attempts))
+        );
     }
 
     /**
