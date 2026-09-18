@@ -402,7 +402,7 @@ ${masterGuardrails}`;
     });
 }
 
-// UPGRADED: Central FIFO Image Call Rate Limiter & Mutex for Pro Models
+// UPGRADED: Central FIFO Image Call Rate Limiter & Mutex for Pro Models with Distributed DB Fallback
 export class GlobalImageRateLimiter {
     private queue: Array<{
         resolve: (release: () => void) => void;
@@ -438,6 +438,49 @@ export class GlobalImageRateLimiter {
         this.minIntervalMs = ms;
     }
 
+    async checkDistributedCooldown(): Promise<number> {
+        try {
+            const { supabase } = await import('@/utils/supabaseClient').catch(() => ({ supabase: null }));
+            if (!supabase) return 0;
+
+            const timeWindow = new Date(Date.now() - this.minIntervalMs);
+            const { data: logs, error } = await supabase
+                .from('event_audit_log')
+                .select('created_at')
+                .eq('event_type', 'gemini_pro_image_generation')
+                .gt('created_at', timeWindow.toISOString())
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (error || !logs || logs.length === 0) {
+                return 0;
+            }
+
+            const latestTimestamp = new Date(logs[0].created_at).getTime();
+            const elapsed = Date.now() - latestTimestamp;
+            if (elapsed < this.minIntervalMs) {
+                return this.minIntervalMs - elapsed;
+            }
+        } catch {
+            // Graceful fallback to in-memory state
+        }
+        return 0;
+    }
+
+    async recordDistributedCall() {
+        try {
+            const { supabase } = await import('@/utils/supabaseClient').catch(() => ({ supabase: null }));
+            if (!supabase) return;
+
+            await supabase.from('event_audit_log').insert({
+                event_type: 'gemini_pro_image_generation',
+                details: { timestamp: new Date().toISOString() }
+            });
+        } catch {
+            // Graceful non-blocking error handling
+        }
+    }
+
     private async scheduleNext() {
         if (this.isLocked || this.queue.length === 0) {
             return;
@@ -452,8 +495,15 @@ export class GlobalImageRateLimiter {
 
         const now = Date.now();
         const elapsed = now - this.lastCompletionTimestamp;
-        if (this.lastCompletionTimestamp > 0 && elapsed < this.minIntervalMs) {
-            const waitMs = this.minIntervalMs - elapsed;
+        let waitMs = (this.lastCompletionTimestamp > 0 && elapsed < this.minIntervalMs)
+            ? (this.minIntervalMs - elapsed)
+            : 0;
+
+        if (waitMs === 0) {
+            waitMs = await this.checkDistributedCooldown();
+        }
+
+        if (waitMs > 0) {
             console.log(`[RateLimiter] Queued Pro image request waiting ${(waitMs / 1000).toFixed(1)}s for mutex cooldown... (Queue: ${this.queue.length})`);
             await new Promise((r) => setTimeout(r, waitMs));
         }
@@ -463,6 +513,7 @@ export class GlobalImageRateLimiter {
             if (released) return;
             released = true;
             this.lastCompletionTimestamp = Date.now();
+            this.recordDistributedCall().catch(() => {});
             this.isLocked = false;
             this.scheduleNext();
         };

@@ -369,8 +369,8 @@ export function buildGenerationManifest(
                 name: key,
                 architecture: val.architecture || val.description || val.setting || String(val),
                 keyLandmarks: Array.isArray(val.landmarks) ? val.landmarks : (Array.isArray(val.keyLandmarks) ? val.keyLandmarks : []),
-                materialsPalette: val.materials || val.palette || val.materialsPalette || '',
-                lightingAtmosphere: val.lighting || val.lightingAtmosphere || ''
+                materialsPalette: val.materials || val.palette || val.materialsPalette || val.color_palette || '',
+                lightingAtmosphere: val.lighting || val.lightingAtmosphere || val.atmosphere || val.mood || ''
             };
         });
     }
@@ -418,12 +418,12 @@ export function buildGenerationManifest(
             }
         }
 
-        // Location Resolution from LocationBible (supports specificLocation, specific_location, locationKey, etc.)
+        // Location Resolution from LocationBible (supports specificLocation, specific_location, locationKey, setting, etc.)
         let spreadLocation: LocationRecord | undefined = undefined;
         const bpSpread = pageIdx >= 0 ? (storyData.blueprint?.structure?.spreads?.[pageIdx] || storyData.blueprint?.structure?.spreads?.find((s: any) => s.spreadNumber === spreadNum)) : null;
         const planSpread = pageIdx >= 0 ? (storyData.visualPlan?.spreads?.[pageIdx] || storyData.visualPlan?.spreads?.find((s: any) => s.spread_index === spreadNum || s.spreadNumber === spreadNum)) : null;
         
-        const locationName = p.locationKey || p.locationName || p.location || bpSpread?.specificLocation || bpSpread?.specific_location || bpSpread?.location || bpSpread?.setting || planSpread?.specific_location || planSpread?.specificLocation || planSpread?.setting || '';
+        const locationName = p.locationKey || p.locationName || p.location || bpSpread?.specificLocation || bpSpread?.specific_location || bpSpread?.location || (typeof bpSpread?.setting === 'string' ? bpSpread.setting : bpSpread?.setting?.specific_location) || planSpread?.specific_location || planSpread?.specificLocation || (typeof planSpread?.setting === 'string' ? planSpread.setting : planSpread?.setting?.specific_location) || '';
         
         if (locationName) {
             if (locationBible.locations[locationName]) {
@@ -434,12 +434,13 @@ export function buildGenerationManifest(
                 if (matchKey) {
                     spreadLocation = locationBible.locations[matchKey];
                 } else if (locationName.trim().length > 0) {
+                    const sObj = (typeof bpSpread?.setting === 'object' ? bpSpread.setting : null) || (typeof planSpread?.setting === 'object' ? planSpread.setting : null);
                     spreadLocation = {
                         name: locationName,
-                        architecture: locationName,
-                        keyLandmarks: [],
-                        materialsPalette: '',
-                        lightingAtmosphere: ''
+                        architecture: sObj?.architecture || sObj?.description || (typeof bpSpread?.setting === 'string' ? bpSpread.setting : locationName),
+                        keyLandmarks: Array.isArray(sObj?.landmarks) ? sObj.landmarks : (Array.isArray(sObj?.keyLandmarks) ? sObj.keyLandmarks : []),
+                        materialsPalette: sObj?.materials || sObj?.palette || sObj?.color_palette || '',
+                        lightingAtmosphere: sObj?.lighting || sObj?.atmosphere || sObj?.mood || ''
                     };
                 }
             }
@@ -607,6 +608,134 @@ export function buildQualityCheckParams(
         orderId: manifest.orderId,
         spreadIndex: spread.spreadNumber,
         iterationNumber,
+    };
+}
+
+export interface RecomputedSpreadContracts {
+    activeHeroTokens: ('[[HERO_1]]' | '[[HERO_2]]')[];
+    activeHeroIds: string[];
+    includesProp: boolean;
+    locationKey: string;
+}
+
+/**
+ * Recomputes dynamic spread contracts (active heroes, prop presence, and location identity)
+ * directly from the prompt text, story data, and spread index.
+ * Used whenever a prompt is manually edited, overridden via Global AI, or regenerated.
+ */
+export function recomputeSpreadContracts(
+    promptText: string,
+    storyData: any,
+    spreadNum: number
+): RecomputedSpreadContracts {
+    const isDualHero = !!(storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object');
+    const isCover = spreadNum === 0;
+    const pageIdx = isCover ? -1 : spreadNum - 1;
+    const text = promptText || '';
+
+    // 1. Hero Contract
+    const activeHeroTokens: ('[[HERO_1]]' | '[[HERO_2]]')[] = ['[[HERO_1]]'];
+    const activeHeroIds: string[] = ['hero_1'];
+
+    if (isDualHero) {
+        if (isCover) {
+            // Covers in dual-hero books feature both heroes unless explicitly instructed otherwise
+            const isHero2Excluded = /\b(without|no|remove|exclude)\s+(\[\[hero_2\]\]|hero\s*b|hero\s*2|friend)/i.test(text);
+            if (!isHero2Excluded) {
+                activeHeroTokens.push('[[HERO_2]]');
+                activeHeroIds.push('hero_2');
+            }
+        } else {
+            const hero2Name = storyData.secondCharacter?.name || '';
+            const hasHero2Token = text.includes('[[HERO_2]]') || (hero2Name && new RegExp(`\\b${hero2Name}\\b`, 'i').test(text));
+            
+            // Check for explicit negation / absence directives
+            const isHero2Negated = 
+                /\b(without|no|remove|exclude|absent)\s+(\[\[hero_2\]\]|hero\s*b|hero\s*2)/i.test(text) ||
+                (hero2Name && new RegExp(`\\b(without|no|remove|exclude|absent)\\s+${hero2Name}\\b`, 'i').test(text)) ||
+                /\b(\[\[hero_1\]\]|hero\s*a|hero\s*1)\s+is\s+alone\b/i.test(text) ||
+                /\b(render\s+only\s+(\[\[hero_1\]\]|hero\s*a|hero\s*1))\b/i.test(text);
+
+            if (isHero2Negated) {
+                // Definitely solo Hero A
+            } else if (hasHero2Token) {
+                activeHeroTokens.push('[[HERO_2]]');
+                activeHeroIds.push('hero_2');
+            } else {
+                // Fallback to existing prompt metadata or blueprint
+                const existingPrompt = storyData.prompts?.find((p: any) => p.spreadNumber === spreadNum || (spreadNum === 0 && p.isCover));
+                if (existingPrompt?.activeHeroTokens && Array.isArray(existingPrompt.activeHeroTokens)) {
+                    if (existingPrompt.activeHeroTokens.includes('[[HERO_2]]')) {
+                        activeHeroTokens.push('[[HERO_2]]');
+                        activeHeroIds.push('hero_2');
+                    }
+                } else {
+                    const bpSpread = pageIdx >= 0 ? storyData.blueprint?.structure?.spreads?.[pageIdx] : null;
+                    const bpHasHero2 = bpSpread?.charactersPresent?.some((c: any) => typeof c === 'string' ? (hero2Name && c.toLowerCase().includes(hero2Name.toLowerCase())) : (hero2Name && c?.name?.toLowerCase()?.includes(hero2Name.toLowerCase())));
+                    if (bpHasHero2) {
+                        activeHeroTokens.push('[[HERO_2]]');
+                        activeHeroIds.push('hero_2');
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Prop Contract
+    let includesProp = false;
+    const recurringAsset = storyData.blueprint?.foundation?.recurringAsset;
+    const propName = recurringAsset?.name || '';
+    const hasPropToken = text.includes('[[PROP_ASSET]]') || (propName && new RegExp(`\\b${propName}\\b`, 'i').test(text));
+    const isPropNegated = /\b(without|no|remove|exclude)\s+(\[\[prop_asset\]\]|prop|item|asset)/i.test(text) ||
+        (propName && new RegExp(`\\b(without|no|remove|exclude)\\s+${propName}\\b`, 'i').test(text));
+
+    if (isPropNegated) {
+        includesProp = false;
+    } else if (hasPropToken) {
+        includesProp = true;
+    } else if (!isCover && recurringAsset) {
+        const existingPrompt = storyData.prompts?.find((p: any) => p.spreadNumber === spreadNum || (spreadNum === 0 && p.isCover));
+        if (typeof existingPrompt?.includesProp === 'boolean') {
+            includesProp = existingPrompt.includesProp;
+        } else if (Array.isArray(recurringAsset.appearancesSpreads) && recurringAsset.appearancesSpreads.includes(spreadNum)) {
+            includesProp = true;
+        }
+    }
+
+    // 3. Location Contract
+    let locationKey = '';
+    const visualAnchors = storyData.visualPlan?.visualAnchors || storyData.blueprint?.visualAnchors || storyData.blueprint?.foundation;
+    const rawLoc = visualAnchors?.recurringLocations || storyData.blueprint?.recurringLocations || storyData.visualPlan?.recurringLocations;
+    const knownLocations: string[] = rawLoc && typeof rawLoc === 'object' ? Object.keys(rawLoc) : [];
+
+    // Check if prompt explicitly states location via known key
+    for (const loc of knownLocations) {
+        if (new RegExp(`\\b${loc}\\b`, 'i').test(text)) {
+            locationKey = loc;
+            break;
+        }
+    }
+
+    if (!locationKey) {
+        // Try regex extraction from structured prompt lines
+        const locMatch = text.match(/(?:Location|Scene(?:\s+setting)?):\s*(?:Set\s+in\s+)?([^,.\n]+)/i);
+        if (locMatch && locMatch[1].trim().length > 2) {
+            locationKey = locMatch[1].trim();
+        } else {
+            const bpSpread = pageIdx >= 0 ? storyData.blueprint?.structure?.spreads?.[pageIdx] : null;
+            const planSpread = pageIdx >= 0 ? (storyData.visualPlan?.spreads?.[pageIdx] || storyData.visualPlan?.spreads?.find((s: any) => s.spread_index === spreadNum || s.spreadNumber === spreadNum)) : null;
+            locationKey = bpSpread?.specificLocation || bpSpread?.specific_location || bpSpread?.location || bpSpread?.setting || planSpread?.specific_location || planSpread?.specificLocation || planSpread?.setting || '';
+            if (typeof locationKey === 'object' && (locationKey as any)?.specific_location) {
+                locationKey = (locationKey as any).specific_location;
+            }
+        }
+    }
+
+    return {
+        activeHeroTokens,
+        activeHeroIds,
+        includesProp,
+        locationKey: String(locationKey || '')
     };
 }
 

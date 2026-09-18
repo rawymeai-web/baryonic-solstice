@@ -15,7 +15,7 @@ import { ShippingModal } from '@/components/admin/ShippingModal';
 import OutpaintReviewModal from '@/components/editor/OutpaintReviewModal';
 import { ClientLogger } from '@/utils/clientLogger';
 import { getWordCountForAge } from '@/services/rules/guidebook';
-import { buildGenerationManifest, buildGenerationPayload, buildQualityCheckParams } from '@/services/visual/manifestBuilder';
+import { buildGenerationManifest, buildGenerationPayload, buildQualityCheckParams, recomputeSpreadContracts } from '@/services/visual/manifestBuilder';
 
 
 interface FinalizeArgs {
@@ -789,6 +789,18 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const handleRegenerateImage = async (index: number | 'cover') => {
         setRegeneratingIndex(index);
         try {
+            const spreadNum = index === 'cover' ? 0 : index;
+            let promptToUse = '';
+            if (index === 'cover') {
+                promptToUse = coverEdit;
+            } else {
+                promptToUse = pageEdits[index]?.prompt || getPromptForIndex(index, spreads[index]);
+            }
+
+            // Dynamically recompute spread contracts (active heroes, prop, location) based on edited prompt
+            const recomputedContracts = recomputeSpreadContracts(promptToUse, storyData, spreadNum);
+            const requiresHeroB = recomputedContracts.activeHeroTokens.includes('[[HERO_2]]');
+
             // DNA-ONLY: Only the approved stylized DNA reference is sent.
             // Strictly zero silent fallbacks to raw photos.
             const heroADNA: string | undefined = masterDNA;
@@ -801,8 +813,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 setRegeneratingIndex(null);
                 return;
             }
-            if (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object' && !heroBDNA) {
-                alert("Stylized DNA for Hero B is missing. Please generate or approve Hero B DNA in the DNA Manager before painting spreads.");
+            if (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object' && requiresHeroB && !heroBDNA) {
+                alert("Stylized DNA for Hero B is missing for this scene. Please generate or approve Hero B DNA in the DNA Manager before painting spreads with Hero B.");
                 setRegeneratingIndex(null);
                 return;
             }
@@ -818,26 +830,25 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 dnaRecords.push({ hero_label: 'Prop Asset', image_type: 'Canonical Asset', image_url: masterPropAsset });
             }
 
-            const spreadNum = index === 'cover' ? 0 : index;
-            let promptToUse = '';
-            if (index === 'cover') {
-                promptToUse = coverEdit;
-            } else {
-                promptToUse = pageEdits[index]?.prompt || getPromptForIndex(index, spreads[index]);
-            }
-
-            // Sync prompt edits with storyData prompts
+            // Sync prompt edits & recomputed contracts with storyData prompts
             const currentPrompts = [...(storyData.prompts || [])];
             const pIdx = currentPrompts.findIndex((p: any) => p.spreadNumber === spreadNum || (spreadNum === 0 && p.isCover));
+            const updatedPromptEntry = {
+                ...(pIdx >= 0 ? currentPrompts[pIdx] : {}),
+                spreadNumber: spreadNum,
+                isCover: spreadNum === 0,
+                imagePrompt: promptToUse,
+                storyText: spreadNum === 0 ? '' : (spreads[spreadNum]?.text || ''),
+                activeHeroTokens: recomputedContracts.activeHeroTokens,
+                activeHeroIds: recomputedContracts.activeHeroIds,
+                includesProp: recomputedContracts.includesProp,
+                locationKey: recomputedContracts.locationKey
+            };
+
             if (pIdx >= 0) {
-                currentPrompts[pIdx] = { ...currentPrompts[pIdx], imagePrompt: promptToUse };
+                currentPrompts[pIdx] = updatedPromptEntry;
             } else {
-                currentPrompts.push({
-                    spreadNumber: spreadNum,
-                    isCover: spreadNum === 0,
-                    imagePrompt: promptToUse,
-                    storyText: spreadNum === 0 ? '' : (spreads[spreadNum]?.text || '')
-                });
+                currentPrompts.push(updatedPromptEntry);
             }
 
             const dynamicStoryData = {
@@ -855,7 +866,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             };
 
             const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
-            const manifest = buildGenerationManifest(dynamicStoryData, targetOrderId, dnaRecords);
+            const manifest = buildGenerationManifest(dynamicStoryData, targetOrderId, dnaRecords, { allowMissingDnaForDraft: !requiresHeroB });
             const payload = buildGenerationPayload(manifest, spreadNum);
 
             // Compress to avoid Vercel/Cloudflare payload size limits
@@ -1334,8 +1345,37 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             }
 
             const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
+            const dynamicPrompts = [...(storyData.prompts || [])];
+
+            // Precompute combined prompts & dynamic contracts for every spread
+            for (let i = 1; i <= totalSpreads; i++) {
+                const existingPrompt = dynamicPrompts.find((p: any) => p.spreadNumber === i);
+                const rawSpreadPrompt = existingPrompt?.imagePrompt || getPromptForIndex(i, spreads[i]);
+                const combinedPrompt = `GLOBAL OVERRIDE INSTRUCTION: ${globalEditInstruction.trim()}\n\n${rawSpreadPrompt}`;
+                const recomputed = recomputeSpreadContracts(combinedPrompt, storyData, i);
+                
+                const pIdx = dynamicPrompts.findIndex((p: any) => p.spreadNumber === i);
+                const updatedEntry = {
+                    ...(pIdx >= 0 ? dynamicPrompts[pIdx] : {}),
+                    spreadNumber: i,
+                    isCover: false,
+                    imagePrompt: combinedPrompt,
+                    storyText: spreads[i]?.text || existingPrompt?.storyText || '',
+                    activeHeroTokens: recomputed.activeHeroTokens,
+                    activeHeroIds: recomputed.activeHeroIds,
+                    includesProp: recomputed.includesProp,
+                    locationKey: recomputed.locationKey
+                };
+                if (pIdx >= 0) {
+                    dynamicPrompts[pIdx] = updatedEntry;
+                } else {
+                    dynamicPrompts.push(updatedEntry);
+                }
+            }
+
             const dynamicStoryData = {
                 ...storyData,
+                prompts: dynamicPrompts,
                 mainCharacter: {
                     ...storyData.mainCharacter,
                     imageDNA: masterDNA ? [masterDNA] : storyData.mainCharacter?.imageDNA
@@ -1347,13 +1387,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 recurringAssetImageUrl: masterPropAsset || storyData.recurringAssetImageUrl
             };
 
-            const manifest = buildGenerationManifest(dynamicStoryData, targetOrderId, dnaRecords);
+            const manifest = buildGenerationManifest(dynamicStoryData, targetOrderId, dnaRecords, { allowMissingDnaForDraft: true });
             const newSpreads = [...spreads];
 
             for (let i = 1; i <= totalSpreads; i++) {
                 setGlobalEditStatus(`Painting Spread ${i} of ${totalSpreads}...`);
                 const payload = buildGenerationPayload(manifest, i);
-                const combinedPrompt = `GLOBAL OVERRIDE INSTRUCTION: ${globalEditInstruction.trim()}\n\n${payload.prompt}`;
 
                 const heroAImage = payload.referenceImages.find(r => r.slotNumber === 1)?.data;
                 const heroBImage = payload.referenceImages.find(r => r.slotNumber === 2 && r.label.includes('[[HERO_2]]'))?.data;
@@ -1365,7 +1404,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
                 try {
                     const imgRes: any = await backendApi.generateImage({
-                        prompt: combinedPrompt,
+                        prompt: payload.prompt,
                         stylePrompt: payload.stylePrompt,
                         heroDNABase64: compressedHeroA,
                         secondDNABase64: compressedHeroB,
@@ -1397,13 +1436,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         onUpdateStory({ spreads: [...newSpreads] });
 
                         // Background QA evaluation for global regeneration
-                        const qcParams = buildQualityCheckParams(manifest, i, finalImageUrl);
                         adminService.rerunQA(targetOrderId, {
                             spreadIndex: i,
                             illustrationUrl: finalImageUrl,
-                            targetPrompt: combinedPrompt,
+                            targetPrompt: payload.prompt,
                             spreadText: payload.storyText,
-                            qcParams
+                            currentTextSide: payload.textSide?.toLowerCase() || 'left'
                         }).catch(err => console.warn(`[EditorScreen] Background QA for spread ${i} failed:`, err));
                     }
                 } catch (e) {

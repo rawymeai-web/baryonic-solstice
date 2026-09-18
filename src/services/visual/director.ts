@@ -107,7 +107,14 @@ export async function generateVisualPlan(
                 "visualAnchors": { 
                     "heroTraits": "...",
                     "signatureItems": "...",
-                    "recurringLocations": "...",
+                    "recurringLocations": {
+                        "Location Name (e.g. Grandma's Attic)": {
+                            "architecture": "A steeply pitched attic with exposed timber rafters, dormer window, and wide plank wooden floors",
+                            "keyLandmarks": ["antique brass telescope by the window", "steamer trunk with vintage stickers", "rocking chair"],
+                            "materialsPalette": "Weathered oak, brass, dusty woven rugs, warm linen",
+                            "lightingAtmosphere": "Dusty golden afternoon sunbeams streaming through dormer glass"
+                        }
+                    },
                     "persistentprops": "...",
                     "spatialLogic": "..."
                 },
@@ -177,6 +184,10 @@ export async function generateVisualPlan(
 
             const plan = JSON.parse(cleanJsonString(rawText));
 
+            if (plan.visualAnchors?.recurringLocations) {
+                plan.visualAnchors.recurringLocations = normalizeRecurringLocations(plan.visualAnchors.recurringLocations);
+            }
+
             console.log("Parsed Plan Spreads:", plan.spreads?.length || 0);
             console.log("Expected Spreads:", script.length);
 
@@ -213,3 +224,60 @@ export async function generateVisualPlan(
         };
     }
 }
+
+/**
+ * Normalizes raw visual plan recurring locations into rich structured records.
+ * Supports string descriptions, partial objects, and full LocationRecord schemas.
+ */
+export function normalizeRecurringLocations(rawLocations: any): Record<string, {
+    architecture: string;
+    keyLandmarks: string[];
+    materialsPalette: string;
+    lightingAtmosphere: string;
+}> {
+    const normalized: Record<string, {
+        architecture: string;
+        keyLandmarks: string[];
+        materialsPalette: string;
+        lightingAtmosphere: string;
+    }> = {};
+
+    if (!rawLocations) return normalized;
+
+    if (typeof rawLocations === 'string') {
+        const parts = rawLocations.split(/;\s*|\n+/).filter(Boolean);
+        parts.forEach((part, idx) => {
+            const [name, desc] = part.includes(':') ? part.split(/:\s*(.+)/) : [`Location ${idx + 1}`, part];
+            normalized[name.trim()] = {
+                architecture: desc?.trim() || name.trim(),
+                keyLandmarks: [],
+                materialsPalette: '',
+                lightingAtmosphere: ''
+            };
+        });
+        return normalized;
+    }
+
+    if (typeof rawLocations === 'object') {
+        Object.entries(rawLocations).forEach(([key, val]: [string, any]) => {
+            if (typeof val === 'string') {
+                normalized[key] = {
+                    architecture: val,
+                    keyLandmarks: [],
+                    materialsPalette: '',
+                    lightingAtmosphere: ''
+                };
+            } else if (val && typeof val === 'object') {
+                normalized[key] = {
+                    architecture: val.architecture || val.description || val.setting || key,
+                    keyLandmarks: Array.isArray(val.keyLandmarks) ? val.keyLandmarks : (Array.isArray(val.landmarks) ? val.landmarks : []),
+                    materialsPalette: val.materialsPalette || val.materials || val.palette || val.color_palette || '',
+                    lightingAtmosphere: val.lightingAtmosphere || val.lighting || val.atmosphere || val.mood || ''
+                };
+            }
+        });
+    }
+
+    return normalized;
+}
+

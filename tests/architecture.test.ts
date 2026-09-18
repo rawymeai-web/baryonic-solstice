@@ -297,6 +297,118 @@ export async function runArchitectureTests(): Promise<{ passed: number; failed: 
         failed++;
     }
 
+    // -------------------------------------------------------------------------
+    // TEST 5: Dynamic Contract Recomputation from Edited Prompts
+    // -------------------------------------------------------------------------
+    console.log('\n--- 5. Dynamic Contract Recomputation ---');
+    try {
+        const { recomputeSpreadContracts } = await import('../src/services/visual/manifestBuilder');
+        const mockStory = {
+            childName: 'Sami',
+            useSecondCharacter: true,
+            secondCharacter: { name: 'Dina', gender: 'girl' },
+            blueprint: {
+                foundation: {
+                    recurringAsset: { name: 'Magic Lantern', appearancesSpreads: [2] }
+                },
+                visualAnchors: {
+                    recurringLocations: {
+                        'Grandma Secret Garden': { architecture: 'Stone walled garden', keyLandmarks: ['fountain'] }
+                    }
+                }
+            }
+        };
+
+        // 5a. Prompt explicitly removes Hero 2
+        const promptNoHero2 = 'Sami is alone in Grandma Secret Garden without [[HERO_2]], reading a book.';
+        const contracts1 = recomputeSpreadContracts(promptNoHero2, mockStory, 1);
+        assert(
+            contracts1.activeHeroTokens.length === 1 && contracts1.activeHeroTokens[0] === '[[HERO_1]]',
+            'recomputeSpreadContracts removes Hero 2 when prompt specifies "without [[HERO_2]]" or "alone"'
+        );
+        assert(contracts1.locationKey === 'Grandma Secret Garden', 'recomputeSpreadContracts resolves location key from prompt');
+
+        // 5b. Prompt adds Hero 2 and adds Prop
+        const promptWithBothAndProp = 'Show [[HERO_1]] and [[HERO_2]] holding the [[PROP_ASSET]] together.';
+        const contracts2 = recomputeSpreadContracts(promptWithBothAndProp, mockStory, 1);
+        assert(
+            contracts2.activeHeroTokens.length === 2 && contracts2.activeHeroTokens.includes('[[HERO_2]]'),
+            'recomputeSpreadContracts includes Hero 2 when prompt contains [[HERO_2]]'
+        );
+        assert(contracts2.includesProp === true, 'recomputeSpreadContracts includes prop when prompt contains [[PROP_ASSET]]');
+
+        // 5c. Prompt explicitly negates Prop
+        const promptNoProp = 'Show [[HERO_1]] and [[HERO_2]] running without prop in the yard.';
+        const contracts3 = recomputeSpreadContracts(promptNoProp, mockStory, 2);
+        assert(contracts3.includesProp === false, 'recomputeSpreadContracts excludes prop when prompt says "without prop"');
+
+    } catch (err: any) {
+        console.error('Unexpected error in Test 5:', err);
+        failed++;
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST 6: Rich Location Bible Normalization
+    // -------------------------------------------------------------------------
+    console.log('\n--- 6. Rich Location Bible Normalization ---');
+    try {
+        const { normalizeRecurringLocations } = await import('../src/services/visual/director');
+        
+        // String input normalization
+        const rawStringLoc = 'Grandma Attic: Cozy wooden attic with dormer windows; Starlight Beach: Sandy cove with glowing shells';
+        const norm1 = normalizeRecurringLocations(rawStringLoc);
+        assert(!!norm1['Grandma Attic'] && norm1['Grandma Attic'].architecture.includes('Cozy wooden attic'), 'Normalizes string location list into structured records');
+        assert(!!norm1['Starlight Beach'] && norm1['Starlight Beach'].architecture.includes('Sandy cove'), 'Extracts second location from string list');
+
+        // Rich object input normalization
+        const rawObjLoc = {
+            'Crystal Cave': {
+                architecture: 'Cavern with amethyst stalactites',
+                landmarks: ['subterranean lake', 'crystal archway'],
+                palette: 'Deep purples and glowing cyan',
+                lighting: 'Luminescent crystal glow'
+            }
+        };
+        const norm2 = normalizeRecurringLocations(rawObjLoc);
+        assert(norm2['Crystal Cave'].keyLandmarks.length === 2, 'Preserves key landmarks array from object schema');
+        assert(norm2['Crystal Cave'].materialsPalette === 'Deep purples and glowing cyan', 'Preserves materials palette');
+        assert(norm2['Crystal Cave'].lightingAtmosphere === 'Luminescent crystal glow', 'Preserves lighting atmosphere');
+
+    } catch (err: any) {
+        console.error('Unexpected error in Test 6:', err);
+        failed++;
+    }
+
+    // -------------------------------------------------------------------------
+    // TEST 7: Solo-Spread Repaint in Dual-Hero Book (Without Hero B DNA)
+    // -------------------------------------------------------------------------
+    console.log('\n--- 7. Solo-Spread Repaint DNA Precheck ---');
+    try {
+        const dualStoryHeroAOnly = {
+            orderId: 'ORD-SOLO-REPAINT',
+            childName: 'Karim',
+            useSecondCharacter: true,
+            secondCharacter: { name: 'Salma', gender: 'girl' },
+            prompts: [
+                { spreadNumber: 1, imagePrompt: 'Karim [[HERO_1]] is alone in his room', activeHeroTokens: ['[[HERO_1]]'], activeHeroIds: ['hero_1'] }
+            ]
+        };
+        const dnaHeroAOnly = [
+            { hero_label: 'Hero A', image_type: 'Stylized DNA', image_url: 'https://cdn.example.com/karim-dna.jpg' }
+        ];
+
+        // Should succeed when allowMissingDnaForDraft is true (as set for solo spreads)
+        const soloManifest = buildGenerationManifest(dualStoryHeroAOnly, 'ORD-SOLO-REPAINT', dnaHeroAOnly, { allowMissingDnaForDraft: true });
+        const soloPayload = buildGenerationPayload(soloManifest, 1);
+        assert(soloPayload.referenceImages.length === 1, 'Solo spread payload only attaches Hero A DNA reference');
+        assert(soloPayload.referenceImages[0].slotNumber === 1, 'Hero A is in Slot 1');
+        assert(soloPayload.activeHeroTokens.length === 1 && soloPayload.activeHeroTokens[0] === '[[HERO_1]]', 'Payload active tokens contain only [[HERO_1]]');
+
+    } catch (err: any) {
+        console.error('Unexpected error in Test 7:', err);
+        failed++;
+    }
+
     console.log(`\n================================================================`);
     console.log(`📊 ARCHITECTURE SUITE COMPLETE: ${passed} Passed, ${failed} Failed`);
     console.log(`================================================================\n`);
