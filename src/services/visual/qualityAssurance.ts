@@ -11,27 +11,25 @@ export async function runQualityAssurance(
     try {
         return await withRetry(async () => {
             const prompt = `
-            ROLE: Safety & Quality Inspector.
-            TASK: Review the following image prompts.
+            ROLE: Storybook Safety Inspector.
+            TASK: Check the following image prompt action descriptions for safety violations and forbidden terms.
     
             RULES:
-            1. No "Text", "Sign", "Label", "Book" keywords that imply written text.
-            2. No "Split screen" or "Comic panel".
-            3. No "Parents" (Mom/Dad) unless explicitly allowed (assume NO).
-            4. **CONTINUATION & SAFETY CHECKLIST (CRITICAL):**
-               - **Time/Location:** Do the settings flow logically? 
-               - **Subject Logic:** Does the active action highlight match the story progression?
-               - **Safety:** ABSOLUTELY NO skulls, skeletons, weapons, scary monsters, rainbows, or real-world family members. Rewrite these into kid-friendly fictional adventure items.
+            1. Forbidden: Words that imply written text like "Signpost with writing", "Text label", "Lettering", "Book cover title".
+            2. Forbidden: "Split screen" or "Comic panel".
+            3. Forbidden: Real-world parents unless explicitly in cast.
+            4. Safety: ABSOLUTELY NO skulls, skeletons, weapons, scary monsters, blood, gore, violence.
             
-            PROMPTS:
-            ${JSON.stringify(prompts.map(p => p.imagePrompt))}
+            PROMPTS TO INSPECT:
+            ${JSON.stringify(prompts.map(p => ({ spreadNumber: p.spreadNumber, text: p.imagePrompt.substring(0, 400) })))}
     
             ACTION:
-            - If a prompt violates a rule, REWRITE it to be safe.
-            - If safe, keep it.
+            Return an array of surgical keyword replacements needed (if any). If safe, return empty array [].
     
-            OUTPUT JSON:
-            [ "Safe Prompt 1", ... ]
+            OUTPUT JSON SCHEMA:
+            [
+              { "spreadNumber": 1, "unsafeTerm": "skull", "safeReplacement": "ancient carved stone" }
+            ]
             `;
 
             const model = ai().getGenerativeModel({
@@ -43,22 +41,28 @@ export async function runQualityAssurance(
             const responseText = response.response.text();
             if (!responseText) throw new Error("QA response empty");
 
-            let safePrompts = JSON.parse(cleanJsonString(responseText));
-
-            // Safety: If AI wraps it in an object like { "prompts": [...] }
-            if (!Array.isArray(safePrompts) && typeof safePrompts === 'object') {
-                const possibleArray = Object.values(safePrompts).find(v => Array.isArray(v));
-                if (possibleArray) safePrompts = possibleArray;
+            let replacements: any[] = JSON.parse(cleanJsonString(responseText));
+            if (!Array.isArray(replacements) && typeof replacements === 'object') {
+                const possibleArray = Object.values(replacements).find(v => Array.isArray(v));
+                if (possibleArray) replacements = possibleArray;
             }
 
-            // Final fallback: if still not an array, throw to trigger catch-block logic
-            if (!Array.isArray(safePrompts)) throw new Error("QA failed to return array");
-
-            // Re-pair with original metadata
-            const finalPrompts = prompts.map((original, idx) => ({
-                ...original,
-                imagePrompt: safePrompts[idx] || original.imagePrompt
-            }));
+            // Apply surgical replacements while protecting token anchors
+            const finalPrompts = prompts.map(original => {
+                let cleanPrompt = original.imagePrompt;
+                if (Array.isArray(replacements)) {
+                    replacements.forEach(rep => {
+                        if (rep && (rep.spreadNumber === original.spreadNumber || rep.spreadNumber === undefined) && rep.unsafeTerm && rep.safeReplacement) {
+                            const regex = new RegExp(`\\b${rep.unsafeTerm}\\b`, 'gi');
+                            cleanPrompt = cleanPrompt.replace(regex, rep.safeReplacement);
+                        }
+                    });
+                }
+                return {
+                    ...original,
+                    imagePrompt: cleanPrompt
+                };
+            });
 
             return {
                 result: finalPrompts,

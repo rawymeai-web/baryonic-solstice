@@ -1,6 +1,7 @@
 import { supabase } from '@/utils/supabaseClient';
 import { describeSubject, describeObjectProp, generateThemeStylePreview, generateObjectStylePreview } from '@/services/generation/imageGenerator';
 import { generatePropAssetImage } from '@/services/generation/assetGenerator';
+import { buildStyleContract } from '../visual/manifestBuilder';
 import { WorkerUtils } from './workerUtils';
 import { MasterScheduler } from './scheduler';
 
@@ -36,14 +37,8 @@ export class CharacterWorker {
             const storyData = order.story_data as any;
             const mainChar = storyData.mainCharacter;
 
-            // STYLE DNA: Use same priority chain as StoryWorker and IllustrationWorker.
-            // technicalStyleGuide is the locked style from the frontend StyleSelectionScreen.
-            const resolvedStyleDNA: string =
-                storyData.selectedStyleNames?.[0] ||
-                storyData.technicalStyleGuide ||
-                storyData.selectedStylePrompt ||
-                storyData.themeVisualDNA ||
-                "high quality painterly children's book illustration";
+            // STYLE DNA: Authoritative StyleContract compilation
+            const resolvedStyleDNA: string = buildStyleContract(storyData).compiledStylePrompt;
 
             if (!mainChar || !mainChar.imageBases64 || !mainChar.imageBases64[0]) {
                 console.warn(`[CharacterWorker] No image photo found for ${orderId}. Checking if recurring prop needs generation...`);

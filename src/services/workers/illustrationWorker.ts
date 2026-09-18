@@ -1,7 +1,8 @@
 import { supabase } from "@/utils/supabaseClient";
 import { generateMethod4Image } from "@/services/generation/imageGenerator";
-import { QualityAgent } from "../visual/qualityAgent";
+import { QualityAgent, HeroQCRef } from "../visual/qualityAgent";
 import { PromptDoctor } from "../visual/promptDoctor";
+import { buildStyleContract } from "../visual/manifestBuilder";
 import { WorkerUtils } from "./workerUtils";
 import { MasterScheduler } from "./scheduler";
 import { EmailService } from "../notifications/emailService";
@@ -178,27 +179,9 @@ export class IllustrationWorker {
             `[IllustrationWorker] Spread ${i + 1} - Generating Image (Prop Asset Slot: ${!!propImagesArray})`,
           );
 
-          // STYLE DNA: Priority chain mirrors StoryWorker — combine style name, prompt details, and technical style guide.
-          const styleName = storyData.selectedStyleNames?.[0] || '';
-          const stylePrompt = storyData.selectedStylePrompt?.includes('**TASK:**') ? '' : (storyData.selectedStylePrompt || '');
-          let techGuideStr = '';
-          if (storyData.technicalStyleGuide) {
-            techGuideStr = typeof storyData.technicalStyleGuide === 'object'
-              ? JSON.stringify(storyData.technicalStyleGuide)
-              : storyData.technicalStyleGuide;
-          }
-
-          const baseStyleDNA: string = [
-            styleName ? `Art Style: ${styleName}.` : '',
-            stylePrompt ? `Style Details: ${stylePrompt}.` : '',
-            techGuideStr ? `Technical Style Rules: ${techGuideStr}.` : '',
-            storyData.themeVisualDNA ? `Theme DNA: ${storyData.themeVisualDNA}.` : ''
-          ].filter(Boolean).join(' ') || "high quality painterly children's book illustration";
-            
-          const is3DStyle = baseStyleDNA.toLowerCase().includes('3d') || baseStyleDNA.toLowerCase().includes('pixar');
-          const resolvedStyleDNA = is3DStyle ?
-            `${baseStyleDNA}. Extremely high quality 3D render, Unreal Engine 5, octane render, volumetric lighting, subsurface scattering on skin, glossy 3D materials, deep depth of field, vibrant cinematic colors, masterpiece 3D artwork.` :
-            baseStyleDNA;
+          // STYLE DNA: Authoritative StyleContract compilation
+          const styleContract = buildStyleContract(storyData);
+          const resolvedStyleDNA = styleContract.compiledStylePrompt;
 
           // DNA-ONLY payload: send exactly 1 image per hero + 1 prop image if present.
           const heroImagesArray: string[] = [heroDNA].filter(Boolean) as string[];
@@ -266,13 +249,62 @@ export class IllustrationWorker {
             };
           }
 
-          // Run Quality Agent Evaluation (Await to prevent state overwriting)
+          // Candidate Pool for Non-Regressive Best-Attempt Selection
+          interface GenerationCandidate {
+            attemptNumber: number;
+            imageUrl: string;
+            imageBase64: string;
+            qcResult: any;
+            compositeScore: number;
+          }
+
+          const computeCompositeScore = (qc: any): number => {
+            return (Number(qc.likenessScore || 0) * 10) +
+              (qc.characterConsistencyStatus === 'pass' ? 20 : 0) +
+              (qc.styleConsistencyStatus === 'pass' ? 20 : 0) +
+              (qc.narrativeAdherenceStatus === 'pass' ? 20 : 0) +
+              (qc.propConsistencyStatus === 'pass' || qc.propConsistencyStatus === 'na' ? 20 : 0) +
+              (qc.wardrobeConsistencyStatus === 'pass' ? 10 : 0) +
+              (qc.textClearanceStatus === 'pass' ? 10 : 0);
+          };
+
+          const candidates: GenerationCandidate[] = [];
           let overallDecision = "pending";
           let originalUrl: string | undefined = undefined;
 
+          // Prepare Typed Heroes for Vision QA
+          const heroesQC: HeroQCRef[] = [
+            {
+              heroToken: '[[HERO_1]]',
+              label: 'Hero A',
+              name: storyData.childName || storyData.mainCharacter?.name || 'Hero A',
+              dnaBase64OrUrl: heroDNA,
+              rawBase64OrUrl: heroRaw,
+              isVisibleInScene: true,
+            }
+          ];
+
+          if (storyData.useSecondCharacter && secondaryDNA) {
+            const isHeroBInScene = !promptBlock.imagePrompt?.includes('[[HERO_1]] is alone') &&
+              (!promptBlock.imagePrompt?.includes('Render ONLY the active hero [[HERO_1]]'));
+            heroesQC.push({
+              heroToken: '[[HERO_2]]',
+              label: 'Hero B',
+              name: storyData.secondCharacter?.name || 'Hero B',
+              dnaBase64OrUrl: secondaryDNA,
+              rawBase64OrUrl: hBOrigUrl || storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0],
+              isVisibleInScene: isHeroBInScene,
+            });
+          }
+
           try {
+            const authoritativeSpreadText = (!isCover && pageIdx >= 0 && storyData.pages?.[pageIdx]?.text)
+              ? storyData.pages[pageIdx].text
+              : (promptBlock.storyText || "");
+
             const qcParams = {
               generatedImageBase64: base64Out,
+              heroes: heroesQC,
               rawHeroImages: heroImagesArray,
               stylizedDnaImages: heroImagesArray,
               childDescription: childDesc,
@@ -283,14 +315,24 @@ export class IllustrationWorker {
               propAssetImageUrl: propAssetUrl,
               spreadNumber: i,
               isCover: isCover,
+              spreadText: authoritativeSpreadText,
+              storyText: authoritativeSpreadText,
               layoutPlanSide: promptBlock.textSide || "Right",
             };
 
             let qcResult = await QualityAgent.evaluateImage(qcParams);
 
             console.log(
-              `[QCAgent] Result for Spread ${i} (Attempt 1): Likeness ${qcResult.likenessScore}/10, Prop: ${qcResult.propConsistencyStatus || 'n/a'}, Narrative: ${qcResult.narrativeAdherenceStatus}, Decision: ${qcResult.overallDecision}`,
+              `[QCAgent] Result for Spread ${i} (Attempt 1): Likeness ${qcResult.likenessScore}/10, Prop: ${qcResult.propConsistencyStatus || 'n/a'}, Style: ${qcResult.styleConsistencyStatus}, Narrative: ${qcResult.narrativeAdherenceStatus}, Decision: ${qcResult.overallDecision}`,
             );
+
+            candidates.push({
+              attemptNumber: 1,
+              imageUrl: iterationUrl,
+              imageBase64: base64Out,
+              qcResult,
+              compositeScore: computeCompositeScore(qcResult)
+            });
 
             overallDecision = qcResult.overallDecision;
 
@@ -311,20 +353,22 @@ export class IllustrationWorker {
 
             // ATTEMPT 2: TARGETED REPAINT & RE-EVALUATION (Max 2 Attempts Per Spread Cap)
             if (qcResult.overallDecision === "fail" || qcResult.overallDecision === "flagged") {
-              console.log(`[QCAgent] Spread ${i} flagged. Triggering targeted Art Director repaint (Attempt 2)...`);
-              originalUrl = finalFinalUrl;
+              console.log(`[QCAgent] Spread ${i} failed/flagged on Attempt 1. Triggering targeted Art Director repaint (Attempt 2)...`);
               
               // Build targeted steering prompt
               let targetedPrompt = promptBlock.imagePrompt;
               const steeringNotes: string[] = [];
-              if (qcResult.characterConsistencyStatus === 'fail' || qcResult.likenessScore < 5) {
+              if (qcResult.characterConsistencyStatus === 'fail' || qcResult.likenessScore < 7) {
                 steeringNotes.push(`CRITICAL CHARACTER LIKENESS FIX: ${qcResult.characterReasoning}`);
+              }
+              if (qcResult.styleConsistencyStatus === 'fail') {
+                steeringNotes.push(`CRITICAL STYLE CONSISTENCY FIX: ${qcResult.styleReasoning || 'Strictly match target style medium and dimensionality.'}`);
               }
               if (qcResult.propConsistencyStatus === 'fail') {
                 steeringNotes.push(`CRITICAL RECURRING PROP INVARIANCE FIX: ${qcResult.propReasoning || qcResult.regenerationReason || 'Match the canonical prop reference image exactly in materials, shape, and colors.'}`);
               }
               if (qcResult.narrativeAdherenceStatus === 'fail') {
-                steeringNotes.push(`CRITICAL SCENE ACTION FIX: Ensure the scene directly depicts: ${promptBlock.storyText || 'the story action'}. Avoid incorrect actions.`);
+                steeringNotes.push(`CRITICAL SCENE ACTION FIX: Ensure the scene directly depicts: ${authoritativeSpreadText}. Avoid incorrect actions.`);
               }
               if (qcResult.regenerationReason) {
                 steeringNotes.push(`CORRECTION MANDATE: ${qcResult.regenerationReason}`);
@@ -341,7 +385,7 @@ export class IllustrationWorker {
                     heroImagesArray,
                     childDesc,
                     childAge,
-                    Math.floor(Math.random() * 100000) + 1, // New randomized seed
+                    Math.floor(Math.random() * 100000) + 1,
                     secondaryImagesArray,
                     undefined,
                     propImagesArray
@@ -364,10 +408,9 @@ export class IllustrationWorker {
                     .from(bucket)
                     .getPublicUrl(fileNameRegen);
                   if (publicDataRegen?.publicUrl) {
-                    finalFinalUrl = publicDataRegen.publicUrl;
-                    console.log(`[QCAgent] Spread ${i} repainted. Running Iteration 2 QA Re-Evaluation...`);
+                    const attempt2Url = publicDataRegen.publicUrl;
+                    console.log(`[QCAgent] Spread ${i} repainted (Attempt 2). Running Iteration 2 QA Re-Evaluation...`);
 
-                    // RE-EVALUATION PASS ON REGENERATED IMAGE (Iteration 2)
                     const qcRegenResult = await QualityAgent.evaluateImage({
                       ...qcParams,
                       generatedImageBase64: base64OutRegen,
@@ -375,17 +418,22 @@ export class IllustrationWorker {
                     });
 
                     console.log(
-                      `[QCAgent] Result for Spread ${i} (Attempt 2): Likeness ${qcRegenResult.likenessScore}/10, Narrative: ${qcRegenResult.narrativeAdherenceStatus}, Decision: ${qcRegenResult.overallDecision}`,
+                      `[QCAgent] Result for Spread ${i} (Attempt 2): Likeness ${qcRegenResult.likenessScore}/10, Style: ${qcRegenResult.styleConsistencyStatus}, Prop: ${qcRegenResult.propConsistencyStatus || 'n/a'}, Narrative: ${qcRegenResult.narrativeAdherenceStatus}, Decision: ${qcRegenResult.overallDecision}`,
                     );
 
-                    overallDecision = qcRegenResult.overallDecision;
-                    qcResult = qcRegenResult; // Update reference for text layout & mapping
+                    candidates.push({
+                      attemptNumber: 2,
+                      imageUrl: attempt2Url,
+                      imageBase64: base64OutRegen,
+                      qcResult: qcRegenResult,
+                      compositeScore: computeCompositeScore(qcRegenResult)
+                    });
 
                     await supabase.from("generation_quality_logs").insert({
                       order_id: orderId,
                       spread_number: i,
                       iteration_number: 2,
-                      image_url: finalFinalUrl,
+                      image_url: attempt2Url,
                       character_consistency_status: qcRegenResult.characterConsistencyStatus,
                       character_reasoning: `[Likeness: ${qcRegenResult.likenessScore}/10] [Visual (Iter 2): ${qcRegenResult.visualDescription}] [Narrative Check: ${qcRegenResult.narrativeAdherenceStatus}] ${qcRegenResult.characterReasoning}`,
                       style_consistency_status: qcRegenResult.styleConsistencyStatus,
@@ -402,7 +450,7 @@ export class IllustrationWorker {
                       try {
                         const doctorResult = await PromptDoctor.refinePrompt({
                           originalPrompt: targetedPrompt,
-                          storyText: promptBlock.storyText,
+                          storyText: authoritativeSpreadText,
                           characterDescription: childDesc,
                           childAge,
                           styleGuide: resolvedStyleDNA,
@@ -443,7 +491,7 @@ export class IllustrationWorker {
                             .from(bucket)
                             .getPublicUrl(fileNameAttempt3);
                           if (publicData3?.publicUrl) {
-                            finalFinalUrl = publicData3.publicUrl;
+                            const attempt3Url = publicData3.publicUrl;
                             console.log(`[QCAgent] Spread ${i} (Attempt 3 / Doctor) painted. Running QA Evaluation...`);
 
                             const qc3Result = await QualityAgent.evaluateImage({
@@ -454,17 +502,22 @@ export class IllustrationWorker {
                             });
 
                             console.log(
-                              `[QCAgent] Result for Spread ${i} (Attempt 3 / Doctor): Likeness ${qc3Result.likenessScore}/10, Narrative: ${qc3Result.narrativeAdherenceStatus}, Decision: ${qc3Result.overallDecision}`,
+                              `[QCAgent] Result for Spread ${i} (Attempt 3 / Doctor): Likeness ${qc3Result.likenessScore}/10, Style: ${qc3Result.styleConsistencyStatus}, Narrative: ${qc3Result.narrativeAdherenceStatus}, Decision: ${qc3Result.overallDecision}`,
                             );
 
-                            overallDecision = qc3Result.overallDecision;
-                            qcResult = qc3Result;
+                            candidates.push({
+                              attemptNumber: 3,
+                              imageUrl: attempt3Url,
+                              imageBase64: base64OutAttempt3,
+                              qcResult: qc3Result,
+                              compositeScore: computeCompositeScore(qc3Result)
+                            });
 
                             await supabase.from("generation_quality_logs").insert({
                               order_id: orderId,
                               spread_number: i,
                               iteration_number: 3,
-                              image_url: finalFinalUrl,
+                              image_url: attempt3Url,
                               character_consistency_status: qc3Result.characterConsistencyStatus,
                               character_reasoning: `[Likeness: ${qc3Result.likenessScore}/10] [Doctor Iter 3: ${doctorResult.explanation}] ${qc3Result.characterReasoning}`,
                               style_consistency_status: qc3Result.styleConsistencyStatus,
@@ -480,16 +533,6 @@ export class IllustrationWorker {
                         console.error(`[PromptDoctor] Error during Doctor Attempt 3 for Spread ${i}:`, docErr);
                       }
                     }
-
-                    if (overallDecision === "fail") {
-                      if (qcResult.likenessScore >= 5 || qcResult.characterConsistencyStatus === 'pass') {
-                        console.warn(`[QCAgent] Spread ${i} flagged for minor QA note (likeness ${qcResult.likenessScore}/10). Continuing autonomous pipeline.`);
-                        overallDecision = "flagged";
-                      } else {
-                        console.warn(`[QCAgent] Spread ${i} has low likeness score (${qcResult.likenessScore}/10) after doctor attempts. Continuing with best attempt.`);
-                        overallDecision = "flagged";
-                      }
-                    }
                   }
                 } else {
                   console.warn(`[QCAgent] Failed to upload regenerated image for Spread ${i + 1}:`, uploadErrRegen);
@@ -499,11 +542,25 @@ export class IllustrationWorker {
               }
             }
 
+            // BEST-CANDIDATE SELECTION: Select the highest-scoring candidate across all attempts
+            candidates.sort((a, b) => b.compositeScore - a.compositeScore);
+            const bestCandidate = candidates[0];
+            finalFinalUrl = bestCandidate.imageUrl;
+            qcResult = bestCandidate.qcResult;
+            overallDecision = bestCandidate.qcResult.overallDecision;
+
+            console.log(
+              `[IllustrationWorker] Spread ${i} selected Best Candidate: Attempt ${bestCandidate.attemptNumber} (Composite Score: ${bestCandidate.compositeScore}, Likeness: ${bestCandidate.qcResult.likenessScore}/10, Decision: ${overallDecision})`,
+            );
+
             // Update local storyData with QC results
             const mappedQcStatus = overallDecision === "pass" ? "passed" : "flagged";
+            const firstAttemptUrl = candidates.find(c => c.attemptNumber === 1)?.imageUrl;
+            originalUrl = bestCandidate.attemptNumber > 1 ? firstAttemptUrl : undefined;
+
             if (!isCover && pageIdx >= 0 && storyData.pages && storyData.pages[pageIdx]) {
               storyData.pages[pageIdx].qcStatus = mappedQcStatus;
-              storyData.pages[pageIdx].textSide = qcResult.recommendedTextSide.toLowerCase();
+              storyData.pages[pageIdx].textSide = qcResult.recommendedTextSide?.toLowerCase() || "right";
               storyData.pages[pageIdx].imageUrl = finalFinalUrl;
               storyData.pages[pageIdx].illustrationUrl = finalFinalUrl;
               if (originalUrl) {
@@ -512,13 +569,13 @@ export class IllustrationWorker {
             }
             if (storyData.spreads && storyData.spreads[i]) {
               storyData.spreads[i].qcStatus = mappedQcStatus;
-              storyData.spreads[i].textSide = qcResult.recommendedTextSide.toLowerCase();
+              storyData.spreads[i].textSide = qcResult.recommendedTextSide?.toLowerCase() || "right";
               if (originalUrl) {
                 storyData.spreads[i].qcOriginalUrl = originalUrl;
               }
             }
             if (isCover) {
-              storyData.coverTextSide = qcResult.recommendedTextSide.toLowerCase();
+              storyData.coverTextSide = qcResult.recommendedTextSide?.toLowerCase() || "right";
               storyData.coverQcStatus = mappedQcStatus;
               storyData.coverImageUrl = finalFinalUrl;
               if (originalUrl) {

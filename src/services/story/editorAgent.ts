@@ -294,9 +294,10 @@ MANDATORY RULES:
                     outputs: { 
                         pageCount: refinedDraft.length,
                         validationValid: validation.valid,
-                        qualityWarnings: validation.warnings 
+                        qualityWarnings: validation.warnings,
+                        qualityErrors: validation.errors
                     },
-                    status: 'Success',
+                    status: validation.valid ? 'Success' : (validation.errors && validation.errors.length > 0 ? 'Warning' : 'Success'),
                     durationMs: Date.now() - startTime
                 }
             };

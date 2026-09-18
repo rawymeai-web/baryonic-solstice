@@ -44,16 +44,16 @@ export interface PromptValidationResult {
 }
 
 export function sanitizeHeroExpression(expr: string): string {
-    if (!expr || typeof expr !== 'string') return 'charming, curious expression';
+    if (!expr || typeof expr !== 'string') return 'expressive, natural expression reflecting the scene mood';
     let clean = expr.trim();
 
+    // Prevent grotesque horror or terrifying facial distortions while preserving authentic emotional arcs
     const replacements: [RegExp, string][] = [
-        [/\b(frustrated|scowling|angry|furious|mad|irritated|grumpy|sullen|pouting|sulking)\b/gi, 'cute thinking face with focused concentration'],
-        [/\b(sad|crying|weeping|miserable|depressed|despairing|exhausted|tired|fatigued|gloomy)\b/gi, 'gentle, thoughtful expression with cute wonder and mild puzzle'],
-        [/\b(terrified|scared|horrified|panicked|fearful|frightened)\b/gi, 'wide-eyed surprised curiosity with playful awe'],
-        [/\b(annoyed|bored|displeased|upset)\b/gi, 'playful, intrigued curiosity'],
-        [/\b(worried|anxious|nervous|troubled)\b/gi, 'soft, thoughtful expression with curious interest'],
-        [/\b(confused|baffled|perplexed)\b/gi, 'cute puzzled face with slight head tilt and wondering eyes'],
+        [/\b(scowling|furious|mad|sulking)\b/gi, 'determined, focused frown'],
+        [/\b(crying|weeping|miserable|despairing)\b/gi, 'gentle, quiet, melancholic expression'],
+        [/\b(terrified|horrified|panicked)\b/gi, 'wide-eyed surprise and startle'],
+        [/\b(exhausted|fatigued)\b/gi, 'soft, sleepy, weary expression'],
+        [/\b(bored|displeased)\b/gi, 'pensive, wondering expression'],
     ];
 
     replacements.forEach(([pattern, rep]) => {
@@ -61,7 +61,7 @@ export function sanitizeHeroExpression(expr: string): string {
     });
 
     clean = clean.replace(/^(a|an|the)\s+/i, '').replace(/\bexpression\b/gi, '').trim();
-    return clean || 'curious and joyful';
+    return clean || 'thoughtful and expressive';
 }
 
 function validateAssembledPrompt(prompt: string): PromptValidationResult {
@@ -1027,11 +1027,15 @@ function assembleEnglishPromptV7_4(
             : '';
 
         const biometrics = extractBiometrics(h.description || (h as any).childDescription || (h as any).characterDescription || (h as any).identity);
-        const bioLock = `
+        const bioLock = biometrics.hasExplicitLocks
+            ? `
   * MANDATORY BIOMETRIC LOCKS (ZERO TOLERANCE FOR COLOR MUTATION):
-    - Eye Color: ${biometrics.eyeColor}. Under NO circumstances render with green, hazel, blue, amber, or light-colored eyes. The eyes must remain distinctly ${biometrics.eyeColor} in all scenes and under all lighting conditions (including lantern light, moonlight, and sunset).
+    - Eye Color: ${biometrics.eyeColor}. Under NO circumstances render with different colored eyes. The eyes must remain distinctly ${biometrics.eyeColor} in all scenes and under all lighting conditions.
     - Hair Color & Style: ${biometrics.hairColor} (${biometrics.hairStyle}). Maintain the exact hair color and wave/curl pattern from Image ${dnaIdx}. Do NOT lighten, bleach, or alter haircut (no modern high-fades, tapers, or undercuts).
-    - Skin Tone: ${biometrics.skinTone}. Preserve natural ethnic complexion without bleaching or unnatural lighting shifts.`;
+    - Skin Tone: ${biometrics.skinTone}. Preserve natural ethnic complexion without bleaching or unnatural lighting shifts.`
+            : `
+  * 1:1 BIOMETRIC FIDELITY AUTHORITY (IMAGE ${dnaIdx}):
+    - Facial Likeness, Eye Color, Hair & Complexion: Image ${dnaIdx} is the sole, absolute visual authority. Preserve the exact eye color, natural hair texture/curl pattern, facial geometry, and skin complexion shown in Image ${dnaIdx}. Under NO circumstances mutate eye color or alter hairstyle.`;
 
         castingDirectives.push(`- ${heroToken} (${name}${ageDesc}): ${roleText}
   * DYNAMIC ISOLATION RULE: Isolate ONLY the character figure from Image ${dnaIdx}. Completely discard and ignore all background scenery, surrounding environment, animals, objects, textures, and props visible in Image ${dnaIdx}.
@@ -1055,9 +1059,9 @@ function assembleEnglishPromptV7_4(
                 if (parsed?.identity?.clothing) {
                     const c = parsed.identity.clothing;
                     const parts = [
-                        c.top || `signature shirt from Image ${dnaIdx}`,
-                        c.canonical_bottom || c.bottom || 'dark blue denim jeans',
-                        c.canonical_footwear || c.footwear || c.shoes || 'classic white sneakers'
+                        c.top || `signature top from Image ${dnaIdx}`,
+                        c.canonical_bottom || c.bottom || `signature pants/bottom from Image ${dnaIdx}`,
+                        c.canonical_footwear || c.footwear || c.shoes || `signature shoes from Image ${dnaIdx}`
                     ];
                     outfitStr = parts.join(', ');
                 }
@@ -1065,7 +1069,7 @@ function assembleEnglishPromptV7_4(
         }
 
         if (!outfitStr) {
-            outfitStr = `signature top/shirt from Image ${dnaIdx}, dark blue denim jeans, and classic sneakers`;
+            outfitStr = `signature clothing and footwear from Image ${dnaIdx}`;
         }
 
         wardrobeDirectives.push(`- ${heroToken} (${name}): Must strictly wear: ${outfitStr}. Maintain this exact clothing and footwear across all full-body, standing, and seated poses. Solid clean colors only; do NOT add patterns, animal prints, or changes, and do NOT render the character barefoot unless explicitly required by a specific story action.`);
@@ -1223,6 +1227,11 @@ function assembleEnglishPromptV7_4(
 
     if (isSoloSceneInDualBook) {
         const absentHeroes = heroes.filter(h => !activeHeroes.includes(h));
+        const activeHeroTokens = activeHeroes.map(h => {
+            const origIdx = heroes.indexOf(h);
+            return origIdx >= 0 ? `[[HERO_${origIdx + 1}]]` : '[[HERO_1]]';
+        }).join(', ');
+
         if (absentHeroes.length > 0) {
             const absentList = absentHeroes.map(h => {
                 const origIdx = heroes.indexOf(h);
@@ -1230,7 +1239,7 @@ function assembleEnglishPromptV7_4(
                 const name = h.name || (h as any).hero_id || '';
                 return `${token}${name ? ` (${name})` : ''}`;
             }).join(', ');
-            constraintsText += ` Note: ${absentList} is ABSENT from this scene. Render ONLY the active hero [[HERO_1]]. Strictly do NOT draw any second child, companion, or bystander in this image.`;
+            constraintsText += ` Note: ${absentList} is ABSENT from this scene. Render ONLY the active hero ${activeHeroTokens}. Strictly do NOT draw any second child, companion, or bystander in this image.`;
         }
     }
 
@@ -1315,7 +1324,7 @@ export async function generatePrompts(
             return {
                 spreadNumber: spreadIndex,
                 imagePrompt: prompt,
-                storyText: isCover ? '' : ((bpSpread as any)?.storyText || spread?.storyText || spread?.text || bpSpread?.narrative || ''),
+                storyText: isCover ? '' : (spread?.storyText || spread?.text || (bpSpread as any)?.storyText || bpSpread?.narrative || ''),
                 mainContentSide: actionSide,
                 textSide: txtSide,
             };

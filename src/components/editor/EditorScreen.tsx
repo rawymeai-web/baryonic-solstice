@@ -251,18 +251,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         };
         loadModernDNA();
     }, [storyData.orderId, storyData.orderNumber]);
-    
-    // --- HEALING OVERRIDE: FORCE CORRECT DNA FOR ORDER RWY-9DUXLKKWD ---
-    if (storyData.orderId === 'RWY-9DUXLKKWD' || storyData.orderNumber === 'RWY-9DUXLKKWD') {
-        // Force Hero A (NASA Hamad) Stylized DNA if it looks stale
-        if (masterDNA && !masterDNA.includes('NASA')) {
-            console.log('🧬 [Healing] Forcing Corrected DNA for Hero A (Hamad)...');
-        }
-        // Force Hero B (12yo Khalda) Stylized DNA
-        if (masterDNA2) {
-             console.log('🧬 [Healing] Forcing Corrected DNA for Hero B (Khalda)...');
-        }
-    }
 
     // Local state to handle edits before saving them back to storyData
     const [pageEdits, setPageEdits] = useState<{ [index: number]: { text: string; prompt: string; textSide?: 'left'|'right'; textOffsetX?: number; textOffsetY?: number; imageOffsetX?: number; imageOffsetY?: number; imageScale?: number; illustrationUrl?: string } }>({});
@@ -827,13 +815,14 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
             const compressedHeroA = await compressSingle(heroADNA);
             const compressedHeroB = await compressSingle(heroBDNA);
+            const compressedProp = await compressSingle(masterPropAsset);
 
             let safePromptToUse = typeof promptToUse === 'string' ? promptToUse : JSON.stringify(promptToUse);
             // HEAL: Rewrite legacy image index bindings that expect raw photos (which we no longer send)
             safePromptToUse = safePromptToUse.replace(/Image 2 defines the character for \[\[HERO_1\]\]/g, "Image 1 defines the character for [[HERO_1]]");
             safePromptToUse = safePromptToUse.replace(/Image 4 defines the character for \[\[HERO_2\]\]/g, "Image 2 defines the character for [[HERO_2]]");
 
-            const promptRequiresHero2 = safePromptToUse.includes('[[HERO_2]]') || safePromptToUse.includes('Image 2');
+            const promptRequiresHero2 = safePromptToUse.includes('[[HERO_2]]');
             const effectiveHeroB = promptRequiresHero2 ? compressedHeroB : undefined;
 
             // --- GENERATION AUDIT: capture exactly what will be sent ---
@@ -849,8 +838,14 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         ? effectiveHeroB
                         : `data:image/jpeg;base64,${effectiveHeroB.replace(/^data:image\/\w+;base64,/, '')}`)
                     : null,
+                propAssetUrl: compressedProp
+                    ? (compressedProp.startsWith('http')
+                        ? compressedProp
+                        : `data:image/jpeg;base64,${compressedProp.replace(/^data:image\/\w+;base64,/, '')}`)
+                    : null,
                 heroACount: compressedHeroA ? 1 : 0,
                 heroBCount: effectiveHeroB ? 1 : 0,
+                hasPropAsset: !!compressedProp,
                 promptSent: safePromptToUse,
                 dnaSource,
             };
@@ -862,11 +857,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 mode: 'DNA-Only v6.0',
                 heroA_has: !!compressedHeroA,
                 heroB_has: !!effectiveHeroB,
+                prop_has: !!compressedProp,
                 promptLength: auditSnapshot.promptSent.length,
             });
 
             console.group(`%c 🧬 DNA AUDIT [Spread ${index}] `, 'background: #222; color: #bada55; font-size: 12px; font-weight: bold;');
-            console.log('[v6.0 DNA-Only] Images sent:', { heroA: !!compressedHeroA, heroB: !!effectiveHeroB });
+            console.log('[v6.0 DNA-Only] Images sent:', { heroA: !!compressedHeroA, heroB: !!effectiveHeroB, prop: !!compressedProp });
             console.log('Prompt (first 300 chars):', auditSnapshot.promptSent.substring(0, 300));
             console.groupEnd();
 
@@ -875,6 +871,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 stylePrompt: typeof visualDNA === 'string' ? visualDNA : String(visualDNA || ''),
                 heroDNABase64: compressedHeroA,
                 secondDNABase64: effectiveHeroB,
+                propAssetBase64: compressedProp,
                 characterDescription: storyData.mainCharacter?.description || '',
                 age: storyData.childAge,
                 secondCharacterDescription: storyData.secondCharacter?.description,
@@ -1276,41 +1273,32 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         setIsGlobalRegenerating(true);
         setGlobalEditProgress(0);
         try {
-            const mainRawPhoto = storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0] || storyData.mainCharacterImageBase64;
-            const mainStylizedDNA = storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageBase64 || storyData.styleReferenceImageUrl || mainRawPhoto;
-            const mainDNASet: string[] = Array.from(new Set([mainRawPhoto, mainStylizedDNA].filter(Boolean) as string[]));
-
-            const secondRawPhoto = storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0] || storyData.secondCharacterImageBase64;
-            const secondStylizedDNA = storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageBase64 || secondRawPhoto;
-            const secondDNASet = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object')
-                ? Array.from(new Set([secondRawPhoto, secondStylizedDNA].filter(Boolean) as string[]))
-                : undefined;
-
             const visualDNA = getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly children\'s book illustration style';
             
-            const compressSet = async (set: string[] | undefined): Promise<string[] | undefined> => {
-                if (!set || set.length === 0) return undefined;
-                return Promise.all(set.map(img => compressBase64Image(img, 768, 0.75)));
-            };
+            const compressedMaster = masterDNA ? await compressBase64Image(masterDNA, 768, 0.75) : undefined;
+            const compressedSecond = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object' && masterDNA2)
+                ? await compressBase64Image(masterDNA2, 768, 0.75)
+                : undefined;
+            const compressedProp = masterPropAsset ? await compressBase64Image(masterPropAsset, 768, 0.75) : undefined;
 
-            const compressedMaster = await compressSet(mainDNASet);
-            const compressedSecond = await compressSet(secondDNASet);
             const newSpreads = [...spreads];
 
             for (let i = 1; i <= totalSpreads; i++) {
                 setGlobalEditStatus(`Painting Spread ${i} of ${totalSpreads}...`);
                 const basePrompt = pageEdits[i]?.prompt || getPromptForIndex(i, spreads[i]) || '';
                 const combinedPrompt = `GLOBAL OVERRIDE INSTRUCTION: ${globalEditInstruction.trim()}\n\n${basePrompt}`;
-                const promptRequiresHero2 = combinedPrompt.includes('[[HERO_2]]') || combinedPrompt.includes('Image 2');
+                const promptRequiresHero2 = combinedPrompt.includes('[[HERO_2]]');
                 const effectiveHeroB = promptRequiresHero2 ? compressedSecond : undefined;
                 try {
                     const imgRes: any = await backendApi.generateImage({
                         prompt: combinedPrompt,
                         stylePrompt: visualDNA,
-                        referenceBase64: compressedMaster,
+                        heroDNABase64: compressedMaster,
+                        secondDNABase64: effectiveHeroB,
+                        propAssetBase64: compressedProp,
                         characterDescription: storyData.mainCharacter?.description || '',
                         age: storyData.childAge,
-                        secondReferenceBase64: effectiveHeroB
+                        secondCharacterDescription: storyData.secondCharacter?.description,
                     });
                     if (imgRes.imageBase64) {
                         newSpreads[i] = { 

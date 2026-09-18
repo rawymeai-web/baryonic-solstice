@@ -440,46 +440,43 @@ export async function generateMethod4Image(
             }
         }
 
-        // 1. Resolve Hero A references
-        const heroASet = Array.isArray(referenceBase64OrSet) ? referenceBase64OrSet : [referenceBase64OrSet];
-        const heroAImages: string[] = [];
-        for (const item of heroASet) {
-            if (item && item.startsWith('http')) {
-                const response = await fetch(item);
-                const arrayBuffer = await response.arrayBuffer();
-                heroAImages.push(Buffer.from(arrayBuffer).toString('base64'));
-            } else if (item) {
-                heroAImages.push(item);
+        // Helper to fetch and resolve URL or Base64 with HTTP status & content-type verification
+        const resolveImageToBuffer = async (item: string | undefined): Promise<string | null> => {
+            if (!item) return null;
+            if (item.startsWith('http://') || item.startsWith('https://')) {
+                try {
+                    const response = await fetch(item);
+                    if (!response.ok) {
+                        console.error(`[ImageGenerator] Image fetch failed with HTTP ${response.status}: ${item}`);
+                        return null;
+                    }
+                    const contentType = response.headers.get('content-type') || '';
+                    if (!contentType.includes('image/') && !contentType.includes('octet-stream')) {
+                        console.warn(`[ImageGenerator] Non-image content type (${contentType}) for: ${item}`);
+                    }
+                    const arrayBuffer = await response.arrayBuffer();
+                    return Buffer.from(arrayBuffer).toString('base64');
+                } catch (err: any) {
+                    console.error(`[ImageGenerator] Network error resolving reference: ${item}`, err?.message);
+                    return null;
+                }
             }
-        }
+            return item;
+        };
 
-        // 2. Resolve Hero B references
-        const heroBSet = Array.isArray(secondReferenceBase64OrSet) ? secondReferenceBase64OrSet : (secondReferenceBase64OrSet ? [secondReferenceBase64OrSet] : []);
-        const heroBImages: string[] = [];
-        for (const item of heroBSet) {
-            if (item && item.startsWith('http')) {
-                const response = await fetch(item);
-                const arrayBuffer = await response.arrayBuffer();
-                heroBImages.push(Buffer.from(arrayBuffer).toString('base64'));
-            } else if (item) {
-                heroBImages.push(item);
-            }
-        }
+        // 1. Resolve Hero A reference (Exactly 1 canonical image)
+        const heroASource = Array.isArray(referenceBase64OrSet) ? referenceBase64OrSet[0] : referenceBase64OrSet;
+        const resolvedHeroA = await resolveImageToBuffer(heroASource);
 
-        // 3. Resolve Prop Asset references
-        const propSet = Array.isArray(propAssetBase64OrSet) ? propAssetBase64OrSet : (propAssetBase64OrSet ? [propAssetBase64OrSet] : []);
-        const propImages: string[] = [];
-        for (const item of propSet) {
-            if (item && item.startsWith('http')) {
-                const response = await fetch(item);
-                const arrayBuffer = await response.arrayBuffer();
-                propImages.push(Buffer.from(arrayBuffer).toString('base64'));
-            } else if (item) {
-                propImages.push(item);
-            }
-        }
+        // 2. Resolve Hero B reference (Exactly 1 canonical image if dual-hero)
+        const heroBSource = Array.isArray(secondReferenceBase64OrSet) ? secondReferenceBase64OrSet[0] : secondReferenceBase64OrSet;
+        const resolvedHeroB = await resolveImageToBuffer(heroBSource);
 
-        // 4. Construct Multi-Modal Input
+        // 3. Resolve Prop Asset reference (Exactly 1 canonical image if prop is featured)
+        const propSource = Array.isArray(propAssetBase64OrSet) ? propAssetBase64OrSet[0] : propAssetBase64OrSet;
+        const resolvedProp = await resolveImageToBuffer(propSource);
+
+        // 4. Construct Multi-Modal Input with strictly ordered, non-duplicated slots
         const contents: any[] = [];
         const stripPrefix = (str: string) => str.replace(/^data:image\/\w+;base64,/, '');
         
@@ -491,19 +488,22 @@ export async function generateMethod4Image(
             return 'image/jpeg'; // Fallback
         };
 
-        heroAImages.forEach((b64, idx) => {
-            contents.push({ text: `[IMAGE 1 - [[HERO_1]] EXACT LIKENESS REFERENCE]:` });
-            contents.push({ inlineData: { mimeType: getMimeType(b64), data: stripPrefix(b64) } });
-        });
-        heroBImages.forEach((b64, idx) => {
-            contents.push({ text: `[IMAGE 2 - [[HERO_2]] EXACT LIKENESS REFERENCE]:` });
-            contents.push({ inlineData: { mimeType: getMimeType(b64), data: stripPrefix(b64) } });
-        });
-        propImages.forEach((b64, idx) => {
-            const propSlotNum = (heroAImages.length > 0 ? 1 : 0) + (heroBImages.length > 0 ? 1 : 0) + idx + 1;
-            contents.push({ text: `[IMAGE ${propSlotNum} - CANONICAL [[PROP_ASSET]] REFERENCE]:` });
-            contents.push({ inlineData: { mimeType: getMimeType(b64), data: stripPrefix(b64) } });
-        });
+        let slotCounter = 0;
+        if (resolvedHeroA) {
+            slotCounter++;
+            contents.push({ text: `[IMAGE ${slotCounter} - [[HERO_1]] EXACT LIKENESS REFERENCE]:` });
+            contents.push({ inlineData: { mimeType: getMimeType(resolvedHeroA), data: stripPrefix(resolvedHeroA) } });
+        }
+        if (resolvedHeroB) {
+            slotCounter++;
+            contents.push({ text: `[IMAGE ${slotCounter} - [[HERO_2]] EXACT LIKENESS REFERENCE]:` });
+            contents.push({ inlineData: { mimeType: getMimeType(resolvedHeroB), data: stripPrefix(resolvedHeroB) } });
+        }
+        if (resolvedProp) {
+            slotCounter++;
+            contents.push({ text: `[IMAGE ${slotCounter} - CANONICAL [[PROP_ASSET]] REFERENCE]:` });
+            contents.push({ inlineData: { mimeType: getMimeType(resolvedProp), data: stripPrefix(resolvedProp) } });
+        }
         
         let unifiedPromptText = sanitizePrompt(prompt);
 
@@ -519,8 +519,8 @@ export async function generateMethod4Image(
                 }
             });
             
-            // Total attached images is contents.length / 2 (since each image has a label text + inlineData)
-            const attachedImagesCount = heroAImages.length + heroBImages.length + propImages.length;
+            // Total attached images is slotCounter (since each attached image incremented slotCounter)
+            const attachedImagesCount = slotCounter;
             if (maxImageRef > attachedImagesCount) {
                 const errorMsg = `[FATAL BINDING ERROR] The generated prompt explicitly references up to "Image ${maxImageRef}", but only ${attachedImagesCount} image(s) were passed in the payload array. Aborting to prevent identity/asset drift.`;
                 console.error(errorMsg);
@@ -619,17 +619,19 @@ export async function generateMethod4Image(
         };
         console.log(`Generating Page via Hybrid Vision Logic (Backend)...`);
         console.log(`- STYLE PROMPT: ${toSafeStr(cleanStylePrompt).substring(0, 100)}...`);
-        console.log(`- HERO A IMAGES SENT: ${heroAImages.length} (Expected: 1 for photo, 1 for DNA style)`);
-        console.log(`- HERO B IMAGES SENT: ${heroBImages.length} (Expected: 1 for photo, 1 for DNA style)`);
+        console.log(`- HERO A SENT: ${resolvedHeroA ? 1 : 0} (Canonical Stylized DNA)`);
+        console.log(`- HERO B SENT: ${resolvedHeroB ? 1 : 0} (Canonical Stylized DNA)`);
+        console.log(`- PROP ASSET SENT: ${resolvedProp ? 1 : 0} (Canonical Asset DNA)`);
         console.log(`- SCENE PROMPT (Length): ${unifiedPromptText.length} characters`);
 
         try {
             const fs = require('fs');
             const debugPayload = {
                 timestamp: new Date().toISOString(),
-                totalImages: contents.length - 1, // minus text part
-                heroAImages: heroAImages.length,
-                heroBImages: heroBImages.length,
+                totalImages: slotCounter,
+                heroA: resolvedHeroA ? 1 : 0,
+                heroB: resolvedHeroB ? 1 : 0,
+                propAsset: resolvedProp ? 1 : 0,
                 promptText: unifiedPromptText
             };
             
@@ -641,23 +643,32 @@ export async function generateMethod4Image(
             // File: /last_gemini_contact_sheet.html
             // ─────────────────────────────────────────────────────────────────────
             try {
-                const imageSlots = [
-                    ...heroAImages.map((b64, i) => ({
-                        slot: i + 1,
-                        label: `[[HERO_1]] — Slot ${i + 1} (DNA reference, sole identity authority)`,
-                        b64,
-                    })),
-                    ...heroBImages.map((b64, i) => ({
-                        slot: heroAImages.length + i + 1,
-                        label: `[[HERO_2]] — Slot ${heroAImages.length + i + 1} (DNA reference, sole identity authority)`,
-                        b64,
-                    })),
-                    ...propImages.map((b64, i) => ({
-                        slot: heroAImages.length + heroBImages.length + i + 1,
-                        label: `[[PROP_ASSET]] — Slot ${heroAImages.length + heroBImages.length + i + 1} (Canonical Prop Asset reference, shape & color authority)`,
-                        b64,
-                    })),
-                ];
+                const imageSlots: { slot: number; label: string; b64: string }[] = [];
+                let debugSlot = 0;
+                if (resolvedHeroA) {
+                    debugSlot++;
+                    imageSlots.push({
+                        slot: debugSlot,
+                        label: `[[HERO_1]] — Slot ${debugSlot} (DNA reference, sole identity authority)`,
+                        b64: resolvedHeroA
+                    });
+                }
+                if (resolvedHeroB) {
+                    debugSlot++;
+                    imageSlots.push({
+                        slot: debugSlot,
+                        label: `[[HERO_2]] — Slot ${debugSlot} (DNA reference, sole identity authority)`,
+                        b64: resolvedHeroB
+                    });
+                }
+                if (resolvedProp) {
+                    debugSlot++;
+                    imageSlots.push({
+                        slot: debugSlot,
+                        label: `[[PROP_ASSET]] — Slot ${debugSlot} (Canonical Prop Asset reference, shape & color authority)`,
+                        b64: resolvedProp
+                    });
+                }
 
                 const cards = imageSlots.map(slot => `
                     <div style="border:2px solid #333;border-radius:12px;padding:12px;background:#1a1a2e;min-width:220px">

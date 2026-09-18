@@ -5,6 +5,7 @@ import { generateVisualPlan } from "@/services/visual/director";
 import { generatePrompts } from "@/services/visual/promptEngineer";
 import { runQualityAssurance } from "@/services/visual/qualityAssurance";
 import { generatePropAssetImage } from "@/services/generation/assetGenerator";
+import { buildStyleContract } from "../visual/manifestBuilder";
 import { WorkerUtils } from "./workerUtils";
 import { MasterScheduler } from "./scheduler";
 
@@ -31,17 +32,26 @@ export class StoryWorker {
         return;
       }
 
+      // Fetch the full order payload
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .select("story_data, generation_snapshot, order_number, created_at")
+        .select("story_data, created_at, order_number")
         .eq("order_number", orderId)
         .single();
 
-      if (orderError || !order)
-        throw new Error("Order not found or database error");
+      if (orderError || !order) throw new Error("Order not found");
 
-      const storyData = order.story_data as any; // The initial blob
-      const snapshot = (order.generation_snapshot as any) || {};
+      const storyData = order.story_data as any;
+      const blueprint = storyData.blueprint;
+
+      if (!blueprint) {
+        throw new Error(
+          "StoryWorker invoked but no blueprint found in story_data.",
+        );
+      }
+
+      // Load pre-flight validation snapshot
+      const snapshot = storyData.preflight_snapshot || {};
 
       // Extract the frozen inputs from the pre-flight snapshot
       const childAge = snapshot.age || storyData.childAge;
@@ -50,34 +60,17 @@ export class StoryWorker {
       const secondCharacter = storyData.useSecondCharacter ? storyData.secondCharacter : undefined;
       const language = storyData.language || "en";
 
-      // Priority: 1) selectedStyleNames?.[0], 2) technicalStyleGuide (locked preview DNA), 3) selectedStylePrompt, 4) themeVisualDNA, 5) safe fallback.
-      const visualDNA: string =
-        storyData.selectedStyleNames?.[0] ||
-        storyData.technicalStyleGuide ||
-        storyData.selectedStylePrompt ||
-        storyData.themeVisualDNA ||
-        "high quality painterly children's book illustration";
+      // STYLE DNA: Authoritative StyleContract compilation
+      const styleContract = buildStyleContract(storyData);
+      const visualDNA: string = styleContract.compiledStylePrompt;
 
       console.log(
-        `[StoryWorker] Resolved visualDNA source: ${
-          storyData.technicalStyleGuide
-            ? "technicalStyleGuide"
-            : storyData.selectedStylePrompt
-              ? "selectedStylePrompt"
-              : storyData.themeVisualDNA
-                ? "themeVisualDNA"
-                : "FALLBACK"
-        } — Preview: ${String(visualDNA).substring(0, 80)}...`,
+        `[StoryWorker] Resolved StyleContract: "${styleContract.styleName}" (${styleContract.dimensionality}) — Preview: ${String(visualDNA).substring(0, 80)}...`,
       );
 
       // --------------------------------------------------------
-      // 1. GENERATE STORY (Blueprint already exists)
+      // 1. GENERATE STORY (Blueprint already validated above)
       // --------------------------------------------------------
-      if (!storyData.blueprint) {
-        throw new Error("Blueprint missing in StoryData. Sequence error.");
-      }
-      const blueprint = storyData.blueprint;
-
       const spreadCount = storyData.spreadCount || (blueprint.structure?.spreads?.length) || 8;
       const customStoryText = storyData.customStoryText;
 
