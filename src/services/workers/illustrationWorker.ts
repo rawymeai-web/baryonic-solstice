@@ -1,7 +1,7 @@
 import { supabase } from "@/utils/supabaseClient";
 import { generateMethod4Image } from "@/services/generation/imageGenerator";
-import { QualityAgent, HeroQCRef, isDefiniteHardFailure } from "../visual/qualityAgent";
-import { buildStyleContract } from "../visual/manifestBuilder";
+import { QualityAgent, HeroQCRef, isDefiniteHardFailure, rankCandidates } from "../visual/qualityAgent";
+import { buildStyleContract, buildGenerationManifest, buildGenerationPayload, buildQualityCheckParams, MissingDnaError } from "../visual/manifestBuilder";
 import { WorkerUtils } from "./workerUtils";
 import { MasterScheduler } from "./scheduler";
 import { EmailService } from "../notifications/emailService";
@@ -85,63 +85,14 @@ export class IllustrationWorker {
       const childDesc = storyData.mainCharacter?.description || "";
 
       // Fetch modern DNA references from database
-      let hAStyleUrl, hAOrigUrl, hBStyleUrl, hBOrigUrl, propAssetUrl;
       const { data: dnaRecords } = await supabase
         .from('order_dna')
         .select('*')
         .eq('order_id', orderId)
         .order('created_at', { ascending: false });
 
-      if (dnaRecords && dnaRecords.length > 0) {
-        hAStyleUrl = dnaRecords.find(r => r.hero_label === 'Hero A' && r.image_type === 'Stylized DNA')?.image_url;
-        hAOrigUrl = dnaRecords.find(r => r.hero_label === 'Hero A' && r.image_type === 'Original Photo')?.image_url;
-        hBStyleUrl = dnaRecords.find(r => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA')?.image_url;
-        hBOrigUrl = dnaRecords.find(r => r.hero_label === 'Hero B' && r.image_type === 'Original Photo')?.image_url;
-        propAssetUrl = dnaRecords.find(r => r.hero_label === 'Prop Asset' && r.image_type === 'Canonical Asset')?.image_url;
-      }
-      // Explicit staff/story_data override takes highest precedence
-      if (storyData.recurringAssetImageUrl) {
-        propAssetUrl = storyData.recurringAssetImageUrl;
-      }
-
-      let heroRaw = hAOrigUrl ||
-        storyData.mainCharacter?.imageRawUrl ||
-        storyData.mainCharacter?.imageBases64?.[0] ||
-        storyData.mainCharacterImageBase64 ||
-        storyData.heroImageBase64 ||
-        storyData.firstCharacterImageBase64 ||
-        storyData.heroImageUrl ||
-        storyData.firstCharacterImageUrl || "";
-
-      const heroDNA =
-        hAStyleUrl ||
-        storyData.mainCharacter?.imageDNA?.[0] ||
-        storyData.styleReferenceImageUrl ||
-        storyData.styleReferenceImageBase64 ||
-        heroRaw;
-
-      let secondaryDNA: string | undefined = undefined;
-      let secondaryRaw: string | undefined = undefined;
-      if (storyData.useSecondCharacter) {
-        secondaryDNA =
-          hBStyleUrl ||
-          storyData.secondCharacter?.imageDNA?.[0] ||
-          storyData.secondCharacterImageBase64 ||
-          storyData.secondCharacterImageUrl ||
-          (storyData.secondCharacter?.imageBases64?.[0] || "");
-
-        secondaryRaw =
-          hBOrigUrl ||
-          storyData.secondCharacter?.imageRawUrl ||
-          storyData.secondCharacter?.imageBases64?.[0] ||
-          storyData.secondCharacterImageBase64 ||
-          storyData.secondCharacterImageUrl || "";
-
-        if (storyData.secondCharacter?.type === "object") {
-          secondaryDNA = undefined;
-          secondaryRaw = undefined;
-        }
-      }
+      // Authoritative Generation Manifest (Fails closed if required stylized DNA is missing)
+      const manifest = buildGenerationManifest(storyData, orderId, dnaRecords || undefined);
 
       // ------------------------------------------------------------------
       // DNA PRE-CACHING: Fetch and convert references to Base64 ONCE in memory
@@ -167,27 +118,38 @@ export class IllustrationWorker {
         return str.replace(/^data:image\/\w+;base64,/, '');
       };
 
-      const [heroDnaB64, heroRawB64, secDnaB64, secRawB64, propAssetB64] = await Promise.all([
-        resolveToBase64(heroDNA),
-        resolveToBase64(heroRaw),
-        resolveToBase64(secondaryDNA),
-        resolveToBase64(secondaryRaw),
-        resolveToBase64(propAssetUrl)
+      const heroA = manifest.heroes[0];
+      const heroB = manifest.heroes[1];
+      const propAsset = manifest.propAsset;
+
+      const [heroAStyleB64, heroARawB64, heroBStyleB64, heroBRawB64, propB64] = await Promise.all([
+        resolveToBase64(heroA?.stylizedDnaUrl),
+        resolveToBase64(heroA?.rawPhotoUrl),
+        resolveToBase64(heroB?.stylizedDnaUrl),
+        resolveToBase64(heroB?.rawPhotoUrl),
+        resolveToBase64(propAsset?.canonicalImageUrl)
       ]);
 
-      const cachedHeroDNA = heroDnaB64 || heroDNA;
-      const cachedHeroRaw = heroRawB64 || heroRaw;
-      const cachedSecDNA = secDnaB64 || secondaryDNA;
-      const cachedSecRaw = secRawB64 || secondaryRaw;
-      const cachedPropAsset = propAssetB64 || propAssetUrl;
+      if (heroA) {
+        if (heroAStyleB64) heroA.stylizedDnaBase64 = heroAStyleB64;
+        if (heroARawB64) heroA.rawPhotoUrl = heroARawB64;
+      }
+      if (heroB) {
+        if (heroBStyleB64) heroB.stylizedDnaBase64 = heroBStyleB64;
+        if (heroBRawB64) heroB.rawPhotoUrl = heroBRawB64;
+      }
+      if (propAsset && propB64) {
+        propAsset.canonicalImageBase64 = propB64;
+      }
 
       // Composite scoring formula for non-regressive candidate selection
       const computeCompositeScore = (qc: any): number => {
-        return (Number(qc.likenessScore || 0) * 10) +
+        return (Number(qc.overallLikenessScore ?? qc.likenessScore ?? 0) * 10) +
           (qc.characterConsistencyStatus === 'pass' ? 20 : 0) +
           (qc.styleConsistencyStatus === 'pass' ? 20 : 0) +
           (qc.narrativeAdherenceStatus === 'pass' ? 20 : 0) +
           (qc.propConsistencyStatus === 'pass' || qc.propConsistencyStatus === 'na' ? 20 : 0) +
+          (qc.locationConsistencyStatus === 'pass' || qc.locationConsistencyStatus === 'na' ? 10 : 0) +
           (qc.wardrobeConsistencyStatus === 'pass' ? 10 : 0) +
           (qc.textClearanceStatus === 'pass' ? 10 : 0);
       };
@@ -217,6 +179,7 @@ export class IllustrationWorker {
         const promptBlock = storyData.prompts[i];
         const isCover = i === 0;
         const pageIdx = isCover ? -1 : i - 1;
+        const spreadManifest = manifest.spreads.find(s => s.spreadNumber === i) || manifest.spreads[i];
         const existingUrl = isCover
           ? storyData.coverImageUrl
           : (storyData.spreads?.[i]?.illustrationUrl || storyData.pages?.[pageIdx]?.illustrationUrl || storyData.pages?.[pageIdx]?.imageUrl);
@@ -228,45 +191,40 @@ export class IllustrationWorker {
           !existingUrl.includes("error") &&
           !existingUrl.endsWith("...");
 
-        const recurringAsset = storyData.blueprint?.foundation?.recurringAsset;
-        const isPropInSpread = !!cachedPropAsset && (
-          promptBlock.imagePrompt?.includes('[[PROP_ASSET]]') ||
-          (recurringAsset?.appearancesSpreads && Array.isArray(recurringAsset.appearancesSpreads) && recurringAsset.appearancesSpreads.includes(i)) ||
-          (recurringAsset?.name && promptBlock.imagePrompt?.toLowerCase().includes(recurringAsset.name.toLowerCase()))
-        );
-        const propImagesArray: string[] | undefined = (isPropInSpread && cachedPropAsset) ? [cachedPropAsset] : undefined;
+        const generationPayload = buildGenerationPayload(manifest, i);
+        const resolvedStyleDNA = generationPayload.stylePrompt;
+        const authoritativeSpreadText = generationPayload.storyText;
 
-        const styleContract = buildStyleContract(storyData);
-        const resolvedStyleDNA = styleContract.compiledStylePrompt;
+        const heroImagesArray: string[] = [heroA?.stylizedDnaBase64 || heroA?.stylizedDnaUrl].filter(Boolean) as string[];
+        const isHeroBActive = spreadManifest ? spreadManifest.activeHeroes.some(h => h.heroToken === '[[HERO_2]]') : !!heroB;
+        const secondaryImagesArray: string[] | undefined = (heroB && isHeroBActive)
+          ? [heroB.stylizedDnaBase64 || heroB.stylizedDnaUrl].filter(Boolean) as string[]
+          : undefined;
 
-        const heroImagesArray: string[] = [cachedHeroDNA].filter(Boolean) as string[];
-        const secondaryImagesArray: string[] | undefined = cachedSecDNA ? [cachedSecDNA] : undefined;
-
-        const authoritativeSpreadText = (!isCover && pageIdx >= 0 && storyData.pages?.[pageIdx]?.text)
-          ? storyData.pages[pageIdx].text
-          : (promptBlock.storyText || "");
+        const isPropInSpread = spreadManifest ? spreadManifest.includesProp : false;
+        const propImagesArray: string[] | undefined = (isPropInSpread && propAsset)
+          ? [propAsset.canonicalImageBase64 || propAsset.canonicalImageUrl].filter(Boolean) as string[]
+          : undefined;
 
         const heroesQC: HeroQCRef[] = [
           {
             heroToken: '[[HERO_1]]',
             label: 'Hero A',
-            name: storyData.childName || storyData.mainCharacter?.name || 'Hero A',
-            dnaBase64OrUrl: cachedHeroDNA,
-            rawBase64OrUrl: cachedHeroRaw,
+            name: heroA?.name || storyData.childName || 'Hero A',
+            dnaBase64OrUrl: heroA?.stylizedDnaBase64 || heroA?.stylizedDnaUrl,
+            rawBase64OrUrl: heroA?.rawPhotoUrl,
             isVisibleInScene: true,
           }
         ];
 
-        if (storyData.useSecondCharacter && cachedSecDNA) {
-          const isHeroBInScene = !promptBlock.imagePrompt?.includes('[[HERO_1]] is alone') &&
-            (!promptBlock.imagePrompt?.includes('Render ONLY the active hero [[HERO_1]]'));
+        if (heroB) {
           heroesQC.push({
             heroToken: '[[HERO_2]]',
             label: 'Hero B',
-            name: storyData.secondCharacter?.name || 'Hero B',
-            dnaBase64OrUrl: cachedSecDNA,
-            rawBase64OrUrl: cachedSecRaw,
-            isVisibleInScene: isHeroBInScene,
+            name: heroB.name || 'Hero B',
+            dnaBase64OrUrl: heroB.stylizedDnaBase64 || heroB.stylizedDnaUrl,
+            rawBase64OrUrl: heroB.rawPhotoUrl,
+            isVisibleInScene: isHeroBActive,
           });
         }
 
@@ -302,7 +260,7 @@ export class IllustrationWorker {
         try {
           const imgRes = await WorkerUtils.withTimeout(
             generateMethod4Image(
-              promptBlock.imagePrompt,
+              generationPayload.prompt,
               resolvedStyleDNA,
               heroImagesArray,
               childDesc,
@@ -380,29 +338,12 @@ export class IllustrationWorker {
 
           pagesUpdated++;
 
-          // Dispatch asynchronous background Vision QA (Non-blocking!)
-          const qcParams = {
-            generatedImageBase64: base64Out,
-            heroes: heroesQC,
-            rawHeroImages: heroImagesArray,
-            stylizedDnaImages: heroImagesArray,
-            childDescription: childDesc,
-            childAge: childAge,
-            targetPrompt: promptBlock.imagePrompt,
-            stylePrompt: resolvedStyleDNA,
-            propAssetImageBase64: propImagesArray?.[0],
-            propAssetImageUrl: propAssetUrl,
-            spreadNumber: i,
-            isCover: isCover,
-            spreadText: authoritativeSpreadText,
-            storyText: authoritativeSpreadText,
-            layoutPlanSide: promptBlock.textSide || "Right",
-          };
-
+          // Dispatch asynchronous background Vision QA via authoritative buildQualityCheckParams
+          const qcParams = buildQualityCheckParams(manifest, i, base64Out, 1);
           state.qcParams = qcParams;
           state.qaPromise = QualityAgent.evaluateImage(qcParams).then(async (qcRes) => {
             console.log(
-              `[QCAgent] Result for Spread ${i + 1} (Attempt 1 Background): Likeness ${qcRes.likenessScore}/10, Style: ${qcRes.styleConsistencyStatus}, Prop: ${qcRes.propConsistencyStatus || 'n/a'}, Narrative: ${qcRes.narrativeAdherenceStatus}, Decision: ${qcRes.overallDecision}`,
+              `[QCAgent] Result for Spread ${i + 1} (Attempt 1 Background): Overall Likeness ${qcRes.overallLikenessScore}/10, Style: ${qcRes.styleConsistencyStatus}, Prop: ${qcRes.propConsistencyStatus || 'n/a'}, Narrative: ${qcRes.narrativeAdherenceStatus}, Location: ${qcRes.locationConsistencyStatus || 'n/a'}, Decision: ${qcRes.overallDecision}`,
             );
 
             await supabase.from("generation_quality_logs").insert({
@@ -411,7 +352,7 @@ export class IllustrationWorker {
               iteration_number: 1,
               image_url: iterationUrl,
               character_consistency_status: qcRes.characterConsistencyStatus,
-              character_reasoning: `[Likeness: ${qcRes.likenessScore}/10] [Prop: ${qcRes.propConsistencyStatus || 'n/a'} - ${qcRes.propReasoning || ''}] [Visual: ${qcRes.visualDescription}] [Narrative Check: ${qcRes.narrativeAdherenceStatus} - ${qcRes.narrativeAdherenceReasoning}] ${qcRes.characterReasoning}`,
+              character_reasoning: `[Overall Likeness: ${qcRes.overallLikenessScore}/10] [Prop: ${qcRes.propConsistencyStatus || 'n/a'} - ${qcRes.propReasoning || ''}] [Location: ${qcRes.locationConsistencyStatus || 'n/a'} - ${qcRes.locationReasoning || ''}] [Visual: ${qcRes.visualDescription}] [Narrative Check: ${qcRes.narrativeAdherenceStatus} - ${qcRes.narrativeAdherenceReasoning}] ${qcRes.characterReasoning}`,
               style_consistency_status: qcRes.styleConsistencyStatus,
               style_reasoning: qcRes.styleReasoning,
               text_clearance_status: qcRes.textClearanceStatus,
@@ -468,8 +409,19 @@ export class IllustrationWorker {
         let qcResult = await state.qaPromise;
 
         if (!qcResult) {
-          console.warn(`[IllustrationWorker] QA result unavailable for Spread ${i + 1}, retaining first-pass image.`);
-          continue;
+          console.warn(`[IllustrationWorker] QA result unavailable for Spread ${i + 1}, failing closed to flagged.`);
+          qcResult = {
+            overallDecision: 'flagged',
+            overallLikenessScore: 0,
+            likenessScore: 0,
+            characterConsistencyStatus: 'flagged',
+            styleConsistencyStatus: 'flagged',
+            narrativeAdherenceStatus: 'flagged',
+            propConsistencyStatus: 'na',
+            locationConsistencyStatus: 'na',
+            textClearanceStatus: 'flagged',
+            characterReasoning: 'Background QA result unavailable or timed out.'
+          };
         }
 
         state.candidates.push({
@@ -485,13 +437,13 @@ export class IllustrationWorker {
 
         if (hasHardFailure) {
           console.log(
-            `[IllustrationWorker] Spread ${i + 1} experienced DEFINITE HARD FAILURE (Likeness: ${qcResult.likenessScore}/10, Char: ${qcResult.characterConsistencyStatus}, Style: ${qcResult.styleConsistencyStatus}, Prop: ${qcResult.propConsistencyStatus || 'n/a'}). Executing Single Targeted Retry (Attempt 2)...`,
+            `[IllustrationWorker] Spread ${i + 1} experienced DEFINITE HARD FAILURE (Likeness: ${qcResult.overallLikenessScore ?? qcResult.likenessScore}/10, Char: ${qcResult.characterConsistencyStatus}, Style: ${qcResult.styleConsistencyStatus}, Prop: ${qcResult.propConsistencyStatus || 'n/a'}). Executing Single Targeted Retry (Attempt 2)...`,
           );
 
           // Build targeted steering prompt
           let targetedPrompt = state.promptBlock.imagePrompt;
           const steeringNotes: string[] = [];
-          if (qcResult.characterConsistencyStatus === 'fail' || qcResult.likenessScore < 7) {
+          if (qcResult.characterConsistencyStatus === 'fail' || (qcResult.overallLikenessScore ?? qcResult.likenessScore) < 7) {
             steeringNotes.push(`CRITICAL CHARACTER LIKENESS FIX: ${qcResult.characterReasoning}`);
           }
           if (qcResult.styleConsistencyStatus === 'fail') {
@@ -499,6 +451,9 @@ export class IllustrationWorker {
           }
           if (qcResult.propConsistencyStatus === 'fail') {
             steeringNotes.push(`CRITICAL RECURRING PROP INVARIANCE FIX: ${qcResult.propReasoning || qcResult.regenerationReason || 'Match the canonical prop reference image exactly.'}`);
+          }
+          if (qcResult.locationConsistencyStatus === 'fail') {
+            steeringNotes.push(`CRITICAL LOCATION CONTINUITY FIX: ${qcResult.locationReasoning || 'Ensure architecture and materials match location contract.'}`);
           }
           if (qcResult.narrativeAdherenceStatus === 'fail') {
             steeringNotes.push(`CRITICAL SCENE ACTION FIX: Ensure the scene directly depicts: ${state.authoritativeSpreadText}. Avoid incorrect actions.`);
@@ -544,15 +499,13 @@ export class IllustrationWorker {
                 const attempt2Url = publicDataRegen.publicUrl;
                 console.log(`[IllustrationWorker] Spread ${i + 1} repainted (Attempt 2). Running QA Evaluation...`);
 
-                const qcRegenResult = await QualityAgent.evaluateImage({
-                  ...state.qcParams,
-                  generatedImageBase64: base64OutRegen,
-                  targetPrompt: targetedPrompt,
-                  iterationNumber: 2
-                });
+                const regenQcParams = buildQualityCheckParams(manifest, i, base64OutRegen, 2);
+                regenQcParams.targetPrompt = targetedPrompt;
+
+                const qcRegenResult = await QualityAgent.evaluateImage(regenQcParams);
 
                 console.log(
-                  `[QCAgent] Result for Spread ${i + 1} (Attempt 2): Likeness ${qcRegenResult.likenessScore}/10, Style: ${qcRegenResult.styleConsistencyStatus}, Prop: ${qcRegenResult.propConsistencyStatus || 'n/a'}, Decision: ${qcRegenResult.overallDecision}`,
+                  `[QCAgent] Result for Spread ${i + 1} (Attempt 2): Likeness ${qcRegenResult.overallLikenessScore}/10, Style: ${qcRegenResult.styleConsistencyStatus}, Prop: ${qcRegenResult.propConsistencyStatus || 'n/a'}, Decision: ${qcRegenResult.overallDecision}`,
                 );
 
                 state.candidates.push({
@@ -569,7 +522,7 @@ export class IllustrationWorker {
                   iteration_number: 2,
                   image_url: attempt2Url,
                   character_consistency_status: qcRegenResult.characterConsistencyStatus,
-                  character_reasoning: `[Likeness: ${qcRegenResult.likenessScore}/10] [Visual (Iter 2): ${qcRegenResult.visualDescription}] [Narrative Check: ${qcRegenResult.narrativeAdherenceStatus}] ${qcRegenResult.characterReasoning}`,
+                  character_reasoning: `[Overall Likeness: ${qcRegenResult.overallLikenessScore}/10] [Visual (Iter 2): ${qcRegenResult.visualDescription}] [Narrative Check: ${qcRegenResult.narrativeAdherenceStatus}] [Location: ${qcRegenResult.locationConsistencyStatus || 'n/a'}] ${qcRegenResult.characterReasoning}`,
                   style_consistency_status: qcRegenResult.styleConsistencyStatus,
                   style_reasoning: qcRegenResult.styleReasoning,
                   text_clearance_status: qcRegenResult.textClearanceStatus,
@@ -584,14 +537,14 @@ export class IllustrationWorker {
           }
         } else {
           console.log(
-            `[IllustrationWorker] Spread ${i + 1} QA: Likeness ${qcResult.likenessScore}/10 (${qcResult.overallDecision === 'pass' ? 'PASSED' : 'FLAGGED'}). No retry needed.`,
+            `[IllustrationWorker] Spread ${i + 1} QA: Likeness ${qcResult.overallLikenessScore || qcResult.likenessScore}/10 (${qcResult.overallDecision === 'pass' ? 'PASSED' : 'FLAGGED'}). No retry needed.`,
           );
         }
 
         // ------------------------------------------------------------------
-        // BEST-CANDIDATE SELECTION: Non-regressive choice between Attempt 1 & 2
+        // BEST-CANDIDATE SELECTION: Non-regressive choice between Attempt 1 & 2 via rankCandidates
         // ------------------------------------------------------------------
-        state.candidates.sort((a, b) => b.compositeScore - a.compositeScore);
+        state.candidates.sort((a, b) => rankCandidates(a, b));
         const bestCandidate = state.candidates[0];
         const finalFinalUrl = bestCandidate.imageUrl;
         const finalQc = bestCandidate.qcResult;
@@ -601,7 +554,7 @@ export class IllustrationWorker {
         const originalUrl = bestCandidate.attemptNumber > 1 ? firstAttemptUrl : undefined;
 
         console.log(
-          `[IllustrationWorker] Spread ${i + 1} Final Selection: Attempt ${bestCandidate.attemptNumber} (Score: ${bestCandidate.compositeScore}, Decision: ${overallDecision})`,
+          `[IllustrationWorker] Spread ${i + 1} Final Selection: Attempt ${bestCandidate.attemptNumber} (Decision: ${overallDecision}, Likeness: ${finalQc.overallLikenessScore ?? finalQc.likenessScore})`,
         );
 
         if (!isCover && pageIdx >= 0 && storyData.pages && storyData.pages[pageIdx]) {
@@ -649,7 +602,7 @@ export class IllustrationWorker {
           console.warn(`[QCAgent] Spread ${i + 1} flagged for admin review. Dispatching Admin QA Email Alert.`);
           EmailService.sendAdminQaAlert(orderId, isCover ? 'cover' : i, {
             childName: storyData.childName,
-            likenessScore: finalQc.likenessScore,
+            likenessScore: finalQc.overallLikenessScore ?? finalQc.likenessScore,
             characterConsistency: finalQc.characterConsistencyStatus,
             reason: finalQc.regenerationReason || finalQc.characterReasoning || finalQc.styleReasoning || 'Borderline likeness/clearance requirement flagged for review.',
             illustrationUrl: finalFinalUrl,
@@ -703,6 +656,19 @@ export class IllustrationWorker {
       // Dispatch Compilation Queue
       await MasterScheduler.dispatchJob(orderId, "compilation");
     } catch (error: any) {
+      if (error instanceof MissingDnaError || error?.name === 'MissingDnaError') {
+        console.error(`[IllustrationWorker] Fail-closed: Missing DNA error for order ${orderId}: ${error.message}`);
+        await supabase.from("orders").update({ status: "dna_missing" }).eq("order_number", orderId);
+        await supabase.from("event_audit_log").insert({
+          event_type: "illustration_generation_failed",
+          order_id: orderId,
+          details: {
+            error: error.message,
+            missingHero: error.missingHero,
+            failClosed: true
+          }
+        });
+      }
       console.error(
         `[IllustrationWorker] Fatal Error executing job ${jobId}:`,
         error,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/utils/supabaseClient';
 import { QualityAgent } from '@/services/visual/qualityAgent';
+import { buildGenerationManifest, buildQualityCheckParams } from '@/services/visual/manifestBuilder';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -36,15 +37,12 @@ export async function POST(
         }
 
         const storyData = typeof order.story_data === 'string' ? JSON.parse(order.story_data) : order.story_data;
-        const spread = spreadIndex === 0 || spreadIndex === 'cover' 
+        const numericIndex = spreadIndex === 'cover' ? 0 : Number(spreadIndex);
+        const spread = numericIndex === 0 
             ? (storyData.spreads?.[0] || { illustrationUrl: storyData.coverImageUrl, text: storyData.title, actualPrompt: storyData.actualCoverPrompt })
-            : storyData.spreads?.[spreadIndex];
+            : storyData.spreads?.[numericIndex];
 
         const resolvedImageUrl = illustrationUrl || spread?.illustrationUrl || storyData.coverImageUrl;
-        const resolvedPrompt = targetPrompt || spread?.actualPrompt || storyData.actualCoverPrompt || '';
-        const resolvedText = spreadText || spread?.text || storyData.title || '';
-        const resolvedSide = currentTextSide || spread?.textSide || 'left';
-
         if (!resolvedImageUrl) {
             return NextResponse.json({ error: 'No image found for this spread to evaluate' }, { status: 400 });
         }
@@ -55,22 +53,10 @@ export async function POST(
             .select('*')
             .eq('order_id', order.order_number);
 
-        const heroADNA = dnaRecords?.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Stylized DNA')?.image_url
-            || storyData.mainCharacter?.imageDNA?.[0]
-            || storyData.styleReferenceImageUrl;
+        // 3. Build Authoritative Generation Manifest (allow missing DNA for draft QA inspection if needed)
+        const manifest = buildGenerationManifest(storyData, order.order_number, dnaRecords || undefined, { allowMissingDnaForDraft: true });
 
-        const heroARaw = dnaRecords?.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Original Photo')?.image_url
-            || storyData.mainCharacter?.imageRawUrl
-            || storyData.mainCharacter?.imageBases64?.[0];
-
-        const heroBDNA = dnaRecords?.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA')?.image_url
-            || storyData.secondCharacter?.imageDNA?.[0];
-
-        const heroBRaw = dnaRecords?.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Original Photo')?.image_url
-            || storyData.secondCharacter?.imageRawUrl;
-
-        // 3. Determine Iteration Number
-        const numericIndex = spreadIndex === 'cover' ? 0 : Number(spreadIndex);
+        // 4. Determine Iteration Number
         const { data: existingLogs } = await supabase
             .from('generation_quality_logs')
             .select('iteration_number')
@@ -83,33 +69,31 @@ export async function POST(
 
         console.log(`[RerunQA] Running QA Evaluation for Order ${order.order_number} Spread ${numericIndex} (Iteration ${nextIteration})...`);
 
-        // 4. Run QualityAgent Evaluation
-        const qcResult = await QualityAgent.evaluateImage({
-            generatedImageBase64: resolvedImageUrl,
-            heroRawBase64: heroARaw,
-            heroDNABase64: heroADNA,
-            secondRawBase64: heroBRaw,
-            secondDNABase64: heroBDNA,
-            pageType: numericIndex === 0 ? 'Cover' : 'Spread',
-            currentTextSide: resolvedSide,
-            targetPrompt: resolvedPrompt,
-            orderId: order.order_number,
-            spreadIndex: numericIndex,
-            spreadText: resolvedText,
-            iterationNumber: nextIteration,
-            childAge: storyData.childAge || '4'
-        });
+        // 5. Construct QualityCheck Params from Manifest
+        const qcParams = buildQualityCheckParams(manifest, numericIndex, resolvedImageUrl, nextIteration);
+        if (targetPrompt) qcParams.targetPrompt = targetPrompt;
+        if (spreadText) {
+            qcParams.spreadText = spreadText;
+            qcParams.storyText = spreadText;
+        }
+        if (currentTextSide) {
+            qcParams.currentTextSide = currentTextSide;
+            qcParams.layoutPlanSide = currentTextSide;
+        }
 
-        console.log(`[RerunQA] Result: Likeness=${qcResult.likenessScore}/10, Style=${qcResult.styleConsistencyStatus}, Narrative=${qcResult.narrativeAdherenceStatus}, Decision=${qcResult.overallDecision}`);
+        // 6. Run QualityAgent Evaluation
+        const qcResult = await QualityAgent.evaluateImage(qcParams);
 
-        // 5. Insert to generation_quality_logs
+        console.log(`[RerunQA] Result: OverallLikeness=${qcResult.overallLikenessScore}/10, Style=${qcResult.styleConsistencyStatus}, Location=${qcResult.locationConsistencyStatus || 'n/a'}, Narrative=${qcResult.narrativeAdherenceStatus}, Decision=${qcResult.overallDecision}`);
+
+        // 7. Insert to generation_quality_logs
         const logEntry = {
             order_id: order.order_number,
             spread_number: numericIndex,
             iteration_number: nextIteration,
             image_url: resolvedImageUrl,
             character_consistency_status: qcResult.characterConsistencyStatus,
-            character_reasoning: `[Likeness: ${qcResult.likenessScore}/10] [Visual: ${qcResult.visualDescription}] [Narrative Check: ${qcResult.narrativeAdherenceStatus}] ${qcResult.characterReasoning}`,
+            character_reasoning: `[Overall Likeness: ${qcResult.overallLikenessScore}/10] [Visual: ${qcResult.visualDescription}] [Narrative Check: ${qcResult.narrativeAdherenceStatus}] [Location: ${qcResult.locationConsistencyStatus || 'n/a'}] ${qcResult.characterReasoning}`,
             style_consistency_status: qcResult.styleConsistencyStatus,
             style_reasoning: qcResult.styleReasoning,
             text_clearance_status: qcResult.textClearanceStatus,
@@ -128,7 +112,7 @@ export async function POST(
             console.error('[RerunQA] Failed to insert QA log:', insertErr);
         }
 
-        // 6. Update Story Data qcStatus
+        // 8. Update Story Data qcStatus
         const mappedStatus = qcResult.overallDecision === 'pass' ? 'passed' : 'flagged';
         if (storyData.spreads?.[numericIndex]) {
             storyData.spreads[numericIndex].qcStatus = mappedStatus;
@@ -155,3 +139,4 @@ export async function POST(
         return NextResponse.json({ error: error.message || 'QA evaluation failed' }, { status: 500 });
     }
 }
+

@@ -17,6 +17,18 @@ export interface HeroQCRef {
     };
 }
 
+export interface HeroQCResult {
+    heroToken: string;
+    label: string;
+    name: string;
+    likenessScore: number;
+    characterConsistencyStatus: 'pass' | 'fail' | 'needs_review';
+    reasoning: string;
+    hairConsistency?: 'pass' | 'fail';
+    skinToneConsistency?: 'pass' | 'fail';
+    ageAccuracy?: 'pass' | 'fail';
+}
+
 export interface ImageEvaluationParams {
     generatedImageBase64: string;
     heroRawBase64?: string;
@@ -33,6 +45,7 @@ export interface ImageEvaluationParams {
     stylizedDnaImages?: string[];
     childDescription?: any;
     stylePrompt?: string;
+    locationRecord?: any;
     propAssetImageBase64?: string;
     propAssetImageUrl?: string;
     spreadNumber?: number;
@@ -46,13 +59,17 @@ export interface ImageEvaluationParams {
 
 export interface QualityCheckResult {
     visualDescription: string;
-    likenessScore: number;
+    heroResults: HeroQCResult[];
+    overallLikenessScore: number;
+    likenessScore: number; // Backwards compatibility: min(heroResults.likenessScore)
     characterConsistencyStatus: 'pass' | 'fail' | 'needs_review';
     characterReasoning: string;
     wardrobeConsistencyStatus: 'pass' | 'fail';
     wardrobeReasoning: string;
     styleConsistencyStatus: 'pass' | 'fail';
     styleReasoning: string;
+    locationConsistencyStatus?: 'pass' | 'fail' | 'na';
+    locationReasoning?: string;
     propConsistencyStatus?: 'pass' | 'fail' | 'na';
     propReasoning?: string;
     textClearanceStatus: 'pass' | 'fail';
@@ -68,8 +85,8 @@ export interface QualityCheckResult {
 
 export class QualityAgent {
     /**
-     * Evaluates a generated illustration against reference photos, style DNA, and story text.
-     * Uses a single typed options object to prevent parameter misalignment.
+     * Evaluates a generated illustration against reference photos, style DNA, location, and story text.
+     * Evaluates all visible heroes independently.
      */
     static async evaluateImage(params: ImageEvaluationParams): Promise<QualityCheckResult> {
         const {
@@ -85,6 +102,7 @@ export class QualityAgent {
             secondDNABase64,
             childAge = "5",
             stylePrompt = params.stylePrompt || "",
+            locationRecord = params.locationRecord,
             propAssetImageBase64 = params.propAssetImageBase64,
             propAssetImageUrl = params.propAssetImageUrl
         } = params;
@@ -111,7 +129,6 @@ export class QualityAgent {
                 return str.replace(/^data:image\/\w+;base64,/, '');
             };
 
-            const isDualHero = heroes ? (heroes.length > 1 && heroes[1].isVisibleInScene !== false) : !!(secondDNABase64 || secondRawBase64);
             const contents: any[] = [];
 
             const getMime = (str: string) => {
@@ -127,19 +144,23 @@ export class QualityAgent {
                 contents.push({ inlineData: { mimeType: getMime(resolvedGen), data: resolvedGen } });
             }
 
-            // 2. Resolve Heroes
+            // 2. Resolve Active Heroes Only
+            const activeHeroes: HeroQCRef[] = [];
             if (heroes && heroes.length > 0) {
                 for (let idx = 0; idx < heroes.length; idx++) {
                     const h = heroes[idx];
-                    const rawB64 = await resolveToBase64(h.rawBase64OrUrl);
-                    const dnaB64 = await resolveToBase64(h.dnaBase64OrUrl);
-                    if (rawB64) {
-                        contents.push({ text: `${h.label} (${h.name}) RAW PHOTO:` });
-                        contents.push({ inlineData: { mimeType: getMime(rawB64), data: rawB64 } });
-                    }
-                    if (dnaB64) {
-                        contents.push({ text: `${h.label} (${h.name}) DNA STYLE REFERENCE:` });
-                        contents.push({ inlineData: { mimeType: getMime(dnaB64), data: dnaB64 } });
+                    if (h.isVisibleInScene !== false) {
+                        activeHeroes.push(h);
+                        const rawB64 = await resolveToBase64(h.rawBase64OrUrl);
+                        const dnaB64 = await resolveToBase64(h.dnaBase64OrUrl);
+                        if (rawB64) {
+                            contents.push({ text: `${h.label} (${h.name} - ${h.heroToken}) RAW PHOTO:` });
+                            contents.push({ inlineData: { mimeType: getMime(rawB64), data: rawB64 } });
+                        }
+                        if (dnaB64) {
+                            contents.push({ text: `${h.label} (${h.name} - ${h.heroToken}) DNA STYLE REFERENCE:` });
+                            contents.push({ inlineData: { mimeType: getMime(dnaB64), data: dnaB64 } });
+                        }
                     }
                 }
             } else {
@@ -158,13 +179,32 @@ export class QualityAgent {
                     contents.push({ text: "Hero A DNA STYLE REFERENCE (Target stylized character design):" });
                     contents.push({ inlineData: { mimeType: getMime(resolvedHeroDNA), data: resolvedHeroDNA } });
                 }
-                if (resolvedSecondRaw) {
-                    contents.push({ text: "Hero B RAW PHOTO (Secondary character geometry):" });
-                    contents.push({ inlineData: { mimeType: getMime(resolvedSecondRaw), data: resolvedSecondRaw } });
-                }
-                if (resolvedSecondDNA) {
-                    contents.push({ text: "Hero B DNA STYLE REFERENCE (Secondary character design):" });
-                    contents.push({ inlineData: { mimeType: getMime(resolvedSecondDNA), data: resolvedSecondDNA } });
+                activeHeroes.push({
+                    heroToken: '[[HERO_1]]',
+                    label: 'Hero A',
+                    name: 'Hero A',
+                    isVisibleInScene: true,
+                    dnaBase64OrUrl: resolvedHeroDNA,
+                    rawBase64OrUrl: resolvedHeroRaw
+                });
+
+                if (resolvedSecondDNA || resolvedSecondRaw) {
+                    if (resolvedSecondRaw) {
+                        contents.push({ text: "Hero B RAW PHOTO (Secondary character geometry):" });
+                        contents.push({ inlineData: { mimeType: getMime(resolvedSecondRaw), data: resolvedSecondRaw } });
+                    }
+                    if (resolvedSecondDNA) {
+                        contents.push({ text: "Hero B DNA STYLE REFERENCE (Secondary character design):" });
+                        contents.push({ inlineData: { mimeType: getMime(resolvedSecondDNA), data: resolvedSecondDNA } });
+                    }
+                    activeHeroes.push({
+                        heroToken: '[[HERO_2]]',
+                        label: 'Hero B',
+                        name: 'Hero B',
+                        isVisibleInScene: true,
+                        dnaBase64OrUrl: resolvedSecondDNA,
+                        rawBase64OrUrl: resolvedSecondRaw
+                    });
                 }
             }
 
@@ -180,20 +220,30 @@ export class QualityAgent {
                 ? `- Mandatory Eye Color: ${biometrics.eyeColor}\n- Mandatory Hair Color & Style: ${biometrics.hairColor} (${biometrics.hairStyle})\n- Mandatory Skin Tone: ${biometrics.skinTone}`
                 : `- Eye Color, Hair & Complexion Authority: DNA Reference Image. Preserve exact eye color, hair pattern, and skin tone from reference.`;
 
+            const locationDirectives = locationRecord
+                ? `\nLOCATION CONTINUITY REQUIREMENT:\n- Location Name: ${locationRecord.name}\n- Expected Architecture & Palette: ${locationRecord.architecture || ''}, ${locationRecord.materialsPalette || ''}\n- Expected Lighting: ${locationRecord.lightingAtmosphere || ''}`
+                : '';
+
+            const activeHeroesPrompt = activeHeroes.map(h => `- ${h.label} (${h.name} - ${h.heroToken}) is ACTIVE in this scene. Evaluate independently.`).join('\n');
+
             const promptContext = `
 You are the child's PARENT and a world-class, uncompromising Art Director inspecting a personalized storybook.
 A parent has paid a premium for a custom keepsake starring THEIR specific child (Target Age: ${childAge} years old).
 
+ACTIVE HEROES IN THIS SCENE:
+${activeHeroesPrompt}
+(If a hero is not listed above, they are absent from this scene. Do not evaluate absent heroes.)
+
 MANDATORY BIOMETRIC TARGET PROFILE:
 - Target Age: ${childAge} years old
 ${bioDirectives}
-${isDualHero ? '- Multi-Hero Scene: Evaluate both Hero A and Hero B likeness independently. Ensure neither hero is blended or swapped.' : ''}
+${locationDirectives}
 
 CRITICAL MINDSET — THE PARENT EYE TEST:
-Look at the generated character in the spread and compare them side-by-side with the Reference DNA Image / Raw Photo and the Mandatory Biometric Profile.
-Ask yourself the fundamental parent question:
+For EVERY active hero in the scene, compare them side-by-side with their attached Reference DNA Image and Raw Photo.
+Ask yourself the fundamental parent question for each hero:
 "Is this unmistakably MY child, or does this look like a different kid / stranger?"
-If a parent would say "That is not my child!", "Why does his haircut look completely different?", "Why are his eyes the wrong color?", "Why does he look 12 instead of 6?", or "Why is his skin color different?", you MUST FAIL the image immediately. Do NOT be polite, agreeable, or lenient.
+If a parent would say "That is not my child!", "Why does his haircut look completely different?", "Why are his eyes the wrong color?", "Why does he look 12 instead of 6?", or "Why is his skin color different?", you MUST FAIL that hero immediately. Do NOT be polite, agreeable, or lenient.
 
 Story Text for this Page (${pageType}):
 "${storyText || 'N/A'}"
@@ -205,70 +255,66 @@ Designated Text Box Side: ${currentTextSide || 'Right'}
 
 STRICT BIOMETRIC & ARTISTIC EVALUATION CRITERIA:
 
-1. Facial Likeness, Feature Proportions & Biometric Color Integrity (Weight: CRITICAL):
-   - Eye Color Integrity: Look closely at the character's irises/eyes in the generated image. Any unprompted mutation in eye color is an UNACCEPTABLE identity hallucination.
-   - Hair Color & Cut Integrity: Hair color and texture must strictly match reference. No unprompted modern fades, tapers, or undercuts when reference is curly/wavy.
-   - Head & Facial Geometry: Does the jawline, chin shape, cheek fullness, and eye spacing match the reference?
-   - Eye Shape & Feature Proportions: Compare the eye-to-face proportion scale directly against the DNA reference.
-   - Scoring Guide:
-     * 9-10: Flawless, unmistakable identity match to the reference child with accurate anatomical/stylization scale.
+1. Per-Hero Facial Likeness, Proportions & Biometrics (Weight: CRITICAL):
+   - Evaluate EACH active hero independently in the "heroResults" array.
+   - Likeness Scoring Guide (0 to 10):
+     * 9-10: Flawless, unmistakable identity match to the reference child.
      * 7-8: Clear, recognizable likeness with natural expression adaptation and accurate biometrics.
-     * 5-6: Generic caricature, distorted proportions, mutated eye/hair colors, or stylization drift — FAILS parent recognition.
+     * 5-6: Generic caricature, distorted proportions, mutated eye/hair colors — FAILS parent recognition.
      * 1-4: Wrong child, imposter, or complete identity loss.
-   - MANDATORY FAIL RULE: Any score below 7/10 is an AUTOMATIC FAIL.
+   - MANDATORY FAIL RULE: Any hero score below 7/10 is an AUTOMATIC FAIL for that hero.
 
-2. Haircut Silhouette & Hair Texture Invariance (Weight: CRITICAL):
-   - Wave/curl pattern, volume, hairline, and side coverage MUST match the DNA reference.
+2. Wardrobe & Footwear Consistency:
+   - Check clothing consistency against reference outfit.
 
-3. Age Invariance (Target Age: ${childAge} years old):
-   - The character MUST visually read as a child of ${childAge} years old.
-
-4. Skin Tone & Ethnic Feature Integrity (Weight: CRITICAL):
-   - Compare skin tone and undertone directly to the DNA reference and raw photo.
-
-5. Wardrobe & Footwear Consistency:
-   - Check clothing consistency across scenes against the reference outfit.
-
-6. Style, Medium & Dimensionality Consistency (Weight: CRITICAL):
+3. Style, Medium & Dimensionality Consistency (Weight: CRITICAL):
    - Target Style Profile: ${stylePrompt || 'Defined by DNA Reference Image'}
-   - Compare artistic medium, rendering dimensionality (2D painterly vs 3D CGI vs vector), surface brushwork/textures, and lighting model directly against DNA Reference.
-   - MANDATORY FAIL RULE: If the illustration mutates into a contrasting artistic medium (e.g. painterly shifting to glossy 3D CGI, 3D animated shifting to flat 2D), set "styleConsistencyStatus": "fail" and "overallDecision": "fail".
+   - Compare artistic medium, rendering dimensionality (2D vs 3D CGI), brushwork, and lighting directly against DNA Reference.
 
-7. Global Recurring Object & Persistent Prop Invariance (Weight: HIGH):
-   - If a Canonical Prop Reference Image is provided: Compare recurring prop/vehicle directly against reference.
-   - MANDATORY FAIL RULE: If the prop mutates in shape, material, or color, set "propConsistencyStatus": "fail" and "overallDecision": "fail".
+4. Global Recurring Prop Invariance (Weight: HIGH):
+   - If Canonical Prop Reference is attached: Must strictly match materials, shape, and colors.
 
-8. Text Zone Clearance:
+5. Location & Environment Continuity:
+   - Does the background environment and lighting match the location requirements?
+
+6. Text Zone Clearance:
    - Check if designated side (${currentTextSide || 'Right'}) is clear of the character's face.
 
-9. Narrative Adherence & Action Matching:
+7. Narrative Adherence & Action Matching:
    - Does the image accurately reflect the story action and mood described in the story text?
-
-OVERALL DECISION RULES:
-- "overallDecision": "pass" -> Likeness >= 7, haircut matches, age matches ${childAge}, skin tone matches, style matches, prop matches reference, narrative adheres.
-- "overallDecision": "fail" -> Any failure in likeness (< 7), haircut mutation, age shift, skin tone shift, corrupted style, prop drift, or narrative contradiction.
-- "overallDecision": "flagged" -> Borderline edge-case requiring Art Director review.
 
 Output STRICTLY a JSON object matching this schema:
 {
   "visualDescription": "Concise 2-sentence description of the generated image.",
-  "likenessScore": 8,
-  "characterConsistencyStatus": "pass" | "fail",
-  "characterReasoning": "Explicit evaluation of facial likeness, haircut silhouette, age accuracy, and skin tone match...",
-  "wardrobeConsistencyStatus": "pass" | "fail",
+  "heroResults": [
+    ${activeHeroes.map(h => `{
+      "heroToken": "${h.heroToken}",
+      "label": "${h.label}",
+      "name": "${h.name}",
+      "likenessScore": 8,
+      "characterConsistencyStatus": "pass",
+      "reasoning": "Detailed likeness and biometric evaluation for ${h.label}...",
+      "hairConsistency": "pass",
+      "skinToneConsistency": "pass",
+      "ageAccuracy": "pass"
+    }`).join(',\n    ')}
+  ],
+  "wardrobeConsistencyStatus": "pass",
   "wardrobeReasoning": "Clothing evaluation...",
-  "styleConsistencyStatus": "pass" | "fail",
+  "styleConsistencyStatus": "pass",
   "styleReasoning": "Style medium and texture evaluation...",
-  "propConsistencyStatus": "pass" | "fail" | "na",
-  "propReasoning": "Evaluation of recurring props and objects...",
-  "textClearanceStatus": "pass" | "fail",
+  "locationConsistencyStatus": "pass",
+  "locationReasoning": "Environment evaluation...",
+  "propConsistencyStatus": "pass",
+  "propReasoning": "Prop evaluation...",
+  "textClearanceStatus": "pass",
   "textReasoning": "Text layout and clearance explanation...",
-  "recommendedTextSide": "Right" | "Left",
+  "recommendedTextSide": "Right",
   "recommendedTextOffsetX": 0,
   "recommendedTextOffsetY": 0,
-  "narrativeAdherenceStatus": "pass" | "fail",
+  "narrativeAdherenceStatus": "pass",
   "narrativeAdherenceReasoning": "Story beat and action evaluation...",
-  "overallDecision": "pass" | "fail" | "flagged",
+  "overallDecision": "pass",
   "regenerationReason": "Clear, actionable correction instruction for repainting if failed"
 }
 `;
@@ -286,32 +332,131 @@ Output STRICTLY a JSON object matching this schema:
             const response = await model.generateContent(contents);
             const rawText = response.response.text().trim();
             const cleaned = cleanJsonString(rawText);
-            const result: QualityCheckResult = JSON.parse(cleaned);
+            let parsedRaw: any = {};
+            try {
+                parsedRaw = JSON.parse(cleaned);
+            } catch (jsonErr) {
+                console.error("[QCAgent] Failed to parse JSON from vision model:", cleaned);
+                parsedRaw = {};
+            }
 
-            // Deterministic Multi-Category Hard Gate: compute final decision in code from all critical checks
-            const criticalFailures = [
-                result.likenessScore < 7,
+            // Strict Runtime Validation & Enum Sanitization (Fail-Closed)
+            const validatePassFail = (val: any): 'pass' | 'fail' => (val === 'pass' ? 'pass' : 'fail');
+            const validatePassFailNa = (val: any): 'pass' | 'fail' | 'na' => (val === 'pass' ? 'pass' : (val === 'fail' ? 'fail' : 'na'));
+            const validateScore = (val: any): number => {
+                const n = Number(val);
+                return Number.isFinite(n) && n >= 0 && n <= 10 ? n : 0;
+            };
+
+            const heroResults: HeroQCResult[] = [];
+            const rawHeroList = Array.isArray(parsedRaw.heroResults) ? parsedRaw.heroResults : [];
+
+            for (const expectedHero of activeHeroes) {
+                const found = rawHeroList.find((h: any) => h.heroToken === expectedHero.heroToken || h.label === expectedHero.label);
+                if (found) {
+                    const score = validateScore(found.likenessScore);
+                    const status: 'pass' | 'fail' | 'needs_review' = (found.characterConsistencyStatus === 'pass' && score >= 7)
+                        ? 'pass'
+                        : (found.characterConsistencyStatus === 'needs_review' ? 'needs_review' : 'fail');
+
+                    heroResults.push({
+                        heroToken: expectedHero.heroToken,
+                        label: expectedHero.label,
+                        name: expectedHero.name,
+                        likenessScore: score,
+                        characterConsistencyStatus: status,
+                        reasoning: found.reasoning || found.characterReasoning || 'Evaluated.',
+                        hairConsistency: validatePassFail(found.hairConsistency),
+                        skinToneConsistency: validatePassFail(found.skinToneConsistency),
+                        ageAccuracy: validatePassFail(found.ageAccuracy)
+                    });
+                } else {
+                    // Fail closed if expected active hero was omitted by model
+                    heroResults.push({
+                        heroToken: expectedHero.heroToken,
+                        label: expectedHero.label,
+                        name: expectedHero.name,
+                        likenessScore: 0,
+                        characterConsistencyStatus: 'fail',
+                        reasoning: `Model omitted evaluation for active hero ${expectedHero.label}.`,
+                        hairConsistency: 'fail',
+                        skinToneConsistency: 'fail',
+                        ageAccuracy: 'fail'
+                    });
+                }
+            }
+
+            const overallLikeness = heroResults.length > 0
+                ? Math.min(...heroResults.map(h => h.likenessScore))
+                : validateScore(parsedRaw.likenessScore);
+
+            const characterConsistencyStatus: 'pass' | 'fail' | 'needs_review' = heroResults.some(h => h.characterConsistencyStatus === 'fail')
+                ? 'fail'
+                : (heroResults.some(h => h.characterConsistencyStatus === 'needs_review') ? 'needs_review' : 'pass');
+
+            const result: QualityCheckResult = {
+                visualDescription: parsedRaw.visualDescription || 'Evaluated illustration.',
+                heroResults,
+                overallLikenessScore: overallLikeness,
+                likenessScore: overallLikeness,
+                characterConsistencyStatus,
+                characterReasoning: heroResults.map(h => `[${h.label}: Likeness ${h.likenessScore}/10 (${h.characterConsistencyStatus})] ${h.reasoning}`).join(' | '),
+                wardrobeConsistencyStatus: validatePassFail(parsedRaw.wardrobeConsistencyStatus),
+                wardrobeReasoning: parsedRaw.wardrobeReasoning || 'Wardrobe check completed.',
+                styleConsistencyStatus: validatePassFail(parsedRaw.styleConsistencyStatus),
+                styleReasoning: parsedRaw.styleReasoning || 'Style check completed.',
+                locationConsistencyStatus: validatePassFailNa(parsedRaw.locationConsistencyStatus),
+                locationReasoning: parsedRaw.locationReasoning,
+                propConsistencyStatus: validatePassFailNa(parsedRaw.propConsistencyStatus),
+                propReasoning: parsedRaw.propReasoning,
+                textClearanceStatus: validatePassFail(parsedRaw.textClearanceStatus),
+                textReasoning: parsedRaw.textReasoning || 'Text clearance check completed.',
+                recommendedTextSide: parsedRaw.recommendedTextSide === 'Left' ? 'Left' : 'Right',
+                recommendedTextOffsetX: Number(parsedRaw.recommendedTextOffsetX) || 0,
+                recommendedTextOffsetY: Number(parsedRaw.recommendedTextOffsetY) || 0,
+                narrativeAdherenceStatus: validatePassFail(parsedRaw.narrativeAdherenceStatus),
+                narrativeAdherenceReasoning: parsedRaw.narrativeAdherenceReasoning || 'Narrative adherence check completed.',
+                overallDecision: 'pass',
+                regenerationReason: parsedRaw.regenerationReason
+            };
+
+            // Deterministic Multi-Category Hard Gate
+            const hardFailures = [
+                result.overallLikenessScore < 7,
                 result.characterConsistencyStatus === 'fail',
                 result.styleConsistencyStatus === 'fail',
-                result.wardrobeConsistencyStatus === 'fail',
-                result.narrativeAdherenceStatus === 'fail',
                 result.propConsistencyStatus === 'fail',
-                result.textClearanceStatus === 'fail'
+                result.narrativeAdherenceStatus === 'fail',
+                result.locationConsistencyStatus === 'fail'
             ];
 
-            if (criticalFailures.some(Boolean)) {
+            if (hardFailures.some(Boolean)) {
                 result.overallDecision = 'fail';
-            } else if (result.characterConsistencyStatus === 'needs_review') {
+            } else if (
+                result.characterConsistencyStatus === 'needs_review' ||
+                result.wardrobeConsistencyStatus === 'fail' ||
+                result.textClearanceStatus === 'fail' ||
+                result.overallLikenessScore < 8
+            ) {
                 result.overallDecision = 'flagged';
             } else {
                 result.overallDecision = 'pass';
             }
 
-            console.log(`[QCAgent] Evaluated: Likeness: ${result.likenessScore}/10, Style: ${result.styleConsistencyStatus}, Prop: ${result.propConsistencyStatus || 'n/a'}, Narrative: ${result.narrativeAdherenceStatus}, Decision: ${result.overallDecision}`);
+            console.log(`[QCAgent] Evaluated: Likeness: ${result.overallLikenessScore}/10, Style: ${result.styleConsistencyStatus}, Prop: ${result.propConsistencyStatus || 'n/a'}, Decision: ${result.overallDecision}`);
             return result;
 
         }, 2, 4000, {
             visualDescription: "Vision QA evaluation fallback due to timeout or transient error.",
+            heroResults: (params.heroes || []).map(h => ({
+                heroToken: h.heroToken,
+                label: h.label,
+                name: h.name,
+                likenessScore: 5,
+                characterConsistencyStatus: 'needs_review',
+                reasoning: 'QA agent encountered transient timeout/error during automated check.'
+            })),
+            overallLikenessScore: 5,
             likenessScore: 5,
             characterConsistencyStatus: 'needs_review',
             characterReasoning: 'QA agent encountered transient vision timeout/error during automated check.',
@@ -319,6 +464,8 @@ Output STRICTLY a JSON object matching this schema:
             wardrobeReasoning: 'Default fallback applied.',
             styleConsistencyStatus: 'pass',
             styleReasoning: 'Default fallback applied.',
+            locationConsistencyStatus: 'pass',
+            locationReasoning: 'Default fallback applied.',
             propConsistencyStatus: 'pass',
             propReasoning: 'Default fallback applied.',
             textClearanceStatus: 'pass',
@@ -335,17 +482,77 @@ Output STRICTLY a JSON object matching this schema:
 }
 
 /**
+ * Counts the total number of hard gate failures in a QA result.
+ */
+export function countHardFailures(qc: any): number {
+    if (!qc) return 999;
+    let count = 0;
+    if (qc.heroResults && Array.isArray(qc.heroResults) && qc.heroResults.length > 0) {
+        for (const h of qc.heroResults) {
+            if ((h.likenessScore ?? 0) < 7) count++;
+            if (h.characterConsistencyStatus === 'fail') count++;
+        }
+    } else {
+        if ((qc.likenessScore ?? 0) < 7) count++;
+        if (qc.characterConsistencyStatus === 'fail') count++;
+    }
+    if (qc.styleConsistencyStatus === 'fail') count++;
+    if (qc.propConsistencyStatus === 'fail') count++;
+    if (qc.narrativeAdherenceStatus === 'fail') count++;
+    if (qc.locationConsistencyStatus === 'fail') count++;
+    return count;
+}
+
+/**
+ * Strict hierarchical candidate comparator:
+ * 1. Hard-gate pass (overallDecision === 'pass') strictly beats non-pass.
+ * 2. If neither passed, rank by fewest hard failures.
+ * 3. Rank by minimum per-hero likeness score.
+ * 4. Tie-break with secondary composite score.
+ */
+export function rankCandidates(
+    a: { qcResult: any; compositeScore?: number },
+    b: { qcResult: any; compositeScore?: number }
+): number {
+    const aPass = a.qcResult?.overallDecision === 'pass';
+    const bPass = b.qcResult?.overallDecision === 'pass';
+
+    // 1. Hard-gate pass beats non-pass
+    if (aPass && !bPass) return -1;
+    if (!aPass && bPass) return 1;
+
+    // 2. If neither passed, rank by fewest hard failures
+    const aFailures = countHardFailures(a.qcResult);
+    const bFailures = countHardFailures(b.qcResult);
+    if (aFailures !== bFailures) {
+        return aFailures - bFailures; // lower is better
+    }
+
+    // 3. Rank by minimum per-hero likeness score
+    const aMinLikeness = a.qcResult?.overallLikenessScore ?? a.qcResult?.likenessScore ?? 0;
+    const bMinLikeness = b.qcResult?.overallLikenessScore ?? b.qcResult?.likenessScore ?? 0;
+    if (aMinLikeness !== bMinLikeness) {
+        return bMinLikeness - aMinLikeness; // higher is better
+    }
+
+    // 4. Tie-break with secondary composite score
+    return (b.compositeScore ?? 0) - (a.compositeScore ?? 0);
+}
+
+/**
  * Determines whether a QA result qualifies as a definite hard failure
  * warranting an automated retry attempt in Fast Production Mode.
- * Borderline / cosmetic issues (e.g. wardrobe variation, text clearance offset)
- * do not trigger retries and are instead routed to the admin review queue.
  */
 export function isDefiniteHardFailure(qc: QualityCheckResult): boolean {
-    if (qc.likenessScore < 7) return true;
+    if (!qc) return true;
+    if (qc.overallLikenessScore < 7 || qc.likenessScore < 7) return true;
     if (qc.characterConsistencyStatus === 'fail') return true;
     if (qc.styleConsistencyStatus === 'fail') return true;
     if (qc.propConsistencyStatus === 'fail') return true;
     if (qc.narrativeAdherenceStatus === 'fail') return true;
+    if (qc.locationConsistencyStatus === 'fail') return true;
+    if (qc.heroResults && qc.heroResults.some(h => h.likenessScore < 7 || h.characterConsistencyStatus === 'fail')) return true;
     return false;
 }
+
 

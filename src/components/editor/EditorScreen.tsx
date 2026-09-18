@@ -165,9 +165,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     useEffect(() => {
         const loadModernDNA = async () => {
             if (!storyData.orderId && !storyData.orderNumber) {
-                // No order ID at all — fall back to storyData blob as last resort
-                setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageBases64?.[0]);
-                setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
+                // No order ID at all — fall back to stylized DNA in storyData blob
+                setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64);
+                setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64);
                 setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
                 setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
                 setMasterPropAsset(storyData.recurringAssetImageUrl || (storyData.blueprint?.foundation?.recurringAsset as any)?.imageUrl);
@@ -190,7 +190,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     if (hAStyle) {
                         setMasterDNA(hAStyle.image_url);
                     } else {
-                        setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageBases64?.[0]);
+                        setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64);
                     }
 
                     if (hAOrig) {
@@ -202,7 +202,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     if (hBStyle) {
                         setMasterDNA2(hBStyle.image_url);
                     } else {
-                        setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
+                        setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64);
                     }
 
                     if (hBOrig) {
@@ -223,10 +223,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     setDnaSource('order_dna');
                     console.log(`✅ [DNA] Loaded ${dnaRecords.length} records from order_dna for ${orderId}`);
                 } else {
-                    // ⚠️ CRITICAL: No order_dna rows found — must fall back to storyData blob.
-                    console.warn(`⚠️ [DNA] No order_dna records found for order ${orderId}. Falling back to storyData blob DNA — THIS MAY CAUSE WRONG HERO IMAGES!`);
-                    setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageBases64?.[0]);
-                    setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
+                    // ⚠️ No order_dna rows found — fall back to stylized DNA in storyData blob
+                    console.warn(`⚠️ [DNA] No order_dna records found for order ${orderId}. Falling back to storyData blob stylized DNA.`);
+                    setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64);
+                    setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64);
                     setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
                     setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
                     setMasterPropAsset(storyData.recurringAssetImageUrl || (storyData.blueprint?.foundation?.recurringAsset as any)?.imageUrl);
@@ -238,8 +238,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             } catch (err) {
                 console.warn('Could not load order_dna records', err);
                 // Fall back to storyData blob on error
-                setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageBases64?.[0]);
-                setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
+                setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64);
+                setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64);
                 setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
                 setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
                 setMasterPropAsset(storyData.recurringAssetImageUrl || (storyData.blueprint?.foundation?.recurringAsset as any)?.imageUrl);
@@ -788,15 +788,23 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const handleRegenerateImage = async (index: number | 'cover') => {
         setRegeneratingIndex(index);
         try {
-            // DNA-ONLY (v6.0): 1 image per hero. Only the approved stylized DNA reference is sent.
-            // No raw photos mixed in — ever.
-            // Priority: 1) Locked selection from dnaAudit, 2) First generated DNA, 3) Raw photo fallback
-            // Priority: 1) First generated DNA, 2) Raw photo fallback
+            // DNA-ONLY: Only the approved stylized DNA reference is sent.
+            // Strictly zero silent fallbacks to raw photos.
             const heroADNA: string | undefined = masterDNA;
-
             const heroBDNA: string | undefined = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object')
                 ? masterDNA2
                 : undefined;
+
+            if (!heroADNA) {
+                alert("Stylized DNA for Hero A is missing. Please generate or approve Hero A DNA in the DNA Manager before painting spreads.");
+                setRegeneratingIndex(null);
+                return;
+            }
+            if (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object' && !heroBDNA) {
+                alert("Stylized DNA for Hero B is missing. Please generate or approve Hero B DNA in the DNA Manager before painting spreads.");
+                setRegeneratingIndex(null);
+                return;
+            }
 
             const visualDNA = getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly, flat 2D illustrated children\'s book style';
 
@@ -1269,6 +1277,15 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
     const handleGlobalRegenerate = async () => {
         if (!globalEditInstruction.trim()) return;
+        if (!masterDNA) {
+            alert("Stylized DNA for Hero A is missing. Please generate or approve Hero A DNA in the DNA Manager before running global regeneration.");
+            return;
+        }
+        if (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object' && !masterDNA2) {
+            alert("Stylized DNA for Hero B is missing. Please generate or approve Hero B DNA in the DNA Manager before running global regeneration.");
+            return;
+        }
+
         const totalSpreads = storyData.spreadCount || Math.max(8, spreads.length - 1);
         setIsGlobalRegenerating(true);
         setGlobalEditProgress(0);

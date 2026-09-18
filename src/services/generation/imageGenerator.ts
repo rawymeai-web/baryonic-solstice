@@ -402,8 +402,53 @@ ${masterGuardrails}`;
     });
 }
 
-// UPGRADED: Hybrid Vision Strategy for Pages (Ported from Frontend)
-let lastProCallTimestamp = 0;
+// UPGRADED: Central FIFO Image Call Rate Limiter & Mutex for Pro Models
+export class GlobalImageRateLimiter {
+    private queue: Array<() => void> = [];
+    private isProcessing = false;
+    private lastCallTimestamp = 0;
+    private readonly minIntervalMs = 30000;
+
+    async acquire(isPro: boolean): Promise<() => void> {
+        if (!isPro) {
+            return () => {};
+        }
+
+        return new Promise<() => void>((resolve) => {
+            this.queue.push(() => {
+                resolve(() => {
+                    this.lastCallTimestamp = Date.now();
+                });
+            });
+            this.processNext();
+        });
+    }
+
+    private async processNext() {
+        if (this.isProcessing || this.queue.length === 0) return;
+        this.isProcessing = true;
+
+        const next = this.queue.shift();
+        if (next) {
+            const now = Date.now();
+            const elapsed = now - this.lastCallTimestamp;
+            if (elapsed < this.minIntervalMs) {
+                const waitMs = this.minIntervalMs - elapsed;
+                console.log(`[RateLimiter] Queued Pro image request waiting ${(waitMs / 1000).toFixed(1)}s for mutex cooldown... (Queue: ${this.queue.length})`);
+                await new Promise((r) => setTimeout(r, waitMs));
+            }
+            this.lastCallTimestamp = Date.now();
+            next();
+        }
+
+        this.isProcessing = false;
+        if (this.queue.length > 0) {
+            this.processNext();
+        }
+    }
+}
+
+export const globalImageRateLimiter = new GlobalImageRateLimiter();
 
 export async function generateMethod4Image(
     prompt: any,
@@ -733,15 +778,7 @@ ${imageSlots.map(s => '→ Image ' + s.slot + ' maps to: ' + s.label).join('<br>
         let finalModelName = modelName;
         let b64 = "";
 
-        if (isPro) {
-            const elapsed = Date.now() - lastProCallTimestamp;
-            if (elapsed < 30000) {
-                const waitTime = 30000 - elapsed;
-                console.log(`[COOLDOWN] Waiting ${(waitTime / 1000).toFixed(1)}s before calling Gemini 3 Pro to prevent 429...`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-            }
-            lastProCallTimestamp = Date.now();
-        }
+        const releaseRateLimit = await globalImageRateLimiter.acquire(isPro);
 
         try {
             console.log(`Calling Gemini Multimodal Image Model: ${finalModelName}...`);
@@ -765,6 +802,8 @@ ${imageSlots.map(s => '→ Image ' + s.slot + ' maps to: ' + s.label).join('<br>
         } catch (error: any) {
             console.warn(`[ImageGen] Generation with ${finalModelName} encountered error: ${error.message || error}. Retrying primary model...`);
             throw error;
+        } finally {
+            releaseRateLimit();
         }
 
         return { 

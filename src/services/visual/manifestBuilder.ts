@@ -76,6 +76,7 @@ export interface SpreadManifest {
     activeHeroes: HeroReference[];
     absentHeroes: HeroReference[];
     includesProp: boolean;
+    location?: LocationRecord;
     cameraAngle?: string;
     vantagePoint?: string;
     subLocation?: string;
@@ -115,6 +116,7 @@ export interface GenerationPayload {
     activeHeroTokens: string[];
     absentHeroTokens: string[];
     propAssetName?: string;
+    location?: LocationRecord;
 }
 
 export class MissingDnaError extends Error {
@@ -394,20 +396,40 @@ export function buildGenerationManifest(
             ? ''
             : (pages[pageIdx]?.text || p.storyText || storyData.blueprint?.structure?.spreads?.[pageIdx]?.narrative || '');
 
-        // Determine active vs absent heroes
+        // Determine active vs absent heroes (Priority: structured activeHeroTokens > structured activeHeroIds > blueprint presence)
         let activeHeroes = [...heroes];
         let absentHeroes: HeroReference[] = [];
 
         if (isDualHero && !isCover) {
-            const promptText = p.imagePrompt || '';
-            const bpSpread = storyData.blueprint?.structure?.spreads?.[pageIdx];
-            const isHeroBExplicitlyAbsent = promptText.includes('[[HERO_1]]') && !promptText.includes('[[HERO_2]]') &&
-                (bpSpread?.emotionalBeat?.includes('alone') || bpSpread?.narrative?.includes(heroes[0].name) && !bpSpread?.narrative?.includes(heroes[1].name));
+            if (Array.isArray(p.activeHeroTokens) && p.activeHeroTokens.length > 0) {
+                activeHeroes = heroes.filter(h => p.activeHeroTokens.includes(h.heroToken));
+                absentHeroes = heroes.filter(h => !p.activeHeroTokens.includes(h.heroToken));
+            } else if (Array.isArray(p.activeHeroIds) && p.activeHeroIds.length > 0) {
+                activeHeroes = heroes.filter(h => p.activeHeroIds.includes(h.heroId));
+                absentHeroes = heroes.filter(h => !p.activeHeroIds.includes(h.heroId));
+            } else {
+                const promptText = p.imagePrompt || '';
+                const bpSpread = storyData.blueprint?.structure?.spreads?.[pageIdx];
+                const isHeroBExplicitlyAbsent = (promptText.includes('[[HERO_1]]') && !promptText.includes('[[HERO_2]]')) &&
+                    (bpSpread?.emotionalBeat?.includes('alone') || (bpSpread?.narrative?.includes(heroes[0].name) && !bpSpread?.narrative?.includes(heroes[1].name)));
 
-            if (isHeroBExplicitlyAbsent) {
-                activeHeroes = [heroes[0]];
-                absentHeroes = [heroes[1]];
+                if (isHeroBExplicitlyAbsent) {
+                    activeHeroes = [heroes[0]];
+                    absentHeroes = [heroes[1]];
+                }
             }
+        }
+
+        // Location Resolution from LocationBible
+        let spreadLocation: LocationRecord | undefined = undefined;
+        const bpSpread = pageIdx >= 0 ? storyData.blueprint?.structure?.spreads?.[pageIdx] : null;
+        const locationName = p.locationName || p.location || bpSpread?.location || bpSpread?.setting;
+        if (locationName && locationBible.locations[locationName]) {
+            spreadLocation = locationBible.locations[locationName];
+        } else if (locationName) {
+            // Find fuzzy match in locationBible
+            const matchKey = Object.keys(locationBible.locations).find(k => k.toLowerCase().includes(locationName.toLowerCase()) || locationName.toLowerCase().includes(k.toLowerCase()));
+            if (matchKey) spreadLocation = locationBible.locations[matchKey];
         }
 
         // Compute Assigned Slots
@@ -416,7 +438,7 @@ export function buildGenerationManifest(
             slotNumber: 1,
             label: `Image 1: Approved character reference for [[HERO_1]] (${heroes[0].name})`,
             referenceType: 'hero_dna',
-            imageUrlOrBase64: heroes[0].stylizedDnaUrl || ''
+            imageUrlOrBase64: heroes[0].stylizedDnaUrl || heroes[0].stylizedDnaBase64 || ''
         });
 
         if (heroes.length > 1) {
@@ -424,22 +446,23 @@ export function buildGenerationManifest(
                 slotNumber: 2,
                 label: `Image 2: Approved character reference for [[HERO_2]] (${heroes[1].name})`,
                 referenceType: 'hero_dna',
-                imageUrlOrBase64: heroes[1].stylizedDnaUrl || ''
+                imageUrlOrBase64: heroes[1].stylizedDnaUrl || heroes[1].stylizedDnaBase64 || ''
             });
         }
 
         const propAppearsInSpread = !isCover && propRef && (
-            !recurringAsset?.appearancesSpreads ||
-            recurringAsset.appearancesSpreads.includes(spreadNum) ||
-            p.imagePrompt?.includes('[[PROP_ASSET]]')
+            p.includesProp === true ||
+            (recurringAsset?.appearancesSpreads && recurringAsset.appearancesSpreads.includes(spreadNum)) ||
+            p.imagePrompt?.includes('[[PROP_ASSET]]') ||
+            (recurringAsset?.name && p.imagePrompt?.toLowerCase().includes(recurringAsset.name.toLowerCase()))
         );
 
-        if (propRef && propAppearsInSpread && propRef.canonicalImageUrl) {
+        if (propRef && propAppearsInSpread && (propRef.canonicalImageUrl || propRef.canonicalImageBase64)) {
             assignedSlots.push({
                 slotNumber: propRef.slotNumber,
                 label: `Image ${propRef.slotNumber}: Approved canonical reference for [[PROP_ASSET]] (${propRef.name})`,
                 referenceType: 'prop_asset',
-                imageUrlOrBase64: propRef.canonicalImageUrl
+                imageUrlOrBase64: propRef.canonicalImageUrl || propRef.canonicalImageBase64 || ''
             });
         }
 
@@ -451,13 +474,14 @@ export function buildGenerationManifest(
             activeHeroes,
             absentHeroes,
             includesProp: !!propAppearsInSpread,
+            location: spreadLocation,
             actionSide: p.mainContentSide === 'left' ? 'left' : 'right',
             textSide: p.textSide === 'left' ? 'left' : 'right',
             assignedSlots
         });
     });
 
-    const storyVersionHash = `${orderId}-${spreads.length}-${styleContract.styleName}-${Date.now()}`;
+    const storyVersionHash = `${orderId}-${spreads.length}-${styleContract.styleName}`;
 
     return {
         orderId,
@@ -497,14 +521,77 @@ export function buildGenerationPayload(
         }
     });
 
+    let promptWithLocation = spread.imagePrompt;
+    if (spread.location) {
+        const loc = spread.location;
+        promptWithLocation += `\n\n[LOCATION CONTINUITY REQUIREMENT]\nLocation: ${loc.name}. Architecture: ${loc.architecture}. Materials & Palette: ${loc.materialsPalette}. Lighting/Atmosphere: ${loc.lightingAtmosphere}. Key landmarks: ${loc.keyLandmarks.join(', ')}.`;
+    }
+
     return {
-        prompt: spread.imagePrompt,
+        prompt: promptWithLocation,
         stylePrompt: manifest.styleContract.compiledStylePrompt,
         referenceImages,
         storyText: spread.storyText,
         textSide: spread.textSide === 'left' ? 'Left' : 'Right',
         activeHeroTokens: spread.activeHeroes.map(h => h.heroToken),
         absentHeroTokens: spread.absentHeroes.map(h => h.heroToken),
-        propAssetName: manifest.propAsset?.name
+        propAssetName: manifest.propAsset?.name,
+        location: spread.location
     };
 }
+
+/**
+ * Builds the authoritative QualityCheck parameters for a generated spread image directly from the manifest.
+ */
+export function buildQualityCheckParams(
+    manifest: GenerationManifest,
+    spreadNumber: number,
+    generatedImageBase64OrUrl: string,
+    iterationNumber: number = 1
+): any {
+    const spread = manifest.spreads.find(s => s.spreadNumber === spreadNumber) || manifest.spreads[spreadNumber];
+    if (!spread) {
+        throw new Error(`Spread ${spreadNumber} not found in manifest for order ${manifest.orderId}`);
+    }
+
+    const heroesQC = manifest.heroes.map(h => {
+        const isActive = spread.activeHeroes.some(ah => ah.heroToken === h.heroToken);
+        return {
+            heroToken: h.heroToken,
+            label: h.label,
+            name: h.name,
+            dnaBase64OrUrl: h.stylizedDnaUrl || h.stylizedDnaBase64,
+            rawBase64OrUrl: h.rawPhotoUrl,
+            isVisibleInScene: isActive,
+            biometrics: h.biometrics
+        };
+    });
+
+    const heroDNAImages = spread.activeHeroes.map(h => h.stylizedDnaUrl || h.stylizedDnaBase64).filter(Boolean) as string[];
+    const heroRawImages = spread.activeHeroes.map(h => h.rawPhotoUrl).filter(Boolean) as string[];
+
+    return {
+        generatedImageBase64: generatedImageBase64OrUrl,
+        heroes: heroesQC,
+        rawHeroImages: heroRawImages,
+        stylizedDnaImages: heroDNAImages,
+        pageType: spread.isCover ? 'Cover' : 'Spread',
+        currentTextSide: spread.textSide === 'left' ? 'Left' : 'Right',
+        targetPrompt: spread.imagePrompt,
+        storyText: spread.storyText,
+        spreadText: spread.storyText,
+        childAge: manifest.heroes[0]?.age || '5',
+        childDescription: manifest.heroes[0]?.wardrobe?.fullDescription,
+        stylePrompt: manifest.styleContract.compiledStylePrompt,
+        locationRecord: spread.location,
+        propAssetImageBase64: spread.includesProp ? (manifest.propAsset?.canonicalImageBase64 || manifest.propAsset?.canonicalImageUrl) : undefined,
+        propAssetImageUrl: spread.includesProp ? manifest.propAsset?.canonicalImageUrl : undefined,
+        spreadNumber: spread.spreadNumber,
+        isCover: spread.isCover,
+        layoutPlanSide: spread.textSide === 'left' ? 'Left' : 'Right',
+        orderId: manifest.orderId,
+        spreadIndex: spread.spreadNumber,
+        iterationNumber,
+    };
+}
+

@@ -93,6 +93,10 @@ export class StoryWorker {
       const edRes = await WorkerUtils.withTimeout(
         runEditorPass(narRes.result, blueprint, language, childName, childAge, secondCharacter, customStoryText),
       );
+      if (edRes.log?.status === "Failed" || edRes.log?.outputs?.validationValid === false) {
+        const errorMsg = edRes.log?.outputs?.error || `Story editor validation hard gate failed: ${JSON.stringify(edRes.log?.outputs?.validationErrors || 'Invalid story structure')}`;
+        throw new Error(errorMsg);
+      }
       const script = edRes.result;
 
       // --------------------------------------------------------
