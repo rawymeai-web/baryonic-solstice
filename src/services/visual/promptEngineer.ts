@@ -965,7 +965,8 @@ function assembleEnglishPromptV7_4(
     heroes: HeroProfile[],
     isCover: boolean = false,
     isRTL: boolean = false,
-    globalPropLocks: { name: string; canonicalDescription: string }[] = []
+    globalPropLocks: { name: string; canonicalDescription: string }[] = [],
+    recurringAsset?: { name: string; description: string; appearancesSpreads?: number[]; isGlobalObject?: boolean; generateAssetImage?: boolean }
 ): { prompt: string; validation: PromptValidationResult } {
 
     const schemaStamp = `[v7.8-style-dna-lock]`;
@@ -993,6 +994,13 @@ function assembleEnglishPromptV7_4(
     });
 
     const isSoloSceneInDualBook = heroes.length > 1 && activeHeroes.length === 1;
+
+    const spreadIndex = typeof spread.spread_index === 'number' ? spread.spread_index : (typeof spread.spreadNumber === 'number' ? spread.spreadNumber : 0);
+    const hasRecurringPropInSpread = !!recurringAsset && !!recurringAsset.name && (
+        (recurringAsset.appearancesSpreads && Array.isArray(recurringAsset.appearancesSpreads) && recurringAsset.appearancesSpreads.includes(spreadIndex)) ||
+        (isCover && (!recurringAsset.appearancesSpreads || recurringAsset.appearancesSpreads.includes(0))) ||
+        (spread.scene_props && Array.isArray(spread.scene_props) && spread.scene_props.some((p: any) => (p.name || '').toLowerCase().includes(recurringAsset.name.toLowerCase())))
+    );
 
     const legendParts = [`CHARACTER CASTING & SOURCE REFERENCES:`];
     const castingDirectives: string[] = [];
@@ -1063,6 +1071,11 @@ function assembleEnglishPromptV7_4(
         wardrobeDirectives.push(`- ${heroToken} (${name}): Must strictly wear: ${outfitStr}. Maintain this exact clothing and footwear across all full-body, standing, and seated poses. Solid clean colors only; do NOT add patterns, animal prints, or changes, and do NOT render the character barefoot unless explicitly required by a specific story action.`);
     });
 
+    if (hasRecurringPropInSpread && recurringAsset) {
+        const propSlot = activeHeroes.length + 1;
+        legendParts.push(`- Image ${propSlot}: Approved canonical reference image for [[PROP_ASSET]] (${recurringAsset.name}).`);
+    }
+
     const legend = legendParts.length > 1 ? legendParts.join('\n') : '';
     const likenessText = castingDirectives.length > 0
         ? `CHARACTER CASTING & SCENE PLACEMENT:\n${castingDirectives.join('\n')}`
@@ -1073,11 +1086,28 @@ function assembleEnglishPromptV7_4(
 
     // Global Prop Invariance Directive
     let persistentPropsText = '';
-    if (globalPropLocks && globalPropLocks.length > 0) {
-        const lockLines = globalPropLocks.map(p => 
-            `- "${p.name}": MUST be visually IDENTICAL across all spreads. Maintain the exact same design: ${p.canonicalDescription}. Do NOT alter the structure, frame materials, colors, or visual design between scenes.`
+    const propLockLines: string[] = [];
+
+    if (hasRecurringPropInSpread && recurringAsset) {
+        const propSlot = activeHeroes.length + 1;
+        propLockLines.push(
+            `- [[PROP_ASSET]] ("${recurringAsset.name}"): Must strictly match the exact physical form, geometry, materials, color scheme, and aesthetic details shown in Image ${propSlot} (${recurringAsset.description}). Render this exact canonical object in the scene without altering its core structure or colors.`
         );
-        persistentPropsText = `GLOBAL OBJECT & PERSISTENT PROP INVARIANCE LOCK:\n${lockLines.join('\n')}`;
+        propLockLines.push(
+            `- DISPOSABLE SUB-ITEMS MANDATE: Any secondary minor props, tools, plants, or background clutter in this scene are strictly disposable and specific ONLY to this spread. Do NOT carry them over to other scenes, and do NOT let them alter or mutate [[PROP_ASSET]].`
+        );
+    }
+
+    if (globalPropLocks && globalPropLocks.length > 0) {
+        globalPropLocks.forEach(p => {
+            if (!recurringAsset || !p.name.toLowerCase().includes(recurringAsset.name.toLowerCase())) {
+                propLockLines.push(`- "${p.name}": MUST be visually IDENTICAL across all spreads. Maintain the exact same design: ${p.canonicalDescription}. Do NOT alter the structure, frame materials, colors, or visual design between scenes.`);
+            }
+        });
+    }
+
+    if (propLockLines.length > 0) {
+        persistentPropsText = `GLOBAL OBJECT & PERSISTENT PROP INVARIANCE LOCK:\n${propLockLines.join('\n')}`;
     }
 
     // Style Matching Directive (Generalized & Style-Invariant)
@@ -1259,7 +1289,8 @@ export async function generatePrompts(
 
             const spreadIsRTL = isRTL || /[\u0600-\u06FF]/.test(spread?.storyText || '') || /[\u0600-\u06FF]/.test((bpSpread as any)?.storyText || '') || /[\u0600-\u06FF]/.test(bpSpread?.narrative || '');
 
-            const { prompt, validation } = assembleEnglishPromptV7_4(spread, styleProfile, heroes, isCover, spreadIsRTL, globalPropLocks);
+            const recurringAsset = blueprint?.foundation?.recurringAsset;
+            const { prompt, validation } = assembleEnglishPromptV7_4(spread, styleProfile, heroes, isCover, spreadIsRTL, globalPropLocks, recurringAsset);
 
             if (!validation.passed) {
                 allValidationErrors.push(`Spread ${spreadIndex}: ${validation.errors.join('; ')}`);

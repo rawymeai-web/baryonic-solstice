@@ -59,7 +59,7 @@ export class IllustrationWorker {
       const secondRef = storyData.secondCharacter?.imageBases64?.[0]; // If using second character
 
       // Fetch modern DNA references from the new architecture
-      let hAStyleUrl, hAOrigUrl, hBStyleUrl, hBOrigUrl;
+      let hAStyleUrl, hAOrigUrl, hBStyleUrl, hBOrigUrl, propAssetUrl;
       const { data: dnaRecords } = await supabase
         .from('order_dna')
         .select('*')
@@ -71,6 +71,10 @@ export class IllustrationWorker {
         hAOrigUrl = dnaRecords.find(r => r.hero_label === 'Hero A' && r.image_type === 'Original Photo')?.image_url;
         hBStyleUrl = dnaRecords.find(r => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA')?.image_url;
         hBOrigUrl = dnaRecords.find(r => r.hero_label === 'Hero B' && r.image_type === 'Original Photo')?.image_url;
+        propAssetUrl = dnaRecords.find(r => r.hero_label === 'Prop Asset' && r.image_type === 'Canonical Asset')?.image_url;
+      }
+      if (!propAssetUrl && storyData.recurringAssetImageUrl) {
+        propAssetUrl = storyData.recurringAssetImageUrl;
       }
 
       // Pre-seed tracking for idempotency
@@ -78,12 +82,12 @@ export class IllustrationWorker {
       let pagesUpdated = 0;
 
       console.log(
-        `[IllustrationWorker] Processing ${storyData.prompts.length} spreads...`,
+        `[IllustrationWorker] Processing ${storyData.prompts.length} spreads... (Prop Asset available: ${!!propAssetUrl})`,
       );
 
       // Event Tracker: Start
       await supabase.from("event_audit_log").insert({
-        event_type: "illustration_batch_started",
+        event_type: "illustrations_started",
         order_id: orderId,
         details: {
           timestamp: new Date(),
@@ -156,13 +160,21 @@ export class IllustrationWorker {
             }
           }
 
+          // Check if Recurring Prop Asset is featured in this spread or prompt
+          const recurringAsset = storyData.blueprint?.foundation?.recurringAsset;
+          const isPropInSpread = !!propAssetUrl && (
+            promptBlock.imagePrompt?.includes('[[PROP_ASSET]]') ||
+            (recurringAsset?.appearancesSpreads && Array.isArray(recurringAsset.appearancesSpreads) && recurringAsset.appearancesSpreads.includes(i)) ||
+            (recurringAsset?.name && promptBlock.imagePrompt?.toLowerCase().includes(recurringAsset.name.toLowerCase()))
+          );
+          const propImagesArray: string[] | undefined = (isPropInSpread && propAssetUrl) ? [propAssetUrl] : undefined;
 
           let isFlagged = false;
           let finalFinalUrl = "";
           let finalRecommendedSide = promptBlock.textSide || "Right";
 
           console.log(
-            `[IllustrationWorker] Spread ${i + 1} - Generating Image`,
+            `[IllustrationWorker] Spread ${i + 1} - Generating Image (Prop Asset Slot: ${!!propImagesArray})`,
           );
 
           // STYLE DNA: Priority chain mirrors StoryWorker — combine style name, prompt details, and technical style guide.
@@ -187,9 +199,7 @@ export class IllustrationWorker {
             `${baseStyleDNA}. Extremely high quality 3D render, Unreal Engine 5, octane render, volumetric lighting, subsurface scattering on skin, glossy 3D materials, deep depth of field, vibrant cinematic colors, masterpiece 3D artwork.` :
             baseStyleDNA;
 
-          // DNA-ONLY payload: send exactly 1 image per hero.
-          // Image 1 = HERO_1 DNA, Image 2 = HERO_2 DNA (if present).
-          // This MUST match what the prompt text says. No raw photos mixed in.
+          // DNA-ONLY payload: send exactly 1 image per hero + 1 prop image if present.
           const heroImagesArray: string[] = [heroDNA].filter(Boolean) as string[];
           const secondaryImagesArray: string[] | undefined = secondaryDNA
             ? [secondaryDNA]
@@ -204,6 +214,8 @@ export class IllustrationWorker {
               childAge,
               Math.floor(Math.random() * 100000),
               secondaryImagesArray,
+              undefined,
+              propImagesArray
             ),
             300000,
           );
@@ -325,6 +337,8 @@ export class IllustrationWorker {
                     childAge,
                     Math.floor(Math.random() * 100000) + 1, // New randomized seed
                     secondaryImagesArray,
+                    undefined,
+                    propImagesArray
                   ),
                   300000,
                 );
@@ -402,6 +416,8 @@ export class IllustrationWorker {
                             childAge,
                             Math.floor(Math.random() * 100000) + 1,
                             secondaryImagesArray,
+                            undefined,
+                            propImagesArray
                           ),
                           300000,
                         );

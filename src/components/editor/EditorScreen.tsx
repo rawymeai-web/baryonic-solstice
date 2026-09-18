@@ -131,6 +131,8 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
     const [masterDNA2, setMasterDNA2] = useState<string | undefined>(undefined);
     const [masterRaw, setMasterRaw] = useState<string | undefined>(undefined);
     const [masterRaw2, setMasterRaw2] = useState<string | undefined>(undefined);
+    const [masterPropAsset, setMasterPropAsset] = useState<string | undefined>(undefined);
+    const [propAssetName, setPropAssetName] = useState<string>('Recurring Prop Asset');
     // Tracks whether DNA came from the trusted order_dna table, storyData blob fallback, or is still loading
     const [dnaSource, setDnaSource] = useState<'order_dna' | 'storydata_fallback' | 'loading'>('loading');
 
@@ -168,6 +170,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
                 setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
                 setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
+                setMasterPropAsset(storyData.recurringAssetImageUrl || (storyData.blueprint?.foundation?.recurringAsset as any)?.imageUrl);
+                if (storyData.blueprint?.foundation?.recurringAsset?.name) {
+                    setPropAssetName(storyData.blueprint.foundation.recurringAsset.name);
+                }
                 setDnaSource('storydata_fallback');
                 return;
             }
@@ -179,6 +185,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     const hAOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Original Photo');
                     const hBStyle = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA');
                     const hBOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Original Photo');
+                    const propRecord = dnaRecords.find((r: any) => r.hero_label === 'Prop Asset' && r.image_type === 'Canonical Asset');
                     
                     if (hAStyle) {
                         setMasterDNA(hAStyle.image_url);
@@ -203,17 +210,29 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     } else {
                         setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
                     }
+
+                    if (propRecord) {
+                        setMasterPropAsset(propRecord.image_url);
+                    } else {
+                        setMasterPropAsset(storyData.recurringAssetImageUrl || (storyData.blueprint?.foundation?.recurringAsset as any)?.imageUrl);
+                    }
+                    if (storyData.blueprint?.foundation?.recurringAsset?.name) {
+                        setPropAssetName(storyData.blueprint.foundation.recurringAsset.name);
+                    }
+
                     setDnaSource('order_dna');
                     console.log(`✅ [DNA] Loaded ${dnaRecords.length} records from order_dna for ${orderId}`);
                 } else {
                     // ⚠️ CRITICAL: No order_dna rows found — must fall back to storyData blob.
-                    // This risks sending DNA images that belonged to a different order.
-                    // The correct fix is to upload DNA for this order via the DNA Manager.
                     console.warn(`⚠️ [DNA] No order_dna records found for order ${orderId}. Falling back to storyData blob DNA — THIS MAY CAUSE WRONG HERO IMAGES!`);
                     setMasterDNA(storyData.mainCharacter?.imageDNA?.[0] || storyData.styleReferenceImageUrl || storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageBases64?.[0]);
                     setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
                     setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
                     setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
+                    setMasterPropAsset(storyData.recurringAssetImageUrl || (storyData.blueprint?.foundation?.recurringAsset as any)?.imageUrl);
+                    if (storyData.blueprint?.foundation?.recurringAsset?.name) {
+                        setPropAssetName(storyData.blueprint.foundation.recurringAsset.name);
+                    }
                     setDnaSource('storydata_fallback');
                 }
             } catch (err) {
@@ -223,6 +242,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 setMasterDNA2(storyData.secondCharacter?.imageDNA?.[0] || storyData.secondCharacterImageUrl || storyData.secondCharacterImageBase64 || storyData.secondCharacter?.imageBases64?.[0]);
                 setMasterRaw(storyData.mainCharacter?.imageRawUrl || storyData.mainCharacter?.imageBases64?.[0]);
                 setMasterRaw2(storyData.secondCharacter?.imageRawUrl || storyData.secondCharacter?.imageBases64?.[0]);
+                setMasterPropAsset(storyData.recurringAssetImageUrl || (storyData.blueprint?.foundation?.recurringAsset as any)?.imageUrl);
+                if (storyData.blueprint?.foundation?.recurringAsset?.name) {
+                    setPropAssetName(storyData.blueprint.foundation.recurringAsset.name);
+                }
                 setDnaSource('storydata_fallback');
             }
         };
@@ -1459,7 +1482,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
     const [isDNAManagerOpen, setIsDNAManagerOpen] = useState(false);
 
-    const handleUpdateDNA = async (mainDNA?: string, secondDNA?: string) => {
+    const handleUpdateDNA = async (mainDNA?: string, secondDNA?: string, newPropDNA?: string) => {
         const newStoryData = { ...storyData };
         if (mainDNA) {
             newStoryData.mainCharacter = {
@@ -1472,6 +1495,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 ...newStoryData.secondCharacter,
                 imageDNA: [secondDNA]
             } as any;
+        }
+        if (newPropDNA) {
+            newStoryData.recurringAssetImageUrl = newPropDNA;
         }
         onUpdateStory(newStoryData);
         if (storyData.orderId) {
@@ -1778,6 +1804,42 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Recurring Canonical Prop Asset Card */}
+                        {(masterPropAsset || storyData.blueprint?.foundation?.recurringAsset || storyData.recurringAssetImageUrl) && (
+                            <div className="mt-3 pt-3 border-t border-orange-200/60">
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest flex items-center gap-1">
+                                        <span>🛶</span> {storyData.blueprint?.foundation?.recurringAsset?.name || propAssetName || 'Canonical Prop Asset'}
+                                    </p>
+                                    <span className="text-[8px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                                        Locked Prop
+                                    </span>
+                                </div>
+                                <div className="flex gap-2 w-full">
+                                    {masterPropAsset ? (
+                                        <div className="flex-1 flex flex-col gap-1">
+                                            <img
+                                                src={masterPropAsset.startsWith('http') ? masterPropAsset : `data:image/jpeg;base64,${masterPropAsset}`}
+                                                alt="Canonical Prop Asset"
+                                                className="w-full rounded-xl shadow-sm border-2 border-amber-300 object-contain bg-gray-900 aspect-square"
+                                                title="Canonical Prop Reference — shape & color authority"
+                                            />
+                                            <span className="text-[8px] font-black text-amber-700 uppercase tracking-widest text-center">🧬 Canonical Asset</span>
+                                        </div>
+                                    ) : (
+                                        <div className="w-full h-16 bg-amber-100/50 rounded-xl border border-dashed border-amber-300 flex items-center justify-center text-[10px] text-amber-700 font-medium">
+                                            Prop declared in Blueprint (Pending render)
+                                        </div>
+                                    )}
+                                </div>
+                                {storyData.blueprint?.foundation?.recurringAsset?.description && (
+                                    <p className="text-[8px] text-gray-500 mt-1 line-clamp-2 italic">
+                                        {storyData.blueprint.foundation.recurringAsset.description}
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -2205,6 +2267,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                     stylePrompt={getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly children\'s book illustration style'}
                                     childDNA={masterDNA}
                                     secondDNA={masterDNA2}
+                                    propDNA={masterPropAsset}
                                     onImageEdited={async newB64 => {
                                         let finalUrl = newB64.startsWith('http') || newB64.startsWith('data:') ? newB64 : `data:image/jpeg;base64,${newB64}`;
                                         const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
@@ -2514,6 +2577,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                                             stylePrompt={getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly children\'s book illustration style'}
                                             childDNA={masterDNA}
                                             secondDNA={masterDNA2}
+                                            propDNA={masterPropAsset}
                                             onImageEdited={newB64 => handleGeminiImageEdit(i, newB64)}
                                         />
                                     </div>

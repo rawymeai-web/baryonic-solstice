@@ -10,6 +10,7 @@ interface SpreadGeminiEditPanelProps {
     stylePrompt: string;               // art style string for consistency
     childDNA?: string;                 // main character reference base64
     secondDNA?: string;                // second character reference base64
+    propDNA?: string;                  // recurring canonical prop reference base64
     onImageEdited: (newBase64: string) => void; // callback: replace the spread image
 }
 
@@ -19,6 +20,7 @@ const SpreadGeminiEditPanel: React.FC<SpreadGeminiEditPanelProps> = ({
     stylePrompt,
     childDNA,
     secondDNA,
+    propDNA,
     onImageEdited,
 }) => {
     const [isOpen, setIsOpen] = useState(false);

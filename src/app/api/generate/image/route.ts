@@ -16,9 +16,11 @@ export async function POST(req: Request) {
             // DNA-ONLY (v6.0): Only these two fields matter.
             // heroDNABase64    = HERO_1 approved stylized DNA image (Image 1 in prompt)
             // secondDNABase64  = HERO_2 approved stylized DNA image (Image 2 in prompt)
-            // Raw photo fields are accepted in the body but intentionally NOT used.
+            // propAssetBase64  = Canonical Prop Asset reference image (Image 2/3 in prompt)
             heroDNABase64,
             secondDNABase64,
+            propAssetBase64,
+            propAssetUrl,
             secondCharacterDescription,
             // Legacy field aliases (kept for backwards compatibility with old frontend calls)
             referenceBase64,
@@ -29,6 +31,7 @@ export async function POST(req: Request) {
         // Fall back to referenceBase64 / secondReferenceBase64 only for legacy callers.
         const resolvedHeroA: string | string[] = heroDNABase64 || referenceBase64;
         const resolvedHeroB: string | string[] | undefined = secondDNABase64 || secondReferenceBase64 || undefined;
+        const resolvedPropAsset: string | string[] | undefined = propAssetBase64 || propAssetUrl || undefined;
 
         ServerLogger.log('IMAGE_GENERATION_REQUEST', {
             mode: 'DNA-Only v6.0',
@@ -36,6 +39,7 @@ export async function POST(req: Request) {
             heroA_imageCount: Array.isArray(resolvedHeroA) ? resolvedHeroA.length : (resolvedHeroA ? 1 : 0),
             heroB_hasImage: !!resolvedHeroB,
             heroB_imageCount: Array.isArray(resolvedHeroB) ? resolvedHeroB.length : (resolvedHeroB ? 1 : 0),
+            propAsset_hasImage: !!resolvedPropAsset,
             promptLength: prompt?.length,
             warning: body.heroRawBase64 ? 'RAW PHOTO WAS SENT BUT IGNORED (DNA-only mode)' : undefined,
         });
@@ -54,7 +58,8 @@ export async function POST(req: Request) {
             age,
             seed,
             resolvedHeroB,
-            secondCharacterDescription
+            secondCharacterDescription,
+            resolvedPropAsset
         );
 
         ServerLogger.log('IMAGE_GENERATION_SUCCESS', {

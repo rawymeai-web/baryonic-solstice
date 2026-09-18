@@ -1,5 +1,6 @@
 import { supabase } from '@/utils/supabaseClient';
 import { describeSubject, describeObjectProp, generateThemeStylePreview, generateObjectStylePreview } from '@/services/generation/imageGenerator';
+import { generatePropAssetImage } from '@/services/generation/assetGenerator';
 import { WorkerUtils } from './workerUtils';
 import { MasterScheduler } from './scheduler';
 
@@ -214,6 +215,42 @@ export class CharacterWorker {
                 await uploadAndLogDNAToTable(secondImageDNA, 'Hero B', 'Stylized DNA');
             }
 
+            // 5. Resolve Recurring Prop Asset DNA if declared in Blueprint
+            let propAssetUrl: string | undefined = undefined;
+            const recurringAsset = storyData.blueprint?.foundation?.recurringAsset;
+            if (recurringAsset && recurringAsset.name && recurringAsset.description && recurringAsset.generateAssetImage !== false) {
+                console.log(`[CharacterWorker] Processing Canonical Prop Asset "${recurringAsset.name}" for ${orderId}...`);
+                try {
+                    // Check if prop asset already exists in order_dna table
+                    const { data: existingPropRecords } = await supabase
+                        .from('order_dna')
+                        .select('image_url')
+                        .eq('order_id', orderId)
+                        .eq('hero_label', 'Prop Asset')
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+
+                    if (existingPropRecords && existingPropRecords.length > 0 && existingPropRecords[0].image_url) {
+                        propAssetUrl = existingPropRecords[0].image_url;
+                        console.log(`[CharacterWorker] Reusing existing Prop Asset DNA for ${orderId}: ${propAssetUrl}`);
+                    } else {
+                        const propResult = await WorkerUtils.withTimeout(
+                            generatePropAssetImage({
+                                orderId,
+                                assetName: recurringAsset.name,
+                                assetDescription: recurringAsset.description,
+                                stylePrompt: resolvedStyleDNA,
+                            }),
+                            180000
+                        );
+                        propAssetUrl = propResult.imageUrl;
+                        console.log(`[CharacterWorker] Generated new Canonical Prop Asset DNA for ${orderId}: ${propAssetUrl}`);
+                    }
+                } catch (propErr: any) {
+                    console.warn(`[CharacterWorker] Failed to generate prop asset image (will continue without blocking):`, propErr.message);
+                }
+            }
+
             // Helper to safely parse description - it may be a JSON string, plain text, or already an object
             const safeParseDesc = (desc: any): any => {
                 if (!desc) return desc;
@@ -234,6 +271,7 @@ export class CharacterWorker {
                     description: secondDescription ? safeParseDesc(secondDescription) : storyData.secondCharacter.description,
                     imageDNA: secondImageDNA ? [secondImageDNA] : undefined // Persist the stylized object!
                 } : undefined,
+                recurringAssetImageUrl: propAssetUrl || storyData.recurringAssetImageUrl,
                 selectedStylePrompt: styleUsed // Lock the clean style prompt used
             };
 

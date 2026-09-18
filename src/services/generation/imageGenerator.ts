@@ -413,7 +413,8 @@ export async function generateMethod4Image(
     age: any,
     seed?: number,
     secondReferenceBase64OrSet?: string | string[],
-    secondCharacterDescription?: any
+    secondCharacterDescription?: any,
+    propAssetBase64OrSet?: string | string[]
 ): Promise<{ imageBase64: string; fullPrompt: string; seedPrompt: string; modelUsed: string }> {
     return withRetry(async () => {
         // [HEAL] Safely coerce stylePrompt and sanitize polluted stylePrompt containing DNA character portrait tasks
@@ -465,7 +466,20 @@ export async function generateMethod4Image(
             }
         }
 
-        // 3. Construct Multi-Modal Input
+        // 3. Resolve Prop Asset references
+        const propSet = Array.isArray(propAssetBase64OrSet) ? propAssetBase64OrSet : (propAssetBase64OrSet ? [propAssetBase64OrSet] : []);
+        const propImages: string[] = [];
+        for (const item of propSet) {
+            if (item && item.startsWith('http')) {
+                const response = await fetch(item);
+                const arrayBuffer = await response.arrayBuffer();
+                propImages.push(Buffer.from(arrayBuffer).toString('base64'));
+            } else if (item) {
+                propImages.push(item);
+            }
+        }
+
+        // 4. Construct Multi-Modal Input
         const contents: any[] = [];
         const stripPrefix = (str: string) => str.replace(/^data:image\/\w+;base64,/, '');
         
@@ -485,10 +499,15 @@ export async function generateMethod4Image(
             contents.push({ text: `[IMAGE 2 - [[HERO_2]] EXACT LIKENESS REFERENCE]:` });
             contents.push({ inlineData: { mimeType: getMimeType(b64), data: stripPrefix(b64) } });
         });
+        propImages.forEach((b64, idx) => {
+            const propSlotNum = (heroAImages.length > 0 ? 1 : 0) + (heroBImages.length > 0 ? 1 : 0) + idx + 1;
+            contents.push({ text: `[IMAGE ${propSlotNum} - CANONICAL [[PROP_ASSET]] REFERENCE]:` });
+            contents.push({ inlineData: { mimeType: getMimeType(b64), data: stripPrefix(b64) } });
+        });
         
         let unifiedPromptText = sanitizePrompt(prompt);
 
-        // 4. Input Consistency Validation (Anti-Hallucination Guard)
+        // 5. Input Consistency Validation (Anti-Hallucination Guard)
         const imageRefs = unifiedPromptText.match(/Image\s+(\d+)/gi);
         if (imageRefs) {
             let maxImageRef = 0;
@@ -500,8 +519,10 @@ export async function generateMethod4Image(
                 }
             });
             
-            if (maxImageRef > contents.length) {
-                const errorMsg = `[FATAL BINDING ERROR] The generated prompt explicitly references up to "Image ${maxImageRef}", but only ${contents.length} images were passed in the payload array. This usually happens when a Dual-Hero prompt is used for a Single-Hero order. Aborting to prevent identity drift.`;
+            // Total attached images is contents.length / 2 (since each image has a label text + inlineData)
+            const attachedImagesCount = heroAImages.length + heroBImages.length + propImages.length;
+            if (maxImageRef > attachedImagesCount) {
+                const errorMsg = `[FATAL BINDING ERROR] The generated prompt explicitly references up to "Image ${maxImageRef}", but only ${attachedImagesCount} image(s) were passed in the payload array. Aborting to prevent identity/asset drift.`;
                 console.error(errorMsg);
                 throw new Error(errorMsg);
             }
@@ -509,7 +530,7 @@ export async function generateMethod4Image(
 
         // DNA-ONLY LEGEND (v6.0): Sequential numbering.
         // This MUST match the prompt body exactly — no contradiction allowed.
-        const legendLines: string[] = ['CHARACTER IDENTITY REFERENCES:'];
+        const legendLines: string[] = ['CHARACTER & ASSET IDENTITY REFERENCES:'];
         let currentIdx = 1;
 
         heroAImages.forEach((_, i) => {
@@ -519,6 +540,11 @@ export async function generateMethod4Image(
 
         heroBImages.forEach((_, i) => {
             legendLines.push(`- Image ${currentIdx}: [[HERO_2]] — approved character reference.`);
+            currentIdx += 1;
+        });
+
+        propImages.forEach((_, i) => {
+            legendLines.push(`- Image ${currentIdx}: [[PROP_ASSET]] — canonical reference object.`);
             currentIdx += 1;
         });
 
@@ -644,6 +670,11 @@ export async function generateMethod4Image(
                     ...heroBImages.map((b64, i) => ({
                         slot: heroAImages.length + i + 1,
                         label: `[[HERO_2]] — Slot ${heroAImages.length + i + 1} (DNA reference, sole identity authority)`,
+                        b64,
+                    })),
+                    ...propImages.map((b64, i) => ({
+                        slot: heroAImages.length + heroBImages.length + i + 1,
+                        label: `[[PROP_ASSET]] — Slot ${heroAImages.length + heroBImages.length + i + 1} (Canonical Prop Asset reference, shape & color authority)`,
                         b64,
                     })),
                 ];

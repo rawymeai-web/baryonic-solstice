@@ -210,83 +210,19 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
             - **Personality Focus:** You MUST define the hero entirely through their internal traits, emotions, and what they like to do (e.g., curious, dreamy, loves to explore).
             - **NO PHYSICAL TRAITS:** STRICTLY DO NOT invent, describe, or discuss any physical attributes, clothing, or color palettes for the character. The visual appearance is handled by a separate system fed by user photos.
             
-            **SINGLE-USE VISUAL GUARANTEE & SETTING LOCK (STRICT INSTRUCTION):**
-            - Image AIs hallucinate non-hero characters across multiple pages. To prevent this:
-            - **DISPOSABLE SUB-CHARACTERS:** Supporting characters (like animals, villagers, guides) MUST belong to a single setting. When the hero leaves that location in the next spread, the secondary character DOES NOT go with them. Do NOT drag random sub-characters across multiple settings.
-            - Therefore, supporting characters should only physically appear visually in EXACTLY ONE or TWO continuous spreads (appearancesSpreads = [X, Y]).
-            - Their influence can span the story (influenceSpreads = [X, Y]), but they cannot travel with the hero.
-            - The same applies to specific story items (other than the primaryVisualAnchor). They should be featured significantly on the specific page where they are relevant, rather than carried around.
+            **SINGLE-USE VISUAL GUARANTEE & DISPOSABLE SUB-ITEMS (STRICT INSTRUCTION):**
+            - Image AIs hallucinate non-hero characters and secondary objects when they cross multiple pages. To prevent this:
+            - **DISPOSABLE SUB-CHARACTERS:** Supporting characters (like animals, villagers, guides) MUST belong to a single setting. When the hero leaves that location in the next spread, the secondary character DOES NOT go with them. Do NOT drag random sub-characters across multiple settings. They physically appear visually in EXACTLY ONE or TWO continuous spreads (appearancesSpreads = [X, Y]).
+            - **DISPOSABLE SUB-ITEMS:** Any minor tools, small toys, plants, or background set pieces introduced in Spread N are strictly disposable. They MUST NOT carry over to subsequent spreads.
+            - **RECURRING ASSET INVARIANCE:** The story may have at most ONE primary recurring physical asset/vessel (e.g., The Starlight Bed-Boat, A Brass Compass, A Wooden Wagon, A Magic Lantern). This object MUST be declared in the "recurringAsset" foundation block with exhaustive physical details so a dedicated canonical reference image can be generated and passed to all spreads where it appears.
 
-            **COGNITIVE LOAD & PACING:**
-            - **ONE ACTION PER SPREAD.**
-            - **ONE EMOTION PER SPREAD.**
-            - **TEXT BUDGET (Narrative Summary):** 
-                - Age < 6: 1-2 short sentences.
-                - Age 6-7: 2-3 sentences.
-                - Age 8+: 3-4 sentences.
-
-            **EMOTIONAL PACING & LAYERING (CRITICAL FOR EARNED DEPTH):**
-            - The story must not feel like a rushed checklist of plot points.
-            - You MUST build in "breathing room" for the character to process emotions internally.
-            - The **Lowest Point** (Spread 5) MUST be dedicated entirely to dramatizing the emotional impact of the failure. Do NOT rush to introduce the solution here. Let the character sit in the struggle.
-            - The **Insight** (Spread 6) MUST focus on the internal realization or observation. Make the logic of the transformation clear and felt by the reader.
-            - Plot transitions (A -> B -> C) must include the internal, emotional processing that justifies the character's next choice.
-
-            **TIME CONTINUITY RULE (CRITICAL):**
-            - The story must progress through continuous action and consequence.
-            - Do NOT use time-skip framing such as "the next day", "later that week", or similar shortcuts.
-            - Time may only pass if the waiting passage itself is part of the tension.
-            - **Chronological Setting Rule:** Your chosen \`timeOfDay\` MUST follow a logical forward progression (e.g., Morning -> Afternoon -> Dusk -> Night). You absolutely cannot jump from Night back to Morning mid-story.
-            - **Environment Continuity:** If entering an indoor/enclosed space (like a Cave), the \`timeOfDay\` or \`lighting\` MUST reflect that enclosed environment contextually in the subsequent spreads until they exit.
-            
-            **DYNAMIC VANTAGE POINT & LOCATION SHIFTS (CRITICAL FOR LAYOUT):**
-            - You MUST change the location or the *vantage point* (where we are looking from) between spreads to keep the visual flow dynamic, depending on what the story needs.
-            - **STRICT WIDE ANGLE MANDATE:** The composition (\`cameraAngle\`) MUST ALWAYS be a wide, spacious establishing shot. ABSOLUTELY NO close-ups, extreme close-ups, or tight framing. The illustration MUST have expansive negative space and open areas.
-            - The \`highlightAction\` MUST truly capture the most important physical event happening on that spread (the main verb/action).
-
-            **TRANSITION QUALITY RULE (CRITICAL):**
-            - A transition hook must create anticipation, tension, or curiosity.
-            - Invalid hooks include time jumps ("The next day..."), summaries, or passive statements.
-            - Each hook must answer: "Why must the reader turn the page?"
-
-            **MILD EMOTIONS & GROUNDED ACTIONS (CRITICAL IMAGE STABILITY RULE):**
-            - Image AIs distort faces and bodies when generating extreme emotions or heavy physical interactions.
-            - You MUST NOT use extreme emotions like "terrified", "astonished", "shocked", "screaming", "weeping", or "very scared".
-            - Use milder, quiet expressions for the low points: e.g., "worried", "sad", "confused", "pensive", or "disappointed".
-            - You MUST NOT use weird or heavy physical situations like "carrying a person", "lifting heavy objects", "throwing", or extreme acrobatics. Keep physical actions grounded, gentle, and simple (e.g., "looking", "holding lightly", "pointing", "sitting").
-
-            **PICTURE-BOOK TONALITY & GENTLE IMAGERY:**
-            - Maintain an atmosphere of cozy wonder, warm colors, soft magical textures, and gentle curiosity.
-            - Any obstacles should be playful, child-scale worries (a shy creature hiding, a gust of wind scattering leaves, a puzzle to solve).
-            - Use playful, wonder-filled storybook props: glowing compasses, magical lanterns, starry jars, old maps, brass keys, or singing stones. Avoid overt rainbow clichés.
-            - Use fictional supporting characters (e.g., talking animals, gentle wizards, friendly forest guides) rather than real-world modern authority figures.
-
-            ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `**SECONDARY CHARACTER PACING (CRITICAL SCREEN-TIME RULE):**
-            - This is a Dual-Hero book. You MUST officially introduce the companion (${storyData.secondCharacter.name}) no later than **Spread 2**.
-            - The companion MUST actively influence the story and help solve the problem. Do not make them a passive bystander.
-            - The companion MUST NOT appear in the \`visualFocus\` or \`newCharacters\` array of any spread *before* their official introduction.` : ''}
-
-            ${storyData.themeId === 'val-siblings' ? (storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `
-**SIBLING VALUE — DUAL HERO MODE (CRITICAL NARRATIVE RULE):**
-- This story is explicitly about the love between siblings. The two heroes ARE the siblings.
-- The story MUST show a realistic small conflict or disagreement between the two heroes — they are family, not perfect teammates.
-- The arc MUST follow: (1) They try to do something together, (2) A moment of friction or misunderstanding arises, (3) One of them makes a sacrifice or apologizes first, (4) They succeed together and both feel the warmth of the resolved bond.
-- DO NOT skip the friction. The emotional payoff only works if the challenge felt real.
-- The final moral must be explicitly about sibling love (e.g., "They learned that a sister/brother is the best teammate there will ever be.").
-` : `
-**SIBLING VALUE — SINGLE HERO MODE (CRITICAL NARRATIVE RULE):**
-- There is NO second hero or sibling character in this story. DO NOT invent one.
-- The hero MUST learn the value of sibling love and mutual support by OBSERVING animals in nature who help each other.
-- The story structure MUST follow this arc:
-  1. Hero has a task they want to complete alone.
-  2. Hero notices animals (e.g., falcon chicks, oryx calves, desert ants, pearl-diving crew) working together, noticing specifically HOW they help each other.
-  3. Hero tries to do the same task alone and struggles.
-  4. Hero reflects on what the animals did differently — and understands why helping and relying on a partner (or sibling) makes everything possible.
-  5. The moral is delivered NOT through a sibling appearing — but through the hero's own quiet realization, perhaps thinking of their sibling at home and understanding their value.
-- The animal(s) MUST be regionally appropriate: Arabian oryx, falcon chicks, desert ants, pearl-diving dhow crew, baby sea turtles on the Gulf coast, etc.
-- This is an OBSERVATION-LED discovery arc, not an action-adventure arc. The hero watches, tries, fails softly, and then understands.
-`) : ''}
-
+            **DYNAMIC VANTAGE POINT, SUB-LOCATION FRAMING & PERSPECTIVE SHIFTS (CRITICAL):**
+            - Do NOT redraw the same static background perspective.
+            - Even if multiple spreads take place in the same general environment (e.g., the child's bedroom, a forest, or an ancient archive):
+              * **Change the Vantage Point:** Shift between low-angle looking toward the starry window, wide overhead shot looking down at the play rug, or dramatic profile shot across the bookshelf.
+              * **Change the Sub-Location Framing:** Move the hero from the cozy bed-boat corner to the open doorway, to the center floor, or next to the garden patio.
+              * **Dynamic Lighting & Mood:** Reflect time of day or magical transformation through shifting shadows, glowing dust particles, or starlight beams.
+            - **STRICT WIDE ANGLE MANDATE:** The composition ('cameraAngle') MUST ALWAYS be a wide, spacious establishing shot. ABSOLUTELY NO close-ups, extreme close-ups, or tight framing. The illustration MUST have expansive negative space for text placement.
 
             OUTPUT JSON FORMAT:
             {
@@ -297,8 +233,15 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
                     "storyCore": "[MUST BE IN ${targetLang}]",
                     "heroDesire": "[MUST BE IN ${targetLang}]",
                     "mainChallenge": "[MUST BE IN ${targetLang}]",
-                    "primaryVisualAnchor": "The object that stays with hero (e.g. A brass explorer lantern with a rotating slot)",
+                    "primaryVisualAnchor": "The object that stays with hero (e.g. The Starlight Bed-Boat or A Brass Explorer Lantern)",
                     "anchorTriggerRule": "MANDATORY NON-EMPTY: Concrete physical cause-first trigger rule with observable physics (e.g. 'The brass lantern shutter opened wide only when the latch clicked into the top notch away from sand; rushed pulling jams the latch')",
+                    "recurringAsset": {
+                        "name": "Canonical name of the recurring prop/vehicle (e.g. 'The Starlight Bed-Boat')",
+                        "description": "Exhaustive isolated physical visual description: exact materials, wood grain finish, trim colors, carvings, geometric shapes, canopy/cushion fabric, isolated on clean neutral studio backdrop with studio lighting (no background room).",
+                        "appearancesSpreads": [1, 2, 3, 4, 5, 6, 7, 8],
+                        "isGlobalObject": true,
+                        "generateAssetImage": true
+                    },
                     "moral": "[MUST BE IN ${targetLang}]",
                     "failedAttemptSpread": 3,
                     "insightSpread": 6,

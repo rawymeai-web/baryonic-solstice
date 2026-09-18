@@ -87,8 +87,20 @@ export async function generateVisualPlan(
                - Do NOT inject forced stylistic caricature terms (e.g., do NOT mandate "oversized wide cartoon eyes", "baby-doll face", or forced 3D tropes); keep facial expressions grounded in natural narrative emotions so the selected visual style and DNA reference govern rendering.
 
             15. **GLOBAL RECURRING OBJECT & PROP INVARIANCE (CRITICAL):**
-               - If an object, vehicle, furniture piece (e.g., Bed-boat, spaceship, bicycle, carriage), tool, or companion toy appears across multiple spreads (or is a key narrative device), you MUST establish an immutable, canonical physical_description for it in 'visualAnchors.persistentprops'.
+               - If an object, vehicle, furniture piece (e.g., Bed-boat, spaceship, bicycle, carriage), tool, or companion toy is declared in 'Blueprint Settings.recurringAsset' (or appears across multiple spreads), you MUST establish an immutable, canonical physical_description for it in 'visualAnchors.persistentprops'.
                - You must NOT redesign, recolor, or mutate the structure, material, or color of this persistent object in different spreads. Maintain identical frame materials, bedding/cushion patterns, shape, and colors across every spread it appears in.
+
+            16. **DISPOSABLE SUB-ITEMS MANDATE (STRICT ZERO CARRY-OVER):**
+               - Any secondary minor prop, background plant, tool, star-chart, or minor animal introduced in a specific spread is strictly DISPOSABLE and MUST NOT carry over to subsequent spreads unless it is the explicitly declared 'recurringAsset'.
+               - Each spread's minor items belong solely to that specific moment and beat.
+
+            17. **DYNAMIC VANTAGE POINT & PERSPECTIVE SHIFTS (CAMERA DIVERSITY MANDATE):**
+               - Even if consecutive spreads share the same overarching environment (e.g., the child's bedroom or spaceship), the camera vantage point, viewing angle, and sub-location framing MUST shift dynamically between consecutive spreads.
+               - Spread N and Spread N+1 MUST NOT share the same static angle or cloned camera setup. For example:
+                 * Spread 1: Wide eye-level establishing shot from the doorway looking toward the window.
+                 * Spread 2: Low-angle dramatic 3/4 view focused on the hero working on the floor near the bed.
+                 * Spread 3: High-angle cinematic over-the-shoulder view looking down into the open vessel/prop.
+               - Ensure varied, filmic storytelling through dynamic perspective shifts across every spread.
 
             OUTPUT JSON SCHEMA:
             {

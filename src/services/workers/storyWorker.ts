@@ -4,6 +4,7 @@ import { runEditorPass } from "@/services/story/editorAgent";
 import { generateVisualPlan } from "@/services/visual/director";
 import { generatePrompts } from "@/services/visual/promptEngineer";
 import { runQualityAssurance } from "@/services/visual/qualityAssurance";
+import { generatePropAssetImage } from "@/services/generation/assetGenerator";
 import { WorkerUtils } from "./workerUtils";
 import { MasterScheduler } from "./scheduler";
 
@@ -131,7 +132,7 @@ export class StoryWorker {
               identity_translation_rule: "Use real photos only for identity cues. Preserve resemblance, but translate all features into the selected stylized style."
           };
       }
-      let hAStyleUrl, hAOrigUrl, hBStyleUrl, hBOrigUrl;
+      let hAStyleUrl, hAOrigUrl, hBStyleUrl, hBOrigUrl, propAssetUrl;
       try {
         const { data: dnaRecords } = await supabase
           .from('order_dna')
@@ -144,9 +145,31 @@ export class StoryWorker {
           hAOrigUrl = dnaRecords.find(r => r.hero_label === 'Hero A' && r.image_type === 'Original Photo')?.image_url;
           hBStyleUrl = dnaRecords.find(r => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA')?.image_url;
           hBOrigUrl = dnaRecords.find(r => r.hero_label === 'Hero B' && r.image_type === 'Original Photo')?.image_url;
+          propAssetUrl = dnaRecords.find(r => r.hero_label === 'Prop Asset' && r.image_type === 'Canonical Asset')?.image_url;
         }
       } catch (err) {
         console.warn("[StoryWorker] Failed to query order_dna table:", err);
+      }
+
+      // If Blueprint defined a recurring asset but it was not yet created, create it now
+      const recurringAsset = blueprint.foundation?.recurringAsset;
+      if (!propAssetUrl && recurringAsset && recurringAsset.name && recurringAsset.description && recurringAsset.generateAssetImage !== false) {
+        try {
+          console.log(`[StoryWorker] Generating missing Canonical Prop Asset "${recurringAsset.name}" for ${orderId}...`);
+          const propRes = await WorkerUtils.withTimeout(
+            generatePropAssetImage({
+              orderId,
+              assetName: recurringAsset.name,
+              assetDescription: recurringAsset.description,
+              stylePrompt: visualDNA
+            }),
+            180000
+          );
+          propAssetUrl = propRes.imageUrl;
+          console.log(`[StoryWorker] Generated Prop Asset URL: ${propAssetUrl}`);
+        } catch (propErr: any) {
+          console.warn("[StoryWorker] Could not generate prop asset:", propErr.message);
+        }
       }
 
       const heroes: any[] = [];
