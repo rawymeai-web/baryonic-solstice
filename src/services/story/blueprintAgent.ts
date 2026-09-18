@@ -214,7 +214,10 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
             - Image AIs hallucinate non-hero characters and secondary objects when they cross multiple pages. To prevent this:
             - **DISPOSABLE SUB-CHARACTERS:** Supporting characters (like animals, villagers, guides) MUST belong to a single setting. When the hero leaves that location in the next spread, the secondary character DOES NOT go with them. Do NOT drag random sub-characters across multiple settings. They physically appear visually in EXACTLY ONE or TWO continuous spreads (appearancesSpreads = [X, Y]).
             - **DISPOSABLE SUB-ITEMS:** Any minor tools, small toys, plants, or background set pieces introduced in Spread N are strictly disposable. They MUST NOT carry over to subsequent spreads.
-            - **RECURRING ASSET INVARIANCE:** The story may have at most ONE primary recurring physical asset/vessel (e.g., The Starlight Bed-Boat, A Brass Compass, A Wooden Wagon, A Magic Lantern). This object MUST be declared in the "recurringAsset" foundation block with exhaustive physical details so a dedicated canonical reference image can be generated and passed to all spreads where it appears.
+            - **RECURRING ASSET INVARIANCE (THRESHOLD >= 2 SPREADS):**
+              * The story may have at most ONE primary recurring physical asset/vessel (e.g., The Starlight Bed-Boat, A Brass Compass, A Wooden Wagon, A Magic Lantern).
+              * RECURRENCE THRESHOLD: Declare a recurringAsset ONLY when a physical object/vehicle recurs across at least TWO spreads (appearancesSpreads length >= 2). Single-spread items are disposable and must not be declared as recurring assets.
+              * NARRATIVE & VISUAL ANCHOR UNIFICATION: When the story's primaryVisualAnchor is a persistent physical vehicle, vessel, or tool, the "recurringAsset" foundation block MUST describe this EXACT SAME canonical object with exhaustive physical details (materials, wood grain, colors, geometry, isolated on clean neutral studio backdrop) so a dedicated canonical reference image can be generated and passed to all spreads where it appears.
 
             **DYNAMIC VANTAGE POINT, SUB-LOCATION FRAMING & PERSPECTIVE SHIFTS (CRITICAL):**
             - Do NOT redraw the same static background perspective.

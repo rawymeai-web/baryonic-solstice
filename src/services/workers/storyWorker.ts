@@ -151,6 +151,11 @@ export class StoryWorker {
         console.warn("[StoryWorker] Failed to query order_dna table:", err);
       }
 
+      // Explicit storyData / staff override takes highest precedence
+      if (storyData.recurringAssetImageUrl) {
+        propAssetUrl = storyData.recurringAssetImageUrl;
+      }
+
       // If Blueprint defined a recurring asset but it was not yet created, create it now
       const recurringAsset = blueprint.foundation?.recurringAsset;
       if (!propAssetUrl && recurringAsset && recurringAsset.name && recurringAsset.description && recurringAsset.generateAssetImage !== false) {
@@ -168,7 +173,21 @@ export class StoryWorker {
           propAssetUrl = propRes.imageUrl;
           console.log(`[StoryWorker] Generated Prop Asset URL: ${propAssetUrl}`);
         } catch (propErr: any) {
-          console.warn("[StoryWorker] Could not generate prop asset:", propErr.message);
+          console.error(`[StoryWorker] Failed to generate prop asset image:`, propErr.message);
+          try {
+            await supabase.from('event_audit_log').insert({
+              event_type: 'prop_asset_generation_failed',
+              order_id: orderId,
+              details: {
+                worker: 'StoryWorker',
+                assetName: recurringAsset.name,
+                error: propErr.message,
+                timestamp: new Date().toISOString()
+              }
+            });
+          } catch (auditErr) {
+            console.warn("[StoryWorker] Failed to record audit log for prop failure:", auditErr);
+          }
         }
       }
 

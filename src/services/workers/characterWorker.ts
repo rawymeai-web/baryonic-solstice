@@ -36,13 +36,6 @@ export class CharacterWorker {
             const storyData = order.story_data as any;
             const mainChar = storyData.mainCharacter;
 
-            if (!mainChar || !mainChar.imageBases64 || !mainChar.imageBases64[0]) {
-                console.warn(`[CharacterWorker] No image photo found for ${orderId}. Skipping character generation.`);
-                // Fast-track to story if no image present
-                await this.completeJob(jobId, orderId, storyData);
-                return;
-            }
-
             // STYLE DNA: Use same priority chain as StoryWorker and IllustrationWorker.
             // technicalStyleGuide is the locked style from the frontend StyleSelectionScreen.
             const resolvedStyleDNA: string =
@@ -51,6 +44,33 @@ export class CharacterWorker {
                 storyData.selectedStylePrompt ||
                 storyData.themeVisualDNA ||
                 "high quality painterly children's book illustration";
+
+            if (!mainChar || !mainChar.imageBases64 || !mainChar.imageBases64[0]) {
+                console.warn(`[CharacterWorker] No image photo found for ${orderId}. Checking if recurring prop needs generation...`);
+                let nonPhotoPropUrl = storyData.recurringAssetImageUrl;
+                const recurringAsset = storyData.blueprint?.foundation?.recurringAsset;
+                if (!nonPhotoPropUrl && recurringAsset && recurringAsset.name && recurringAsset.description && recurringAsset.generateAssetImage !== false) {
+                    try {
+                        const propResult = await WorkerUtils.withTimeout(
+                            generatePropAssetImage({
+                                orderId,
+                                assetName: recurringAsset.name,
+                                assetDescription: recurringAsset.description,
+                                stylePrompt: resolvedStyleDNA,
+                            }),
+                            180000
+                        );
+                        nonPhotoPropUrl = propResult.imageUrl;
+                    } catch (propErr: any) {
+                        console.error(`[CharacterWorker] Failed to generate prop for non-photo order:`, propErr.message);
+                    }
+                }
+                await this.completeJob(jobId, orderId, {
+                    ...storyData,
+                    recurringAssetImageUrl: nonPhotoPropUrl
+                });
+                return;
+            }
 
             // 1. Resolve Text DNA Description for Primary Character
             let description = "";
@@ -247,7 +267,21 @@ export class CharacterWorker {
                         console.log(`[CharacterWorker] Generated new Canonical Prop Asset DNA for ${orderId}: ${propAssetUrl}`);
                     }
                 } catch (propErr: any) {
-                    console.warn(`[CharacterWorker] Failed to generate prop asset image (will continue without blocking):`, propErr.message);
+                    console.error(`[CharacterWorker] Failed to generate prop asset image:`, propErr.message);
+                    try {
+                        await supabase.from('event_audit_log').insert({
+                            event_type: 'prop_asset_generation_failed',
+                            order_id: orderId,
+                            details: {
+                                worker: 'CharacterWorker',
+                                assetName: recurringAsset.name,
+                                error: propErr.message,
+                                timestamp: new Date().toISOString()
+                            }
+                        });
+                    } catch (auditErr) {
+                        console.warn("[CharacterWorker] Failed to record audit log for prop failure:", auditErr);
+                    }
                 }
             }
 

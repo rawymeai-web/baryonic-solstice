@@ -16,6 +16,8 @@ export interface ImageEvaluationParams {
     stylizedDnaImages?: string[];
     childDescription?: any;
     stylePrompt?: string;
+    propAssetImageBase64?: string;
+    propAssetImageUrl?: string;
     spreadNumber?: number;
     isCover?: boolean;
     layoutPlanSide?: any;
@@ -34,7 +36,7 @@ export interface QualityCheckResult {
     wardrobeReasoning: string;
     styleConsistencyStatus: 'pass' | 'fail';
     styleReasoning: string;
-    propConsistencyStatus?: 'pass' | 'fail';
+    propConsistencyStatus?: 'pass' | 'fail' | 'na';
     propReasoning?: string;
     textClearanceStatus: 'pass' | 'fail';
     textReasoning: string;
@@ -64,7 +66,9 @@ export class QualityAgent {
             secondRawBase64,
             secondDNABase64,
             childAge = "5",
-            stylePrompt = params.stylePrompt || ""
+            stylePrompt = params.stylePrompt || "",
+            propAssetImageBase64 = params.propAssetImageBase64,
+            propAssetImageUrl = params.propAssetImageUrl
         } = params;
 
         return withRetry(async () => {
@@ -94,12 +98,13 @@ export class QualityAgent {
                 return 'image/jpeg';
             };
 
-            const [resolvedGen, resolvedHeroRaw, resolvedHeroDNA, resolvedSecondRaw, resolvedSecondDNA] = await Promise.all([
+            const [resolvedGen, resolvedHeroRaw, resolvedHeroDNA, resolvedSecondRaw, resolvedSecondDNA, resolvedProp] = await Promise.all([
                 resolveToBase64(generatedImageBase64),
                 resolveToBase64(heroRawBase64),
                 resolveToBase64(heroDNABase64),
                 resolveToBase64(secondRawBase64),
                 resolveToBase64(secondDNABase64),
+                resolveToBase64(propAssetImageBase64 || propAssetImageUrl)
             ]);
 
             // Add Generated Image First
@@ -127,6 +132,11 @@ export class QualityAgent {
                     contents.push({ text: "Hero B DNA STYLE REFERENCE (Secondary character design):" });
                     contents.push({ inlineData: { mimeType: getMime(resolvedSecondDNA), data: resolvedSecondDNA } });
                 }
+            }
+
+            if (resolvedProp) {
+                contents.push({ text: "CANONICAL RECURRING PROP ASSET REFERENCE (Physical appearance authority for signature recurring prop/vehicle):" });
+                contents.push({ inlineData: { mimeType: getMime(resolvedProp), data: resolvedProp } });
             }
 
             const biometrics = extractBiometrics(params.childDescription || targetPrompt);
@@ -197,9 +207,12 @@ STRICT BIOMETRIC & ARTISTIC EVALUATION CRITERIA:
    - FORBIDDEN STYLE DRIFT: The generated image must strictly adhere to the established artistic medium and stylization level of the DNA Reference. It must NOT drift into contrasting artistic media or incompatible stylization levels (e.g., painterly realism shifting to 3D CGI plastic or flat vector, 3D animated shifting to flat 2D or realistic photo, watercolor shifting to digital glossy CGI).
    - MANDATORY FAIL RULE: If the illustration mutates into a contrasting artistic medium or different dimensionality/stylization level, set "styleConsistencyStatus": "fail", "overallDecision": "fail", and specify the exact observed drift and target requirement in "regenerationReason" (e.g., "Style drifted into [Observed Style] with [Observed Deviations]; must strictly match the [Target Style] and anatomical scale of the DNA Reference Image").
 
-7. Global Recurring Object & Persistent Prop Invariance:
-   - Check recurring signature objects (e.g. Bed-boat, signature lantern, vehicles, core story props).
-   - If an established recurring prop defined in the prompt/blueprint mutates into a completely different design, material, or object across scenes, flag or fail.
+7. Global Recurring Object & Persistent Prop Invariance (Weight: HIGH):
+   - Check recurring signature objects (e.g. Bed-Boat, signature lantern, vehicles, core story props).
+   - If a Canonical Prop Reference Image is provided in the input: Compare the recurring prop/vehicle in the generated image directly against the reference image.
+   - Core Structural Invariance: The prop must strictly match the canonical reference in materials (wood grain, metal finish), geometry, color palette, and distinct features (e.g., star-wheel, canopy shape, sail texture).
+   - MANDATORY FAIL RULE: If the scene features the recurring prop but it mutates into a completely different design, different materials, or mismatched colors contradicting the Canonical Prop Reference Image, you MUST set "propConsistencyStatus": "fail", "overallDecision": "fail", and specify in "regenerationReason": "Prop Invariance Failure: Recurring prop drifted from Canonical Reference Image [Observed deviations]. Must strictly match canonical prop reference."
+   - If no recurring prop appears in this specific scene or no prop reference was provided, set "propConsistencyStatus": "na" and "propReasoning": "No recurring prop in this spread."
 
 8. Text Zone Clearance:
    - Check if the designated side (${currentTextSide || 'Right'}) is clear of the character's face.
@@ -209,8 +222,8 @@ STRICT BIOMETRIC & ARTISTIC EVALUATION CRITERIA:
    - Does the image accurately reflect the story action and mood described in the story text?
 
 OVERALL DECISION RULES:
-- "overallDecision": "pass" -> Likeness >= 7, haircut matches reference, age matches ${childAge}, skin tone matches, style matches, narrative adheres.
-- "overallDecision": "fail" -> Any failure in likeness (< 7), haircut mutation (fade/undercut when curls), age shift, skin tone shift, corrupted style, or narrative contradiction.
+- "overallDecision": "pass" -> Likeness >= 7, haircut matches reference, age matches ${childAge}, skin tone matches, style matches, prop matches reference (if present), narrative adheres.
+- "overallDecision": "fail" -> Any failure in likeness (< 7), haircut mutation (fade/undercut when curls), age shift, skin tone shift, corrupted style, prop invariance failure, or narrative contradiction.
 - "overallDecision": "flagged" -> Borderline edge-case requiring Art Director review.
 
 Output STRICTLY a JSON object matching this schema:
@@ -223,8 +236,8 @@ Output STRICTLY a JSON object matching this schema:
   "wardrobeReasoning": "Clothing evaluation...",
   "styleConsistencyStatus": "pass" | "fail",
   "styleReasoning": "Style medium and texture evaluation...",
-  "propConsistencyStatus": "pass" | "fail",
-  "propReasoning": "Evaluation of recurring props and objects...",
+  "propConsistencyStatus": "pass" | "fail" | "na",
+  "propReasoning": "Evaluation of recurring props and objects against Canonical Prop Reference Image...",
   "textClearanceStatus": "pass" | "fail",
   "textReasoning": "Text layout and clearance explanation...",
   "recommendedTextSide": "Right" | "Left",

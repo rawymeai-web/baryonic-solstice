@@ -73,7 +73,8 @@ export class IllustrationWorker {
         hBOrigUrl = dnaRecords.find(r => r.hero_label === 'Hero B' && r.image_type === 'Original Photo')?.image_url;
         propAssetUrl = dnaRecords.find(r => r.hero_label === 'Prop Asset' && r.image_type === 'Canonical Asset')?.image_url;
       }
-      if (!propAssetUrl && storyData.recurringAssetImageUrl) {
+      // Explicit staff/story_data override takes highest precedence
+      if (storyData.recurringAssetImageUrl) {
         propAssetUrl = storyData.recurringAssetImageUrl;
       }
 
@@ -278,6 +279,8 @@ export class IllustrationWorker {
               childAge: childAge,
               targetPrompt: promptBlock.imagePrompt,
               stylePrompt: resolvedStyleDNA,
+              propAssetImageBase64: propImagesArray?.[0],
+              propAssetImageUrl: propAssetUrl,
               spreadNumber: i,
               isCover: isCover,
               layoutPlanSide: promptBlock.textSide || "Right",
@@ -286,7 +289,7 @@ export class IllustrationWorker {
             let qcResult = await QualityAgent.evaluateImage(qcParams);
 
             console.log(
-              `[QCAgent] Result for Spread ${i} (Attempt 1): Likeness ${qcResult.likenessScore}/10, Narrative: ${qcResult.narrativeAdherenceStatus}, Decision: ${qcResult.overallDecision}`,
+              `[QCAgent] Result for Spread ${i} (Attempt 1): Likeness ${qcResult.likenessScore}/10, Prop: ${qcResult.propConsistencyStatus || 'n/a'}, Narrative: ${qcResult.narrativeAdherenceStatus}, Decision: ${qcResult.overallDecision}`,
             );
 
             overallDecision = qcResult.overallDecision;
@@ -297,7 +300,7 @@ export class IllustrationWorker {
               iteration_number: 1,
               image_url: iterationUrl,
               character_consistency_status: qcResult.characterConsistencyStatus,
-              character_reasoning: `[Likeness: ${qcResult.likenessScore}/10] [Visual: ${qcResult.visualDescription}] [Narrative Check: ${qcResult.narrativeAdherenceStatus} - ${qcResult.narrativeAdherenceReasoning}] ${qcResult.characterReasoning}`,
+              character_reasoning: `[Likeness: ${qcResult.likenessScore}/10] [Prop: ${qcResult.propConsistencyStatus || 'n/a'} - ${qcResult.propReasoning || ''}] [Visual: ${qcResult.visualDescription}] [Narrative Check: ${qcResult.narrativeAdherenceStatus} - ${qcResult.narrativeAdherenceReasoning}] ${qcResult.characterReasoning}`,
               style_consistency_status: qcResult.styleConsistencyStatus,
               style_reasoning: qcResult.styleReasoning,
               text_clearance_status: qcResult.textClearanceStatus,
@@ -316,6 +319,9 @@ export class IllustrationWorker {
               const steeringNotes: string[] = [];
               if (qcResult.characterConsistencyStatus === 'fail' || qcResult.likenessScore < 5) {
                 steeringNotes.push(`CRITICAL CHARACTER LIKENESS FIX: ${qcResult.characterReasoning}`);
+              }
+              if (qcResult.propConsistencyStatus === 'fail') {
+                steeringNotes.push(`CRITICAL RECURRING PROP INVARIANCE FIX: ${qcResult.propReasoning || qcResult.regenerationReason || 'Match the canonical prop reference image exactly in materials, shape, and colors.'}`);
               }
               if (qcResult.narrativeAdherenceStatus === 'fail') {
                 steeringNotes.push(`CRITICAL SCENE ACTION FIX: Ensure the scene directly depicts: ${promptBlock.storyText || 'the story action'}. Avoid incorrect actions.`);

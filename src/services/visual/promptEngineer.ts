@@ -1072,7 +1072,10 @@ function assembleEnglishPromptV7_4(
     });
 
     if (hasRecurringPropInSpread && recurringAsset) {
-        const propSlot = activeHeroes.length + 1;
+        // Deterministic slot computation based on total attached hero references:
+        // Single-hero book: Image 1 = Hero 1, Image 2 = Prop Asset.
+        // Dual-hero book: Image 1 = Hero 1, Image 2 = Hero 2, Image 3 = Prop Asset.
+        const propSlot = (heroes && heroes.length > 1 ? 2 : 1) + 1;
         legendParts.push(`- Image ${propSlot}: Approved canonical reference image for [[PROP_ASSET]] (${recurringAsset.name}).`);
     }
 
@@ -1089,7 +1092,7 @@ function assembleEnglishPromptV7_4(
     const propLockLines: string[] = [];
 
     if (hasRecurringPropInSpread && recurringAsset) {
-        const propSlot = activeHeroes.length + 1;
+        const propSlot = (heroes && heroes.length > 1 ? 2 : 1) + 1;
         propLockLines.push(
             `- [[PROP_ASSET]] ("${recurringAsset.name}"): Must strictly match the exact physical form, geometry, materials, color scheme, and aesthetic details shown in Image ${propSlot} (${recurringAsset.description}). Render this exact canonical object in the scene without altering its core structure or colors.`
         );

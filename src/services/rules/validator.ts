@@ -30,6 +30,23 @@ export const Validator = {
         if (!blueprint) return false;
         if (!blueprint.foundation || !blueprint.structure) return false;
         if (!Array.isArray(blueprint.structure.spreads)) return false;
+        
+        // Deterministic recurringAsset validation
+        if (blueprint.foundation.recurringAsset) {
+            const asset = blueprint.foundation.recurringAsset;
+            if (typeof asset !== 'object') return false;
+            if (typeof asset.name !== 'string' || !asset.name.trim()) return false;
+            if (typeof asset.description !== 'string' || !asset.description.trim()) return false;
+            if (asset.appearancesSpreads && Array.isArray(asset.appearancesSpreads)) {
+                const spreadCount = blueprint.structure.spreads.length || 8;
+                for (const s of asset.appearancesSpreads) {
+                    if (typeof s !== 'number' || s < 0 || s > spreadCount) return false;
+                }
+                if (asset.appearancesSpreads.length < 2) {
+                    asset.generateAssetImage = false;
+                }
+            }
+        }
         return true;
     },
 
@@ -42,8 +59,6 @@ export const Validator = {
     validateVisualPlan: (plan: any, expectedLength: number = 8): boolean => {
         if (!plan || !plan.spreads) return false;
         if (!Array.isArray(plan.spreads)) return false;
-        // The plan might include a Cover (Spread 0), so it could be script.length + 1
-        // Or sometimes it matches exactly. We should just check it has *enough* spreads.
         if (plan.spreads.length < expectedLength) return false;
         return true;
     },

@@ -2,6 +2,7 @@ export const maxDuration = 300;
 
 import { NextResponse } from 'next/server';
 import { generateThemeStylePreview, describeSubject, describeObjectProp, generateObjectStylePreview } from '@/services/generation/imageGenerator';
+import { generatePropAssetImage } from '@/services/generation/assetGenerator';
 import { ART_STYLE_OPTIONS } from '@/constants';
 import { checkRateLimit, logRequest } from '@/utils/rateLimiter';
 import { uploadBase64Image } from '@/services/imageStore';
@@ -20,6 +21,23 @@ export async function POST(req: Request) {
                 remaining: 0,
                 resetTime: rateCheck.resetTime.toISOString()
             }, { status: 429 });
+        }
+
+        // Dedicated Prop Asset Regeneration Handler
+        if (body.type === 'prop' || (body.assetName && body.assetDescription)) {
+            const propResult = await generatePropAssetImage({
+                orderId: body.orderId || 'manual_regen',
+                assetName: body.assetName,
+                assetDescription: body.assetDescription,
+                stylePrompt: body.stylePrompt || body.style || "children's book watercolor illustration"
+            });
+            await logRequest(ip, clientEmail);
+            return NextResponse.json({
+                success: true,
+                propAssetImageUrl: propResult.imageUrl,
+                propAssetBase64: propResult.imageBase64,
+                artifiedHeroBase64: propResult.imageUrl
+            });
         }
 
         const { mainCharacter, secondCharacter, theme, style: styleId, age, occasion, customGoal } = body;

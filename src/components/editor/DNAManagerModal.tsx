@@ -12,6 +12,7 @@ interface DNAManagerModalProps {
 
 export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onClose, onUpdateDNA }) => {
     const [isRegenerating, setIsRegenerating] = useState(false);
+    const [isRegeneratingProp, setIsRegeneratingProp] = useState(false);
     const [mainDNA, setMainDNA] = useState<string | undefined>(
         storyData.styleReferenceImageBase64 || storyData.mainCharacter?.imageDNA?.[0]
     );
@@ -29,13 +30,13 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
     const handleUpload = (type: 'main' | 'second' | 'prop') => {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/jpeg, image/png, image/webp';
-        input.onchange = (e: any) => {
-            const file = e.target.files?.[0];
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (event) => {
-                const base64 = (event.target?.result as string).split(',')[1];
+                const base64 = event.target?.result as string;
                 if (type === 'main') setMainDNA(base64);
                 else if (type === 'second') setSecondDNA(base64);
                 else if (type === 'prop') setPropDNA(base64);
@@ -67,6 +68,33 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
             alert(`Failed to regenerate DNA: ${e.message}`);
         } finally {
             setIsRegenerating(false);
+        }
+    };
+
+    const handleRegenerateProp = async () => {
+        if (!recurringAsset || !recurringAsset.name) return;
+        setIsRegeneratingProp(true);
+        try {
+            const data: any = await backendApi.generateDna({
+                type: 'prop',
+                orderId: storyData.orderId,
+                assetName: recurringAsset.name,
+                assetDescription: recurringAsset.description,
+                stylePrompt: storyData.technicalStyleGuide || storyData.selectedStyleNames?.[0] || storyData.selectedStylePrompt || "high quality illustration"
+            });
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            if (data.propAssetImageUrl || data.propAssetBase64) {
+                setPropDNA(data.propAssetImageUrl || data.propAssetBase64);
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert(`Failed to regenerate Prop Asset: ${e.message}`);
+        } finally {
+            setIsRegeneratingProp(false);
         }
     };
 
@@ -189,9 +217,17 @@ export const DNAManagerModal: React.FC<DNAManagerModalProps> = ({ storyData, onC
                                     ) : (
                                         <div className="w-full h-48 bg-gray-800 rounded-lg border border-gray-700 flex items-center justify-center text-gray-500">No prop reference generated yet</div>
                                     )}
-                                    <div className="flex gap-2 mt-3">
+                                    <div className="flex flex-wrap gap-2 mt-3">
                                         <Button variant="secondary" onClick={() => handleUpload('prop')} className="flex-1 py-1.5 text-xs">Upload Custom Prop</Button>
-                                        {propDNA && <Button variant="secondary" onClick={() => handleDownload(propDNA, `Canonical_Prop_${(recurringAsset?.name || 'Asset').replace(/\s+/g, '_')}.jpg`)} className="flex-1 py-1.5 text-xs border-amber-500/30 text-amber-400">Download Reference</Button>}
+                                        <Button 
+                                            variant="secondary" 
+                                            onClick={handleRegenerateProp} 
+                                            disabled={isRegeneratingProp}
+                                            className="flex-1 py-1.5 text-xs border-amber-500/30 hover:border-amber-500 text-amber-400"
+                                        >
+                                            {isRegeneratingProp ? <Spinner size="sm" /> : 'Regenerate Prop'}
+                                        </Button>
+                                        {propDNA && <Button variant="secondary" onClick={() => handleDownload(propDNA, `Canonical_Prop_${(recurringAsset?.name || 'Asset').replace(/\s+/g, '_')}.jpg`)} className="w-full py-1 text-xs border-gray-700 text-gray-400">Download Reference</Button>}
                                     </div>
                                 </div>
                                 <div className="flex flex-col justify-center bg-gray-900/50 p-4 rounded-lg border border-gray-800 text-xs text-gray-300 space-y-2">

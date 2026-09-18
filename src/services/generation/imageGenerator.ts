@@ -528,26 +528,6 @@ export async function generateMethod4Image(
             }
         }
 
-        // DNA-ONLY LEGEND (v6.0): Sequential numbering.
-        // This MUST match the prompt body exactly — no contradiction allowed.
-        const legendLines: string[] = ['CHARACTER & ASSET IDENTITY REFERENCES:'];
-        let currentIdx = 1;
-
-        heroAImages.forEach((_, i) => {
-            legendLines.push(`- Image ${currentIdx}: [[HERO_1]] — approved character reference.`);
-            currentIdx += 1;
-        });
-
-        heroBImages.forEach((_, i) => {
-            legendLines.push(`- Image ${currentIdx}: [[HERO_2]] — approved character reference.`);
-            currentIdx += 1;
-        });
-
-        propImages.forEach((_, i) => {
-            legendLines.push(`- Image ${currentIdx}: [[PROP_ASSET]] — canonical reference object.`);
-            currentIdx += 1;
-        });
-
         // Transparent WYSIWYG Mode: Use the prompt exactly as passed.
         let finalPromptText = unifiedPromptText;
         
