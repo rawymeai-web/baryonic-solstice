@@ -404,47 +404,70 @@ ${masterGuardrails}`;
 
 // UPGRADED: Central FIFO Image Call Rate Limiter & Mutex for Pro Models
 export class GlobalImageRateLimiter {
-    private queue: Array<() => void> = [];
-    private isProcessing = false;
-    private lastCallTimestamp = 0;
-    private readonly minIntervalMs = 30000;
+    private queue: Array<{
+        resolve: (release: () => void) => void;
+    }> = [];
+    private isLocked = false;
+    private lastCompletionTimestamp = 0;
+    private minIntervalMs: number;
 
-    async acquire(isPro: boolean): Promise<() => void> {
+    constructor(minIntervalMs = 30000) {
+        this.minIntervalMs = minIntervalMs;
+    }
+
+    async acquire(isPro: boolean = true): Promise<() => void> {
         if (!isPro) {
             return () => {};
         }
 
         return new Promise<() => void>((resolve) => {
-            this.queue.push(() => {
-                resolve(() => {
-                    this.lastCallTimestamp = Date.now();
-                });
-            });
-            this.processNext();
+            this.queue.push({ resolve });
+            this.scheduleNext();
         });
     }
 
-    private async processNext() {
-        if (this.isProcessing || this.queue.length === 0) return;
-        this.isProcessing = true;
+    getQueueLength(): number {
+        return this.queue.length;
+    }
 
-        const next = this.queue.shift();
-        if (next) {
-            const now = Date.now();
-            const elapsed = now - this.lastCallTimestamp;
-            if (elapsed < this.minIntervalMs) {
-                const waitMs = this.minIntervalMs - elapsed;
-                console.log(`[RateLimiter] Queued Pro image request waiting ${(waitMs / 1000).toFixed(1)}s for mutex cooldown... (Queue: ${this.queue.length})`);
-                await new Promise((r) => setTimeout(r, waitMs));
-            }
-            this.lastCallTimestamp = Date.now();
-            next();
+    getIsLocked(): boolean {
+        return this.isLocked;
+    }
+
+    setMinIntervalMs(ms: number) {
+        this.minIntervalMs = ms;
+    }
+
+    private async scheduleNext() {
+        if (this.isLocked || this.queue.length === 0) {
+            return;
         }
 
-        this.isProcessing = false;
-        if (this.queue.length > 0) {
-            this.processNext();
+        this.isLocked = true;
+        const current = this.queue.shift();
+        if (!current) {
+            this.isLocked = false;
+            return;
         }
+
+        const now = Date.now();
+        const elapsed = now - this.lastCompletionTimestamp;
+        if (this.lastCompletionTimestamp > 0 && elapsed < this.minIntervalMs) {
+            const waitMs = this.minIntervalMs - elapsed;
+            console.log(`[RateLimiter] Queued Pro image request waiting ${(waitMs / 1000).toFixed(1)}s for mutex cooldown... (Queue: ${this.queue.length})`);
+            await new Promise((r) => setTimeout(r, waitMs));
+        }
+
+        let released = false;
+        const releaseFn = () => {
+            if (released) return;
+            released = true;
+            this.lastCompletionTimestamp = Date.now();
+            this.isLocked = false;
+            this.scheduleNext();
+        };
+
+        current.resolve(releaseFn);
     }
 }
 

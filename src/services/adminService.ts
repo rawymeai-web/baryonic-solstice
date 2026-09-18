@@ -695,6 +695,7 @@ export async function rerunQA(orderId: string, payload: {
   targetPrompt?: string;
   spreadText?: string;
   currentTextSide?: string;
+  qcParams?: any;
 }): Promise<{ success: boolean; qcResult: any; logEntry: any }> {
   const res = await fetch(`/api/admin/orders/${orderId}/rerun-qa`, {
     method: 'POST',

@@ -342,11 +342,13 @@ Output STRICTLY a JSON object matching this schema:
 
             // Strict Runtime Validation & Enum Sanitization (Fail-Closed)
             const validatePassFail = (val: any): 'pass' | 'fail' => (val === 'pass' ? 'pass' : 'fail');
-            const validatePassFailNa = (val: any): 'pass' | 'fail' | 'na' => (val === 'pass' ? 'pass' : (val === 'fail' ? 'fail' : 'na'));
             const validateScore = (val: any): number => {
                 const n = Number(val);
                 return Number.isFinite(n) && n >= 0 && n <= 10 ? n : 0;
             };
+
+            const hasActiveLocation = !!(params.locationRecord && (params.locationRecord.name || params.locationRecord.architecture));
+            const hasActiveProp = !!(params.propAssetImageBase64 || params.propAssetImageUrl);
 
             const heroResults: HeroQCResult[] = [];
             const rawHeroList = Array.isArray(parsedRaw.heroResults) ? parsedRaw.heroResults : [];
@@ -355,9 +357,19 @@ Output STRICTLY a JSON object matching this schema:
                 const found = rawHeroList.find((h: any) => h.heroToken === expectedHero.heroToken || h.label === expectedHero.label);
                 if (found) {
                     const score = validateScore(found.likenessScore);
-                    const status: 'pass' | 'fail' | 'needs_review' = (found.characterConsistencyStatus === 'pass' && score >= 7)
-                        ? 'pass'
-                        : (found.characterConsistencyStatus === 'needs_review' ? 'needs_review' : 'fail');
+                    const hairStatus = validatePassFail(found.hairConsistency);
+                    const skinToneStatus = validatePassFail(found.skinToneConsistency);
+                    const ageStatus = validatePassFail(found.ageAccuracy);
+                    const biometricsOk = hairStatus === 'pass' && skinToneStatus === 'pass' && ageStatus === 'pass';
+
+                    let status: 'pass' | 'fail' | 'needs_review' = 'fail';
+                    if (!biometricsOk || score < 7 || found.characterConsistencyStatus === 'fail') {
+                        status = 'fail';
+                    } else if (found.characterConsistencyStatus === 'needs_review' || score < 8) {
+                        status = 'needs_review';
+                    } else {
+                        status = 'pass';
+                    }
 
                     heroResults.push({
                         heroToken: expectedHero.heroToken,
@@ -366,9 +378,9 @@ Output STRICTLY a JSON object matching this schema:
                         likenessScore: score,
                         characterConsistencyStatus: status,
                         reasoning: found.reasoning || found.characterReasoning || 'Evaluated.',
-                        hairConsistency: validatePassFail(found.hairConsistency),
-                        skinToneConsistency: validatePassFail(found.skinToneConsistency),
-                        ageAccuracy: validatePassFail(found.ageAccuracy)
+                        hairConsistency: hairStatus,
+                        skinToneConsistency: skinToneStatus,
+                        ageAccuracy: ageStatus
                     });
                 } else {
                     // Fail closed if expected active hero was omitted by model
@@ -394,6 +406,17 @@ Output STRICTLY a JSON object matching this schema:
                 ? 'fail'
                 : (heroResults.some(h => h.characterConsistencyStatus === 'needs_review') ? 'needs_review' : 'pass');
 
+            // Fail closed: if active location or prop is present, omission or 'na' results in 'fail'
+            let resolvedLocationStatus: 'pass' | 'fail' | 'na' = 'na';
+            if (hasActiveLocation) {
+                resolvedLocationStatus = parsedRaw.locationConsistencyStatus === 'pass' ? 'pass' : 'fail';
+            }
+
+            let resolvedPropStatus: 'pass' | 'fail' | 'na' = 'na';
+            if (hasActiveProp) {
+                resolvedPropStatus = parsedRaw.propConsistencyStatus === 'pass' ? 'pass' : 'fail';
+            }
+
             const result: QualityCheckResult = {
                 visualDescription: parsedRaw.visualDescription || 'Evaluated illustration.',
                 heroResults,
@@ -405,9 +428,9 @@ Output STRICTLY a JSON object matching this schema:
                 wardrobeReasoning: parsedRaw.wardrobeReasoning || 'Wardrobe check completed.',
                 styleConsistencyStatus: validatePassFail(parsedRaw.styleConsistencyStatus),
                 styleReasoning: parsedRaw.styleReasoning || 'Style check completed.',
-                locationConsistencyStatus: validatePassFailNa(parsedRaw.locationConsistencyStatus),
+                locationConsistencyStatus: resolvedLocationStatus,
                 locationReasoning: parsedRaw.locationReasoning,
-                propConsistencyStatus: validatePassFailNa(parsedRaw.propConsistencyStatus),
+                propConsistencyStatus: resolvedPropStatus,
                 propReasoning: parsedRaw.propReasoning,
                 textClearanceStatus: validatePassFail(parsedRaw.textClearanceStatus),
                 textReasoning: parsedRaw.textReasoning || 'Text clearance check completed.',
@@ -443,7 +466,7 @@ Output STRICTLY a JSON object matching this schema:
                 result.overallDecision = 'pass';
             }
 
-            console.log(`[QCAgent] Evaluated: Likeness: ${result.overallLikenessScore}/10, Style: ${result.styleConsistencyStatus}, Prop: ${result.propConsistencyStatus || 'n/a'}, Decision: ${result.overallDecision}`);
+            console.log(`[QCAgent] Evaluated: Likeness: ${result.overallLikenessScore}/10, Style: ${result.styleConsistencyStatus}, Prop: ${result.propConsistencyStatus || 'n/a'}, Location: ${result.locationConsistencyStatus || 'n/a'}, Decision: ${result.overallDecision}`);
             return result;
 
         }, 2, 4000, {
@@ -454,7 +477,10 @@ Output STRICTLY a JSON object matching this schema:
                 name: h.name,
                 likenessScore: 5,
                 characterConsistencyStatus: 'needs_review',
-                reasoning: 'QA agent encountered transient timeout/error during automated check.'
+                reasoning: 'QA agent encountered transient timeout/error during automated check.',
+                hairConsistency: 'pass',
+                skinToneConsistency: 'pass',
+                ageAccuracy: 'pass'
             })),
             overallLikenessScore: 5,
             likenessScore: 5,
@@ -491,6 +517,9 @@ export function countHardFailures(qc: any): number {
         for (const h of qc.heroResults) {
             if ((h.likenessScore ?? 0) < 7) count++;
             if (h.characterConsistencyStatus === 'fail') count++;
+            if (h.hairConsistency === 'fail') count++;
+            if (h.skinToneConsistency === 'fail') count++;
+            if (h.ageAccuracy === 'fail') count++;
         }
     } else {
         if ((qc.likenessScore ?? 0) < 7) count++;
@@ -551,7 +580,13 @@ export function isDefiniteHardFailure(qc: QualityCheckResult): boolean {
     if (qc.propConsistencyStatus === 'fail') return true;
     if (qc.narrativeAdherenceStatus === 'fail') return true;
     if (qc.locationConsistencyStatus === 'fail') return true;
-    if (qc.heroResults && qc.heroResults.some(h => h.likenessScore < 7 || h.characterConsistencyStatus === 'fail')) return true;
+    if (qc.heroResults && qc.heroResults.some(h => 
+        h.likenessScore < 7 || 
+        h.characterConsistencyStatus === 'fail' ||
+        h.hairConsistency === 'fail' ||
+        h.skinToneConsistency === 'fail' ||
+        h.ageAccuracy === 'fail'
+    )) return true;
     return false;
 }
 

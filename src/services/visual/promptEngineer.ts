@@ -43,9 +43,18 @@ export interface PromptValidationResult {
     warnings: string[];
 }
 
-export function sanitizeHeroExpression(expr: string): string {
-    if (!expr || typeof expr !== 'string') return 'expressive, natural expression reflecting the scene mood';
+export function sanitizeHeroExpression(expr: string, heroToken?: string): string {
+    if (!expr || typeof expr !== 'string') return `${heroToken ? heroToken + ' has an ' : ''}expressive, natural expression reflecting the scene mood`;
     let clean = expr.trim();
+
+    if (heroToken) {
+        clean = clean.replace(/\b(he|she)\b/gi, heroToken);
+        clean = clean.replace(/\b(his|her)\b/gi, `${heroToken}'s`);
+        clean = clean.replace(/\b(him|her)\b/gi, heroToken);
+        if (!clean.includes(heroToken)) {
+            clean = `${heroToken} with ${clean}`;
+        }
+    }
 
     // Prevent grotesque horror or terrifying facial distortions while preserving authentic emotional arcs
     const replacements: [RegExp, string][] = [
@@ -61,7 +70,7 @@ export function sanitizeHeroExpression(expr: string): string {
     });
 
     clean = clean.replace(/^(a|an|the)\s+/i, '').replace(/\bexpression\b/gi, '').trim();
-    return clean || 'thoughtful and expressive';
+    return clean || `${heroToken ? heroToken + ' is ' : ''}thoughtful and expressive`;
 }
 
 function validateAssembledPrompt(prompt: string): PromptValidationResult {
@@ -990,6 +999,13 @@ function assembleEnglishPromptV7_4(
                    spread.keyActions.toLowerCase().includes(`hero_${idx + 1}`) ||
                    spread.keyActions.toLowerCase().includes(heroToken);
         }
+        if (spread.characters_present && Array.isArray(spread.characters_present)) {
+            const hName = (h.name || '').toLowerCase();
+            return spread.characters_present.some((c: any) => typeof c === 'string' ? (hName && c.toLowerCase().includes(hName)) : (hName && c?.name?.toLowerCase()?.includes(hName)));
+        }
+        if (idx > 0 && ((spread.action_summary && spread.action_summary.toLowerCase().includes('alone')) || (spread.storyText && spread.storyText.toLowerCase().includes('alone')))) {
+            return false;
+        }
         return true;
     });
 
@@ -1273,7 +1289,19 @@ export async function generatePrompts(
     heroes: HeroProfile[],
     language?: string
 ): Promise<{
-    result: { spreadNumber: number, imagePrompt: string, storyText: string, textSide?: string, mainContentSide?: string }[],
+    result: {
+        spreadNumber: number;
+        imagePrompt: string;
+        storyText: string;
+        textSide?: string;
+        mainContentSide?: string;
+        activeHeroTokens?: string[];
+        activeHeroIds?: string[];
+        includesProp?: boolean;
+        locationKey?: string;
+        locationName?: string;
+        location?: string;
+    }[],
     log: WorkflowLog
 }> {
 
@@ -1315,11 +1343,38 @@ export async function generatePrompts(
             if (isCover) {
                 actionSide = spreadIsRTL ? 'left' : 'right';
                 txtSide = spreadIsRTL ? 'left' : 'right';
-            } else {
-                if (txtSide.toLowerCase() !== 'left' && txtSide.toLowerCase() !== 'right') {
-                    txtSide = actionSide.toLowerCase() === 'left' ? 'right' : 'left';
+            }
+
+            // Determine structured active heroes
+            const activeHeroTokens: string[] = ['[[HERO_1]]'];
+            const activeHeroIds: string[] = ['hero_1'];
+            if (heroes.length > 1 && !isCover && heroes[1]) {
+                const hero2Name = heroes[1].name || '';
+                const promptHasHero2 = prompt.includes('[[HERO_2]]');
+                const isHero1Alone = prompt.includes('[[HERO_1]] is alone') || 
+                    prompt.includes('Render ONLY the active hero [[HERO_1]]') ||
+                    (spread.action_summary && spread.action_summary.toLowerCase().includes('alone')) ||
+                    (bpSpread?.narrative && bpSpread.narrative.toLowerCase().includes('alone'));
+                const bpHasHero2 = !!(bpSpread && (bpSpread as any).charactersPresent && Array.isArray((bpSpread as any).charactersPresent) && (bpSpread as any).charactersPresent.some((c: any) => typeof c === 'string' ? (hero2Name && c.toLowerCase().includes(hero2Name.toLowerCase())) : (hero2Name && c?.name?.toLowerCase()?.includes(hero2Name.toLowerCase()))));
+                const planHasHero2 = !!(spread && spread.characters_present && Array.isArray(spread.characters_present) && spread.characters_present.some((c: any) => typeof c === 'string' ? (hero2Name && c.toLowerCase().includes(hero2Name.toLowerCase())) : (hero2Name && c?.name?.toLowerCase()?.includes(hero2Name.toLowerCase()))));
+                
+                if ((promptHasHero2 || bpHasHero2 || planHasHero2) && !isHero1Alone) {
+                    activeHeroTokens.push('[[HERO_2]]');
+                    activeHeroIds.push('hero_2');
                 }
             }
+
+            // Determine structured prop inclusion
+            const includesProp = Boolean(!isCover && recurringAsset && (
+                (Array.isArray(recurringAsset.appearancesSpreads) && recurringAsset.appearancesSpreads.includes(spreadIndex)) ||
+                spread.includesProp === true ||
+                spread.includes_prop === true ||
+                prompt.includes('[[PROP_ASSET]]') ||
+                (recurringAsset.name && prompt.toLowerCase().includes(recurringAsset.name.toLowerCase()))
+            ));
+
+            // Determine normalized location identity from plan or blueprint
+            const locationKey = String(spread?.specific_location || spread?.specificLocation || spread?.location || spread?.setting || bpSpread?.specificLocation || (bpSpread as any)?.specific_location || (bpSpread as any)?.location || (bpSpread as any)?.setting || '');
 
             return {
                 spreadNumber: spreadIndex,
@@ -1327,6 +1382,12 @@ export async function generatePrompts(
                 storyText: isCover ? '' : (spread?.storyText || spread?.text || (bpSpread as any)?.storyText || bpSpread?.narrative || ''),
                 mainContentSide: actionSide,
                 textSide: txtSide,
+                activeHeroTokens,
+                activeHeroIds,
+                includesProp,
+                locationKey,
+                locationName: locationKey,
+                location: locationKey,
             };
         });
 

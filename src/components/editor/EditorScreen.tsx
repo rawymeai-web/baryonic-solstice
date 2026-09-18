@@ -15,6 +15,7 @@ import { ShippingModal } from '@/components/admin/ShippingModal';
 import OutpaintReviewModal from '@/components/editor/OutpaintReviewModal';
 import { ClientLogger } from '@/utils/clientLogger';
 import { getWordCountForAge } from '@/services/rules/guidebook';
+import { buildGenerationManifest, buildGenerationPayload, buildQualityCheckParams } from '@/services/visual/manifestBuilder';
 
 
 interface FinalizeArgs {
@@ -806,8 +807,18 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 return;
             }
 
-            const visualDNA = getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly, flat 2D illustrated children\'s book style';
+            const dnaRecords: any[] = [];
+            if (masterDNA) {
+                dnaRecords.push({ hero_label: 'Hero A', image_type: 'Stylized DNA', image_url: masterDNA });
+            }
+            if (masterDNA2) {
+                dnaRecords.push({ hero_label: 'Hero B', image_type: 'Stylized DNA', image_url: masterDNA2 });
+            }
+            if (masterPropAsset) {
+                dnaRecords.push({ hero_label: 'Prop Asset', image_type: 'Canonical Asset', image_url: masterPropAsset });
+            }
 
+            const spreadNum = index === 'cover' ? 0 : index;
             let promptToUse = '';
             if (index === 'cover') {
                 promptToUse = coverEdit;
@@ -815,23 +826,51 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 promptToUse = pageEdits[index]?.prompt || getPromptForIndex(index, spreads[index]);
             }
 
-            // Compress to avoid Vercel/Cloudflare 4.5MB payload size limits
+            // Sync prompt edits with storyData prompts
+            const currentPrompts = [...(storyData.prompts || [])];
+            const pIdx = currentPrompts.findIndex((p: any) => p.spreadNumber === spreadNum || (spreadNum === 0 && p.isCover));
+            if (pIdx >= 0) {
+                currentPrompts[pIdx] = { ...currentPrompts[pIdx], imagePrompt: promptToUse };
+            } else {
+                currentPrompts.push({
+                    spreadNumber: spreadNum,
+                    isCover: spreadNum === 0,
+                    imagePrompt: promptToUse,
+                    storyText: spreadNum === 0 ? '' : (spreads[spreadNum]?.text || '')
+                });
+            }
+
+            const dynamicStoryData = {
+                ...storyData,
+                prompts: currentPrompts,
+                mainCharacter: {
+                    ...storyData.mainCharacter,
+                    imageDNA: masterDNA ? [masterDNA] : storyData.mainCharacter?.imageDNA
+                },
+                secondCharacter: storyData.secondCharacter ? {
+                    ...storyData.secondCharacter,
+                    imageDNA: masterDNA2 ? [masterDNA2] : storyData.secondCharacter?.imageDNA
+                } : undefined,
+                recurringAssetImageUrl: masterPropAsset || storyData.recurringAssetImageUrl
+            };
+
+            const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
+            const manifest = buildGenerationManifest(dynamicStoryData, targetOrderId, dnaRecords);
+            const payload = buildGenerationPayload(manifest, spreadNum);
+
+            // Compress to avoid Vercel/Cloudflare payload size limits
             const compressSingle = async (img: string | undefined): Promise<string | undefined> => {
                 if (!img) return undefined;
                 return compressBase64Image(img, 768, 0.75);
             };
 
-            const compressedHeroA = await compressSingle(heroADNA);
-            const compressedHeroB = await compressSingle(heroBDNA);
-            const compressedProp = await compressSingle(masterPropAsset);
+            const heroAImage = payload.referenceImages.find(r => r.slotNumber === 1)?.data;
+            const heroBImage = payload.referenceImages.find(r => r.slotNumber === 2 && r.label.includes('[[HERO_2]]'))?.data;
+            const propImage = payload.referenceImages.find(r => r.label.includes('[[PROP_ASSET]]'))?.data;
 
-            let safePromptToUse = typeof promptToUse === 'string' ? promptToUse : JSON.stringify(promptToUse);
-            // HEAL: Rewrite legacy image index bindings that expect raw photos (which we no longer send)
-            safePromptToUse = safePromptToUse.replace(/Image 2 defines the character for \[\[HERO_1\]\]/g, "Image 1 defines the character for [[HERO_1]]");
-            safePromptToUse = safePromptToUse.replace(/Image 4 defines the character for \[\[HERO_2\]\]/g, "Image 2 defines the character for [[HERO_2]]");
-
-            const promptRequiresHero2 = safePromptToUse.includes('[[HERO_2]]');
-            const effectiveHeroB = promptRequiresHero2 ? compressedHeroB : undefined;
+            const compressedHeroA = await compressSingle(heroAImage);
+            const compressedHeroB = await compressSingle(heroBImage);
+            const compressedProp = await compressSingle(propImage);
 
             // --- GENERATION AUDIT: capture exactly what will be sent ---
             const auditSnapshot = {
@@ -841,10 +880,10 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         ? compressedHeroA
                         : `data:image/jpeg;base64,${compressedHeroA.replace(/^data:image\/\w+;base64,/, '')}`)
                     : null,
-                heroBUrl: effectiveHeroB
-                    ? (effectiveHeroB.startsWith('http')
-                        ? effectiveHeroB
-                        : `data:image/jpeg;base64,${effectiveHeroB.replace(/^data:image\/\w+;base64,/, '')}`)
+                heroBUrl: compressedHeroB
+                    ? (compressedHeroB.startsWith('http')
+                        ? compressedHeroB
+                        : `data:image/jpeg;base64,${compressedHeroB.replace(/^data:image\/\w+;base64,/, '')}`)
                     : null,
                 propAssetUrl: compressedProp
                     ? (compressedProp.startsWith('http')
@@ -852,9 +891,9 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                         : `data:image/jpeg;base64,${compressedProp.replace(/^data:image\/\w+;base64,/, '')}`)
                     : null,
                 heroACount: compressedHeroA ? 1 : 0,
-                heroBCount: effectiveHeroB ? 1 : 0,
+                heroBCount: compressedHeroB ? 1 : 0,
                 hasPropAsset: !!compressedProp,
-                promptSent: safePromptToUse,
+                promptSent: payload.prompt,
                 dnaSource,
             };
             setLastGenerationAudit(auditSnapshot);
@@ -864,21 +903,21 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 index,
                 mode: 'DNA-Only v6.0',
                 heroA_has: !!compressedHeroA,
-                heroB_has: !!effectiveHeroB,
+                heroB_has: !!compressedHeroB,
                 prop_has: !!compressedProp,
                 promptLength: auditSnapshot.promptSent.length,
             });
 
             console.group(`%c 🧬 DNA AUDIT [Spread ${index}] `, 'background: #222; color: #bada55; font-size: 12px; font-weight: bold;');
-            console.log('[v6.0 DNA-Only] Images sent:', { heroA: !!compressedHeroA, heroB: !!effectiveHeroB, prop: !!compressedProp });
+            console.log('[v6.0 DNA-Only] Images sent:', { heroA: !!compressedHeroA, heroB: !!compressedHeroB, prop: !!compressedProp });
             console.log('Prompt (first 300 chars):', auditSnapshot.promptSent.substring(0, 300));
             console.groupEnd();
 
             const imgRes: any = await backendApi.generateImage({
-                prompt: auditSnapshot.promptSent,
-                stylePrompt: typeof visualDNA === 'string' ? visualDNA : String(visualDNA || ''),
+                prompt: payload.prompt,
+                stylePrompt: payload.stylePrompt,
                 heroDNABase64: compressedHeroA,
-                secondDNABase64: effectiveHeroB,
+                secondDNABase64: compressedHeroB,
                 propAssetBase64: compressedProp,
                 characterDescription: storyData.mainCharacter?.description || '',
                 age: storyData.childAge,
@@ -894,7 +933,6 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
             // Upload base64 image to Supabase Storage to store lightweight public CDN URL instead of huge base64 payload
             let finalImageUrl = imgRes.imageBase64;
-            const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
             try {
                 const uploadRes = await backendApi.uploadImage({
                     orderNumber: targetOrderId,
@@ -915,9 +953,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     coverImageUrl: finalImageUrl,
                     coverOriginalUrl: undefined,
                     coverQcStatus: undefined,
-                    // Keep the editable seed prompt in actualCoverPrompt (what you see in the textarea)
                     actualCoverPrompt: imgRes.seedPrompt || promptToUse,
-                    // Store the REAL Gemini prompt separately for troubleshooting
                     lastGeminiCoverPrompt: imgRes.fullPrompt,
                     coverGenerationModel: imgRes.modelUsed
                 };
@@ -929,14 +965,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     lastGeminiCoverPrompt: imgRes.fullPrompt,
                     coverGenerationModel: imgRes.modelUsed
                 } as any);
-                // Keep the textarea as-is (editable seed) — do NOT replace with compiled Gemini prompt
                 await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
 
                 // Authoritative QA re-evaluation in background
                 adminService.rerunQA(targetOrderId, {
                     spreadIndex: 0,
                     illustrationUrl: finalImageUrl,
-                    targetPrompt: imgRes.fullPrompt || promptToUse,
+                    targetPrompt: imgRes.fullPrompt || payload.prompt,
                     spreadText: storyData.title
                 }).catch(err => console.warn('[EditorScreen] Background QA failed:', err));
             } else {
@@ -946,15 +981,12 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     illustrationUrl: finalImageUrl,
                     qcOriginalUrl: undefined,
                     qcStatus: undefined,
-                    // Keep the editable seed prompt (what you see in the textarea)
                     actualPrompt: imgRes.seedPrompt || promptToUse,
-                    // Store the REAL Gemini prompt separately for troubleshooting
                     lastGeminiPrompt: imgRes.fullPrompt,
                     generationModel: imgRes.modelUsed
                 };
                 const newStory = { ...storyData, spreads: newSpreads };
                 
-                // Do NOT update pageEdits — leave the seed prompt editable in the textarea
                 onUpdateStory({ spreads: newSpreads });
                 await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
 
@@ -962,7 +994,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 adminService.rerunQA(targetOrderId, {
                     spreadIndex: index,
                     illustrationUrl: finalImageUrl,
-                    targetPrompt: imgRes.fullPrompt || promptToUse,
+                    targetPrompt: imgRes.fullPrompt || payload.prompt,
                     spreadText: newSpreads[index]?.text,
                     currentTextSide: newSpreads[index]?.textSide || 'left'
                 }).catch(err => console.warn('[EditorScreen] Background QA failed:', err));
@@ -1290,40 +1322,89 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         setIsGlobalRegenerating(true);
         setGlobalEditProgress(0);
         try {
-            const visualDNA = getCleanStylePrompt(storyData.selectedStylePrompt) || 'Painterly children\'s book illustration style';
-            
-            const compressedMaster = masterDNA ? await compressBase64Image(masterDNA, 768, 0.75) : undefined;
-            const compressedSecond = (storyData.useSecondCharacter && storyData.secondCharacter?.type !== 'object' && masterDNA2)
-                ? await compressBase64Image(masterDNA2, 768, 0.75)
-                : undefined;
-            const compressedProp = masterPropAsset ? await compressBase64Image(masterPropAsset, 768, 0.75) : undefined;
+            const dnaRecords: any[] = [];
+            if (masterDNA) {
+                dnaRecords.push({ hero_label: 'Hero A', image_type: 'Stylized DNA', image_url: masterDNA });
+            }
+            if (masterDNA2) {
+                dnaRecords.push({ hero_label: 'Hero B', image_type: 'Stylized DNA', image_url: masterDNA2 });
+            }
+            if (masterPropAsset) {
+                dnaRecords.push({ hero_label: 'Prop Asset', image_type: 'Canonical Asset', image_url: masterPropAsset });
+            }
 
+            const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
+            const dynamicStoryData = {
+                ...storyData,
+                mainCharacter: {
+                    ...storyData.mainCharacter,
+                    imageDNA: masterDNA ? [masterDNA] : storyData.mainCharacter?.imageDNA
+                },
+                secondCharacter: storyData.secondCharacter ? {
+                    ...storyData.secondCharacter,
+                    imageDNA: masterDNA2 ? [masterDNA2] : storyData.secondCharacter?.imageDNA
+                } : undefined,
+                recurringAssetImageUrl: masterPropAsset || storyData.recurringAssetImageUrl
+            };
+
+            const manifest = buildGenerationManifest(dynamicStoryData, targetOrderId, dnaRecords);
             const newSpreads = [...spreads];
 
             for (let i = 1; i <= totalSpreads; i++) {
                 setGlobalEditStatus(`Painting Spread ${i} of ${totalSpreads}...`);
-                const basePrompt = pageEdits[i]?.prompt || getPromptForIndex(i, spreads[i]) || '';
-                const combinedPrompt = `GLOBAL OVERRIDE INSTRUCTION: ${globalEditInstruction.trim()}\n\n${basePrompt}`;
-                const promptRequiresHero2 = combinedPrompt.includes('[[HERO_2]]');
-                const effectiveHeroB = promptRequiresHero2 ? compressedSecond : undefined;
+                const payload = buildGenerationPayload(manifest, i);
+                const combinedPrompt = `GLOBAL OVERRIDE INSTRUCTION: ${globalEditInstruction.trim()}\n\n${payload.prompt}`;
+
+                const heroAImage = payload.referenceImages.find(r => r.slotNumber === 1)?.data;
+                const heroBImage = payload.referenceImages.find(r => r.slotNumber === 2 && r.label.includes('[[HERO_2]]'))?.data;
+                const propImage = payload.referenceImages.find(r => r.label.includes('[[PROP_ASSET]]'))?.data;
+
+                const compressedHeroA = heroAImage ? await compressBase64Image(heroAImage, 768, 0.75) : undefined;
+                const compressedHeroB = heroBImage ? await compressBase64Image(heroBImage, 768, 0.75) : undefined;
+                const compressedProp = propImage ? await compressBase64Image(propImage, 768, 0.75) : undefined;
+
                 try {
                     const imgRes: any = await backendApi.generateImage({
                         prompt: combinedPrompt,
-                        stylePrompt: visualDNA,
-                        heroDNABase64: compressedMaster,
-                        secondDNABase64: effectiveHeroB,
+                        stylePrompt: payload.stylePrompt,
+                        heroDNABase64: compressedHeroA,
+                        secondDNABase64: compressedHeroB,
                         propAssetBase64: compressedProp,
                         characterDescription: storyData.mainCharacter?.description || '',
                         age: storyData.childAge,
                         secondCharacterDescription: storyData.secondCharacter?.description,
                     });
                     if (imgRes.imageBase64) {
+                        let finalImageUrl = imgRes.imageBase64;
+                        try {
+                            const uploadRes = await backendApi.uploadImage({
+                                orderNumber: targetOrderId,
+                                spreadNum: i,
+                                imageBase64: imgRes.imageBase64
+                            });
+                            if (uploadRes?.publicUrl) {
+                                finalImageUrl = uploadRes.publicUrl;
+                            }
+                        } catch (uploadErr) {
+                            console.warn(`[EditorScreen] Upload for spread ${i} failed, using base64`, uploadErr);
+                        }
+
                         newSpreads[i] = { 
                             ...newSpreads[i], 
-                            illustrationUrl: imgRes.imageBase64,
+                            illustrationUrl: finalImageUrl,
                             generationModel: imgRes.modelUsed
                         };
                         onUpdateStory({ spreads: [...newSpreads] });
+
+                        // Background QA evaluation for global regeneration
+                        const qcParams = buildQualityCheckParams(manifest, i, finalImageUrl);
+                        adminService.rerunQA(targetOrderId, {
+                            spreadIndex: i,
+                            illustrationUrl: finalImageUrl,
+                            targetPrompt: combinedPrompt,
+                            spreadText: payload.storyText,
+                            qcParams
+                        }).catch(err => console.warn(`[EditorScreen] Background QA for spread ${i} failed:`, err));
                     }
                 } catch (e) {
                     console.error(`Global regen failed for spread ${i}`, e);

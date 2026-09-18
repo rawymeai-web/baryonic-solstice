@@ -361,20 +361,18 @@ export function buildGenerationManifest(
 
     // 4. Resolve Location Bible
     const locationBible: LocationBible = { locations: {} };
-    const visualAnchors = storyData.visualPlan?.visualAnchors || storyData.blueprint?.visualAnchors;
-    if (visualAnchors?.recurringLocations) {
-        const rawLoc = visualAnchors.recurringLocations;
-        if (typeof rawLoc === 'object') {
-            Object.entries(rawLoc).forEach(([key, val]: [string, any]) => {
-                locationBible.locations[key] = {
-                    name: key,
-                    architecture: val.architecture || val.description || String(val),
-                    keyLandmarks: Array.isArray(val.landmarks) ? val.landmarks : [],
-                    materialsPalette: val.materials || val.palette || '',
-                    lightingAtmosphere: val.lighting || ''
-                };
-            });
-        }
+    const visualAnchors = storyData.visualPlan?.visualAnchors || storyData.blueprint?.visualAnchors || storyData.blueprint?.foundation;
+    const rawLoc = visualAnchors?.recurringLocations || storyData.blueprint?.recurringLocations || storyData.visualPlan?.recurringLocations;
+    if (rawLoc && typeof rawLoc === 'object') {
+        Object.entries(rawLoc).forEach(([key, val]: [string, any]) => {
+            locationBible.locations[key] = {
+                name: key,
+                architecture: val.architecture || val.description || val.setting || String(val),
+                keyLandmarks: Array.isArray(val.landmarks) ? val.landmarks : (Array.isArray(val.keyLandmarks) ? val.keyLandmarks : []),
+                materialsPalette: val.materials || val.palette || val.materialsPalette || '',
+                lightingAtmosphere: val.lighting || val.lightingAtmosphere || ''
+            };
+        });
     }
 
     // 5. Build Style Contract
@@ -420,28 +418,45 @@ export function buildGenerationManifest(
             }
         }
 
-        // Location Resolution from LocationBible
+        // Location Resolution from LocationBible (supports specificLocation, specific_location, locationKey, etc.)
         let spreadLocation: LocationRecord | undefined = undefined;
-        const bpSpread = pageIdx >= 0 ? storyData.blueprint?.structure?.spreads?.[pageIdx] : null;
-        const locationName = p.locationName || p.location || bpSpread?.location || bpSpread?.setting;
-        if (locationName && locationBible.locations[locationName]) {
-            spreadLocation = locationBible.locations[locationName];
-        } else if (locationName) {
-            // Find fuzzy match in locationBible
-            const matchKey = Object.keys(locationBible.locations).find(k => k.toLowerCase().includes(locationName.toLowerCase()) || locationName.toLowerCase().includes(k.toLowerCase()));
-            if (matchKey) spreadLocation = locationBible.locations[matchKey];
+        const bpSpread = pageIdx >= 0 ? (storyData.blueprint?.structure?.spreads?.[pageIdx] || storyData.blueprint?.structure?.spreads?.find((s: any) => s.spreadNumber === spreadNum)) : null;
+        const planSpread = pageIdx >= 0 ? (storyData.visualPlan?.spreads?.[pageIdx] || storyData.visualPlan?.spreads?.find((s: any) => s.spread_index === spreadNum || s.spreadNumber === spreadNum)) : null;
+        
+        const locationName = p.locationKey || p.locationName || p.location || bpSpread?.specificLocation || bpSpread?.specific_location || bpSpread?.location || bpSpread?.setting || planSpread?.specific_location || planSpread?.specificLocation || planSpread?.setting || '';
+        
+        if (locationName) {
+            if (locationBible.locations[locationName]) {
+                spreadLocation = locationBible.locations[locationName];
+            } else {
+                // Find fuzzy match in locationBible
+                const matchKey = Object.keys(locationBible.locations).find(k => k.toLowerCase().includes(locationName.toLowerCase()) || locationName.toLowerCase().includes(k.toLowerCase()));
+                if (matchKey) {
+                    spreadLocation = locationBible.locations[matchKey];
+                } else if (locationName.trim().length > 0) {
+                    spreadLocation = {
+                        name: locationName,
+                        architecture: locationName,
+                        keyLandmarks: [],
+                        materialsPalette: '',
+                        lightingAtmosphere: ''
+                    };
+                }
+            }
         }
 
-        // Compute Assigned Slots
+        // Compute Assigned Slots (Active Heroes only)
         const assignedSlots: SpreadManifest['assignedSlots'] = [];
-        assignedSlots.push({
-            slotNumber: 1,
-            label: `Image 1: Approved character reference for [[HERO_1]] (${heroes[0].name})`,
-            referenceType: 'hero_dna',
-            imageUrlOrBase64: heroes[0].stylizedDnaUrl || heroes[0].stylizedDnaBase64 || ''
-        });
+        if (activeHeroes.some(h => h.heroToken === '[[HERO_1]]')) {
+            assignedSlots.push({
+                slotNumber: 1,
+                label: `Image 1: Approved character reference for [[HERO_1]] (${heroes[0].name})`,
+                referenceType: 'hero_dna',
+                imageUrlOrBase64: heroes[0].stylizedDnaUrl || heroes[0].stylizedDnaBase64 || ''
+            });
+        }
 
-        if (heroes.length > 1) {
+        if (heroes.length > 1 && activeHeroes.some(h => h.heroToken === '[[HERO_2]]')) {
             assignedSlots.push({
                 slotNumber: 2,
                 label: `Image 2: Approved character reference for [[HERO_2]] (${heroes[1].name})`,
