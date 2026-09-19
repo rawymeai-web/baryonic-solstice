@@ -1,7 +1,11 @@
-import { runArchitectureTests } from './architecture.test';
+﻿import { runArchitectureTests } from './architecture.test';
 import { runFastProductionTests } from './fast_production.test';
 import { runGenerationContractTests } from './generation_contracts.test';
 import { runE2EProductionPipelineTests } from './e2e_production_pipeline.test';
+import { runGlobalOverridePrecedenceTests } from './global_override_precedence.test';
+import { runQAContractPersistenceTests } from './qa_contract_persistence.test';
+import { runAtomicDistributedLeaseTests } from './atomic_distributed_lease.test';
+import { runRegexSafetyTests } from './regex_safety.test';
 
 async function main() {
     console.log('\n================================================================');
@@ -26,6 +30,22 @@ async function main() {
     const res4 = await runE2EProductionPipelineTests();
     totalPassed += res4.passed;
     totalFailed += res4.failed;
+
+    const res5 = await runGlobalOverridePrecedenceTests();
+    totalPassed += res5.passed;
+    totalFailed += res5.failed;
+
+    const res6 = await runQAContractPersistenceTests();
+    totalPassed += res6.passed;
+    totalFailed += res6.failed;
+
+    const res7 = await runAtomicDistributedLeaseTests();
+    totalPassed += res7.passed;
+    totalFailed += res7.failed;
+
+    const res8 = await runRegexSafetyTests();
+    totalPassed += res8.passed;
+    totalFailed += res8.failed;
 
     console.log('================================================================');
     console.log(`🏁 GRAND TOTAL: ${totalPassed} PASSED, ${totalFailed} FAILED`);

@@ -402,17 +402,20 @@ ${masterGuardrails}`;
     });
 }
 
-// UPGRADED: Central FIFO Image Call Rate Limiter & Mutex for Pro Models with Distributed DB Fallback
+import { DistributedLeaseManager, ActiveLease } from './distributedLeaseManager';
+
+// UPGRADED: Central FIFO Image Call Rate Limiter & Mutex with Atomic Distributed Lease Reservation
 export class GlobalImageRateLimiter {
     private queue: Array<{
         resolve: (release: () => void) => void;
     }> = [];
     private isLocked = false;
-    private lastCompletionTimestamp = 0;
     private minIntervalMs: number;
+    private leaseManager: DistributedLeaseManager;
 
-    constructor(minIntervalMs = 30000) {
+    constructor(minIntervalMs = 30000, leaseManager?: DistributedLeaseManager) {
         this.minIntervalMs = minIntervalMs;
+        this.leaseManager = leaseManager || DistributedLeaseManager.getInstance();
     }
 
     async acquire(isPro: boolean = true): Promise<() => void> {
@@ -438,49 +441,6 @@ export class GlobalImageRateLimiter {
         this.minIntervalMs = ms;
     }
 
-    async checkDistributedCooldown(): Promise<number> {
-        try {
-            const { supabase } = await import('@/utils/supabaseClient').catch(() => ({ supabase: null }));
-            if (!supabase) return 0;
-
-            const timeWindow = new Date(Date.now() - this.minIntervalMs);
-            const { data: logs, error } = await supabase
-                .from('event_audit_log')
-                .select('created_at')
-                .eq('event_type', 'gemini_pro_image_generation')
-                .gt('created_at', timeWindow.toISOString())
-                .order('created_at', { ascending: false })
-                .limit(1);
-
-            if (error || !logs || logs.length === 0) {
-                return 0;
-            }
-
-            const latestTimestamp = new Date(logs[0].created_at).getTime();
-            const elapsed = Date.now() - latestTimestamp;
-            if (elapsed < this.minIntervalMs) {
-                return this.minIntervalMs - elapsed;
-            }
-        } catch {
-            // Graceful fallback to in-memory state
-        }
-        return 0;
-    }
-
-    async recordDistributedCall() {
-        try {
-            const { supabase } = await import('@/utils/supabaseClient').catch(() => ({ supabase: null }));
-            if (!supabase) return;
-
-            await supabase.from('event_audit_log').insert({
-                event_type: 'gemini_pro_image_generation',
-                details: { timestamp: new Date().toISOString() }
-            });
-        } catch {
-            // Graceful non-blocking error handling
-        }
-    }
-
     private async scheduleNext() {
         if (this.isLocked || this.queue.length === 0) {
             return;
@@ -493,27 +453,27 @@ export class GlobalImageRateLimiter {
             return;
         }
 
-        const now = Date.now();
-        const elapsed = now - this.lastCompletionTimestamp;
-        let waitMs = (this.lastCompletionTimestamp > 0 && elapsed < this.minIntervalMs)
-            ? (this.minIntervalMs - elapsed)
-            : 0;
-
-        if (waitMs === 0) {
-            waitMs = await this.checkDistributedCooldown();
-        }
-
-        if (waitMs > 0) {
-            console.log(`[RateLimiter] Queued Pro image request waiting ${(waitMs / 1000).toFixed(1)}s for mutex cooldown... (Queue: ${this.queue.length})`);
-            await new Promise((r) => setTimeout(r, waitMs));
+        let activeLease: ActiveLease | undefined;
+        try {
+            // Atomic distributed slot reservation across serverless/multi-instances
+            activeLease = await this.leaseManager.acquire({
+                resourceKey: 'gemini_pro_image',
+                minIntervalMs: this.minIntervalMs,
+                maxConcurrent: 1,
+                leaseDurationMs: 120000,
+                errorPolicy: 'degraded_local'
+            });
+        } catch (leaseErr) {
+            console.error('[GlobalImageRateLimiter] Lease reservation error:', leaseErr);
         }
 
         let released = false;
         const releaseFn = () => {
             if (released) return;
             released = true;
-            this.lastCompletionTimestamp = Date.now();
-            this.recordDistributedCall().catch(() => {});
+            if (activeLease) {
+                activeLease.release().catch(() => {});
+            }
             this.isLocked = false;
             this.scheduleNext();
         };

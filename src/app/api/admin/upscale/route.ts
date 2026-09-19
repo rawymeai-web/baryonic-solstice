@@ -9,7 +9,21 @@ import { promisify } from 'util';
 const execFileAsync = promisify(execFile);
 export const maxDuration = 180;
 
-const REAL_ESRGAN_EXE = 'C:\\Users\\s_eme\\.gemini\\antigravity\\tools\\realesrgan\\realesrgan-ncnn-vulkan.exe';
+function getRealEsrganExecutablePath(): { path: string | null; engine: 'real-esrgan' | 'sharp'; reason?: string } {
+    const configuredPath = process.env.REAL_ESRGAN_PATH;
+    if (configuredPath && fs.existsSync(configuredPath)) {
+        return { path: configuredPath, engine: 'real-esrgan' };
+    }
+    const localRelativePath = path.join(process.cwd(), 'tools', 'realesrgan', process.platform === 'win32' ? 'realesrgan-ncnn-vulkan.exe' : 'realesrgan-ncnn-vulkan');
+    if (fs.existsSync(localRelativePath)) {
+        return { path: localRelativePath, engine: 'real-esrgan' };
+    }
+    return {
+        path: null,
+        engine: 'sharp',
+        reason: configuredPath ? `Configured REAL_ESRGAN_PATH (${configuredPath}) not found on disk.` : 'REAL_ESRGAN_PATH environment variable not configured.'
+    };
+}
 
 async function toBuffer(input: string): Promise<Buffer | null> {
     if (!input) return null;
@@ -52,7 +66,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Check if Real-ESRGAN standalone executable is available
-        if (fs.existsSync(REAL_ESRGAN_EXE)) {
+        const esrganInfo = getRealEsrganExecutablePath();
+        if (esrganInfo.path) {
             const tempDir = os.tmpdir();
             const tempInput = path.join(tempDir, `upscale_in_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`);
             const tempOutput = path.join(tempDir, `upscale_out_${Date.now()}_${Math.random().toString(36).slice(2)}.png`);
@@ -60,8 +75,8 @@ export async function POST(req: NextRequest) {
 
             await fs.promises.writeFile(tempInput, inputBuf);
 
-            console.log(`[Upscale AI] Executing Real-ESRGAN 4X Super-Resolution with model ${model}...`);
-            await execFileAsync(REAL_ESRGAN_EXE, [
+            console.log(`[Upscale AI] Executing Real-ESRGAN 4X Super-Resolution with model ${model} at ${esrganInfo.path}...`);
+            await execFileAsync(esrganInfo.path, [
                 '-i', tempInput,
                 '-o', tempOutput,
                 '-n', model,
@@ -91,6 +106,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Fallback to Sharp Lanczos3 if Real-ESRGAN executable is not found
+        console.log(`[Upscale AI] Falling back to Sharp Lanczos3. Reason: ${esrganInfo.reason || 'Executable not available'}`);
         const meta = await sharp(inputBuf).metadata();
         const srcW = meta.width || 1376;
         const srcH = meta.height || 768;

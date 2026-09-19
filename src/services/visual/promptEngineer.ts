@@ -14,6 +14,7 @@ import {
     SpreadDesignPlan, SpreadPlan, StoryBlueprint, WorkflowLog,
     StyleProfile, HeroProfile, SceneProp
 } from '../../types';
+import { escapeRegExp } from '@/utils/regexUtils';
 
 // ---------------------------------------------------------------------------
 // VALIDATION & SANITIZATION
@@ -87,7 +88,7 @@ function validateAssembledPrompt(prompt: string): PromptValidationResult {
 
     // 2. HARD FAIL: forbidden words
     FORBIDDEN_WORDS.forEach(word => {
-        const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'i');
         if (regex.test(lower)) {
             errors.push(`FORBIDDEN_WORD: "${word}" found.`);
         }
@@ -116,7 +117,7 @@ function sanitizeText(text: string): string {
         'fuse', 'fusion', 'spine', 'seam',
     ];
     safeForbidden.forEach(word => {
-        clean = clean.replace(new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), '');
+        clean = clean.replace(new RegExp(`\\b${escapeRegExp(word)}\\b`, 'gi'), '');
     });
     // Replace real-world logo names with safe alternatives
     clean = clean.replace(/\bNASA\b/g, 'space-themed emblem');
@@ -127,7 +128,7 @@ function sanitizeUnnamedCharacters(text: string, heroTokens: string[]): string {
     let clean = text;
     UNNAMED_CHARACTER_TERMS.forEach(term => {
         const replacement = heroTokens.length >= 2 ? heroTokens[1] : 'the surrounding environment';
-        clean = clean.replace(new RegExp(term, 'gi'), replacement);
+        clean = clean.replace(new RegExp(escapeRegExp(term), 'gi'), replacement);
     });
     return clean;
 }

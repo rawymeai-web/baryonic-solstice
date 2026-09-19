@@ -15,7 +15,15 @@ import { ShippingModal } from '@/components/admin/ShippingModal';
 import OutpaintReviewModal from '@/components/editor/OutpaintReviewModal';
 import { ClientLogger } from '@/utils/clientLogger';
 import { getWordCountForAge } from '@/services/rules/guidebook';
-import { buildGenerationManifest, buildGenerationPayload, buildQualityCheckParams, recomputeSpreadContracts } from '@/services/visual/manifestBuilder';
+import { 
+    buildGenerationManifest, 
+    buildGenerationPayload, 
+    buildQualityCheckParams, 
+    recomputeSpreadContracts,
+    parseGlobalOverrideInstruction,
+    mergeSpreadContracts,
+    compilePromptFromResolvedContract
+} from '@/services/visual/manifestBuilder';
 
 
 interface FinalizeArgs {
@@ -966,19 +974,13 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     coverQcStatus: undefined,
                     actualCoverPrompt: imgRes.seedPrompt || promptToUse,
                     lastGeminiCoverPrompt: imgRes.fullPrompt,
-                    coverGenerationModel: imgRes.modelUsed
+                    coverGenerationModel: imgRes.modelUsed,
+                    prompts: currentPrompts
                 };
-                onUpdateStory({
-                    coverImageUrl: finalImageUrl,
-                    coverOriginalUrl: undefined,
-                    coverQcStatus: undefined,
-                    actualCoverPrompt: imgRes.seedPrompt || promptToUse,
-                    lastGeminiCoverPrompt: imgRes.fullPrompt,
-                    coverGenerationModel: imgRes.modelUsed
-                } as any);
+                onUpdateStory(newStory);
                 await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
 
-                // Authoritative QA re-evaluation in background
+                // Authoritative QA re-evaluation in background (AFTER saveOrder completes)
                 adminService.rerunQA(targetOrderId, {
                     spreadIndex: 0,
                     illustrationUrl: finalImageUrl,
@@ -996,12 +998,16 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                     lastGeminiPrompt: imgRes.fullPrompt,
                     generationModel: imgRes.modelUsed
                 };
-                const newStory = { ...storyData, spreads: newSpreads };
+                const newStory = { 
+                    ...storyData, 
+                    spreads: newSpreads,
+                    prompts: currentPrompts 
+                };
                 
-                onUpdateStory({ spreads: newSpreads });
+                onUpdateStory(newStory);
                 await adminService.saveOrder(targetOrderId, newStory, shippingDetails || {});
 
-                // Authoritative QA re-evaluation in background
+                // Authoritative QA re-evaluation in background (AFTER saveOrder completes)
                 adminService.rerunQA(targetOrderId, {
                     spreadIndex: index,
                     illustrationUrl: finalImageUrl,
@@ -1333,6 +1339,14 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
         setIsGlobalRegenerating(true);
         setGlobalEditProgress(0);
         try {
+            // Parse global override instruction into structured tri-state patch
+            const { patch: globalPatch, validationErrors } = parseGlobalOverrideInstruction(globalEditInstruction, storyData);
+            if (validationErrors.length > 0) {
+                alert(`Global instruction error:\n\n${validationErrors.join('\n')}`);
+                setIsGlobalRegenerating(false);
+                return;
+            }
+
             const dnaRecords: any[] = [];
             if (masterDNA) {
                 dnaRecords.push({ hero_label: 'Hero A', image_type: 'Stylized DNA', image_url: masterDNA });
@@ -1347,19 +1361,30 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
             const targetOrderId = storyData.orderId || storyData.orderNumber || 'RWY-UNKNOWN';
             const dynamicPrompts = [...(storyData.prompts || [])];
 
-            // Precompute combined prompts & dynamic contracts for every spread
+            // Precompute structured contracts & non-contradictory prompts for every spread
             for (let i = 1; i <= totalSpreads; i++) {
                 const existingPrompt = dynamicPrompts.find((p: any) => p.spreadNumber === i);
                 const rawSpreadPrompt = existingPrompt?.imagePrompt || getPromptForIndex(i, spreads[i]);
-                const combinedPrompt = `GLOBAL OVERRIDE INSTRUCTION: ${globalEditInstruction.trim()}\n\n${rawSpreadPrompt}`;
-                const recomputed = recomputeSpreadContracts(combinedPrompt, storyData, i);
+                const recomputed = mergeSpreadContracts({
+                    globalPatch,
+                    manualSpreadPrompt: rawSpreadPrompt,
+                    existingContract: existingPrompt ? {
+                        activeHeroTokens: existingPrompt.activeHeroTokens,
+                        activeHeroIds: existingPrompt.activeHeroIds,
+                        includesProp: existingPrompt.includesProp,
+                        locationKey: existingPrompt.locationKey
+                    } : undefined,
+                    storyData,
+                    spreadNum: i
+                });
+                const compiledPrompt = compilePromptFromResolvedContract(rawSpreadPrompt, recomputed, globalEditInstruction);
                 
                 const pIdx = dynamicPrompts.findIndex((p: any) => p.spreadNumber === i);
                 const updatedEntry = {
                     ...(pIdx >= 0 ? dynamicPrompts[pIdx] : {}),
                     spreadNumber: i,
                     isCover: false,
-                    imagePrompt: combinedPrompt,
+                    imagePrompt: compiledPrompt,
                     storyText: spreads[i]?.text || existingPrompt?.storyText || '',
                     activeHeroTokens: recomputed.activeHeroTokens,
                     activeHeroIds: recomputed.activeHeroIds,
@@ -1389,6 +1414,7 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
 
             const manifest = buildGenerationManifest(dynamicStoryData, targetOrderId, dnaRecords, { allowMissingDnaForDraft: true });
             const newSpreads = [...spreads];
+            const generatedSpreads: { index: number; illustrationUrl: string; prompt: string; storyText: string; textSide: string }[] = [];
 
             for (let i = 1; i <= totalSpreads; i++) {
                 setGlobalEditStatus(`Painting Spread ${i} of ${totalSpreads}...`);
@@ -1433,16 +1459,14 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                             illustrationUrl: finalImageUrl,
                             generationModel: imgRes.modelUsed
                         };
-                        onUpdateStory({ spreads: [...newSpreads] });
-
-                        // Background QA evaluation for global regeneration
-                        adminService.rerunQA(targetOrderId, {
-                            spreadIndex: i,
+                        generatedSpreads.push({
+                            index: i,
                             illustrationUrl: finalImageUrl,
-                            targetPrompt: payload.prompt,
-                            spreadText: payload.storyText,
-                            currentTextSide: payload.textSide?.toLowerCase() || 'left'
-                        }).catch(err => console.warn(`[EditorScreen] Background QA for spread ${i} failed:`, err));
+                            prompt: payload.prompt,
+                            storyText: payload.storyText,
+                            textSide: payload.textSide?.toLowerCase() || 'left'
+                        });
+                        onUpdateStory({ spreads: [...newSpreads], prompts: dynamicPrompts });
                     }
                 } catch (e) {
                     console.error(`Global regen failed for spread ${i}`, e);
@@ -1450,9 +1474,22 @@ const EditorScreen: React.FC<EditorScreenProps> = ({
                 setGlobalEditProgress(Math.round((i / totalSpreads) * 100));
             }
 
-            // Save final state
+            // Save final state with updated prompts to DB BEFORE triggering background QA
+            const finalStory = { ...storyData, prompts: dynamicPrompts, spreads: newSpreads };
+            onUpdateStory(finalStory);
             if (storyData.orderId) {
-                await adminService.saveOrder(storyData.orderId, { ...storyData, spreads: newSpreads }, shippingDetails || {});
+                await adminService.saveOrder(storyData.orderId, finalStory, shippingDetails || {});
+            }
+
+            // Authoritative QA re-evaluation in background (AFTER database save completes!)
+            for (const item of generatedSpreads) {
+                adminService.rerunQA(targetOrderId, {
+                    spreadIndex: item.index,
+                    illustrationUrl: item.illustrationUrl,
+                    targetPrompt: item.prompt,
+                    spreadText: item.storyText,
+                    currentTextSide: item.textSide
+                }).catch(err => console.warn(`[EditorScreen] Background QA for spread ${item.index} failed:`, err));
             }
         } catch (e: any) {
             alert(`Global regeneration error: ${e.message}`);
