@@ -601,9 +601,14 @@ export async function generateMethod4Image(
             // Total attached images is slotCounter (since each attached image incremented slotCounter)
             const attachedImagesCount = slotCounter;
             if (maxImageRef > attachedImagesCount) {
-                const errorMsg = `[FATAL BINDING ERROR] The generated prompt explicitly references up to "Image ${maxImageRef}", but only ${attachedImagesCount} image(s) were passed in the payload array. Aborting to prevent identity/asset drift.`;
-                console.error(errorMsg);
-                throw new Error(errorMsg);
+                console.warn(`[IMAGE BINDING NOTICE] Prompt references up to "Image ${maxImageRef}", but only ${attachedImagesCount} image(s) attached. Auto-sanitizing dangling references to prevent generation crash.`);
+                // Sanitize references to unattached images (e.g. Image 2 when only 1 image attached)
+                for (let k = attachedImagesCount + 1; k <= maxImageRef; k++) {
+                    const danglingLineRegex = new RegExp(`^.*Image\\s+${k}.*$\\n?`, 'gmi');
+                    unifiedPromptText = unifiedPromptText.replace(danglingLineRegex, '');
+                    const danglingInlineRegex = new RegExp(`Image\\s+${k}`, 'gi');
+                    unifiedPromptText = unifiedPromptText.replace(danglingInlineRegex, 'the canonical item description');
+                }
             }
         }
 
@@ -806,47 +811,67 @@ ${imageSlots.map(s => '→ Image ' + s.slot + ' maps to: ' + s.label).join('<br>
             console.error("Failed to write debug payload", e);
         }
 
-        // 2. Call Gemini Multimodal Image Model (Nano Banana Pro)
-        const modelName = process.env.NEXT_PUBLIC_TARGET_MODEL || 'gemini-3-pro-image-preview';
-        const isPro = modelName.includes('pro');
-        let finalModelName = modelName;
+        // 2. Call Gemini Multimodal Image Model with Graceful Fallback Hierarchy
+        const primaryModel = process.env.NEXT_PUBLIC_TARGET_MODEL || 'gemini-3-pro-image-preview';
+        const candidateModels = [
+            primaryModel,
+            'gemini-3-pro-image',
+            'gemini-3.1-flash-image',
+            'gemini-3.1-flash-image-preview',
+            'gemini-2.5-flash-image'
+        ].filter((m, i, arr) => arr.indexOf(m) === i); // Deduplicate
+
         let b64 = "";
+        let succeededModel = "";
+        let lastGenerationError: any = null;
 
-        const releaseRateLimit = await globalImageRateLimiter.acquire(isPro);
+        for (const candidateModel of candidateModels) {
+            const isPro = candidateModel.includes('pro');
+            const releaseRateLimit = await globalImageRateLimiter.acquire(isPro);
 
-        try {
-            console.log(`Calling Gemini Multimodal Image Model: ${finalModelName}...`);
-            const model = ai().getGenerativeModel({ model: finalModelName });
-            const response = await model.generateContent(contents);
+            try {
+                console.log(`Calling Gemini Multimodal Image Model: ${candidateModel}...`);
+                const model = ai().getGenerativeModel({ model: candidateModel });
+                const response = await model.generateContent(contents);
 
-            // Extract Image
-            const candidates = response.response.candidates || [];
-            if (candidates.length > 0 && candidates[0].content?.parts) {
-                for (const part of candidates[0].content.parts) {
-                    if (part.inlineData?.data) {
-                        b64 = part.inlineData.data;
-                        break;
+                // Extract Image
+                const candidates = response.response.candidates || [];
+                if (candidates.length > 0 && candidates[0].content?.parts) {
+                    for (const part of candidates[0].content.parts) {
+                        if (part.inlineData?.data) {
+                            b64 = part.inlineData.data;
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (!b64) {
-                throw new Error(`Vision Model Error: No image data returned. (Model: ${finalModelName})`);
+                if (b64) {
+                    succeededModel = candidateModel;
+                    console.log(`✓ Image generation succeeded with model: ${candidateModel}`);
+                    releaseRateLimit();
+                    break;
+                } else {
+                    console.warn(`[ImageGen] Model ${candidateModel} returned no image data. Trying fallback model...`);
+                }
+            } catch (error: any) {
+                lastGenerationError = error;
+                console.warn(`[ImageGen] Model ${candidateModel} failed: ${error.message || error}. Trying fallback model...`);
+            } finally {
+                releaseRateLimit();
             }
-        } catch (error: any) {
-            console.warn(`[ImageGen] Generation with ${finalModelName} encountered error: ${error.message || error}. Retrying primary model...`);
-            throw error;
-        } finally {
-            releaseRateLimit();
+        }
+
+        if (!b64) {
+            throw new Error(`Vision Model Error: All model candidates failed to generate an image. Last error: ${lastGenerationError?.message || 'No image data returned'}`);
         }
 
         return { 
             imageBase64: b64, 
             fullPrompt: finalPromptText, 
             seedPrompt: unifiedPromptText,
-            modelUsed: finalModelName
+            modelUsed: succeededModel
         };
-    });
+    }, { retries: 2, delayMs: 2000, maxDelayMs: 6000, rateLimitDelayMs: 4000 });
 }
 
 /**

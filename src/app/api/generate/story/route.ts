@@ -42,6 +42,16 @@ export async function POST(req: Request) {
             storyData.customStoryText
         );
 
+        if (editorResponse.log.status === 'Failed' || editorResponse.log.outputs?.validationValid === false) {
+            ServerLogger.error('STORY_VALIDATION_FAILED', new Error("Editor validation failed"));
+            return NextResponse.json({
+                error: "Story failed editor quality validation",
+                details: editorResponse.log.outputs?.qualityErrors || editorResponse.log.outputs?.error || "Invalid manuscript",
+                validationErrors: editorResponse.log.outputs?.qualityErrors,
+                logs: [narrativeResponse.log, editorResponse.log]
+            }, { status: 422 });
+        }
+
         const duration = Date.now() - startTime;
         ServerLogger.log('STORY_GENERATION_COMPLETE', { durationMs: duration });
 

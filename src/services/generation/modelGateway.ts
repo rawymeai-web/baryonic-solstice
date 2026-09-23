@@ -16,12 +16,30 @@ export const cleanJsonString = (str: string): string => {
     return str.replace(/```json/g, '').replace(/```/g, '').trim();
 };
 
+export interface RetryOptions<T> {
+    retries?: number;
+    delayMs?: number;
+    maxDelayMs?: number;
+    rateLimitDelayMs?: number;
+    fallbackValue?: T;
+}
+
 export async function withRetry<T>(
     operation: () => Promise<T>,
-    retries = 5,
+    retriesOrOptions: number | RetryOptions<T> = 5,
     delayMs = 3000,
     fallbackValue?: T
 ): Promise<T> {
+    const options: RetryOptions<T> = typeof retriesOrOptions === 'object'
+        ? retriesOrOptions
+        : { retries: retriesOrOptions, delayMs, fallbackValue };
+
+    const retries = options.retries ?? 5;
+    const baseDelay = options.delayMs ?? 3000;
+    const maxDelay = options.maxDelayMs ?? 45000;
+    const rateLimitDelay = options.rateLimitDelayMs ?? 30000;
+    const fallback = options.fallbackValue;
+
     try {
         return await operation();
     } catch (error: any) {
@@ -32,25 +50,29 @@ export async function withRetry<T>(
                                errorMessage.includes('quota exceeded') || 
                                error?.status === 429;
 
-            // Use a much larger delay for rate limits (20-30s + jitter)
-            let actualDelay = delayMs;
+            let actualDelay: number;
             if (isRateLimit) {
-                const jitter = Math.floor(Math.random() * 10000); // 0-10s jitter
-                actualDelay = 30000 + jitter; 
+                const jitter = Math.floor(Math.random() * 3000); // 0-3s jitter
+                actualDelay = Math.min(rateLimitDelay + jitter, maxDelay);
                 console.warn(`[429 RATE LIMIT] Quota exceeded. Waiting ${actualDelay}ms before retry...`);
             } else {
-                actualDelay = delayMs * 2; // Exponential backoff for other errors
+                actualDelay = Math.min(baseDelay * 2, maxDelay); // Exponential backoff for other errors
             }
 
             console.warn(`Operation failed, retrying... (${retries} attempts left). Delaying for ${actualDelay}ms. Error: ${error.message || error}`);
 
             await new Promise(resolve => setTimeout(resolve, actualDelay));
 
-            return withRetry(operation, retries - 1, actualDelay, fallbackValue);
+            return withRetry(operation, {
+                ...options,
+                retries: retries - 1,
+                delayMs: actualDelay
+            });
         } else {
             console.error("Operation failed after max retries:", error);
-            if (fallbackValue !== undefined) return fallbackValue;
+            if (fallback !== undefined) return fallback;
             throw error;
         }
     }
 }
+

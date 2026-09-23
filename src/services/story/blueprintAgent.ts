@@ -121,63 +121,62 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
             - You MAY add accessories if the Theme requires it.
 
             **VISUAL CONTINUITY RULES (NON-NEGOTIABLE):**
-            1. **PRIMARY VISUAL ANCHOR (THE HERO OBJECT):** Choose ONE critical object (e.g., a cardboard box, a wooden kite, a brass compass) that is central to the story. 
-               - You MUST define it physically: shape, material, color, and size.
-               - Bad: "An ordinary object that has amazing powers."
-               - Good: "A brown corrugated cardboard box, slightly dented on the left corner, large enough for a child to sit inside."
+            1. **PRIMARY VISUAL ANCHOR (OPTIONAL STORY TOOL):** 
+               - If the story naturally centers on a specific physical keepsake, tool, or toy (e.g. wooden kite, brass compass, berry basket), define it physically in "primaryVisualAnchor" (shape, material, color) and specify its operational mechanism in "anchorTriggerRule".
+               - If the story is interpersonal/social (e.g. making friends at school), exploratory, or naturalistic, set "primaryVisualAnchor": "None" and "anchorTriggerRule": "None".
+               - DO NOT force an artificial mechanical gadget where everyday play or human interaction is the focus!
             2. **LOCATION PROGRESSION:** Do NOT redraw the same full background unless it's the final resolution.
                - *Good Flow:* Room -> Path -> Forest Edge -> Clearing -> Hill -> Home.
                - *Bad Flow:* Room -> Room -> Room -> Room.
             3. **CHARACTER CONTINUITY:** Supporting characters should appear in consecutive spreads. Avoid random appearing/disappearing.
             
-            **PERSONALITY-CONFLICT LOCK (CRITICAL — DO THIS FIRST):**
-            - Before writing anything, identify ONE specific internal trait or flaw of the hero from their INPUT DATA.
-            - The central conflict/obstacle MUST directly attack or expose that specific trait.
-            - The MORAL must be the direct resolution of that trait.
-            - Example: Hero is impatient → Obstacle requires waiting → Moral is about patience.
-            - Example: Hero is afraid to ask for help → Obstacle can only be solved with help → Moral is about courage to ask.
-            - DO NOT invent a conflict unrelated to who the hero IS internally.
+            **PERSONALITY & CONFLICT DIVERSITY (CRITICAL):**
+            - Avoid the cliché "hero is impatient -> obstacle requires slow patience" loop unless specifically called for.
+            - Explore diverse child-centered conflicts:
+              a) Social / Friendship / Empathy: Overcoming shyness, asking to join play, sharing, listening.
+              b) Curiosity / Mystery / Deduction: Finding clues, discovering how things work, tracking a secret path.
+              c) Teamwork / Synergy: Two friends bringing distinct complementary skills to solve a shared challenge.
+              d) Everyday Joy / Playful Wonder: A cozy toddler picnic, building a block tower, baking, gentle bedtime exploration.
+            - The conflict must be personal to the child and easily solvable within an ${spreadCount}-point physical progression.
 
             **NARRATIVE ARC REQUIREMENTS (${spreadCount} SPREADS — MASTER STORY ARCHITECTURE):**
             - You MUST generate EXACTLY ${spreadCount} spread objects.
             - Do NOT produce fewer or more than ${spreadCount}.
             1. **Spread 1 (Normal World, Home Base Framing & Personal Motive Origin):** 
-               - Establish the hero's name, their ONE key internal trait, and their starting **Home Base** (e.g., sunny play nook, bedroom rug, cozy garden porch).
+               - Establish the hero's name, their starting **Home Base** (e.g., sunny play nook, bedroom rug, cozy garden porch), and their warm personal motive.
+               ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `- **DUAL-HERO GROUNDING:** Ground BOTH "${storyData.childName}" and "${storyData.secondCharacter.name}" in their shared starting location from Spread 1!` : ''}
                - **World Framing Bridge:** Always ground the child's home base so the story has a clear starting reality before any magical or outdoor exploration begins.
-               - **Personal Motive Origin (NO Arbitrary Missions):** The hero's desire MUST spring from a warm, personal origin—a favorite activity, a deep love for animals/stars, a cherished gift, or gentle curiosity. NEVER drop an ungrounded mission statement (e.g., *"dreaming of helping desert friends sleep"* without explaining why this matters to the child).
-               - **Physical Cause-First Anchor Prop Rule (STRICT v4.0 MANDATE):** If a recurring anchor prop (pebble, compass, lantern, astrolabe, toy tool) is used, state its concrete PHYSICAL CAUSE-FIRST OPERATIONAL RULE in 1 clear sentence (e.g., *"The brass lantern shutter opened wide only when the latch clicked into the top notch away from sand"*, or *"The compass needle pointed true only when held flat and away from iron buckles"*).
-                 ❌ **STRICTLY FORBIDDEN:** ABSOLUTELY NO mood-ring, psychic, or emotion-reading magic (e.g. NEVER write *"the pebble glowed when happy and dimmed when sad"*, *"the lantern shined with his curiosity"*). The prop must obey concrete, observable physical actions!
-               - Set a clear physical ANCHOR IMAGE (location + object) — this will be returned to and echoed in Spread ${spreadCount}.
+               - **Personal Motive Origin (NO Arbitrary Missions):** The hero's desire MUST spring from a warm, personal origin—a favorite activity, a deep love for animals/stars, a cherished gift, or gentle curiosity.
+               - **Anchor Prop (If Used):** If an anchor prop is used, state its concrete PHYSICAL CAUSE-FIRST OPERATIONAL RULE. If no anchor prop is needed, focus on the child's playful desire and setting.
             2. **Spread 2 (Catalyst & Co-Hero Intentional Onboarding):** 
-               - The problem/obstacle appears and directly targets the hero's flaw. The hero's desire is now blocked.
+               - The problem, mystery, or play invitation appears.
                - **Sensory Bridge into Adventure:** Show the physical trigger (sound, movement, doorway) leading from the Spread 1 Home Base into the adventure space.
-               - ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `**DUAL-HERO ONBOARDING:** Give the companion (${storyData.secondCharacter.name}) a deliberate, warm on-screen entrance here if not in Spread 1. Establish their distinct personality, complementary skill (e.g., quiet observer vs eager explorer), and their own agency/motive.` : ''}
-               - If an environment or entity is personified as a testing force (e.g. *"The pyramid loved tricky games"*), establish it as an active presence that will be paid off later.
+               - ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `**DUAL-HERO ONBOARDING:** Establish ${storyData.secondCharacter.name}'s distinct personality, complementary skill (e.g., quiet observer vs eager explorer), and their own active stake.` : ''}
             3. **Spread 3 (First Attempt & Causal Action):** 
-               - Hero tries their default approach. It fails or makes things worse BECAUSE of their internal flaw.
-               - **Strict Causal Continuity:** The hero's opening action must directly respond to the obstacle from Spread 2 (no teleporting or solving problems off-screen).
-               - **Named Emotional Beat:** Name the child's exact feeling (e.g., "Frustrated", "Surprised") alongside the physical action.
-            4. **Spread 4 (Complication & Dynamic Duo Interaction):** 
-               - The situation escalates. ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `The co-hero actively contributes their perspective/skills.` : `A supporting character or natural sign may appear.`} Things get harder, not easier.
-               - **Named Emotional Beat:** Name the emotional state (e.g., "Confused", "Puzzled").
-            5. **Spread 5 (Near-Quit Beat — CRITICAL):** 
-               - The hero's lowest emotional point. They MUST explicitly consider giving up. This beat must be written as: (a) the physical result of the failure (drooping shoulders, sitting down), (b) a quiet moment where the hero sits/stops and nearly decides to quit, and (c) the explicit named emotion ("Sad", "Disappointed"). If an anchor prop is present, it remains stuck, unlatched, or unresponsive due to the incorrect physical approach from Spread 3. The solution MUST NOT appear here.
-            6. **Spread ${Math.ceil(spreadCount * 0.75)} (Insight & Observation):** 
-               - The "Aha!" moment. Something small the hero NOTICES (not something told to them) triggers a realization. This must be a direct logical response to the flaw revealed in Spread 3. The hero realizes the correct physical adjustment needed to operate the anchor prop or solve the obstacle.
-               - **Theme–Premise Dramatization:** If the theme involves communicating with animals or nature, explicitly show the hero interpreting animal sounds, postures, or silence as a meaningful message (e.g., realizing a soft whimper is asking for quiet stillness).
+               - Hero(es) try their default approach. It encounters an unexpected snag or complication.
+               - **Strict Causal Continuity:** The opening action must directly respond to the obstacle from Spread 2.
+               - **Named Emotional Beat:** Name the child's exact feeling (e.g., "Puzzled", "Shy", "Surprised") alongside the physical action.
+            4. **Spread 4 (Complication & Dynamic Interaction):** 
+               - The challenge deepens. ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `The co-hero actively contributes their perspective/skills.` : `An environmental sign or friendly helper may appear.`}
+               - **Named Emotional Beat:** Name the emotional state (e.g., "Curious", "Determined", "Hesitant").
+            5. **Spread 5 (Near-Quit / Low Point Beat):** 
+               - The emotional pause. The hero(es) pause and feel discouraged or stuck. Name the feeling plainly ("felt sad", "felt shy"). The solution MUST NOT appear here.
+            6. **Spread ${Math.ceil(spreadCount * 0.75)} (Insight & Shared Realization):** 
+               - The "Aha!" moment. Something small noticed in the environment or a supportive connection between characters triggers a realization.
+               - ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `Both heroes connect their ideas together.` : `The hero discovers the right approach.`}
                - **Named Emotional Beat:** Name the shift ("Relieved", "Hopeful").
-            7. **Spread ${spreadCount - 1} (Climax, Success & Title Secret Reveal):** 
-               - Hero uses their new approach/insight. They succeed through their own effort (and teamwork).
-               - **Deliver the Title's Promise & Theme:** If the title or theme promises a secret, treasure, or language, reveal the actual secret or artifact here.
+            7. **Spread ${spreadCount - 1} (Climax, Success & Title Promise Payoff):** 
+               - **Deliver the Title's Promise:** If the title or premise promises treasure, a secret, or finding a lost item, reveal the actual promised payoff here with coherent physical logic.
+               - ${storyData.useSecondCharacter && storyData.secondCharacter && storyData.secondCharacter.type !== 'object' ? `**INDISPENSABLE DUAL-HERO ACTION (MANDATORY):** BOTH ${storyData.childName} and ${storyData.secondCharacter.name} MUST perform an indispensable physical or cognitive action. If either hero were removed, the success could not happen!` : `The hero succeeds through their own effort and insight.`}
                - **Named Emotional Beat:** Name the triumph ("Proud", "Delighted").
             8. **Spread ${spreadCount} (Seamless Return Journey + Home Base Payoff):** 
-               - **Return Journey Bridge (NO Teleporting):** Include an explicit bridging clause describing how the hero transitions smoothly from the adventure space back to the Spread 1 Home Base (e.g., *"Lana gently carried her sleepy new friend home, back to her cozy play nook..."*).
-               - Echo the familiar setting/anchor from Spread 1, showing the transformation through the hero's proud, happy body language and the successfully placed/held anchor tool. Explicitly state the earned emotional realization ("Content", "Safe", "Loved") in a simple, child-friendly closing line.
+               - **Return Journey Bridge:** Smooth transition bridging the adventure space back to the Spread 1 Home Base.
+               - **Warm Scene-Based Closure (ANTI-PREACHY):** End on a cozy character moment (holding a keepsake, laughing together, tucking into bed, a warm hug). STRICTLY FORBIDDEN: Do NOT state an adult moral proverb (e.g. NEVER write "He learned that patience is the secret").
+               - State the earned emotional feeling ("Content", "Safe", "Happy").
 
             **HERO DESIRE & MOTIVE CONSISTENCY (REQUIRED):**
             - The hero's desire and inciting motive from Spread 1 MUST be the exact thing resolved in Spread ${spreadCount - 1} or ${spreadCount}.
-            - Do NOT change the hero's core goal mid-story. The "Moral" is what they LEARN; the "Desire" is what they WANT.
-            - The moral MUST be the direct answer to the hero's internal flaw, not a generic life lesson.
+            - Do NOT change the hero's core goal mid-story. The "Moral" is the internal feeling/insight; the "Desire" is what they wanted to do.
 
             **CAUSAL CHAIN & NO OFF-SCREEN TELEPORTS (STRICT):**
             - Every obstacle introduced in Spread N must have a physical, causal resolution or navigation action in Spread N+1 before moving to the next challenge.
@@ -236,15 +235,9 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
                     "storyCore": "[MUST BE IN ${targetLang}]",
                     "heroDesire": "[MUST BE IN ${targetLang}]",
                     "mainChallenge": "[MUST BE IN ${targetLang}]",
-                    "primaryVisualAnchor": "The object that stays with hero (e.g. The Starlight Bed-Boat or A Brass Explorer Lantern)",
-                    "anchorTriggerRule": "MANDATORY NON-EMPTY: Concrete physical cause-first trigger rule with observable physics (e.g. 'The brass lantern shutter opened wide only when the latch clicked into the top notch away from sand; rushed pulling jams the latch')",
-                    "recurringAsset": {
-                        "name": "Canonical name of the recurring prop/vehicle (e.g. 'The Starlight Bed-Boat')",
-                        "description": "Exhaustive isolated physical visual description: exact materials, wood grain finish, trim colors, carvings, geometric shapes, canopy/cushion fabric, isolated on clean neutral studio backdrop with studio lighting (no background room).",
-                        "appearancesSpreads": [1, 2, 3, 4, 5, 6, 7, 8],
-                        "isGlobalObject": true,
-                        "generateAssetImage": true
-                    },
+                    "primaryVisualAnchor": "The object that stays with hero (e.g. 'The Starlight Bed-Boat') OR 'None' if social/everyday story without a special prop",
+                    "anchorTriggerRule": "Concrete physical trigger rule OR 'None'",
+                    "recurringAsset": null, // OR { name, description, appearancesSpreads, isGlobalObject, generateAssetImage } ONLY if a real recurring vehicle/prop is needed
                     "moral": "[MUST BE IN ${targetLang}]",
                     "failedAttemptSpread": 3,
                     "insightSpread": 6,
@@ -317,7 +310,7 @@ ${selectedArc.beats.map(b => `              Spread ${b.spread}: ${b.text}`).join
             if (selectedArc) {
                 blueprint.foundation.arcId = selectedArc.arcId;
                 blueprint.foundation.selectedArc = selectedArc;
-                if (!blueprint.foundation.anchorTriggerRule) {
+                if (!blueprint.foundation.anchorTriggerRule && selectedArc.anchorAndRule && selectedArc.anchorAndRule.toLowerCase() !== 'none' && blueprint.foundation.primaryVisualAnchor?.toLowerCase() !== 'none') {
                     blueprint.foundation.anchorTriggerRule = selectedArc.anchorAndRule;
                 }
             }

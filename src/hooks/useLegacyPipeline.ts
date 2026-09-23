@@ -234,6 +234,7 @@ export const useLegacyPipeline = (
                         const hAOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero A' && r.image_type === 'Original Photo');
                         const hBStyle = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Stylized DNA');
                         const hBOrig = dnaRecords.find((r: any) => r.hero_label === 'Hero B' && r.image_type === 'Original Photo');
+                        const propRecord = dnaRecords.find((r: any) => r.hero_label === 'Prop Asset' && r.image_type === 'Canonical Asset');
 
                         if (hAStyle?.image_url && (!mainChar.imageDNA || mainChar.imageDNA.length === 0)) {
                             mainChar.imageDNA = [hAStyle.image_url];
@@ -248,6 +249,9 @@ export const useLegacyPipeline = (
                             if (hBOrig?.image_url && !storyData.secondCharacter.imageRawUrl) {
                                 storyData.secondCharacter.imageRawUrl = hBOrig.image_url;
                             }
+                        }
+                        if (propRecord?.image_url) {
+                            storyData.recurringAssetImageUrl = propRecord.image_url;
                         }
                         storyData.mainCharacter = mainChar;
                     }
@@ -769,10 +773,21 @@ export const useLegacyPipeline = (
 
             const visualStylePrompt = storyData.selectedStylePrompt || 'Painterly, flat 2D illustrated children\'s book style';
 
+            const propAssetCandidate = 
+                storyData.recurringAssetImageUrl || 
+                (storyData as any)?.propAssetUrl || 
+                (storyData as any)?.propAssetBase64 || 
+                (storyData.blueprint?.foundation?.recurringAsset as any)?.imageUrl ||
+                (storyData.blueprint?.foundation?.recurringAsset as any)?.image_url;
+            const propDNAResolved = propAssetCandidate || '';
+
             logMsg(`Character Binding Status:`);
             logMsg(`- HERO_1: ${mainStylizedDNA ? 'DNA-Matched ✓' : 'Raw Fallback ⚠️'}`);
             if (storyData.useSecondCharacter) {
                 logMsg(`- HERO_2: ${secondStylizedDNA ? 'DNA-Matched ✓' : 'Raw Fallback ⚠️'}`);
+            }
+            if (propDNAResolved) {
+                logMsg(`- PROP_ASSET: Canonical Asset Matched ✓`);
             }
 
             const uploadSpreadImage = async (
@@ -855,6 +870,7 @@ export const useLegacyPipeline = (
                 const coverImagePrompt = typeof rawCover === 'string' ? rawCover : (rawCover?.imagePrompt || rawCover?.prompt);
                 const requiresHero2Cover = (typeof coverImagePrompt === 'string' ? coverImagePrompt : '').includes('[[HERO_2]]') || (typeof coverImagePrompt === 'string' ? coverImagePrompt : '').includes('Image 2');
                 const effectiveSecondDNACover = (storyData.useSecondCharacter && requiresHero2Cover) ? secondDNAResolved : undefined;
+                const effectivePropCover = propDNAResolved || undefined;
 
                 logMsg(`--> Painting Cover...`);
                 await sleep(delayBetweenScenes);
@@ -862,7 +878,9 @@ export const useLegacyPipeline = (
                     prompt: coverImagePrompt, stylePrompt: visualStylePrompt,
                     referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
                     age: storyData.childAge || '5', secondReferenceBase64: effectiveSecondDNACover,
-                    secondCharacterDescription: storyData.secondCharacter?.description
+                    secondCharacterDescription: storyData.secondCharacter?.description,
+                    propAssetBase64: effectivePropCover,
+                    propAssetUrl: effectivePropCover
                 })) as any;
                 if (coverRes.imageBase64 || coverRes.data?.imageBase64) {
                     let b64 = coverRes.imageBase64 || coverRes.data?.imageBase64;
@@ -881,7 +899,9 @@ export const useLegacyPipeline = (
                                 prompt: retryPrompt, stylePrompt: visualStylePrompt,
                                 referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
                                 age: storyData.childAge || '5', secondReferenceBase64: effectiveSecondDNACover,
-                                secondCharacterDescription: storyData.secondCharacter?.description
+                                secondCharacterDescription: storyData.secondCharacter?.description,
+                                propAssetBase64: effectivePropCover,
+                                propAssetUrl: effectivePropCover
                             })) as any;
                             if (retryRes.imageBase64 || retryRes.data?.imageBase64) {
                                 b64 = retryRes.imageBase64 || retryRes.data?.imageBase64;
@@ -1013,12 +1033,15 @@ export const useLegacyPipeline = (
 
                     const requiresHero2 = (typeof imagePrompt === 'string' ? imagePrompt : '').includes('[[HERO_2]]') || (typeof imagePrompt === 'string' ? imagePrompt : '').includes('Image 2');
                     const effectiveSecondDNA = (storyData.useSecondCharacter && requiresHero2) ? secondDNAResolved : undefined;
+                    const effectivePropSpread = propDNAResolved || undefined;
 
                     const imgRes = await retryStep(`Painting Spread ${spreadNum}`, () => backendApi.generateImage({
                         prompt: imagePrompt, stylePrompt: visualStylePrompt,
                         referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
                         age: storyData.childAge || '5', secondReferenceBase64: effectiveSecondDNA,
-                        secondCharacterDescription: storyData.secondCharacter?.description
+                        secondCharacterDescription: storyData.secondCharacter?.description,
+                        propAssetBase64: effectivePropSpread,
+                        propAssetUrl: effectivePropSpread
                     })) as any;
 
                     if (imgRes.imageBase64 || imgRes.data?.imageBase64) {
@@ -1041,7 +1064,9 @@ export const useLegacyPipeline = (
                                     prompt: retryPrompt, stylePrompt: visualStylePrompt,
                                     referenceBase64: mainDNAResolved, characterDescription: storyData.mainCharacter?.description,
                                     age: storyData.childAge || '5', secondReferenceBase64: effectiveSecondDNA,
-                                    secondCharacterDescription: storyData.secondCharacter?.description
+                                    secondCharacterDescription: storyData.secondCharacter?.description,
+                                    propAssetBase64: effectivePropSpread,
+                                    propAssetUrl: effectivePropSpread
                                 })) as any;
                                 if (imgRetryRes.imageBase64 || imgRetryRes.data?.imageBase64) {
                                     finalB64 = imgRetryRes.imageBase64 || imgRetryRes.data?.imageBase64;

@@ -62,23 +62,45 @@ ${assetDescription}
             });
         }
 
-        console.log(`[AssetGenerator] Calling gemini-3-pro-image-preview for Prop: "${assetName}"...`);
-        const model = ai().getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
-        const response = await model.generateContent(contents);
+        const candidateModels = [
+            'gemini-3-pro-image-preview',
+            'gemini-3-pro-image',
+            'gemini-3.1-flash-image',
+            'gemini-3.1-flash-image-preview',
+            'gemini-2.5-flash-image'
+        ];
 
         let imageBase64 = '';
-        const candidates = response.response.candidates || [];
-        if (candidates.length > 0 && candidates[0].content?.parts) {
-            for (const part of candidates[0].content.parts) {
-                if (part.inlineData?.data) {
-                    imageBase64 = part.inlineData.data;
+        let lastError: any = null;
+
+        for (const candidateModel of candidateModels) {
+            try {
+                console.log(`[AssetGenerator] Calling model ${candidateModel} for Prop: "${assetName}"...`);
+                const model = ai().getGenerativeModel({ model: candidateModel });
+                const response = await model.generateContent(contents);
+
+                const candidates = response.response.candidates || [];
+                if (candidates.length > 0 && candidates[0].content?.parts) {
+                    for (const part of candidates[0].content.parts) {
+                        if (part.inlineData?.data) {
+                            imageBase64 = part.inlineData.data;
+                            break;
+                        }
+                    }
+                }
+
+                if (imageBase64) {
+                    console.log(`✓ Prop asset generated successfully with model: ${candidateModel}`);
                     break;
                 }
+            } catch (error: any) {
+                lastError = error;
+                console.warn(`[AssetGenerator] Model ${candidateModel} failed: ${error.message || error}. Trying fallback...`);
             }
         }
 
         if (!imageBase64) {
-            throw new Error(`[AssetGenerator] Vision Model returned no image data for prop "${assetName}".`);
+            throw new Error(`[AssetGenerator] Vision Model returned no image data for prop "${assetName}". Last error: ${lastError?.message || 'Unknown'}`);
         }
 
         let imageUrl: string | undefined = undefined;

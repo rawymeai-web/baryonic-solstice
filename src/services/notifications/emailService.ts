@@ -4,6 +4,24 @@ import { ServerLogger } from '@/utils/serverLogger';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_stub_key');
 
+// CAN-SPAM & Global Compliance Physical Postal Address
+export const COMPANY_PHYSICAL_ADDRESS = "Rawy / Albumii General Trading & Contracting Co. W.L.L., Al Hamra Business Tower, Sharq, Kuwait City, Kuwait";
+
+export const getEmailFooter = (recipientEmail: string = '', isMarketing: boolean = false) => {
+    const unsubscribeUrl = `https://rawytime.com/unsubscribe.html?email=${encodeURIComponent(recipientEmail || '')}`;
+    return `
+        <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(0, 26, 64, 0.08); font-size: 11px; line-height: 1.6; color: #888; text-align: center;">
+            <p style="margin: 0 0 6px 0; font-weight: 700; color: #001A40;">Rawy &bull; Where Every Child Becomes the Hero</p>
+            <p style="margin: 0 0 6px 0; color: #666;">${COMPANY_PHYSICAL_ADDRESS}</p>
+            <p style="margin: 0; color: #777;">
+                ${isMarketing 
+                    ? `You received this promotional communication from Rawy. <a href="${unsubscribeUrl}" style="color: #F78F50; text-decoration: underline;">One-Click Unsubscribe</a>` 
+                    : `This is an important transactional update regarding your order or account on Rawy. <a href="${unsubscribeUrl}" style="color: #F78F50; text-decoration: underline;">Email preferences / Unsubscribe</a>`}
+            </p>
+        </div>
+    `;
+};
+
 // Helper to get user-friendly status name
 const friendlyStatus = (status: string) => {
     switch (status) {
@@ -160,8 +178,7 @@ export class EmailService {
                                 </p>
                             </div>
                             
-                            <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #A0AEC0; text-align: center; margin: 0;">Rawy • Where Every Child Becomes the Hero.</p>
+                            ${getEmailFooter(recipientEmail)}
                         </div>
                     `;
                     break;
@@ -248,8 +265,7 @@ export class EmailService {
                                 <a href="${previewLink}" style="color: #006B5D; font-weight: 700; word-break: break-all;">${previewLink}</a>
                             </p>
 
-                            <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #A0AEC0; text-align: center; margin: 0;">Rawy • Where Every Child Becomes the Hero.</p>
+                            ${getEmailFooter(recipientEmail)}
                         </div>
                     `;
                     break;
@@ -304,8 +320,7 @@ export class EmailService {
                                 </div>
                             ` : ''}
 
-                            <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy • Where Every Child Becomes the Hero.</p>
+                            ${getEmailFooter(recipientEmail)}
                         </div>
                     `;
                     break;
@@ -329,8 +344,7 @@ export class EmailService {
                                 ${statusExplanation(payload.status)}
                             </p>
 
-                            <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy. Where Every Child Becomes the Hero.</p>
+                            ${getEmailFooter(recipientEmail)}
                         </div>
                     `;
                     break;
@@ -354,8 +368,35 @@ export class EmailService {
                                 ${payload.message || 'Your subscription details have been successfully updated. Thank you for being a part of Rawy!'}
                             </p>
 
-                            <hr style="border: 0; border-top: 1px solid rgba(0, 26, 64, 0.08); margin: 32px 0;" />
-                            <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">Rawy. Where Every Child Becomes the Hero.</p>
+                            ${getEmailFooter(recipientEmail)}
+                        </div>
+                    `;
+                    break;
+                case 'subscription_renewal_reminder':
+                    const renewDate = payload.renewalDate || 'in 7 days';
+                    const renewAmount = payload.amount || 'your regular plan rate';
+                    subject = `Upcoming Rawy Subscription Renewal Notice 📅`;
+                    html = `
+                        <div style="font-family: 'Plus Jakarta Sans', 'Tajawal', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #FFF9F0; color: #001A40; border-radius: 24px; border: 1px solid rgba(0, 26, 64, 0.05); direction: ltr; text-align: left;">
+                            <div style="text-align: center; margin-bottom: 24px;">
+                                <span style="font-size: 40px;">📅✨</span>
+                            </div>
+                            <h2 style="color: #006B5D; font-size: 24px; font-weight: 800; margin-bottom: 16px; text-align: center;">Subscription Renewal Notice</h2>
+                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">Hi ${recipientName},</p>
+                            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+                                This is a friendly reminder that your Rawy membership (${payload.plan || 'Plan'}) is scheduled to automatically renew on <strong>${renewDate}</strong> for <strong>${renewAmount}</strong>.
+                            </p>
+                            
+                            <div style="background-color: rgba(0, 107, 93, 0.04); padding: 24px; border-radius: 16px; margin: 24px 0; border: 1px solid rgba(0, 107, 93, 0.1); text-align: center;">
+                                <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #555;">Next Billing Date</span>
+                                <h3 style="font-size: 20px; font-weight: 800; color: #006B5D; margin: 8px 0 0 0;">${renewDate}</h3>
+                            </div>
+                            
+                            <p style="font-size: 14px; line-height: 1.6; color: #444; margin-bottom: 24px;">
+                                You don't need to take any action to continue receiving your monthly story credits and benefits. If you wish to cancel or modify your plan, you can do so anytime from your <a href="https://rawytime.com" style="color: #F78F50; font-weight: bold; text-decoration: underline;">Account Dashboard</a> before the renewal date.
+                            </p>
+
+                            ${getEmailFooter(recipientEmail)}
                         </div>
                     `;
                     break;

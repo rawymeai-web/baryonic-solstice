@@ -1,4 +1,4 @@
-﻿import { runArchitectureTests } from './architecture.test';
+import { runArchitectureTests } from './architecture.test';
 import { runFastProductionTests } from './fast_production.test';
 import { runGenerationContractTests } from './generation_contracts.test';
 import { runE2EProductionPipelineTests } from './e2e_production_pipeline.test';
@@ -6,6 +6,7 @@ import { runGlobalOverridePrecedenceTests } from './global_override_precedence.t
 import { runQAContractPersistenceTests } from './qa_contract_persistence.test';
 import { runAtomicDistributedLeaseTests } from './atomic_distributed_lease.test';
 import { runRegexSafetyTests } from './regex_safety.test';
+import { runModelFallbackTests } from './model_fallback.test';
 
 async function main() {
     console.log('\n================================================================');
@@ -46,6 +47,10 @@ async function main() {
     const res8 = await runRegexSafetyTests();
     totalPassed += res8.passed;
     totalFailed += res8.failed;
+
+    const res9 = await runModelFallbackTests();
+    totalPassed += res9.passed;
+    totalFailed += res9.failed;
 
     console.log('================================================================');
     console.log(`🏁 GRAND TOTAL: ${totalPassed} PASSED, ${totalFailed} FAILED`);

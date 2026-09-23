@@ -19,25 +19,26 @@ export const GUIDEBOOK = {
             "9-12": { min: 30, max: 50 }
         },
         structure: {
-            intro: "Establish Hero in grounded Home Base. State personal desire origin and establish anchor item rule.",
+            intro: "Establish Hero in grounded Home Base. State personal desire origin and optional anchor item or exploratory setting.",
             catalyst: "The sensory trigger / incident that invites the hero into the adventure.",
-            risingAction: "Three escalating attempts/obstacles with strict causal continuity and named emotions (for ages 1-3: simplified 3-beat shape: Want -> Try/Recovery -> Got it/Rest).",
-            climax: "The insight and final test delivering the title/theme promise.",
-            resolution: "Seamless return bridge to the Home Base with cozy emotional realization and child-voice takeaway."
+            risingAction: "Escalating attempts/obstacles with strict causal continuity and named emotions (for ages 1-3: simplified 3-beat shape: Want -> Try/Recovery -> Got it/Rest).",
+            climax: "The insight and final test delivering the title/theme promise with indispensable agency from required heroes.",
+            resolution: "Seamless return bridge to the Home Base with a warm, scene-based emotional realization and child-voice closure (no explicit adult proverbs)."
         },
         principles: {
-            toddlerStoryArchitecture: "For ages 1–3, follow a 3-beat board book shape: Want (Spreads 1-3) -> Try/Trouble & Simple Recovery (Spreads 4-6) -> Got it/Happy/Rest (Spreads 7-8). Strictly 4-8 words per spread, one idea per spread, no subordinate clauses (cut 'because', 'so that'), with playful repetition and rhythm.",
+            toddlerStoryArchitecture: "For ages 1–3, follow a 3-beat board book shape: Want (Spreads 1-3) -> Try/Trouble & Simple Recovery (Spreads 4-6) -> Got it/Happy/Rest (Spreads 7-8). Strictly 4-8 words per spread, one idea per spread, no subordinate clauses (cut 'because', 'so that'), with playful repetition and rhythm. Retain sensory charm and avoid dry fragments.",
             personalMotiveOrigin: "Hero desire must have a clear personal root (love, gift, curiosity), never an ungrounded mission statement.",
             worldLogicAndFrame: "Spread 1 must name the child's home base so the final spread's return journey makes complete sense.",
-            recurringDeviceRule: "State the simple physical trigger of any anchor item on first use in Spread 1. Always state cause before effect.",
+            recurringDeviceRule: "If an anchor item is used, state its concrete physical trigger on first use in Spread 1. Always state cause before effect. Anchor items are optional tools, not universal requirements.",
             objectContinuityRule: "For ages 1–5, maintain object continuity by using the hero's name possessive ('Lana's pebble') instead of generic articles ('a pebble') which create discontinuity.",
-            helperAnimalPurpose: "When introducing a mentor or helper animal (e.g. owl, turtle), explicitly describe what they embody ('slow and calm') so downstream callbacks feel earned.",
-            warmClosingTakeaway: "End with a cozy, warm resolution in the child's own voice (e.g. 'Quiet and slow was the best kind of magic'). Never preach with adult proverbs, but never stop without a felt resolution.",
+            helperAnimalPurpose: "When introducing a mentor or helper animal (optional, only when fitting the setting), explicitly describe what they embody ('slow and calm') so downstream callbacks feel earned.",
+            warmClosingTakeaway: "End with a cozy, scene-based emotional resolution in the child's own voice (e.g. holding a keepsake, a warm hug, smiling at a completed drawing). Strictly ban explicit adult moral formulas (e.g. 'Patience is the best secret', 'He learned that honesty is...').",
             transitionAndResolution: "Bridging clauses required when crossing setting boundaries or returning home.",
-            themePremiseAlignment: "Explicitly dramatize the core theme promise (e.g. quiet animal language).",
+            themePremiseAlignment: "Explicitly dramatize the core theme promise and fulfill it in the climax.",
             emotionalVocabulary: "For ages 1–3, use simple primary emotions (happy, sad, mad, calm, proud, scared, mixed up, safe). Save complex emotions (frustrated, disappointed) for older tiers.",
             bannedWordPolicy: "If a banned or overly complex word must be replaced, preserve the story beat it was carrying using an approved substitute from SIMPLE_WORD_REPLACEMENT_DICTIONARY — never delete the beat itself.",
-            pronounPolicyGuard: "Pronoun Policy Guard (ages 1–5): the final text must not use third-person pronouns (he/she/him/her/his/hers/it/its) to refer to the hero or a named companion. Use the hero's name, or restructure sentences naturally without ungrammatical fragments."
+            pronounPolicyGuard: "Pronoun Policy Guard (ages 1–5): the final text must not use third-person pronouns (he/she/him/her/his/hers/it/its) to refer to the hero or a named companion. Use the hero's name, or restructure sentences naturally without ungrammatical fragments.",
+            soundEffectBudget: "Sound words are optional and organic (budget of 0–4 across the entire book). Motivate sounds by physical actions. Do NOT require a sound on every spread. Avoid forced or parenthetical sounds."
         }
     },
 
@@ -136,8 +137,8 @@ export const INTUITIVE_SOUND_WORDS = {
         "THUMP THUMP", "TICK TOCK", "YUM YUM", "WIGGLE WIGGLE"
     ],
     ar: [
-        "شـشـش...", "طَـق طَـق!", "هَـفف...", "زَق زَق!", "تِك تِك!", "هـووو!",
-        "قـهـقـهـة!", "تـوت تـوت!", "بـلـوب!", "سـنـور!", "تـك تـك!"
+        "شـشـش...", "طق طق!", "هف...", "زقزقة!", "تك تك!", "ووووش!",
+        "قهقهة!", "توت توت!", "خرير!", "طاخ!"
     ]
 };
 

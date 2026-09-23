@@ -81,7 +81,10 @@ export async function POST(req: Request) {
             fs.appendFileSync('latest_crash.txt', `\n--- CRASH AT ${new Date().toISOString()} ---\n${error.stack || error.message}\n`);
         } catch (e) { }
         return NextResponse.json(
-            { error: error.message || "Unknown server error during image generation" },
+            { 
+                error: error.message || "Unknown server error during image generation",
+                details: error.name || undefined
+            },
             { status: 500 }
         );
     }

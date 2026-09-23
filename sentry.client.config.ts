@@ -6,10 +6,16 @@ if (SENTRY_DSN && SENTRY_DSN !== "undefined" && !SENTRY_DSN.startsWith("__")) {
   Sentry.init({
     dsn: SENTRY_DSN,
     tracesSampleRate: 0.1,
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
+    // CIPA compliance: Turn session replay recording off by default
+    replaysSessionSampleRate: 0,
+    // Strictly mask all form inputs, text, and media in error diagnostic replays
+    replaysOnErrorSampleRate: 0.1,
     integrations: [
-      Sentry.replayIntegration(),
+      Sentry.replayIntegration({
+        maskAllText: true,
+        maskAllInputs: true,
+        blockAllMedia: true,
+      }),
     ],
   });
 }

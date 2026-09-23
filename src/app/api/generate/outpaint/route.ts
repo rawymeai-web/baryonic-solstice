@@ -129,37 +129,48 @@ You must replace all solid white borders by naturally extending the environment 
 
         contents.push({ text: editPrompt });
 
-        console.log(`[Outpaint] Calling gemini-3-pro-image-preview with ${contents.length} parts`);
+        const candidateModels = [
+            'gemini-3-pro-image-preview',
+            'gemini-3-pro-image',
+            'gemini-3.1-flash-image',
+            'gemini-3.1-flash-image-preview',
+            'gemini-2.5-flash-image'
+        ];
 
-        // ── Use gemini-3-pro-image-preview ────────────────
-        const model = getAi().getGenerativeModel({
-            model: 'gemini-3-pro-image-preview',
-        });
-
-        const response = await model.generateContent(contents);
-
-        // Extract edited image from response
         let imageBase64Result: string | null = null;
-        const parts = response.response.candidates?.[0]?.content?.parts || [];
+        let lastOutpaintError: any = null;
 
-        for (const part of parts) {
-            if (part.inlineData?.mimeType?.startsWith('image/')) {
-                imageBase64Result = part.inlineData.data;
-                break;
+        for (const candidateModel of candidateModels) {
+            try {
+                console.log(`[Outpaint] Calling ${candidateModel} with ${contents.length} parts`);
+                const model = getAi().getGenerativeModel({ model: candidateModel });
+                const response = await model.generateContent(contents);
+
+                const parts = response.response.candidates?.[0]?.content?.parts || [];
+                for (const part of parts) {
+                    if (part.inlineData?.mimeType?.startsWith('image/')) {
+                        imageBase64Result = part.inlineData.data;
+                        break;
+                    }
+                }
+
+                if (imageBase64Result) {
+                    console.log(`[Outpaint] ✅ Success with model: ${candidateModel} (${imageBase64Result.length} chars)`);
+                    break;
+                }
+            } catch (err: any) {
+                lastOutpaintError = err;
+                console.warn(`[Outpaint] Model ${candidateModel} failed: ${err.message || err}. Trying fallback...`);
             }
         }
 
         if (!imageBase64Result) {
-            console.error('[Outpaint] No image in response. Parts:', JSON.stringify(
-                parts.map((p: any) => ({ hasInlineData: !!p.inlineData, text: p.text?.slice?.(0, 200) }))
-            ));
             return NextResponse.json(
-                { error: 'Gemini did not return a filled image. The model may have refused or returned text only. Try again.' },
+                { error: `Gemini did not return a filled image across all candidate models. Last error: ${lastOutpaintError?.message || 'Unknown'}` },
                 { status: 500 }
             );
         }
 
-        console.log(`[Outpaint] ✅ Success — filled image returned (${imageBase64Result.length} chars)`);
         return NextResponse.json({ success: true, imageBase64: imageBase64Result });
 
     } catch (error: any) {

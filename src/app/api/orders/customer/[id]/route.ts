@@ -87,25 +87,25 @@ export async function GET(
     let subscription = null;
     const { data: dbSub } = await supabase
       .from('subscriptions')
-      .select('plan_type, next_billing_date')
+      .select('plan, next_billing_date')
       .eq('customer_id', id)
       .maybeSingle();
       
     if (dbSub) {
       subscription = {
-        plan: dbSub.plan_type,
+        plan: dbSub.plan,
         next_billing_date: dbSub.next_billing_date
       };
     } else if (email) {
       // Fallback check by email
       const { data: dbSubEmail } = await supabase
         .from('subscriptions')
-        .select('plan_type, next_billing_date')
+        .select('plan, next_billing_date')
         .eq('customer_id', email)
         .maybeSingle();
       if (dbSubEmail) {
         subscription = {
-          plan: dbSubEmail.plan_type,
+          plan: dbSubEmail.plan,
           next_billing_date: dbSubEmail.next_billing_date
         };
       }
